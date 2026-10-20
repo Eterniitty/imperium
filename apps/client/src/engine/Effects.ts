@@ -50,15 +50,31 @@ export class Effects {
   private ownBolt = new THREE.MeshBasicMaterial({ color: 0x8fe9ff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
   private enemyBolt = new THREE.MeshBasicMaterial({ color: 0xff7a4a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
 
-  constructor(private readonly ownId: () => string | null) {}
+  private ownGlow: THREE.Sprite;
+  private enemyGlow: THREE.Sprite;
+
+  constructor(private readonly ownId: () => string | null) {
+    const glow = (color: number) => {
+      const s = new THREE.Sprite(
+        new THREE.SpriteMaterial({ map: glowTexture(), color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }),
+      );
+      s.scale.setScalar(2.6);
+      return s;
+    };
+    this.ownGlow = glow(0x8fe9ff);
+    this.enemyGlow = glow(0xff7a4a);
+  }
 
   add(shot: Shot): void {
     const from = new THREE.Vector3(...shot.from);
     const dir = new THREE.Vector3(...shot.dir).normalize();
     const end = shot.hitAt ?? shot.serverTime + (shot.range / shot.speed) * 1000;
     if (shot.weapon === "cannon") {
-      const mesh = new THREE.Mesh(BOLT_GEO, shot.id === this.ownId() ? this.ownBolt : this.enemyBolt);
+      const own = shot.id === this.ownId();
+      const mesh = new THREE.Mesh(BOLT_GEO, own ? this.ownBolt : this.enemyBolt);
       mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+      // Halo: desde detrás de la nave la ráfaga se ve de punta; el halo la hace visible desde cualquier ángulo.
+      mesh.add(own ? this.ownGlow.clone() : this.enemyGlow.clone());
       this.group.add(mesh);
       this.bolts.push({ mesh, from, dir, speed: shot.speed, t0: shot.serverTime, end, hits: shot.hitAt !== null });
     } else {

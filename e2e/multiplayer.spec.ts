@@ -127,15 +127,23 @@ test("dos jugadores se ven en el mismo universo y se ven moverse", async ({ brow
   await bruno.waitForTimeout(500);
   await bruno.screenshot({ path: `${SHOTS}/7b-vuelo-compartido.png` });
 
-  // Combate: HUD con escudo y casco; X fija a Ana como objetivo; F dispara el cañón.
+  // Combate: HUD con escudo y casco. Ana es su compañera: X no la fija (no hay fuego amigo).
   await expect(bruno.locator(".combat-self")).toContainText("Escudo");
   await expect(bruno.locator(".combat-self")).toContainText("Misiles 6/6");
   await bruno.keyboard.press("KeyX");
-  await expect(bruno.locator(".combat-target")).toContainText("Ana Prima");
+  await expect(bruno.locator(".combat-target")).toContainText("Sin objetivo");
+  // Cuenta los disparos que devuelve el servidor mientras se mantiene F.
+  await bruno.evaluate(() => {
+    const w = window as unknown as { __shots: number; __imperium: { space: { subscribe(fn: (s: { shots: unknown[] }) => void): void } } };
+    w.__shots = 0;
+    w.__imperium.space.subscribe((s) => (w.__shots = Math.max(w.__shots, w.__shots + s.shots.length)));
+  });
   await bruno.keyboard.down("KeyF");
-  await bruno.waitForTimeout(600);
+  await bruno.waitForTimeout(250);
   await bruno.screenshot({ path: `${SHOTS}/7c-combate.png` });
+  await bruno.waitForTimeout(500);
   await bruno.keyboard.up("KeyF");
+  expect(await bruno.evaluate(() => (window as unknown as { __shots: number }).__shots)).toBeGreaterThan(1);
   await bruno.keyboard.press("KeyM");
 
   // Ana cierra el juego: Bruno la ve desconectada y el contador baja. Si el navegador
