@@ -8,6 +8,7 @@ Idioma de trabajo: **español** (código y comentarios en español; identificado
 - `docs/arquitectura.md` — pila técnica, simulación, protocolo, modelo de datos.
 - `docs/despliegue.md` — servidor, seguridad y costes.
 - `README.md` — cómo ejecutar y comprobar el proyecto.
+- `docs/hoja-de-ruta.md` — fases pendientes en orden; la siguiente es la primera sin marcar.
 
 ## Estado
 - Fase 1 (diseño), 2 (arquitectura) y 3 (prototipo local) terminadas.
