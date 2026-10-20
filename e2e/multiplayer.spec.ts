@@ -46,12 +46,34 @@ const select = (page: Page, s: StarSystemSummary) =>
   page.evaluate((sys) => (window as unknown as Debug).__imperium.store.getState().select(sys), s);
 
 test("dos jugadores se ven en el mismo universo y se ven moverse", async ({ browser }) => {
-  // Incluye un viaje real entre sistemas del Núcleo (hasta ~30 s a la velocidad de prueba).
-  test.setTimeout(120_000);
+  // Incluye un viaje real entre sistemas del Núcleo (hasta ~40 s a la velocidad de prueba).
+  test.setTimeout(180_000);
   const ana = await newPlayer(browser, "ana@aeonarch.test", "Ana Prima");
   const bruno = await newPlayer(browser, "bruno@aeonarch.test", "Bruno Segundo");
 
-  // Los dos están en línea y cada uno ve al otro.
+  // Por defecto solo se ven los compañeros: cada uno se ve solo a sí mismo.
+  await expect(ana.getByText("1 en línea")).toBeVisible();
+  await expect(bruno.getByText("1 en línea")).toBeVisible();
+
+  // Se hacen compañeros desde los ajustes: Ana añade a Bruno y Bruno acepta.
+  await ana.getByRole("button", { name: "Abrir los ajustes" }).click();
+  await ana.getByRole("tab", { name: "Compañeros" }).click();
+  await expect(ana.getByRole("radio", { name: "Solo mis compañeros" })).toHaveAttribute("aria-checked", "true");
+  await ana.getByLabel("Añadir por nombre de Emperador").fill("bruno segundo");
+  await ana.getByRole("button", { name: "Añadir", exact: true }).click();
+  await expect(ana.getByText("Esperando a que te añadan")).toBeVisible();
+  await ana.screenshot({ path: `${SHOTS}/6a-compañeros.png` });
+  await ana.keyboard.press("Escape");
+
+  await bruno.getByRole("button", { name: "Abrir los ajustes" }).click();
+  await bruno.getByRole("tab", { name: "Compañeros" }).click();
+  await expect(bruno.getByText("Te han añadido")).toBeVisible();
+  await bruno.locator(".social-list li", { hasText: "Ana Prima" }).getByRole("button", { name: "Añadir" }).click();
+  await expect(bruno.locator(".social-list li", { hasText: "Ana Prima" })).toBeVisible();
+  await expect(bruno.getByText("Te han añadido")).toBeHidden();
+  await bruno.keyboard.press("Escape");
+
+  // Ya son compañeros: los dos se ven.
   await expect(ana.getByText("2 en línea")).toBeVisible();
   await expect(bruno.getByText("2 en línea")).toBeVisible();
   const anaE = await myEmperor(ana);
@@ -86,7 +108,7 @@ test("dos jugadores se ven en el mismo universo y se ven moverse", async ({ brow
   await bruno.screenshot({ path: `${SHOTS}/6-bruno-ve-venir-a-ana.png` });
 
   // Al llegar, Bruno la tiene en su sistema.
-  await expect(brunoPanel.locator(".emperor-list li", { hasText: "Ana Prima" })).toContainText("conectado", { timeout: 30_000 });
+  await expect(brunoPanel.locator(".emperor-list li", { hasText: "Ana Prima" })).toContainText("conectado", { timeout: 60_000 });
   await expect(brunoPanel.getByRole("heading", { name: "Emperadores aquí" })).toBeVisible();
   await bruno.screenshot({ path: `${SHOTS}/7-ana-llega.png` });
   expect((await myEmperor(ana)).travel?.to.systemId).toBe(brunoSystem.id);

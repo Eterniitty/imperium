@@ -10,6 +10,8 @@ import { EventWorker } from "./events/queue";
 import { FleetService } from "./fleet/service";
 import { Hub } from "./realtime/hub";
 import { realtimeRoutes } from "./realtime/routes";
+import { socialRoutes } from "./social/routes";
+import { SocialService } from "./social/service";
 import { createMailer, type Mailer } from "./mail";
 
 /** Versión del servidor; la inyecta esbuild al compilar y en desarrollo vale "dev". */
@@ -69,9 +71,11 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
 
   const emperors = new EmperorService(deps.db, config);
   const fleets = new FleetService(deps.db, config);
-  const hub = new Hub(emperors, fleets, app.log, config.TIME_SCALE);
+  const social = new SocialService(deps.db);
+  const hub = new Hub(emperors, fleets, social, app.log, config.TIME_SCALE);
   await app.register(emperorRoutes, { config, db: deps.db, emperors, hub });
   await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, hub });
+  await app.register(socialRoutes, { config, db: deps.db, emperors, social, hub });
 
   // Cola de eventos programados: llegadas de flotas (y, más adelante, construcciones…).
   const worker = new EventWorker(deps.db, app.log);

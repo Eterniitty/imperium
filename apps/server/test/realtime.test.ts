@@ -5,7 +5,7 @@
 import { sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import WebSocket from "ws";
-import { LOGIN_TOKEN_PARAM, PROTOCOL_VERSION, WS_CLOSE, type Emperor, type EmperorView, type Fleet, type ServerMessage, type Topic } from "@imperium/shared";
+import { LOGIN_TOKEN_PARAM, PROTOCOL_VERSION, WS_CLOSE, type Emperor, type EmperorView, type Fleet, type ServerMessage, type Topic, type Visibility } from "@imperium/shared";
 import { generateSector, universeSeedFromString } from "@imperium/procgen";
 import { buildApp } from "../src/app";
 import { sessionCookieName } from "../src/auth/routes";
@@ -131,11 +131,16 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
     return { [SESSION_COOKIE]: res.cookies.find((c) => c.name === SESSION_COOKIE)!.value };
   }
 
-  async function player(email: string, name: string) {
+  /** Jugador con Emperador. Por defecto público, para los tests de difusión; los de privacidad eligen. */
+  async function player(email: string, name: string, visibility: Visibility = "public") {
     const cookies = await login(email);
     const res = await app.inject({ method: "POST", url: "/api/emperor", payload: { name }, cookies });
+    await app.inject({ method: "POST", url: "/api/social/visibility", payload: { visibility }, cookies });
     return { cookies, emperor: res.json().emperor as Emperor };
   }
+
+  const social = (cookies: Record<string, string>, url: string, payload?: unknown) =>
+    app.inject({ method: payload === undefined ? "GET" : "POST", url, payload: payload as object, cookies });
 
   const ticket = async (cookies: Record<string, string>) => {
     const res = await app.inject({ method: "POST", url: "/api/ws/ticket", cookies });
@@ -279,12 +284,13 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
     expect(await s.closed()).toBe(WS_CLOSE.rateLimited);
   });
 
-  it("un Emperador nuevo aparece en directo para los conectados", async () => {
+  it("un Emperador nuevo y público aparece en directo para los conectados", async () => {
     const a = await player("a@ejemplo.com", "Aurelia");
     const sa = await connect(a.cookies);
     const from = sa.messages.length;
-    const b = await player("b@ejemplo.com", "Brennus");
-    const delta = await sa.next(deltaOf("emperors"), from);
+    // Nace privado (solo compañeros): aparece para los demás cuando se hace público.
+    const b = await player("b@ejemplo.com", "Brennus", "public");
+    const delta = await sa.next((m): m is Delta => deltaOf("emperors")(m) && m.ops.length > 0, from);
     expect(delta.ops).toEqual([{ path: `emperors.${b.emperor.id}`, v: { ...b.emperor, online: false } }]);
   });
 
@@ -325,5 +331,91 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
     const [row] = await database.db.execute(sql`SELECT system_id, dest_system_id FROM fleets WHERE id = ${fleet.id}`);
     expect(row).toEqual({ system_id: dest.id, dest_system_id: null });
     expect(sb.messages.slice(fromB).filter(deltaOf("me"))).toEqual([]);
+  });
+
+  describe("privacidad", () => {
+    /** Ids de Emperadores que ve un cliente según lo recibido (instantánea y cambios). */
+    const seenBy = (s: TestSocket): Set<string> => {
+      const ids = new Set<string>();
+      for (const m of s.messages) {
+        if (m.t === "snap" && m.topic === "emperors") {
+          ids.clear();
+          for (const e of m.data.emperors) ids.add(e.id);
+        } else if (m.t === "delta" && m.topic === "emperors") {
+          for (const op of m.ops) {
+            const id = op.path.slice("emperors.".length);
+            if (op.v) ids.add(id);
+            else ids.delete(id);
+          }
+        }
+      }
+      return ids;
+    };
+    const settle = () => new Promise((r) => setTimeout(r, 200));
+
+    it("por defecto solo te ven tus compañeros: ni posición ni avisos a los demás", async () => {
+      const a = await player("a@ejemplo.com", "Aurelia", "allies");
+      const b = await player("b@ejemplo.com", "Brennus", "allies");
+      const sa = await connect(a.cookies);
+      const sb = await connect(b.cookies);
+      expect([...seenBy(sb)]).toEqual([b.emperor.id]);
+
+      // Aurelia viaja: a Brennus no le llega nada de ella.
+      const from = sb.messages.length;
+      const dest = coreSystems.find((s) => s.id !== a.emperor.location.systemId)!;
+      sa.send({ t: "cmd", cmdId: "oculta-0001", op: "emperor.move", args: { systemId: dest.id } });
+      await sa.next(is("ack"));
+      await settle();
+      expect(JSON.stringify(sb.messages.slice(from))).not.toContain(a.emperor.id);
+    });
+
+    it("añadirse uno solo no basta; cuando los dos se añaden, se ven", async () => {
+      const a = await player("a@ejemplo.com", "Aurelia", "allies");
+      const b = await player("b@ejemplo.com", "Brennus", "allies");
+      const sb = await connect(b.cookies);
+
+      const one = await social(a.cookies, "/api/social/allies", { name: "  BRENNUS " });
+      expect(one.json()).toMatchObject({ allies: [], pending: [{ id: b.emperor.id, name: "Brennus" }], requests: [] });
+      expect((await social(b.cookies, "/api/social")).json()).toMatchObject({ requests: [{ id: a.emperor.id, name: "Aurelia" }] });
+      await settle();
+      expect(seenBy(sb).has(a.emperor.id)).toBe(false);
+
+      const both = await social(b.cookies, "/api/social/allies", { name: "aurelia" });
+      expect(both.json()).toMatchObject({ allies: [{ id: a.emperor.id }], pending: [], requests: [] });
+      await settle();
+      expect(seenBy(sb).has(a.emperor.id)).toBe(true);
+
+      // Quitar al compañero: deja de verse en el acto.
+      await social(b.cookies, "/api/social/allies/remove", { emperorId: a.emperor.id });
+      await settle();
+      expect(seenBy(sb).has(a.emperor.id)).toBe(false);
+    });
+
+    it("oculto no lo ve nadie, ni sus compañeros; al ocultarse, desaparece para quien lo veía", async () => {
+      const a = await player("a@ejemplo.com", "Aurelia", "public");
+      const b = await player("b@ejemplo.com", "Brennus", "allies");
+      const sb = await connect(b.cookies);
+      expect(seenBy(sb).has(a.emperor.id)).toBe(true);
+      await social(a.cookies, "/api/social/allies", { name: "Brennus" });
+      await social(b.cookies, "/api/social/allies", { name: "Aurelia" });
+
+      await social(a.cookies, "/api/social/visibility", { visibility: "hidden" });
+      await settle();
+      expect(seenBy(sb).has(a.emperor.id)).toBe(false);
+      // Una instantánea nueva tampoco lo trae.
+      const fresh = await connect(b.cookies);
+      expect(seenBy(fresh).has(a.emperor.id)).toBe(false);
+      // Él sí se ve a sí mismo.
+      const own = await connect(a.cookies);
+      expect(seenBy(own).has(a.emperor.id)).toBe(true);
+    });
+
+    it("errores al añadir compañeros y visibilidad no válida", async () => {
+      const a = await player("a@ejemplo.com", "Aurelia");
+      expect((await social(a.cookies, "/api/social/allies", { name: "Nadie Existe" })).json()).toEqual({ error: "unknown_emperor" });
+      expect((await social(a.cookies, "/api/social/allies", { name: "aurelia" })).json()).toEqual({ error: "cannot_ally_self" });
+      expect((await social(a.cookies, "/api/social/visibility", { visibility: "algunos" })).statusCode).toBe(400);
+      expect((await app.inject({ method: "GET", url: "/api/social" })).statusCode).toBe(401);
+    });
   });
 });

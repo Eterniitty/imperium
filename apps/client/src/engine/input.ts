@@ -1,4 +1,5 @@
 import { settingsStore, type Action } from "../state/settings";
+import { gameStore } from "../state/store";
 
 /**
  * Estado del teclado. Ignora las teclas pulsadas mientras se escribe en la
@@ -23,7 +24,8 @@ export class Keyboard {
   }
 
   private handleDown = (e: KeyboardEvent) => {
-    if (this.isTyping(e)) return;
+    // Con el menú de ajustes abierto, las teclas son del menú (Esc lo cierra), no del juego.
+    if (this.isTyping(e) || gameStore.getState().settingsOpen) return;
     if (!e.repeat) this.onKeyPress(e.code);
     this.down.add(e.code);
   };

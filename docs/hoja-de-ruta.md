@@ -19,7 +19,8 @@ Orden de construcción de lo que pide [diseno.md](diseno.md). Cada fase se divid
 - **Ajustes con teclas configurables** y cámara en **primera y tercera persona** (sin entrar en la nave a pie).
 - **Tiempo real**: el juego corre a la hora real; los saltos entre estrellas son hiperespaciales (más rápidos que la luz).
 - **Ajustes** con idioma, calidad de imagen, tamaño de la interfaz y música; la ayuda de controles va en el menú, no en pantalla. La interfaz se adapta a la **resolución** de la ventana.
-- **Música**: generativa (se compone en el navegador), sin archivos ni derechos de autor.
+- **Privacidad**: nadie necesita saber dónde estás. Cada jugador elige quién ve su posición (todos, solo compañeros, nadie); por defecto, solo compañeros. Hecho: compañeros por nombre (mutuos) y filtrado en el servidor.
+- **Música**: solo generada por código (se compone en el navegador), sin archivos ni derechos de autor.
 - **Combate**: disparar a otras naves, con **escudos, misiles y cañones según la clase de nave**; la nave del Emperador es una nave más de su flota.
 
 ## Fase 5 — Flotas y exploración

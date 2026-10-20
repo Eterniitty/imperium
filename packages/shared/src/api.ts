@@ -101,6 +101,30 @@ export interface EmperorResponse {
   emperor: Emperor;
 }
 
+/**
+ * Quién puede ver dónde está tu Emperador: todos, solo tus compañeros (aliados
+ * mutuos) o nadie. El servidor no envía su posición a quien no debe verla.
+ */
+export type Visibility = "public" | "allies" | "hidden";
+export const VISIBILITIES: readonly Visibility[] = ["public", "allies", "hidden"];
+
+/** Otro Emperador en la lista de compañeros. */
+export interface AllyEntry {
+  id: string;
+  name: string;
+}
+
+/** Respuesta de `GET /api/social` y de sus cambios. */
+export interface SocialResponse {
+  visibility: Visibility;
+  /** Compañeros: os habéis añadido los dos. */
+  allies: AllyEntry[];
+  /** Los has añadido tú, pero ellos a ti todavía no. */
+  pending: AllyEntry[];
+  /** Te han añadido ellos; añádelos tú para ser compañeros. */
+  requests: AllyEntry[];
+}
+
 /** Códigos de error de la API; el cliente los traduce con claves `error.*`. */
 export type ApiErrorCode =
   | "invalid_request"
@@ -111,6 +135,8 @@ export type ApiErrorCode =
   | "emperor_exists"
   | "name_taken"
   | "unknown_system"
+  | "unknown_emperor"
+  | "cannot_ally_self"
   | "internal";
 
 /** Respuesta de `POST /api/ws/ticket`: ticket de un solo uso para abrir el WebSocket. */

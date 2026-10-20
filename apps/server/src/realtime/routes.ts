@@ -95,6 +95,7 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
       const client: Client = {
         ...owner,
         subscribed: new Set(),
+        known: new Set(),
         send: (msg: ServerMessage) => {
           if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(msg));
         },

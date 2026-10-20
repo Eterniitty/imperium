@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { bigserial, check, index, integer, jsonb, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { bigserial, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 
 /**
  * Esquema de la base de datos. Tras cambiarlo: `pnpm --filter @imperium/server db:generate`
@@ -63,6 +63,11 @@ export const emperors = pgTable("emperors", {
   name: text("name").notNull(),
   /** Nombre en forma comparable (NFKC y minúsculas): impide "Aurelia" y "AURELIA" a la vez. */
   nameKey: text("name_key").notNull().unique(),
+  /**
+   * Quién puede ver dónde está: "public" (todos), "allies" (solo compañeros, es
+   * decir, aliados mutuos) o "hidden" (nadie). Lo aplica el servidor al enviar.
+   */
+  visibility: text("visibility").notNull().default("allies"),
   /** Sistema donde está, o del que salió si está viajando: "sx:sy:sz:indice". */
   systemId: text("system_id").notNull(),
   /**
@@ -76,6 +81,7 @@ export const emperors = pgTable("emperors", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
+  check("emperors_visibility", sql`${t.visibility} IN ('public', 'allies', 'hidden')`),
   check("emperors_travel_complete", sql`(${t.destSystemId} IS NULL) = (${t.departAt} IS NULL) AND (${t.departAt} IS NULL) = (${t.arriveAt} IS NULL)`),
 ]);
 
@@ -134,4 +140,22 @@ export const scheduledEvents = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("scheduled_events_due_at_idx").on(t.dueAt)],
+);
+
+/**
+ * Compañeros: cada fila dice que `emperorId` ha añadido a `allyId`. Son
+ * compañeros cuando la relación existe en los dos sentidos.
+ */
+export const emperorAllies = pgTable(
+  "emperor_allies",
+  {
+    emperorId: uuid("emperor_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    allyId: uuid("ally_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.emperorId, t.allyId] }), index("emperor_allies_ally_id_idx").on(t.allyId), check("emperor_allies_not_self", sql`${t.emperorId} <> ${t.allyId}`)],
 );

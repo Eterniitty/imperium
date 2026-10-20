@@ -4,7 +4,7 @@
  * incluya Zod en su paquete.
  */
 import { z } from "zod";
-import { EMPEROR_NAME_MAX, EMPEROR_NAME_MIN } from "./api";
+import { EMPEROR_NAME_MAX, EMPEROR_NAME_MIN, VISIBILITIES, type Visibility } from "./api";
 import { BASE_LOCALES, type Locale } from "./i18n";
 
 export const LocaleSchema = z.enum(BASE_LOCALES as [Locale, ...Locale[]]);
@@ -39,6 +39,15 @@ export const EmperorNameSchema = z
       .max(EMPEROR_NAME_MAX)
       .regex(/^[\p{L}\p{N}](?:[\p{L}\p{M}\p{N} '’-]*[\p{L}\p{M}\p{N}])?$/u),
   );
+
+/** Cuerpo de `POST /api/social/visibility`. */
+export const VisibilityBodySchema = z.object({ visibility: z.enum(VISIBILITIES as [Visibility, ...Visibility[]]) });
+
+/** Cuerpo de `POST /api/social/allies`: añadir un compañero por nombre. */
+export const AllyAddBodySchema = z.object({ name: z.string().max(64) });
+
+/** Cuerpo de `POST /api/social/allies/remove`. */
+export const AllyRemoveBodySchema = z.object({ emperorId: z.uuid() });
 
 /** Cuerpo de `POST /api/emperor`: crear el Emperador de la cuenta. */
 export const EmperorCreateBodySchema = z.object({ name: EmperorNameSchema });

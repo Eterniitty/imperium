@@ -12,7 +12,9 @@ import {
   type Quality,
   type UiScale,
 } from "../state/settings";
+import { useAuth } from "../state/auth";
 import { useKeyLabels } from "./keys";
+import { SocialTab } from "./SocialTab";
 import { LanguageToggle } from "./LanguageToggle";
 import { gameStore, useGame, useT } from "../state/store";
 
@@ -86,7 +88,8 @@ export function SettingsPanel() {
   const locale = useGame((s) => s.locale);
   const open = useGame((s) => s.settingsOpen);
   const bindings = useSettings((s) => s.bindings);
-  const [tab, setTab] = useState<"general" | "controls">("general");
+  const [tab, setTab] = useState<"general" | "controls" | "social">("general");
+  const hasEmperor = useAuth((s) => s.emperor !== null);
   const [capturing, setCapturing] = useState<{ action: Action; slot: number } | null>(null);
 
   // Captura la siguiente tecla pulsada para la acción elegida.
@@ -107,11 +110,14 @@ export function SettingsPanel() {
   // Esc cierra el panel (si no se está eligiendo tecla).
   useEffect(() => {
     if (!open || capturing) return;
+    // En fase de captura y sin propagar: el Esc que cierra el menú no llega al juego.
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === "Escape") gameStore.getState().setSettingsOpen(false);
+      if (e.code !== "Escape") return;
+      e.stopPropagation();
+      gameStore.getState().setSettingsOpen(false);
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () => window.removeEventListener("keydown", onKey, { capture: true });
   }, [open, capturing]);
 
   if (!open) return null;
@@ -132,13 +138,14 @@ export function SettingsPanel() {
           </button>
         </div>
         <div className="tabs" role="tablist">
-          {(["general", "controls"] as const).map((id) => (
+          {(hasEmperor ? (["general", "controls", "social"] as const) : (["general", "controls"] as const)).map((id) => (
             <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? "lang-btn active" : "lang-btn"} onClick={() => setTab(id)}>
               {t(`settings.tab.${id}`)}
             </button>
           ))}
         </div>
         {tab === "general" && <GeneralTab />}
+        {tab === "social" && <SocialTab />}
         {tab === "controls" && (
           <>
         <h3>{t("settings.howToPlay")}</h3>

@@ -106,6 +106,7 @@ Las tres capas usan **la misma tubería de órdenes validada** que los jugadores
 
 ## 11. Decisiones cerradas
 
+- **Privacidad de la posición**: cada jugador elige quién ve dónde está su Emperador (todos, solo compañeros o nadie; por defecto, compañeros). Las flotas solo las ve su dueño. Un futuro escáner podrá detectar a quien esté cerca.
 - **PvP libre en todo el universo**, **sin protección especial para desconectados**. La defensa del ausente es su gobernador IA y su preparación.
 - **Ritmo en horas** para construir y asediar; **viajes entre estrellas en minutos**; vuelo en tiempo real dentro de los sistemas.
 - **Juego gratuito y sin monetizar**.

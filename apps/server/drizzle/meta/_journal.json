@@ -29,6 +29,13 @@
       "when": 1792521295402,
       "tag": "0003_worried_rocket_racer",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792525072077,
+      "tag": "0004_organic_black_knight",
+      "breakpoints": true
     }
   ]
 }

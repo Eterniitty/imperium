@@ -481,3 +481,9 @@ kbd {
 .prefs select { max-width: 320px; }
 .prefs input[type="range"] { width: 220px; vertical-align: middle; accent-color: var(--gold); }
 .howto { margin: 4px 0 8px; padding-left: 18px; color: #c3cbd9; line-height: 1.6; font-size: 13px; }
+.social-list li { justify-content: space-between; }
+.social-list li strong { color: #ff9f5a; }
+.social-actions { display: flex; gap: 12px; margin-left: auto; }
+.social-add { margin-top: 16px; }
+.social-add-row { display: flex; gap: 8px; }
+.social-add-row .auth-input { flex: 1; }

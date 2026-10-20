@@ -2,6 +2,7 @@ import type { FastifyBaseLogger } from "fastify";
 import { PROTOCOL_VERSION, type CommandError, type DeltaOp, type Emperor, type EmperorView, type ServerMessage, type Topic } from "@imperium/shared";
 import type { EmperorService } from "../emperor/service";
 import type { FleetService } from "../fleet/service";
+import { canSee, type SocialService } from "../social/service";
 
 /** Un jugador conectado por WebSocket. */
 export interface Client {
@@ -9,6 +10,8 @@ export interface Client {
   emperorId: string;
   /** Temas de los que recibe cambios: solo tras pedir su instantánea (`sub`). */
   subscribed: Set<Topic>;
+  /** Emperadores que este cliente ve ahora: solo a ellos se les avisa de que dejan de verse. */
+  known: Set<string>;
   send(msg: ServerMessage): void;
 }
 
@@ -19,7 +22,8 @@ const PROCESSED_PER_ACCOUNT = 100;
 
 /**
  * Centro de difusión. Temas:
- * - "emperors": público, para todos.
+ * - "emperors": los Emperadores que cada jugador puede ver (según su
+ *   visibilidad y sus compañeros); a cada cliente le llega solo lo suyo.
  * - "me": privado de cada Emperador (sus flotas); su `seq` es propio de cada uno.
  *
  * Todo lo que lee la base de datos y envía pasa por una cola, en orden: así
@@ -36,6 +40,7 @@ export class Hub {
   constructor(
     private readonly emperors: EmperorService,
     private readonly fleets: FleetService,
+    private readonly social: SocialService,
     private readonly log: FastifyBaseLogger,
     private readonly timeScale: number,
     private readonly now: () => number = Date.now,
@@ -82,9 +87,12 @@ export class Hub {
   subscribe(client: Client, topic: Topic): Promise<void> {
     return this.enqueue(async () => {
       if (topic === "emperors") {
-        const all = await this.emperors.all();
+        const [all, visibility, mine] = await Promise.all([this.emperors.all(), this.social.visibilities(), this.social.mutualAllies(client.emperorId)]);
         if (!this.clients.has(client)) return;
-        client.send({ t: "snap", topic, seq: this.emperorsSeq, serverTime: this.now(), data: { emperors: all.map((e) => this.view(e)) } });
+        // Los compañeros son mutuos: el objetivo tiene al cliente como compañero si el cliente lo tiene a él.
+        const visible = all.filter((e) => canSee(client.emperorId, e.id, visibility.get(e.id) ?? "hidden", mine.has(e.id) ? new Set([client.emperorId]) : new Set()));
+        client.known = new Set(visible.map((e) => e.id));
+        client.send({ t: "snap", topic, seq: this.emperorsSeq, serverTime: this.now(), data: { emperors: visible.map((e) => this.view(e)) } });
       } else {
         const fleets = await this.fleets.byEmperor(client.emperorId);
         if (!this.clients.has(client)) return;
@@ -99,11 +107,28 @@ export class Hub {
     for (const c of this.clients) if (c.subscribed.has(topic) && to(c)) c.send(msg);
   }
 
-  /** Difunde a todos el estado actual de un Emperador (leído de la base de datos al enviarlo). */
+  /**
+   * Difunde el estado actual de un Emperador (leído de la base de datos al
+   * enviarlo) a quien puede verlo. A quien lo veía y ya no, le llega su baja;
+   * a los demás, nada. Todos los clientes avanzan `seq` para no ver huecos.
+   */
   publish(emperorId: string): Promise<void> {
     return this.enqueue(async () => {
-      const e = await this.emperors.byId(emperorId);
-      this.send("emperors", ++this.emperorsSeq, [{ path: `emperors.${emperorId}`, v: e ? this.view(e) : null }], () => true);
+      const [e, visibility, allies] = await Promise.all([this.emperors.byId(emperorId), this.social.visibility(emperorId), this.social.mutualAllies(emperorId)]);
+      const seq = ++this.emperorsSeq;
+      const path = `emperors.${emperorId}` as const;
+      for (const c of this.clients) {
+        if (!c.subscribed.has("emperors")) continue;
+        const sees = e !== null && canSee(c.emperorId, emperorId, visibility, allies);
+        let ops: DeltaOp[] = [];
+        if (sees) {
+          ops = [{ path, v: this.view(e) }];
+          c.known.add(emperorId);
+        } else if (c.known.delete(emperorId)) {
+          ops = [{ path, v: null }];
+        }
+        c.send({ t: "delta", topic: "emperors", seq, serverTime: this.now(), ops });
+      }
     });
   }
 
