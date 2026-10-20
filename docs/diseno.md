@@ -106,6 +106,7 @@ Las tres capas usan **la misma tubería de órdenes validada** que los jugadores
 
 ## 11. Decisiones cerradas
 
+- **Escala dentro de los sistemas** (estilo No Man's Sky, en metros): la nave del Emperador mide ~45 m; un planeta rocoso, 2–9 km de radio; un gigante gaseoso, hasta ~35 km; una estrella, 100–250 km. Las órbitas están a cientos o miles de km. Velocidad normal ~250 m/s (combate), impulso ×4 y **motor de pulso** (~30 km/s) para cruzar el sistema, que se apaga cerca de planetas y estrellas. Armas en metros: cañón ~2 km, misil ~5 km.
 - **Privacidad de la posición**: cada jugador elige quién ve dónde está su Emperador (todos, solo compañeros o nadie; por defecto, compañeros). Las flotas solo las ve su dueño. Un futuro escáner podrá detectar a quien esté cerca.
 - **PvP libre en todo el universo**, **sin protección especial para desconectados**. La defensa del ausente es su gobernador IA y su preparación.
 - **Ritmo en horas** para construir y asediar; **viajes entre estrellas en minutos**; vuelo en tiempo real dentro de los sistemas.

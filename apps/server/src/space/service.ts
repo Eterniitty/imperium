@@ -1,7 +1,7 @@
 import { EMPEROR_FLAGSHIP, PIRATE_RAIDER } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import type { ServerMessage, ShipPose, ShipState, StarSystemDetail, StarSystemSummary, Vec3, WeaponKind } from "@imperium/shared";
-import { isTravelling, plausibleMove, systemLayout } from "@imperium/sim";
+import { isTravelling, plausibleMove, systemLayout, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { ServerConfig } from "../config";
 import type { EmperorService } from "../emperor/service";
@@ -39,7 +39,7 @@ const TICK_MS = 100;
 /** Cada cuánto se difunde el escudo que se recarga (no hace falta a 10 Hz). */
 const SHIELD_BROADCAST_MS = 500;
 /** Margen fuera del borde antes de rechazar una posición (salir del sistema es legal, pero se avisa con `leave`). */
-const BOUNDARY_SLACK = 30;
+const BOUNDARY_SLACK = 50_000;
 /** Hasta cuánto atrás se buscan posiciones del objetivo para los impactos (latencia del tirador). */
 const LAG_COMPENSATION_MS = 300;
 const HISTORY_SIZE = 12;
@@ -55,7 +55,7 @@ export class SpaceService {
   private readonly rooms = new Map<string, Set<Member>>();
   /** Estado de combate por Emperador; dura aunque salga del sistema. */
   private readonly combatants = new Map<string, Combatant>();
-  private readonly boundaries = new Map<string, number>();
+  private readonly layouts = new Map<string, SystemLayout | null>();
   private readonly seed: number;
   private readonly timer: ReturnType<typeof setInterval>;
   private readonly timeouts = new Set<ReturnType<typeof setTimeout>>();
@@ -94,14 +94,18 @@ export class SpaceService {
     this.timeouts.add(t);
   }
 
-  private boundary(systemId: string): number {
-    let b = this.boundaries.get(systemId);
-    if (b === undefined) {
+  private layout(systemId: string): SystemLayout | null {
+    let l = this.layouts.get(systemId);
+    if (l === undefined) {
       const summary = findSystem(this.seed, systemId);
-      b = summary ? systemLayout(this.detailOf(summary)).boundary : 0;
-      this.boundaries.set(systemId, b);
+      l = summary ? systemLayout(this.detailOf(summary)) : null;
+      this.layouts.set(systemId, l);
     }
-    return b;
+    return l;
+  }
+
+  private boundary(systemId: string): number {
+    return this.layout(systemId)?.boundary ?? 0;
   }
 
   private combatantOf(emperorId: string): Combatant {
@@ -237,7 +241,9 @@ export class SpaceService {
       const id = `pirate:${systemId}:${i}`;
       if (this.members.has(id) || (this.deadPirates.get(id) ?? 0) > now) continue;
       this.deadPirates.delete(id);
-      const home = pirateHome(systemId, i, this.boundary(systemId));
+      const layout = this.layout(systemId);
+      if (!layout) return;
+      const home = pirateHome(systemId, i, layout, now);
       const combat = new Combatant(PIRATE_RAIDER.hull, PIRATE_RAIDER.combat, now);
       this.combatants.set(id, combat);
       const m: Member = {

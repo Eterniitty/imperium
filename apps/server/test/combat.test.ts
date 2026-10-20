@@ -13,7 +13,7 @@ describe("reglas del combate", () => {
 
   it("un rayo acierta lo que pasa cerca dentro del alcance, y no lo que queda detrás o lejos", () => {
     expect(rayHit([0, 0, 0], [0, 0, -1], [1, 0, -50], 140)).toBeCloseTo(50);
-    expect(rayHit([0, 0, 0], [0, 0, -1], [10, 0, -50], 140)).toBeNull();
+    expect(rayHit([0, 0, 0], [0, 0, -1], [100, 0, -50], 140)).toBeNull();
     expect(rayHit([0, 0, 0], [0, 0, -1], [0, 0, 50], 140)).toBeNull();
     expect(rayHit([0, 0, 0], [0, 0, -1], [0, 0, -200], 140)).toBeNull();
   });

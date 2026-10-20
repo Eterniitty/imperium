@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { serverNow } from "../net/world";
 import { shipName, spaceStore, type PoseSample } from "../net/space";
 import { gameStore } from "../state/store";
-import { createFlagship, disposeShip } from "./shipModel";
+import { createFlagship, disposeShip, SHIP_SCALE } from "./shipModel";
 import { labelTexture } from "./textures";
 
 const ALLY_COLOR = "#5fd3e6";
@@ -68,8 +68,8 @@ export class RemoteShips {
 
   private add(id: string, name: string, color: string, small: boolean, key: string): Visual {
     const ship = createFlagship(color);
-    // Los piratas, algo más pequeños que la nave de un Emperador.
-    if (small) ship.scale.setScalar(0.75);
+    // A la escala de la nave propia; los piratas, algo más pequeños.
+    ship.scale.setScalar(SHIP_SCALE * (small ? 0.75 : 1));
     const { texture, aspect } = labelTexture(name, color);
     const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, sizeAttenuation: false, transparent: true }));
     label.scale.set(LABEL_HEIGHT * aspect, LABEL_HEIGHT, 1);

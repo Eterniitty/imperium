@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { withLogDepth } from "./logDepth";
 
 /**
  * Material de estrellas del mapa: cada estrella es un punto con núcleo
@@ -13,7 +14,8 @@ export function createStarMaterial(): THREE.ShaderMaterial {
       uFocus: { value: new THREE.Vector3() },
       uFadeRadius: { value: 250 },
     },
-    vertexShader: /* glsl */ `
+    ...withLogDepth({
+vertexShader: /* glsl */ `
       attribute vec3 color;
       attribute float size;
       uniform float uScale;
@@ -45,7 +47,8 @@ export function createStarMaterial(): THREE.ShaderMaterial {
         vec3 col = mix(vColor, vec3(1.0), core * 0.55);
         gl_FragColor = vec4(col * (core + halo) * vAlpha, 1.0);
       }
-    `,
+    `
+}),
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,

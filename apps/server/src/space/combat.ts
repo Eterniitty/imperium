@@ -5,8 +5,8 @@
 import type { ShipCombat, WeaponDefinition } from "@imperium/content";
 import type { Quat, Vec3, WeaponKind } from "@imperium/shared";
 
-/** Radio de impacto de una nave (unidades de sistema): algo mayor que el modelo, por la latencia. */
-export const HIT_RADIUS = 4;
+/** Radio de impacto de una nave (metros): la nave mide unos 45 m; algo de margen por la latencia. */
+export const HIT_RADIUS = 30;
 /** Cono de fijación de misiles: el objetivo tiene que estar a menos de este ángulo del morro. */
 export const MISSILE_LOCK_COS = Math.cos((60 * Math.PI) / 180);
 

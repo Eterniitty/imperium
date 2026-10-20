@@ -41,7 +41,8 @@ export class Engine {
   private unsubscribeDetail: () => void;
 
   constructor(private container: HTMLElement) {
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    // Profundidad logarítmica: en un sistema conviven naves de 45 m y estrellas a miles de km.
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance", logarithmicDepthBuffer: true });
     // La densidad de píxeles sale de la calidad elegida en los ajustes (protege a los
     // equipos modestos y a las pantallas 4K) y se actualiza si se cambia.
     this.renderer.setPixelRatio(pixelRatioFor(settingsStore.getState().prefs.quality, window.devicePixelRatio));

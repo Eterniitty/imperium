@@ -36,7 +36,8 @@ interface Flash {
 /** Devuelve dónde se dibuja ahora una nave (propia o ajena), o null si no está. */
 export type ShipLocator = (id: string) => THREE.Vector3 | null;
 
-const BOLT_GEO = new THREE.BoxGeometry(0.18, 0.18, 3.2);
+/** Ráfaga de cañón: unos 32 m de largo (las naves miden ~45 m). */
+const BOLT_GEO = new THREE.BoxGeometry(1.8, 1.8, 32);
 
 /**
  * Efectos del combate: ráfagas de cañón, misiles que persiguen al objetivo,
@@ -58,7 +59,7 @@ export class Effects {
       const s = new THREE.Sprite(
         new THREE.SpriteMaterial({ map: glowTexture(), color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }),
       );
-      s.scale.setScalar(2.6);
+      s.scale.setScalar(26);
       return s;
     };
     this.ownGlow = glow(0x8fe9ff);
@@ -81,7 +82,7 @@ export class Effects {
       const sprite = new THREE.Sprite(
         new THREE.SpriteMaterial({ map: glowTexture(), color: 0xffb35c, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }),
       );
-      sprite.scale.setScalar(2.2);
+      sprite.scale.setScalar(22);
       this.group.add(sprite);
       this.missiles.push({ sprite, from, dir, targetId: shot.target, speed: shot.speed, t0: shot.serverTime, end, hits: shot.hitAt !== null, last: from.clone() });
     }
@@ -99,15 +100,15 @@ export class Effects {
   }
 
   explode(at: THREE.Vector3 | Vec3): void {
-    this.flash(at, 28, 1.2, 0xffa040);
-    this.flash(at, 12, 0.6, 0xffffff);
+    this.flash(at, 280, 1.2, 0xffa040);
+    this.flash(at, 120, 0.6, 0xffffff);
   }
 
   update(dt: number, serverTime: number, locate: ShipLocator): void {
     this.bolts = this.bolts.filter((b) => {
       if (serverTime >= b.end) {
         this.group.remove(b.mesh);
-        if (b.hits) this.flash(b.from.clone().addScaledVector(b.dir, (b.speed * (b.end - b.t0)) / 1000), 5, 0.35);
+        if (b.hits) this.flash(b.from.clone().addScaledVector(b.dir, (b.speed * (b.end - b.t0)) / 1000), 50, 0.35);
         return false;
       }
       b.mesh.position.copy(b.from).addScaledVector(b.dir, (b.speed * Math.max(0, serverTime - b.t0)) / 1000);
@@ -128,7 +129,7 @@ export class Effects {
       if (k >= 1) {
         this.group.remove(m.sprite);
         m.sprite.material.dispose();
-        if (m.hits) this.flash(m.last, 9, 0.5);
+        if (m.hits) this.flash(m.last, 90, 0.5);
         return false;
       }
       return true;

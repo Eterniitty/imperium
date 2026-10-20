@@ -38,6 +38,8 @@ export interface GameState {
   fps: number;
   flight: boolean;
   flightSpeed: number;
+  /** Motor de pulso encendido (al pilotar en un sistema). */
+  pulse: boolean;
 
   hovered: StarSystemSummary | null;
   selected: StarSystemSummary | null;
@@ -59,7 +61,7 @@ export interface GameState {
   select(s: StarSystemSummary | null): void;
   selectPlanet(index: number | null): void;
   setNavigation(focus: WorldPosition, sector: SectorCoord): void;
-  setFlight(flight: boolean, speed: number): void;
+  setFlight(flight: boolean, speed: number, pulse?: boolean): void;
   setStats(stats: { loadedSectors: number; loadedSystems: number; fps: number }): void;
   notify(key: I18nKey, params?: Record<string, string | number>): void;
   setSettingsOpen(open: boolean): void;
@@ -100,6 +102,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   fps: 0,
   flight: false,
   flightSpeed: 0,
+  pulse: false,
 
   hovered: null,
   selected: null,
@@ -142,7 +145,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
 
   setNavigation: (focusWorld, focusSector) => set({ focusWorld, focusSector }),
 
-  setFlight: (flight, flightSpeed) => set({ flight, flightSpeed: Math.round(flightSpeed * 10) / 10 }),
+  setFlight: (flight, flightSpeed, pulse = false) => set({ flight, flightSpeed: Math.round(flightSpeed * 10) / 10, pulse }),
 
   setStats: (stats) => set(stats),
 

@@ -6,6 +6,7 @@ import { PIRATE_RAIDER } from "@imperium/content";
 import { hashString } from "@imperium/procgen";
 import { parseSystemId, type Quat, type Vec3 } from "@imperium/shared";
 import { HUMAN_CORE_RADIUS } from "../emperor/world";
+import { planetPosition, type SystemLayout } from "@imperium/sim";
 import { normalize } from "./combat";
 
 /** Cuántos piratas viven en un sistema: ninguno en el Núcleo Humano (zona segura); fuera, en cuatro de cada diez. */
@@ -17,12 +18,17 @@ export function pirateCount(systemId: string): number {
   return h % 100 < 40 ? 1 + ((h >>> 8) % 3) : 0;
 }
 
-/** Punto de partida de un pirata: repartidos por el sistema a media distancia del borde. */
-export function pirateHome(systemId: string, index: number, boundary: number): Vec3 {
+/**
+ * Punto de partida de un pirata: rondando un planeta del sistema (a unas decenas
+ * de km), que es adonde van los jugadores. Sin planetas, cerca de la estrella.
+ */
+export function pirateHome(systemId: string, index: number, layout: SystemLayout, serverTimeMs: number): Vec3 {
   const h = hashString(`pirata:${systemId}:${index}`);
-  const a = ((h % 3600) / 3600) * Math.PI * 2;
-  const r = boundary * (0.35 + ((h >>> 12) % 30) / 100);
-  return [Math.cos(a) * r, (((h >>> 20) % 40) - 20) * 0.5, Math.sin(a) * r];
+  const planet = layout.planets.length ? layout.planets[h % layout.planets.length]! : null;
+  const center = planet ? planetPosition(planet, serverTimeMs) : { x: 0, y: 0, z: 0 };
+  const away = planet ? planet.size * 4 + 20_000 : layout.starRadius * 3;
+  const a = (((h >>> 8) % 3600) / 3600) * Math.PI * 2;
+  return [center.x + Math.cos(a) * away, center.y + (((h >>> 20) % 40) - 20) * 100, center.z + Math.sin(a) * away];
 }
 
 /** Orientación que lleva el morro (0, 0, -1) hacia `dir`. */
@@ -68,7 +74,7 @@ export function stepPirate(p: Vec3, v: Vec3, home: Vec3, target: Vec3 | null, dt
     const back: Vec3 = [home[0] - p[0], home[1] - p[1], home[2] - p[2]];
     const d = Math.hypot(...back);
     const dir = normalize(back);
-    desired = dir && d > 5 ? [dir[0] * max * 0.4, dir[1] * max * 0.4, dir[2] * max * 0.4] : [0, 0, 0];
+    desired = dir && d > 200 ? [dir[0] * max * 0.4, dir[1] * max * 0.4, dir[2] * max * 0.4] : [0, 0, 0];
   }
   const k = 1 - Math.exp(-dtSec * 1.5);
   const nv: Vec3 = [v[0] + (desired[0] - v[0]) * k, v[1] + (desired[1] - v[1]) * k, v[2] + (desired[2] - v[2]) * k];

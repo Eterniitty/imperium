@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { withLogDepth } from "./logDepth";
 import { Rng } from "@imperium/procgen";
 
 /**
@@ -48,7 +49,8 @@ export class Backdrop {
         side: THREE.BackSide,
         depthWrite: false,
         uniforms: { uSeed: { value: rng.range(0, 100) } },
-        vertexShader: /* glsl */ `
+        ...withLogDepth({
+vertexShader: /* glsl */ `
           varying vec3 vDir;
           void main() {
             vDir = normalize(position);
@@ -76,7 +78,8 @@ export class Backdrop {
             vec3 dust = vec3(0.10, 0.07, 0.05) * band * smoothstep(0.35, 0.75, m) * 0.45;
             gl_FragColor = vec4(base + violet + teal + dust, 1.0);
           }
-        `,
+        `
+}),
       }),
     );
     sky.frustumCulled = false;

@@ -58,7 +58,7 @@ export const SystemIdSchema = z.string().regex(/^-?\d{1,7}:-?\d{1,7}:-?\d{1,7}:\
 
 const CmdIdSchema = z.string().regex(/^[A-Za-z0-9_-]{8,64}$/);
 /** Números finitos y acotados: nada de NaN, Infinity ni coordenadas absurdas. */
-const Coord = z.number().finite().min(-1e6).max(1e6);
+const Coord = z.number().finite().min(-1e9).max(1e9);
 const Vec3Schema = z.tuple([Coord, Coord, Coord]);
 const QuatSchema = z.tuple([z.number().min(-1.01).max(1.01), z.number().min(-1.01).max(1.01), z.number().min(-1.01).max(1.01), z.number().min(-1.01).max(1.01)]);
 

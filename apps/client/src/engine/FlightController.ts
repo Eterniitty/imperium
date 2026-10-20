@@ -23,6 +23,12 @@ export class FlightController {
   turnSpeed = 1.1;
   /** Mayor = responde antes; menor = más inercia. */
   responsiveness = 2.5;
+  /**
+   * Motor de pulso: solo hacia delante, a `pulseSpeed`, con algo más de inercia.
+   * Lo enciende y apaga quien use el controlador (la vista de sistema).
+   */
+  pulse = false;
+  pulseSpeed = 0;
 
   private dragging = false;
   private lastX = 0;
@@ -92,8 +98,9 @@ export class FlightController {
     if (input.lengthSq() > 0) input.normalize();
 
     const boost = kb.action("boost") ? this.boostFactor : 1;
-    this.desired.copy(input).applyQuaternion(this.camera.quaternion).multiplyScalar(this.baseSpeed * boost);
-    const k = 1 - Math.exp(-dt * this.responsiveness);
+    if (this.pulse) this.desired.set(0, 0, -1).applyQuaternion(this.camera.quaternion).multiplyScalar(this.pulseSpeed);
+    else this.desired.copy(input).applyQuaternion(this.camera.quaternion).multiplyScalar(this.baseSpeed * boost);
+    const k = 1 - Math.exp(-dt * (this.pulse ? this.responsiveness * 0.6 : this.responsiveness));
     this.velocity.lerp(this.desired, k);
     if (this.velocity.lengthSq() < 1e-6 && input.lengthSq() === 0) this.velocity.set(0, 0, 0);
 

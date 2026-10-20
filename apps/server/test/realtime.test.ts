@@ -469,8 +469,8 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       const systemId = a.emperor.location.systemId;
       sa.send({ t: "pose", systemId, ...pose([50, 0, 0]) });
       await sa.next(is("space"));
-      // 5000 unidades de golpe: imposible a la velocidad de la nave.
-      sa.send({ t: "pose", systemId, ...pose([5050, 0, 0]) });
+      // 1000 km de golpe: imposible incluso con el motor de pulso.
+      sa.send({ t: "pose", systemId, ...pose([1_000_050, 0, 0]) });
       expect(await sa.next(is("poseRejected"))).toMatchObject({ p: [50, 0, 0] });
     });
 
@@ -528,7 +528,7 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       const from = sb.messages.length;
       sa.send({ t: "fire", weapon: "cannon", dir: [0, 0, -1] });
       const shot = await sb.next(is("shot"), from);
-      expect(shot).toMatchObject({ weapon: "cannon", target: null, speed: 260 });
+      expect(shot).toMatchObject({ weapon: "cannon", target: null, speed: 1500 });
       expect(shot.hitAt).not.toBeNull();
       const hurt = await sb.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id, from);
       expect(hurt.ship).toMatchObject({ shield: 186, hull: 400 });

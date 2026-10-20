@@ -1,5 +1,8 @@
 import * as THREE from "three";
 
+/** El modelo mide ~4,5 unidades de largo: a escala ×10, la nave mide unos 45 m (las distancias de los sistemas van en metros). */
+export const SHIP_SCALE = 10;
+
 /**
  * Nave insignia del Emperador, generada por código: casco alargado, alas en
  * flecha, puente y motores con brillo. Mira hacia -Z (el "delante" de Three.js)

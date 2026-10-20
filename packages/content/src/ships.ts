@@ -1,11 +1,11 @@
 import type { ShipClassDefinition, ShipClassId, ShipCombat, WeaponDefinition } from "./types";
 
 /** Cañón estándar: ráfagas rápidas, sin límite de munición. */
-const CANNON: WeaponDefinition = { kind: "cannon", damage: 14, cooldownSec: 0.2, rangeU: 140, speedU: 260, ammo: null, ammoRegenSec: null };
+const CANNON: WeaponDefinition = { kind: "cannon", damage: 14, cooldownSec: 0.2, rangeU: 2000, speedU: 1500, ammo: null, ammoRegenSec: null };
 /** Cañón ligero de las naves que no son de combate. */
 const CANNON_LIGHT: WeaponDefinition = { ...CANNON, damage: 6, cooldownSec: 0.35 };
 /** Misil: mucho daño, sigue al objetivo fijado; munición limitada que se repone con el tiempo. */
-const MISSILE: WeaponDefinition = { kind: "missile", damage: 90, cooldownSec: 2.5, rangeU: 260, speedU: 110, ammo: 6, ammoRegenSec: 15 };
+const MISSILE: WeaponDefinition = { kind: "missile", damage: 90, cooldownSec: 2.5, rangeU: 5000, speedU: 700, ammo: 6, ammoRegenSec: 15 };
 
 /**
  * Clases de nave humanas del MVP. Escala decidida el 20-10-2026: saltar entre
@@ -118,7 +118,7 @@ export function fleetSpeedLyPerHour(classIds: readonly string[]): number {
 /**
  * Asaltante de los Carroñeros (IA). Más débil que la nave del Emperador, pero
  * suelen ir en grupo. Viven fuera del Núcleo Humano y atacan a quien se acerca.
- * Distancias y velocidades en unidades de sistema.
+ * Distancias en metros y velocidades en metros por segundo.
  */
 export const PIRATE_RAIDER: {
   speciesId: string;
@@ -134,14 +134,14 @@ export const PIRATE_RAIDER: {
 } = {
   speciesId: "scavengers",
   hull: 120,
-  speedU: 34,
-  aggroRangeU: 220,
-  preferredRangeU: 55,
+  speedU: 230,
+  aggroRangeU: 6000,
+  preferredRangeU: 900,
   respawnSec: 300,
   combat: {
     shield: 40,
     shieldRegenPerSec: 6,
     shieldDelaySec: 4,
-    weapons: [{ kind: "cannon", damage: 7, cooldownSec: 0.45, rangeU: 120, speedU: 220, ammo: null, ammoRegenSec: null }],
+    weapons: [{ kind: "cannon", damage: 7, cooldownSec: 0.45, rangeU: 1800, speedU: 1300, ammo: null, ammoRegenSec: null }],
   },
 };

@@ -178,7 +178,7 @@ export interface ShipClassDefinition {
 /** Tipos de arma: cañón (proyectil recto, rápido) o misil (sigue al objetivo fijado). */
 export type WeaponKind = "cannon" | "missile";
 
-/** Arma de una nave. Distancias en unidades de sistema (us), tiempos en segundos. */
+/** Arma de una nave. Distancias en metros (`rangeU`), velocidades en m/s, tiempos en segundos. */
 export interface WeaponDefinition {
   kind: WeaponKind;
   damage: number;

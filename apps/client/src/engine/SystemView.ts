@@ -1,8 +1,9 @@
 import * as THREE from "three";
+import { withLogDepth } from "./logDepth";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
 import type { I18nKey, StarSystemDetail } from "@imperium/shared";
-import { PILOT_BOOST, PILOT_SPEED, planetAngle, systemLayout, type PlanetLayout, type SystemLayout } from "@imperium/sim";
+import { PILOT_BOOST, PILOT_SPEED, PULSE_SAFE_RADII, PULSE_SPEED, planetAngle, systemLayout, type PlanetLayout, type SystemLayout } from "@imperium/sim";
 import { resetSpace, spaceStore } from "../net/space";
 import { connection, serverNow } from "../net/world";
 import { RemoteShips } from "./RemoteShips";
@@ -14,7 +15,7 @@ import { gameStore } from "../state/store";
 import { Backdrop } from "./Backdrop";
 import { FlightController } from "./FlightController";
 import type { Keyboard } from "./input";
-import { createFlagship, disposeShip } from "./shipModel";
+import { createFlagship, disposeShip, SHIP_SCALE } from "./shipModel";
 import { glowTexture, planetTexture, ringTexture } from "./textures";
 import type { View } from "./View";
 
@@ -41,9 +42,9 @@ export interface SystemViewEvents {
 const POSE_INTERVAL = 0.125;
 
 /** Cámara de persecución (tercera persona): detrás y algo por encima de la nave. */
-const CHASE_OFFSET = new THREE.Vector3(0, 2.4, 10);
+const CHASE_OFFSET = new THREE.Vector3(0, 24, 100);
 /** Cámara de cabina (primera persona): en el puente, mirando al frente. */
-const COCKPIT_OFFSET = new THREE.Vector3(0, 0.55, -0.4);
+const COCKPIT_OFFSET = new THREE.Vector3(0, 5.5, -4);
 
 /**
  * Vista de un sistema estelar, con la disposición de `@imperium/sim` (distancias
@@ -54,7 +55,8 @@ const COCKPIT_OFFSET = new THREE.Vector3(0, 0.55, -0.4);
  */
 export class SystemView implements View {
   readonly scene = new THREE.Scene();
-  readonly camera = new THREE.PerspectiveCamera(50, 1, 0.1, 20000);
+  // De medio metro a cientos de miles de km: lo permite el búfer de profundidad logarítmico.
+  readonly camera = new THREE.PerspectiveCamera(50, 1, 0.5, 5e8);
   readonly controls: OrbitControls;
 
   private content = new THREE.Group();
@@ -88,7 +90,7 @@ export class SystemView implements View {
     this.controls = new OrbitControls(this.camera, dom);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.08;
-    this.controls.minDistance = 8;
+    this.controls.minDistance = 200;
     this.controls.maxDistance = 600;
     this.controls.enabled = false;
 
@@ -126,7 +128,8 @@ export class SystemView implements View {
     const starRadius = layout.starRadius;
     this.starMaterial = new THREE.ShaderMaterial({
       uniforms: { uColor: { value: starColor }, uTime: { value: 0 }, uDark: { value: isBlackHole ? 1 : 0 } },
-      vertexShader: /* glsl */ `
+      ...withLogDepth({
+vertexShader: /* glsl */ `
         varying vec3 vNormal; varying vec3 vPos;
         void main() { vNormal = normalize(normalMatrix * normal); vPos = position;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
@@ -137,13 +140,14 @@ export class SystemView implements View {
         float h(vec3 p){ return fract(sin(dot(p, vec3(12.9898,78.233,37.719))) * 43758.5453); }
         void main() {
           float rim = 1.0 - max(dot(vNormal, vec3(0.0, 0.0, 1.0)), 0.0);
-          float grain = h(floor(vPos * 6.0 + uTime * 0.6)) * 0.12;
+          float grain = h(floor(normalize(vPos) * 60.0 + uTime * 0.6)) * 0.12;
           vec3 hot = mix(uColor, vec3(1.0), 0.25);
           vec3 col = (mix(hot, uColor * 0.75, rim) + grain) * 0.85;
           if (uDark > 0.5) col = uColor * pow(rim, 3.0) * 1.5;
           gl_FragColor = vec4(col, 1.0);
         }
-      `,
+      `
+}),
     });
     const star = new THREE.Mesh(new THREE.SphereGeometry(starRadius, 48, 32), this.starMaterial);
     this.content.add(star);
@@ -198,11 +202,12 @@ export class SystemView implements View {
       const moons: PlanetVisual["moons"] = [];
       p.moons.forEach((m, mi) => {
         const moon = new THREE.Mesh(
-          new THREE.SphereGeometry(0.25 + rng.range(0, 0.25), 16, 12),
+          new THREE.SphereGeometry(size * (0.12 + rng.range(0, 0.12)), 24, 16),
           new THREE.MeshStandardMaterial({ map: planetTexture(m.type, `${summary.id}:${p.index}:m${mi}`), roughness: 1 }),
         );
         mesh.add(moon);
-        moons.push({ mesh: moon, radius: size + 1.2 + mi * 0.9, speed: rng.range(0.4, 1.2), phase: rng.range(0, Math.PI * 2) });
+        // Las lunas: posiciones relativas a la malla del planeta (que no está escalada), en metros.
+        moons.push({ mesh: moon, radius: size * (2.5 + mi * 1.2), speed: rng.range(0.004, 0.012), phase: rng.range(0, Math.PI * 2) });
       });
 
       const orbitLine = this.makeOrbit(radius);
@@ -216,8 +221,8 @@ export class SystemView implements View {
         new THREE.SpriteMaterial({ map: glowTexture(), color: 0xb57bff, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }),
       );
       const a = rng.range(0, Math.PI * 2);
-      anomaly.position.set(Math.cos(a) * (radius + 6), rng.range(-4, 4), Math.sin(a) * (radius + 6));
-      anomaly.scale.setScalar(6);
+      anomaly.position.set(Math.cos(a) * (radius + 60_000), rng.range(-4000, 4000), Math.sin(a) * (radius + 60_000));
+      anomaly.scale.setScalar(60_000);
       anomaly.userData.anomaly = true;
       this.content.add(anomaly);
     }
@@ -247,14 +252,14 @@ export class SystemView implements View {
     const pos = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) {
       const a = rng.range(0, Math.PI * 2);
-      const r = radius + rng.bell() * 2.2;
+      const r = radius + rng.bell() * 8000;
       pos[i * 3] = Math.cos(a) * r;
-      pos[i * 3 + 1] = rng.bell() * 0.6;
+      pos[i * 3 + 1] = rng.bell() * 1500;
       pos[i * 3 + 2] = Math.sin(a) * r;
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    return new THREE.Points(geo, new THREE.PointsMaterial({ color: 0x9a8f80, size: 0.35, sizeAttenuation: true }));
+    return new THREE.Points(geo, new THREE.PointsMaterial({ color: 0x9a8f80, size: 900, sizeAttenuation: true }));
   }
 
   private clear(): void {
@@ -285,8 +290,11 @@ export class SystemView implements View {
     this.stopPiloting();
     if (!this.layout) return;
     const ship = createFlagship(0xc792ff);
+    ship.scale.setScalar(SHIP_SCALE);
     const dir = from && from.lengthSq() > 0 ? from.clone().normalize() : new THREE.Vector3(0.2, 0.15, 1).normalize();
-    ship.position.copy(dir.multiplyScalar(this.layout.boundary * 0.8));
+    // Se llega cerca de la órbita del primer planeta (o de la estrella), no al borde lejano.
+    const first = this.layout.planets[0]?.orbitRadius ?? this.layout.starRadius * 5;
+    ship.position.copy(dir.multiplyScalar(first * 1.15));
     ship.lookAt(0, 0, 0);
     // lookAt orienta +Z hacia el objetivo; la nave mira hacia -Z.
     ship.rotateY(Math.PI);
@@ -295,6 +303,7 @@ export class SystemView implements View {
     const flight = new FlightController(ship, this.dom, this.keyboard);
     flight.baseSpeed = PILOT_SPEED;
     flight.boostFactor = PILOT_BOOST;
+    flight.pulseSpeed = PULSE_SPEED;
     flight.enabled = true;
     this.flight = flight;
     this.leaving = false;
@@ -334,7 +343,7 @@ export class SystemView implements View {
     const desired = CHASE_OFFSET.clone().applyQuaternion(ship.quaternion).add(ship.position);
     this.camera.position.lerp(desired, k);
     this.camera.up.copy(new THREE.Vector3(0, 1, 0).applyQuaternion(ship.quaternion));
-    this.chaseTarget.copy(new THREE.Vector3(0, 0, -30).applyQuaternion(ship.quaternion).add(ship.position));
+    this.chaseTarget.copy(new THREE.Vector3(0, 0, -300).applyQuaternion(ship.quaternion).add(ship.position));
     this.camera.lookAt(this.chaseTarget);
   }
 
@@ -343,9 +352,45 @@ export class SystemView implements View {
     return new THREE.Vector3(0, 0, -1).applyQuaternion(this.ship!.quaternion).normalize();
   }
 
+  /** Enciende o apaga el motor de pulso. No arranca pegado a un planeta o a la estrella. */
+  private togglePulse(): void {
+    const flight = this.flight;
+    if (!flight) return;
+    if (flight.pulse) {
+      flight.pulse = false;
+      return;
+    }
+    if (this.nearestBodyClearance() < 1) return this.events.notify("pilot.pulseBlocked");
+    flight.pulse = true;
+  }
+
+  /**
+   * Cuánto falta para la zona de seguridad del cuerpo más cercano, en múltiplos
+   * de esa zona (menos de 1: dentro). La zona es `PULSE_SAFE_RADII` radios.
+   */
+  private nearestBodyClearance(): number {
+    if (!this.ship || !this.layout) return Infinity;
+    const pos = this.ship.position;
+    let best = pos.length() / (this.layout.starRadius * PULSE_SAFE_RADII);
+    const tmp = new THREE.Vector3();
+    for (const p of this.planets) best = Math.min(best, p.mesh.getWorldPosition(tmp).distanceTo(pos) / (p.layout.size * PULSE_SAFE_RADII));
+    return best;
+  }
+
+  /** El pulso se apaga solo al entrar en la zona de seguridad de un planeta o de la estrella. */
+  private checkPulse(): void {
+    const flight = this.flight;
+    if (!flight?.pulse) return;
+    if (this.nearestBodyClearance() < 1) {
+      flight.pulse = false;
+      // Llega con poca velocidad: el pulso no se lleva por delante al planeta.
+      flight.velocity.setLength(Math.min(flight.velocity.length(), PILOT_SPEED * PILOT_BOOST));
+    }
+  }
+
   /** Mantener la tecla dispara el cañón a su cadencia, hacia donde apunta el morro. */
   private fireCannon(): void {
-    if (!this.keyboard.action("fireCannon")) return;
+    if (!this.keyboard.action("fireCannon") || this.flight?.pulse) return;
     const now = performance.now();
     if (now < this.cannonReadyAt) return;
     const cannon = EMPEROR_FLAGSHIP.combat.weapons.find((w) => w.kind === "cannon");
@@ -428,9 +473,9 @@ export class SystemView implements View {
       ship.position.sub(center).setLength(radius).add(center);
       this.flight!.velocity.multiplyScalar(0.3);
     };
-    pushOut(new THREE.Vector3(), layout.starRadius * 1.6);
+    pushOut(new THREE.Vector3(), layout.starRadius * 1.05);
     const tmp = new THREE.Vector3();
-    for (const p of this.planets) pushOut(p.mesh.getWorldPosition(tmp), p.layout.size + 0.8);
+    for (const p of this.planets) pushOut(p.mesh.getWorldPosition(tmp), p.layout.size + 40);
   }
 
   activate(): void {
@@ -454,10 +499,11 @@ export class SystemView implements View {
     const selected = gameStore.getState().selectedPlanet;
     for (const p of this.planets) {
       p.pivot.rotation.y = planetAngle(p.layout, now);
-      p.mesh.rotation.y += dt * 0.25;
+      // Rotación lenta: a esta escala, la superficie de un planeta de varios km se movería deprisa.
+      p.mesh.rotation.y += dt * 0.005;
       for (const m of p.moons) {
         const a = m.phase + this.time * m.speed;
-        m.mesh.position.set(Math.cos(a) * m.radius, Math.sin(a * 0.7) * 0.3, Math.sin(a) * m.radius);
+        m.mesh.position.set(Math.cos(a) * m.radius, Math.sin(a * 0.7) * m.radius * 0.05, Math.sin(a) * m.radius);
       }
       const mat = p.orbitLine.material as THREE.LineBasicMaterial;
       mat.opacity = p.index === selected ? 0.55 : p.index === this.hoveredPlanet ? 0.32 : 0.14;
@@ -472,6 +518,7 @@ export class SystemView implements View {
     }
     if (this.ship && this.flight) {
       this.flight.update(dt);
+      this.checkPulse();
       this.collide();
       this.applyCorrection();
       this.sendPose(dt);
@@ -479,7 +526,7 @@ export class SystemView implements View {
       this.fireCannon();
       this.updateCombatVisuals(dt);
       this.placeChaseCamera(1 - Math.exp(-dt * 8));
-      gameStore.getState().setFlight(true, this.flight.speed);
+      gameStore.getState().setFlight(true, this.flight.speed, this.flight.pulse);
       // Más allá del borde: espacio interestelar.
       if (!this.leaving && this.layout && this.ship.position.length() > this.layout.boundary) {
         this.leaving = true;
@@ -524,6 +571,7 @@ export class SystemView implements View {
   onKey(code: string): void {
     if (this.ship) {
       if (isBound("cameraView", code)) gameStore.getState().toggleCameraView();
+      else if (isBound("pulse", code)) this.togglePulse();
       else if (isBound("lockTarget", code)) this.cycleTarget();
       else if (isBound("fireMissile", code)) this.fireMissile();
       return;

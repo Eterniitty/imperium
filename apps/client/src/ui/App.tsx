@@ -53,7 +53,7 @@ export function App() {
     engineRef.current = engine;
     // Solo en desarrollo: acceso desde la consola del navegador para depurar.
     if (import.meta.env.DEV) {
-      (window as unknown as Record<string, unknown>).__imperium = { engine, store: gameStore, world: worldStore, space: spaceStore };
+      (window as unknown as Record<string, unknown>).__imperium = { engine, store: gameStore, world: worldStore, space: spaceStore, connection };
     }
     // Con Emperador, se conecta al mundo compartido; sin servidor, el universo sigue siendo local.
     if (authStore.getState().emperor) connection.start();
