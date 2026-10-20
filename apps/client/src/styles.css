@@ -218,6 +218,9 @@ kbd {
 .goto input:focus { outline: none; border-color: var(--cyan); }
 .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
 .fps { color: var(--muted); }
+.server-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.server-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
+.server-dot.online { background: #4ade80; box-shadow: 0 0 6px rgba(74, 222, 128, 0.6); }
 
 .side {
   position: absolute;

@@ -24,6 +24,11 @@ export const es = {
   "flight.speed": "Velocidad",
   "flight.hint": "Arrastra para orientar la nave · W acelerar · Mayús impulso",
 
+  "server.label": "Servidor",
+  "server.online": "En línea",
+  "server.offline": "Sin conexión",
+  "server.title": "Estado de la conexión con el servidor",
+
   "view.galaxy": "Mapa estelar",
   "view.system": "Sistema",
   "view.back": "Volver al mapa",

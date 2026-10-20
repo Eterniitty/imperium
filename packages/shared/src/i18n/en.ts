@@ -22,6 +22,11 @@ export const en: Record<I18nKey, string> = {
   "flight.speed": "Speed",
   "flight.hint": "Drag to steer the ship · W accelerate · Shift boost",
 
+  "server.label": "Server",
+  "server.online": "Online",
+  "server.offline": "Offline",
+  "server.title": "Connection status with the server",
+
   "view.galaxy": "Star map",
   "view.system": "System",
   "view.back": "Back to map",

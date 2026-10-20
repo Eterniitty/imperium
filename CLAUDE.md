@@ -11,8 +11,8 @@ Idioma de trabajo: **español** (código y comentarios en español; identificado
 
 ## Estado
 - Fase 1 (diseño), 2 (arquitectura) y 3 (prototipo local) terminadas.
-- El cliente genera el universo localmente. Aún no hay servidor de juego, cuentas ni multijugador.
-- Siguiente: **Fase 4** — servidor autoritativo (Fastify + ws), acceso por correo con enlace de un solo uso, Emperador persistente, dos jugadores en el mismo universo.
+- **Fase 4 en curso** — servidor autoritativo (Fastify + ws), acceso por correo con enlace de un solo uso, Emperador persistente, dos jugadores en el mismo universo. Pasos: 4a esqueleto del servidor (hecho), 4b base de datos y cuentas, 4c Emperador persistente, 4d WebSocket y dos jugadores.
+- El cliente aún genera el universo localmente.
 
 ## Reglas del proyecto
 1. Trabaja por fases. No construyas todo de golpe ni avances a arquitectura distribuida sin un prototipo jugable.
@@ -28,7 +28,7 @@ Idioma de trabajo: **español** (código y comentarios en español; identificado
 - Usuario de trabajo: `imperium` (sudo con contraseña). Root bloqueado por SSH; solo clave SSH.
 - Cortafuegos UFW: abiertos solo OpenSSH y 80/tcp.
 - Caddy sirve el cliente compilado desde `/var/www/aeonarch` en `:80`, **protegido con usuario y contraseña** (`basicauth`, la versión de Caddy de Ubuntu usa `basicauth`, no `basic_auth`). Configuración en `/etc/caddy/Caddyfile`.
-- Desplegar el cliente: `./scripts/deploy-client.sh` desde la raíz del repositorio.
+- Desplegar el cliente: `./scripts/deploy-client.sh`; el servidor: `./scripts/deploy-server.sh`. Ninguno necesita sudo (ver `docs/despliegue.md`).
 
 ### Seguridad: prioridad máxima
 - **No abras el juego al público sin protección** hasta cumplir, en este orden: (1) archivos estáticos servidos desde Cloudflare (R2/caché), nunca desde el servidor; (2) puertos 80/443 aceptados solo desde las IP de Cloudflare; (3) límites por IP y cuenta; (4) vigilante de tráfico saliente con corte automático. Motivo: Hetzner cobra el tráfico saliente por encima de 20 TB y un atacante puede descargar un archivo en bucle.

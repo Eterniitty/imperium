@@ -4,7 +4,7 @@ MMO espacial 3D para navegador. Cada jugador es un Emperador humano inmortal en 
 
 > Nombre interno del proyecto en el código: `imperium` (paquetes `@imperium/*`). El nombre del juego es **Aeonarch**.
 
-**Estado: Fase 3 — Prototipo local.** El universo se genera en el navegador; todavía no hay servidor, cuentas ni multijugador.
+**Estado: Fase 4 en curso — servidor autoritativo.** El universo aún se genera en el navegador. Ya existe el esqueleto del servidor (`apps/server`); faltan cuentas, persistencia y multijugador.
 
 ## Qué funciona ahora
 
@@ -31,6 +31,14 @@ pnpm dev
 ```
 
 Abre <http://localhost:5173> en el navegador y pulsa **Despertar**.
+
+Para levantar también el servidor de juego, en otra terminal:
+
+```bash
+pnpm dev:server
+```
+
+Vite redirige `/api` y `/ws` al servidor local (`127.0.0.1:3000`). Sin servidor, el cliente funciona igual y la barra superior muestra «Servidor: sin conexión».
 
 ### Configuración opcional
 
@@ -59,18 +67,21 @@ cp .env.example .env        # en Windows (CMD): copy .env.example .env
 ## Comprobaciones
 
 ```bash
-pnpm test        # tests (generación procedural y contenido)
+pnpm test        # tests (generación procedural, contenido y servidor)
 pnpm typecheck   # tipos de TypeScript en todos los paquetes
-pnpm build       # compilación de producción del cliente (apps/client/dist)
+pnpm build       # compilación de producción (apps/client/dist y apps/server/dist)
 ```
 
 ## Estructura
 
 ```
 apps/client        Cliente: React (interfaz) + Three.js (motor 3D propio)
+apps/server        Servidor de juego: Fastify (API HTTP; WebSocket en camino)
 packages/shared    Tipos, coordenadas, constantes e idiomas base (es/en)
 packages/procgen   Generación determinista del universo (compartida con el futuro servidor)
 packages/content   Fichas de especies, facciones y naves como datos
+deploy/            Servicio de systemd y Caddyfile de referencia
+scripts/           Scripts de despliegue en el servidor
 docs/              Diseño, arquitectura y lista de despliegue
 ```
 

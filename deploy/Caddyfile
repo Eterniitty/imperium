@@ -1,0 +1,26 @@
+# Configuración de Caddy de referencia (se copia a /etc/caddy/Caddyfile).
+# El hash de la contraseña NO se guarda aquí: sustituye HASH_DE_LA_CONTRASEÑA
+# por el que ya está en el servidor (se genera con `caddy hash-password`).
+:80 {
+	encode zstd gzip
+
+	# Todo el sitio, incluidas la API y el WebSocket, sigue tras usuario y contraseña.
+	basicauth {
+		tester HASH_DE_LA_CONTRASEÑA
+	}
+
+	# API y WebSocket: al servidor de juego, que solo escucha en la máquina local.
+	@game path /api/* /ws
+	handle @game {
+		reverse_proxy 127.0.0.1:3000 {
+			# La contraseña de Caddy no tiene por qué llegar al juego.
+			header_up -Authorization
+		}
+	}
+
+	# Todo lo demás: el cliente compilado.
+	handle {
+		root * /var/www/aeonarch
+		file_server
+	}
+}

@@ -8,6 +8,11 @@ export default defineConfig({
   server: {
     port: 5173,
     host: "localhost",
+    // En desarrollo, las llamadas a la API van al servidor local (pnpm dev:server).
+    proxy: {
+      "/api": "http://127.0.0.1:3000",
+      "/ws": { target: "ws://127.0.0.1:3000", ws: true },
+    },
   },
   build: {
     target: "es2022",

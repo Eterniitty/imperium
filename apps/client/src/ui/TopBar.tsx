@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { engineRef } from "../engineRef";
 import { useGame, useT } from "../state/store";
 import { LanguageToggle } from "./LanguageToggle";
+import { ServerStatus } from "./ServerStatus";
 
 function fmt(n: number): string {
   return Math.round(n).toLocaleString();
@@ -87,6 +88,7 @@ export function TopBar() {
             </button>
           </div>
         )}
+        <ServerStatus />
         <span className="fps mono">
           {fps} {t("hud.fps")}
         </span>

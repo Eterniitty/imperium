@@ -12,6 +12,14 @@ Lista de comprobación del despliegue en **Hetzner CPX22** (Ubuntu 26.04, Núrem
 - [x] **UFW** activo, solo con `OpenSSH` permitido.
 - [x] `unattended-upgrades` activo (parches de seguridad automáticos).
 
+## Despliegue del juego (sin sudo)
+
+- **Cliente:** `./scripts/deploy-client.sh` compila y copia el cliente a `/var/www/aeonarch`. La carpeta pertenece al usuario `imperium`, así que no necesita sudo.
+- **Servidor:** `./scripts/deploy-server.sh` compila el servidor y reinicia el servicio de usuario de systemd `aeonarch-server` (`deploy/aeonarch-server.service`). Escucha solo en `127.0.0.1:3000`; Caddy le pasa `/api/*` y `/ws`, detrás del mismo `basicauth`.
+- Registro del servidor: `journalctl --user -u aeonarch-server -f`.
+- Preparación única (con sudo): `sudo loginctl enable-linger imperium`, para que el servicio arranque con el sistema y no dependa de una sesión abierta.
+- Caddy: la configuración de referencia está en `deploy/Caddyfile` (sin el hash de la contraseña).
+
 ## PRIORIDAD MÁXIMA antes de abrir al público
 
 Hetzner **solo factura el tráfico saliente** (20 TB incluidos, ~1 €/TB adicional). Un ataque que descargue un archivo en bucle puede generar una factura. Estos puntos van **en este orden** y son obligatorios antes de publicar la dirección del juego:

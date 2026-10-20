@@ -1,0 +1,19 @@
+# Servicio de usuario de systemd para el servidor de juego.
+# Se instala sin sudo en ~/.config/systemd/user/ (lo hace scripts/deploy-server.sh).
+# Para que arranque con el sistema y siga vivo sin sesión abierta hace falta,
+# una sola vez: sudo loginctl enable-linger imperium
+[Unit]
+Description=Aeonarch — servidor de juego
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/imperium/apps/server
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node --enable-source-maps --env-file-if-exists=%h/imperium/.env dist/index.js
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

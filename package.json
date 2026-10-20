@@ -9,7 +9,8 @@
   },
   "scripts": {
     "dev": "pnpm --filter @imperium/client dev",
-    "build": "pnpm --filter @imperium/client build",
+    "dev:server": "pnpm --filter @imperium/server dev",
+    "build": "pnpm -r build",
     "preview": "pnpm --filter @imperium/client preview",
     "test": "vitest run",
     "test:watch": "vitest",
