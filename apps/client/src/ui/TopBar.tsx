@@ -5,7 +5,6 @@ import { gameStore } from "../state/store";
 import { useKeyLabels } from "./keys";
 import { formatDuration, useServerNow } from "./useNow";
 import { useGame, useT } from "../state/store";
-import { LanguageToggle } from "./LanguageToggle";
 import { ServerStatus } from "./ServerStatus";
 
 function fmt(n: number): string {
@@ -123,7 +122,6 @@ export function TopBar() {
         <span className="fps mono">
           {fps} {t("hud.fps")}
         </span>
-        <LanguageToggle />
       </div>
     </header>
   );

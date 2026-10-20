@@ -88,6 +88,7 @@ test("nombrar al Emperador, entrar en su sistema, trasladarlo y que lo recuerde"
 
   // Ajustes: cambiar la tecla del mapa a K y comprobar que funciona.
   await page.getByRole("button", { name: "Abrir los ajustes" }).click();
+  await page.getByRole("tab", { name: "Controles" }).click();
   await page.getByRole("button", { name: "Mapa / pilotar 1" }).click();
   await expect(page.getByText("Pulsa una tecla…")).toBeVisible();
   await page.keyboard.press("KeyK");

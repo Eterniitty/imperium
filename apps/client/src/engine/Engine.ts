@@ -8,7 +8,7 @@ import { authStore } from "../state/auth";
 import { findSystemSummary, gameStore } from "../state/store";
 import { GalaxyView } from "./GalaxyView";
 import { Keyboard } from "./input";
-import { isBound, keyLabel, settingsStore } from "../state/settings";
+import { isBound, keyLabel, pixelRatioFor, settingsStore } from "../state/settings";
 import { SystemView } from "./SystemView";
 import type { View } from "./View";
 
@@ -30,13 +30,18 @@ export class Engine {
   private fpsFrames = 0;
   private pointerDown: { x: number; y: number; t: number } | null = null;
   private lastHover = 0;
+  private unsubscribeSettings: () => void;
   /** Salto en curso seguido por la cámara: origen y destino, para entrar al llegar por el lado correcto. */
   private jumping: { from: WorldPosition; to: WorldPosition } | null = null;
 
   constructor(private container: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-    // Limitar la densidad de píxeles protege a los equipos modestos y a las pantallas 4K.
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    // La densidad de píxeles sale de la calidad elegida en los ajustes (protege a los
+    // equipos modestos y a las pantallas 4K) y se actualiza si se cambia.
+    this.renderer.setPixelRatio(pixelRatioFor(settingsStore.getState().prefs.quality, window.devicePixelRatio));
+    this.unsubscribeSettings = settingsStore.subscribe((st, prev) => {
+      if (st.prefs.quality !== prev.prefs.quality) this.applyQuality();
+    });
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.1;
     this.renderer.setClearColor(0x02030a);
@@ -65,6 +70,11 @@ export class Engine {
     this.loop();
     // Como en No Man's Sky: se empieza a los mandos de la nave, en el sistema del Emperador.
     this.pilot(null);
+  }
+
+  private applyQuality(): void {
+    this.renderer.setPixelRatio(pixelRatioFor(settingsStore.getState().prefs.quality, window.devicePixelRatio));
+    this.resize();
   }
 
   // --- Pilotaje ---
@@ -301,6 +311,7 @@ export class Engine {
 
   dispose(): void {
     cancelAnimationFrame(this.frameId);
+    this.unsubscribeSettings();
     this.resizeObserver.disconnect();
     this.keyboard.dispose();
     this.galaxy.dispose();

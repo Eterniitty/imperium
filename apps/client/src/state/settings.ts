@@ -69,8 +69,69 @@ function load(): Bindings {
   }
 }
 
+/**
+ * Calidad de imagen: cuántos píxeles se dibujan por píxel de pantalla. En
+ * pantallas grandes o de alta densidad (4K, Retina) es lo que más pesa.
+ * - auto: la densidad de la pantalla, hasta 1,5.
+ * - high: la densidad de la pantalla, hasta 2.
+ * - medium: un píxel por píxel CSS.
+ * - low: menos píxeles de los que hay (más fluido en equipos modestos).
+ */
+export type Quality = "auto" | "high" | "medium" | "low";
+
+export function pixelRatioFor(quality: Quality, devicePixelRatio: number): number {
+  switch (quality) {
+    case "auto":
+      return Math.min(devicePixelRatio, 1.5);
+    case "high":
+      return Math.min(devicePixelRatio, 2);
+    case "medium":
+      return 1;
+    case "low":
+      return 0.75;
+  }
+}
+
+/** Escala de la interfaz: automática según la ventana, o fija. */
+export type UiScale = "auto" | 0.85 | 1 | 1.25 | 1.5 | 1.75;
+export const UI_SCALES: UiScale[] = ["auto", 0.85, 1, 1.25, 1.5, 1.75];
+
+/** Escala automática: 1 para una ventana de 1440 × 810, más en pantallas grandes, menos en pequeñas. */
+export function uiScaleFor(scale: UiScale, width: number, height: number): number {
+  if (scale !== "auto") return scale;
+  const k = Math.min(width / 1440, height / 810);
+  return Math.round(Math.min(1.75, Math.max(0.85, k)) * 100) / 100;
+}
+
+export interface Preferences {
+  quality: Quality;
+  uiScale: UiScale;
+  /** Volumen de la música, 0 a 1 (0 = apagada). */
+  musicVolume: number;
+}
+
+const DEFAULT_PREFERENCES: Preferences = { quality: "auto", uiScale: "auto", musicVolume: 0.5 };
+const PREFS_KEY = "imperium.prefs";
+
+function loadPrefs(): Preferences {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PREFS_KEY) ?? "null") as Partial<Preferences> | null;
+    const quality = saved?.quality;
+    const volume = saved?.musicVolume;
+    return {
+      quality: quality === "auto" || quality === "high" || quality === "medium" || quality === "low" ? quality : DEFAULT_PREFERENCES.quality,
+      uiScale: UI_SCALES.includes(saved?.uiScale as UiScale) ? (saved!.uiScale as UiScale) : DEFAULT_PREFERENCES.uiScale,
+      musicVolume: typeof volume === "number" && volume >= 0 && volume <= 1 ? volume : DEFAULT_PREFERENCES.musicVolume,
+    };
+  } catch {
+    return { ...DEFAULT_PREFERENCES };
+  }
+}
+
 export interface SettingsState {
   bindings: Bindings;
+  prefs: Preferences;
+  setPrefs(prefs: Partial<Preferences>): void;
   /** Asigna `code` a la posición `slot` (0 o 1) de la acción. */
   bind(action: Action, slot: number, code: string): void;
   /** Quita la tecla de esa posición. */
@@ -88,6 +149,16 @@ function save(bindings: Bindings) {
 
 export const settingsStore = createStore<SettingsState>()((set, get) => ({
   bindings: load(),
+  prefs: loadPrefs(),
+  setPrefs: (changes) => {
+    const prefs = { ...get().prefs, ...changes };
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+    } catch {
+      // Sin almacenamiento: dura solo esta sesión.
+    }
+    set({ prefs });
+  },
   bind: (action, slot, code) => {
     const keys = [...get().bindings[action]];
     keys[slot] = code;

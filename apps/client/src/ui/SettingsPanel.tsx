@@ -1,13 +1,92 @@
 import { useEffect, useState } from "react";
-import { ACTIONS, conflictsOf, keyLabel, settingsStore, useSettings, type Action, type ActionContext } from "../state/settings";
+import {
+  ACTIONS,
+  conflictsOf,
+  keyLabel,
+  settingsStore,
+  UI_SCALES,
+  uiScaleFor,
+  useSettings,
+  type Action,
+  type ActionContext,
+  type Quality,
+  type UiScale,
+} from "../state/settings";
+import { useKeyLabels } from "./keys";
+import { LanguageToggle } from "./LanguageToggle";
 import { gameStore, useGame, useT } from "../state/store";
 
-/** Ajustes: de momento, las teclas. Cada acción admite dos teclas. */
+const QUALITIES: Quality[] = ["auto", "high", "medium", "low"];
+
+/** Pestaña General: idioma, calidad de imagen y música. */
+function GeneralTab() {
+  const t = useT();
+  const prefs = useSettings((s) => s.prefs);
+  const set = settingsStore.getState().setPrefs;
+  return (
+    <dl className="prefs">
+      <dt>{t("hud.language")}</dt>
+      <dd>
+        <LanguageToggle />
+      </dd>
+      <dt>
+        <label htmlFor="pref-quality">{t("settings.quality")}</label>
+      </dt>
+      <dd>
+        <select id="pref-quality" className="auth-input" value={prefs.quality} onChange={(e) => set({ quality: e.target.value as Quality })}>
+          {QUALITIES.map((q) => (
+            <option key={q} value={q}>
+              {t(`settings.quality.${q}`)}
+            </option>
+          ))}
+        </select>
+        <div className="muted small">{t("settings.qualityHint", { width: window.innerWidth, height: window.innerHeight, dpr: window.devicePixelRatio })}</div>
+      </dd>
+      <dt>
+        <label htmlFor="pref-ui">{t("settings.uiScale")}</label>
+      </dt>
+      <dd>
+        <select
+          id="pref-ui"
+          className="auth-input"
+          value={String(prefs.uiScale)}
+          onChange={(e) => set({ uiScale: (e.target.value === "auto" ? "auto" : Number(e.target.value)) as UiScale })}
+        >
+          {UI_SCALES.map((s) => (
+            <option key={s} value={String(s)}>
+              {s === "auto"
+                ? t("settings.uiScale.auto", { percent: Math.round(uiScaleFor("auto", window.innerWidth, window.innerHeight) * 100) })
+                : `${Math.round(s * 100)} %`}
+            </option>
+          ))}
+        </select>
+      </dd>
+      <dt>
+        <label htmlFor="pref-music">{t("settings.music")}</label>
+      </dt>
+      <dd>
+        <input
+          id="pref-music"
+          type="range"
+          min={0}
+          max={100}
+          value={Math.round(prefs.musicVolume * 100)}
+          onChange={(e) => set({ musicVolume: Number(e.target.value) / 100 })}
+        />{" "}
+        <span className="mono small">{prefs.musicVolume > 0 ? `${Math.round(prefs.musicVolume * 100)} %` : t("settings.off")}</span>
+      </dd>
+    </dl>
+  );
+}
+
+/** Pestaña Controles: cómo se juega y las teclas (dos por acción). */
 export function SettingsPanel() {
   const t = useT();
+  const keys = useKeyLabels();
   const locale = useGame((s) => s.locale);
   const open = useGame((s) => s.settingsOpen);
   const bindings = useSettings((s) => s.bindings);
+  const [tab, setTab] = useState<"general" | "controls">("general");
   const [capturing, setCapturing] = useState<{ action: Action; slot: number } | null>(null);
 
   // Captura la siguiente tecla pulsada para la acción elegida.
@@ -52,6 +131,24 @@ export function SettingsPanel() {
             ×
           </button>
         </div>
+        <div className="tabs" role="tablist">
+          {(["general", "controls"] as const).map((id) => (
+            <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? "lang-btn active" : "lang-btn"} onClick={() => setTab(id)}>
+              {t(`settings.tab.${id}`)}
+            </button>
+          ))}
+        </div>
+        {tab === "general" && <GeneralTab />}
+        {tab === "controls" && (
+          <>
+        <h3>{t("settings.howToPlay")}</h3>
+        <ul className="howto">
+          <li>{t("help.pilotMouse")}</li>
+          <li>{t("help.keysPilot", keys)}</li>
+          <li>{t("help.rotate")} · {t("help.pan")} · {t("help.zoom")}</li>
+          <li>{t("help.select")}</li>
+          <li>{t("help.keysMap", keys)}</li>
+        </ul>
         <h3>{t("settings.keys")}</h3>
         <p className="muted small">{t("settings.keysHint")}</p>
         {(Object.keys(ACTIONS) as ActionContext[]).map((ctx) => (
@@ -92,10 +189,14 @@ export function SettingsPanel() {
             </table>
           </section>
         ))}
+          </>
+        )}
         <div className="actions">
-          <button className="btn" onClick={() => settingsStore.getState().resetBindings()}>
-            {t("settings.reset")}
-          </button>
+          {tab === "controls" && (
+            <button className="btn" onClick={() => settingsStore.getState().resetBindings()}>
+              {t("settings.reset")}
+            </button>
+          )}
           <button className="btn btn-primary" onClick={() => gameStore.getState().setSettingsOpen(false)}>
             {t("settings.close")}
           </button>

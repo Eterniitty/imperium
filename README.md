@@ -58,7 +58,7 @@ cp .env.example .env        # en Windows (CMD): copy .env.example .env
 
 ## Controles
 
-Se empieza a los mandos de la nave del Emperador, dentro de su sistema. Todas las teclas se cambian en **Ajustes (⚙)**; estas son las de por defecto.
+Se empieza a los mandos de la nave del Emperador, dentro de su sistema. En **Ajustes (⚙)** están el idioma, la calidad de imagen, el tamaño de la interfaz, la música y todas las teclas; estas son las de por defecto.
 
 | Pilotar la nave | |
 |---|---|

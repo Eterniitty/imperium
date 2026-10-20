@@ -17,7 +17,7 @@ IMPERIUM es un MMO espacial 3D para navegador. Cada jugador es un **Emperador in
 4. **Defender y conquistar**: proteger rutas de suministro, asediar y capturar instalaciones enemigas.
 5. **Sobrevivir a la muerte**: cuando el Emperador cae, renace y vuelve a empezar desde lo que conserve su linaje.
 
-El ritmo es **en horas** para construir, producir y asediar. **Viajar entre estrellas cercanas lleva minutos** (decidido el 20-10-2026): un salto de 10–20 años luz dura unos minutos y cruzar un sector, entre media hora y una hora. Dentro de un sistema se vuela en tiempo real, pilotando la nave, al estilo de No Man's Sky. Se juega en sesiones cortas y frecuentes; el imperio sigue funcionando mientras el jugador no está.
+El ritmo es **en horas** para construir, producir y asediar. **Viajar entre estrellas cercanas lleva minutos** (decidido el 20-10-2026): un salto de 10–20 años luz dura unos minutos y cruzar un sector, entre media hora y una hora. Dentro de un sistema se vuela en tiempo real, pilotando la nave, al estilo de No Man's Sky. **El juego corre en tiempo real** (`TIME_SCALE=1` también en el servidor de pruebas): un minuto de juego es un minuto real. Viajar entre estrellas es posible gracias al **salto hiperespacial**, mucho más rápido que la luz (unos 200 a.l. por hora para la nave del Emperador); dentro de los sistemas las distancias están comprimidas para recorrerlos volando en minutos. Se juega en sesiones cortas y frecuentes; el imperio sigue funcionando mientras el jugador no está.
 
 ## 3. El Emperador inmortal
 

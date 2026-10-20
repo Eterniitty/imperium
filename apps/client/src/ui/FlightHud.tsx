@@ -34,7 +34,6 @@ export function FlightHud() {
         <div className="flight-bar">
           <span style={{ width: `${Math.min(100, (speed / MAX_SPEED[view]) * 100)}%` }} />
         </div>
-        <div className="muted small">{piloting ? t("pilot.hint", { map: keys.toggleMap }) : t("flight.hint")}</div>
       </div>
     </div>
   );

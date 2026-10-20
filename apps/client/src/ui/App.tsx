@@ -1,12 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Engine } from "../engine/Engine";
+import { music } from "../audio/music";
 import { engineRef } from "../engineRef";
+import { settingsStore, uiScaleFor, useSettings } from "../state/settings";
 import { connection, worldStore } from "../net/world";
 import { authStore } from "../state/auth";
 import { gameStore, useGame } from "../state/store";
 import { FlightHud } from "./FlightHud";
 import { FleetsPanel } from "./FleetsPanel";
-import { HelpPanel } from "./HelpPanel";
 import { Notice } from "./Notice";
 import { SettingsPanel } from "./SettingsPanel";
 import { Legend } from "./Legend";
@@ -15,12 +16,34 @@ import { StartScreen } from "./StartScreen";
 import { SystemPanel } from "./SystemPanel";
 import { TopBar } from "./TopBar";
 
+/** Escala de la interfaz según los ajustes y el tamaño de la ventana (se recalcula al cambiarla). */
+function useUiScale(): number {
+  const pref = useSettings((s) => s.prefs.uiScale);
+  const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+  useEffect(() => {
+    const onResize = () => setSize({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return uiScaleFor(pref, size.w, size.h);
+}
+
 export function App() {
   const started = useGame((s) => s.started);
   const view = useGame((s) => s.view);
   // Con un sistema seleccionado, su panel ya dice la clase de la estrella y necesita el sitio de la leyenda.
   const hasSelection = useGame((s) => s.selected !== null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const uiScale = useUiScale();
+
+  // La música sigue al volumen de los ajustes.
+  useEffect(
+    () =>
+      settingsStore.subscribe((s, prev) => {
+        if (s.prefs.musicVolume !== prev.prefs.musicVolume) music.setVolume(s.prefs.musicVolume);
+      }),
+    [],
+  );
 
   useEffect(() => {
     if (!started || !containerRef.current) return;
@@ -44,7 +67,7 @@ export function App() {
   return (
     <div className="game">
       <div className="viewport" ref={containerRef} />
-      <div className="hud">
+      <div className="hud" style={{ zoom: uiScale }}>
         <TopBar />
         {view === "galaxy" ? (
           <>
@@ -59,7 +82,6 @@ export function App() {
             <PlanetPanel />
           </>
         )}
-        <HelpPanel />
         <Notice />
         <SettingsPanel />
       </div>

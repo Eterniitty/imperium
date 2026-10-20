@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { EMPEROR_NAME_MAX, EMPEROR_NAME_MIN, MAGIC_LINK_TTL_MINUTES } from "@imperium/shared";
+import { music } from "../audio/music";
 import { authStore, useAuth } from "../state/auth";
+import { settingsStore } from "../state/settings";
 import { findSystemSummary, gameStore, useGame, useT } from "../state/store";
 import { LanguageToggle } from "./LanguageToggle";
 
@@ -13,7 +15,16 @@ function AuthPanel() {
   const [name, setName] = useState("");
 
   const enter = (
-    <button className="btn btn-primary start-button" onClick={() => gameStore.getState().start(emperor?.location)} autoFocus>
+    <button
+      className="btn btn-primary start-button"
+      onClick={() => {
+        // El clic es el gesto que el navegador exige para poder sonar.
+        music.setVolume(settingsStore.getState().prefs.musicVolume);
+        music.start();
+        gameStore.getState().start(emperor?.location);
+      }}
+      autoFocus
+    >
       {t("start.enter")}
     </button>
   );

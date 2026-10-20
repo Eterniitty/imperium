@@ -17,6 +17,9 @@ Orden de construcción de lo que pide [diseno.md](diseno.md). Cada fase se divid
 - **Más masividad** y pensar bien la **escala** (distancias y tiempos).
 - **Escala decidida**: saltar entre estrellas cercanas lleva **minutos**; dentro del sistema se vuela en tiempo real.
 - **Ajustes con teclas configurables** y cámara en **primera y tercera persona** (sin entrar en la nave a pie).
+- **Tiempo real**: el juego corre a la hora real; los saltos entre estrellas son hiperespaciales (más rápidos que la luz).
+- **Ajustes** con idioma, calidad de imagen, tamaño de la interfaz y música; la ayuda de controles va en el menú, no en pantalla. La interfaz se adapta a la **resolución** de la ventana.
+- **Música**: generativa (se compone en el navegador), sin archivos ni derechos de autor.
 - **Combate**: disparar a otras naves, con **escudos, misiles y cañones según la clase de nave**; la nave del Emperador es una nave más de su flota.
 
 ## Fase 5 — Flotas y exploración
