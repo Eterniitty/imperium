@@ -36,6 +36,13 @@
       "when": 1792525072077,
       "tag": "0004_organic_black_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792526877195,
+      "tag": "0005_abnormal_white_queen",
+      "breakpoints": true
     }
   ]
 }

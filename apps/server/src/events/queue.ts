@@ -10,6 +10,8 @@ export type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
 export interface EventPayloads {
   /** Una flota llega a su destino. */
   "fleet.arrive": { fleetId: string };
+  /** El Emperador llega a un sistema tras un salto (para descubrir lo que cubre su escáner). */
+  "emperor.arrive": { emperorId: string; systemId: string };
 }
 export type EventKind = keyof EventPayloads;
 

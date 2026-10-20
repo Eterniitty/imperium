@@ -124,6 +124,14 @@ Mensajes JSON con campo `t` (tipo). Ejemplos:
 - Única orden por ahora: `emperor.move` (`args.systemId`). El viaje se guarda como destino y horas de salida y llegada; la posición se calcula al vuelo con `@imperium/sim` en el servidor y en el cliente, sin enviar posiciones.
 - Tipos en `packages/shared/src/protocol.ts`; esquema Zod de los mensajes del cliente en `schemas.ts`. Mensaje mal formado → cierre 4400; exceso de mensajes → 4429.
 
+### Implementado (paso 5b): niebla de guerra
+
+- Las posiciones y clases de estrella (`generateSector`) son públicas. El detalle (`generateSystemDetail`) recibe además una semilla secreta **por sistema**: `HMAC-SHA256(DETAIL_SEED, systemId)` recortado a 32 bits (`apps/server/src/discovery/service.ts`). Averiguar la semilla de un sistema por fuerza bruta no revela las de los demás.
+- Tabla `discoveries (emperor_id, system_id, discovered_at)`. Se descubre el sistema y todo lo que esté dentro del alcance del escáner (recorriendo los sectores que corta la esfera): al crear el Emperador, al procesar `fleet.arrive` (mejor escáner de la flota) y al procesar `emperor.arrive` (nave del Emperador), evento que se programa al ordenar el salto.
+- Puesta al día: al arrancar, el servidor da su entorno a los Emperadores sin ningún descubrimiento (los creados antes del paso 5b); es idempotente.
+- `GET /api/systems/:systemId` (cookie de sesión, 120 por minuto y cuenta): `{ detail }` si se ha descubierto; si no, 403 `not_discovered`.
+- Tema `me`: la instantánea lleva `discovered` (ids) y cada descubrimiento llega como `{ path: "discovered.<id>", v: true }`. `PROTOCOL_VERSION` = 3.
+
 ## 9. Autenticación por enlace mágico
 
 - El usuario introduce su correo; se genera un **token aleatorio de 32 bytes**.

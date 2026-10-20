@@ -26,7 +26,7 @@ Orden de construcción de lo que pide [diseno.md](diseno.md). Cada fase se divid
 ## Fase 5 — Flotas y exploración
 
 - **5a. Tiempo de juego, cola de eventos y flotas.** ✔ Escala de tiempo única (`TIME_SCALE`): 1 = ritmo del diseño (horas); más alta en el servidor de pruebas. Cola `scheduled_events` con trabajador (`FOR UPDATE SKIP LOCKED`, un evento que falla se aplaza). Flotas y naves; cada Emperador empieza con un explorador. Orden `fleet.move`; la llegada es un evento programado. Tema privado `me` en el WebSocket.
-- **5b. Niebla de guerra.** El detalle de los sistemas (planetas, recursos, anomalías) se genera con una semilla secreta que solo tiene el servidor; las posiciones y clases de estrella siguen siendo públicas. Tabla `discoveries`: al llegar a un sistema, la flota descubre lo que cubre su escáner. El cliente pide el detalle al servidor y solo lo recibe si lo ha descubierto.
+- **5b. Niebla de guerra.** ✔ El detalle de los sistemas (planetas, recursos, anomalías) se genera con una semilla secreta que solo tiene el servidor (`DETAIL_SEED`; una semilla por sistema derivada con HMAC-SHA256); las posiciones y clases de estrella siguen siendo públicas. Tabla `discoveries`: se descubre al crear el Emperador (su sistema y lo que cubren su nave y su flota inicial), al llegar una flota (escáner de su mejor nave) y al llegar el Emperador tras un salto (evento `emperor.arrive`). `GET /api/systems/:id` entrega el detalle solo si se ha descubierto; el tema `me` lleva la lista de descubiertos. El cliente pide el detalle al servidor y lo guarda en memoria; lo no descubierto sale «Sin explorar» y en la vista de sistema solo se ve la estrella.
 
 ## Fase 6 — Pilotar la nave del Emperador (estilo No Man's Sky)
 

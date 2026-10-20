@@ -4,8 +4,25 @@ import { Deposits, DepositChips, Meter, RESOURCE_COLORS } from "./common";
 export function PlanetPanel() {
   const t = useT();
   const detail = useGame((s) => s.detail);
+  const detailStatus = useGame((s) => s.detailStatus);
+  const selected = useGame((s) => s.selected);
   const selectedPlanet = useGame((s) => s.selectedPlanet);
-  if (!detail) return null;
+  if (!detail) {
+    // Sin explorar (o el detalle aún no ha llegado): solo se sabe la estrella.
+    if (!selected) return null;
+    return (
+      <aside className="side panel">
+        <div className="side-head">
+          <div>
+            <h2>{selected.name}</h2>
+            <div className="muted small">{t(`star.${selected.starClass}`)}</div>
+            <div className="tag unknown">{t(detailStatus === "loading" ? "system.loading" : "system.unexplored")}</div>
+          </div>
+        </div>
+        {detailStatus === "unexplored" && <p className="muted small">{t("system.unexploredHint")}</p>}
+      </aside>
+    );
+  }
   const planet = detail.planets.find((p) => p.index === selectedPlanet) ?? null;
 
   return (

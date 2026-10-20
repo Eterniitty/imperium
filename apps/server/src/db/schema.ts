@@ -159,3 +159,20 @@ export const emperorAllies = pgTable(
   },
   (t) => [primaryKey({ columns: [t.emperorId, t.allyId] }), index("emperor_allies_ally_id_idx").on(t.allyId), check("emperor_allies_not_self", sql`${t.emperorId} <> ${t.allyId}`)],
 );
+
+/**
+ * Niebla de guerra: sistemas que ha descubierto cada Emperador (con su nave o
+ * sus flotas). Solo de estos puede pedir el detalle (planetas, recursos…).
+ */
+export const discoveries = pgTable(
+  "discoveries",
+  {
+    emperorId: uuid("emperor_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    /** Sistema descubierto: "sx:sy:sz:indice". */
+    systemId: text("system_id").notNull(),
+    discoveredAt: timestamp("discovered_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.emperorId, t.systemId] })],
+);

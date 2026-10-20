@@ -6,6 +6,8 @@ import { eq, sql } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
 import { emperors, fleets, ships } from "../db/schema";
+import { discoverAround, fleetScannerRangeLy } from "../discovery/service";
+import { schedule } from "../events/queue";
 import { findSystem, nameKey, pickSpawnSystem, placeFromRow, type PlaceRow } from "./world";
 
 const columns = {
@@ -59,7 +61,11 @@ export class EmperorService {
     return rows.map((r) => this.toEmperor(r));
   }
 
-  /** Crea el Emperador y su flota inicial en el mismo sistema, todo o nada. */
+  /**
+   * Crea el Emperador y su flota inicial en el mismo sistema, todo o nada. Nace
+   * conociendo su sistema y lo que cubren el escáner de su nave y el de su
+   * flota inicial (que está en el mismo sitio).
+   */
   async create(accountId: string, name: string): Promise<CreateResult> {
     const spawn = pickSpawnSystem(this.seed);
     const created = await this.db.transaction(async (tx) => {
@@ -75,6 +81,8 @@ export class EmperorService {
       await tx.insert(ships).values(
         STARTING_FLEET.map((classId) => ({ fleetId: fleet!.id, classId, hull: getShipClass(classId)!.hull })),
       );
+      const range = Math.max(EMPEROR_FLAGSHIP.scannerRangeLy, fleetScannerRangeLy(STARTING_FLEET));
+      await discoverAround(tx, this.seed, row.id, spawn, range);
       return row;
     });
     if (created) return { ok: true, emperor: this.toEmperor(created) };
@@ -110,6 +118,8 @@ export class EmperorService {
         })
         .where(eq(emperors.id, row.id))
         .returning(columns);
+      // La posición se resuelve sola al consultarla; el evento es para descubrir al llegar.
+      await schedule(tx, "emperor.arrive", new Date(arriveAt), { emperorId: row.id, systemId: dest.id });
       return { ok: true, emperor: this.toEmperor(updated!) };
     });
   }

@@ -1,10 +1,9 @@
 import * as THREE from "three";
 import type { I18nKey, SectorCoord, StarSystemSummary, WorldPosition } from "@imperium/shared";
-import { generateSystemDetail } from "@imperium/procgen";
-import { UNIVERSE_SEED } from "../config";
 import { isTravelling, positionAt } from "@imperium/sim";
 import { serverNow, worldStore } from "../net/world";
 import { authStore } from "../state/auth";
+import { unexploredDetail } from "../state/details";
 import { findSystemSummary, gameStore } from "../state/store";
 import { GalaxyView } from "./GalaxyView";
 import { Keyboard } from "./input";
@@ -33,6 +32,11 @@ export class Engine {
   private unsubscribeSettings: () => void;
   /** Salto en curso seguido por la cámara: origen y destino, para entrar al llegar por el lado correcto. */
   private jumping: { from: WorldPosition; to: WorldPosition } | null = null;
+  /** Sistema dibujado en la vista de sistema y si se dibujó sin explorar (solo la estrella). */
+  private shown: { id: string; explored: boolean } | null = null;
+  /** Lado por el que entró la nave la última vez que se pilotó. */
+  private lastPilotFrom: THREE.Vector3 | null = null;
+  private unsubscribeDetail: () => void;
 
   constructor(private container: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -41,6 +45,10 @@ export class Engine {
     this.renderer.setPixelRatio(pixelRatioFor(settingsStore.getState().prefs.quality, window.devicePixelRatio));
     this.unsubscribeSettings = settingsStore.subscribe((st, prev) => {
       if (st.prefs.quality !== prev.prefs.quality) this.applyQuality();
+    });
+    // El detalle llega del servidor (niebla de guerra), quizá después de entrar en el sistema.
+    this.unsubscribeDetail = gameStore.subscribe((st, prev) => {
+      if (st.detail !== prev.detail) this.onDetail();
     });
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.1;
@@ -107,9 +115,10 @@ export class Engine {
     this.jumping = null;
     const store = gameStore.getState();
     store.select(summary);
-    this.system.build(store.detail ?? generateSystemDetail(UNIVERSE_SEED, summary));
+    this.buildSystem(summary);
     this.switchTo(this.system);
     store.setView("system");
+    this.lastPilotFrom = from?.clone() ?? null;
     this.system.pilot(from);
     return true;
   }
@@ -224,8 +233,7 @@ export class Engine {
   enterSystem(s: StarSystemSummary): void {
     const store = gameStore.getState();
     store.select(s);
-    const detail = store.detail ?? generateSystemDetail(UNIVERSE_SEED, s);
-    this.system.build(detail);
+    this.buildSystem(s);
     this.switchTo(this.system);
     store.setView("system");
   }
@@ -236,6 +244,23 @@ export class Engine {
   }
 
   // --- Interno ---
+
+  /** Dibuja un sistema con su detalle si se conoce; si no (sin explorar o aún llegando), solo la estrella. */
+  private buildSystem(s: StarSystemSummary): void {
+    const detail = gameStore.getState().detail;
+    const known = detail?.summary.id === s.id ? detail : null;
+    this.system.build(known ?? unexploredDetail(s));
+    this.shown = { id: s.id, explored: known !== null };
+  }
+
+  /** Llegó el detalle del sistema que se está viendo sin explorar: se vuelve a dibujar, con la nave si se pilotaba. */
+  private onDetail(): void {
+    const detail = gameStore.getState().detail;
+    if (!detail || this.active !== this.system || !this.shown || this.shown.explored || this.shown.id !== detail.summary.id) return;
+    const piloting = this.system.isPiloting;
+    this.buildSystem(detail.summary);
+    if (piloting) this.system.pilot(this.lastPilotFrom);
+  }
 
   private switchTo(view: View): void {
     if (view === this.active) return;
@@ -312,6 +337,7 @@ export class Engine {
   dispose(): void {
     cancelAnimationFrame(this.frameId);
     this.unsubscribeSettings();
+    this.unsubscribeDetail();
     this.resizeObserver.disconnect();
     this.keyboard.dispose();
     this.galaxy.dispose();

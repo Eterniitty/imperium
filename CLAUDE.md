@@ -13,10 +13,11 @@ Idioma de trabajo: **español** (código y comentarios en español; identificado
 ## Estado
 - Fase 1 (diseño), 2 (arquitectura) y 3 (prototipo local) terminadas.
 - **Fase 4 terminada** — servidor autoritativo (Fastify + ws), acceso por correo con enlace de un solo uso, Emperador persistente (nombre único, aparece en el Núcleo Humano) y mundo compartido por WebSocket (ticket de un solo uso, `snap`/`delta`/`cmd`/`ack`, orden `emperor.move` con tiempo de viaje).
-- **Fases 5–6 en curso** (ver `docs/hoja-de-ruta.md`): 5a hecho (escala de tiempo `TIME_SCALE`, cola de eventos, flotas) y 6a hecho (pilotar la nave del Emperador en el sistema, primera y tercera persona, salto con J, teclas configurables). Siguiente: 6b vuelo compartido y 6c combate en tiempo real; 5b (niebla de guerra) queda pendiente.
+- **Fases 5–6 en curso** (ver `docs/hoja-de-ruta.md`): 5a hecho (escala de tiempo `TIME_SCALE`, cola de eventos, flotas), 5b hecho (niebla de guerra) y 6a hecho (pilotar la nave del Emperador en el sistema, primera y tercera persona, salto con J, teclas configurables). Siguiente: 6b vuelo compartido y 6c combate en tiempo real.
+- Niebla de guerra: el detalle de los sistemas depende de la semilla secreta `DETAIL_SEED` del servidor (obligatoria en producción; no cambiarla con partidas en marcha). El cliente ya no lo genera: lo pide a `GET /api/systems/:id` y solo lo recibe si su Emperador lo ha descubierto (tabla `discoveries`). Para generar un detalle en el servidor, usa `DiscoveryService.detail`.
 - Privacidad: el servidor solo envía cada Emperador a quien puede verlo (visibilidad `public`/`allies`/`hidden`, compañeros mutuos en `emperor_allies`). La música es solo generativa (Web Audio), sin archivos.
 - El juego corre en **tiempo real** (`TIME_SCALE=1`, también en el servidor de pruebas); las pruebas automáticas usan escalas altas para no esperar. Todos los jugadores reciben todos los Emperadores (sin zonas de interés por sector). Tickets, límites y órdenes procesadas viven en memoria (un solo proceso).
-- El cliente aún genera el universo localmente; servidor y cliente deben usar la misma semilla (`UNIVERSE_SEED` / `VITE_UNIVERSE_SEED`).
+- El cliente aún genera el mapa estelar (posiciones y clases de estrella) localmente; servidor y cliente deben usar la misma semilla (`UNIVERSE_SEED` / `VITE_UNIVERSE_SEED`).
 
 ## Reglas del proyecto
 1. Trabaja por fases. No construyas todo de golpe ni avances a arquitectura distribuida sin un prototipo jugable.
