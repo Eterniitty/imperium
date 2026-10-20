@@ -1,0 +1,27 @@
+{
+  "name": "imperium",
+  "private": true,
+  "version": "0.1.0",
+  "description": "IMPERIUM — MMO espacial 3D para navegador",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @imperium/client dev",
+    "build": "pnpm --filter @imperium/client build",
+    "preview": "pnpm --filter @imperium/client preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}
