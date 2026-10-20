@@ -83,16 +83,18 @@ describe("generateSector", () => {
 
 describe("generateSystemDetail", () => {
   const sector = generateSector(SEED, { x: 1, y: 1, z: 1 });
+  /** Semilla secreta de detalle de prueba (en el servidor, una por sistema). */
+  const DETAIL = 0x1234abcd;
 
   it("es determinista", () => {
     for (const s of sector.systems) {
-      expect(generateSystemDetail(SEED, s)).toEqual(generateSystemDetail(SEED, s));
+      expect(generateSystemDetail(SEED, s, DETAIL)).toEqual(generateSystemDetail(SEED, s, DETAIL));
     }
   });
 
   it("genera órbitas crecientes y recursos en rango", () => {
     for (const s of sector.systems) {
-      const d = generateSystemDetail(SEED, s);
+      const d = generateSystemDetail(SEED, s, DETAIL);
       expect(d.energy).toBeGreaterThanOrEqual(0);
       expect(d.energy).toBeLessThanOrEqual(5);
       for (let i = 1; i < d.planets.length; i++) {
@@ -113,7 +115,7 @@ describe("generateSystemDetail", () => {
     let checked = 0;
     for (let x = 0; x < 6; x++) {
       for (const s of generateSector(SEED, { x, y: 2, z: 0 }).systems) {
-        for (const p of generateSystemDetail(SEED, s).planets) {
+        for (const p of generateSystemDetail(SEED, s, DETAIL).planets) {
           if (p.type === "gas_giant") {
             expect(p.deposits.metal).toBe(0);
             checked++;
@@ -122,5 +124,21 @@ describe("generateSystemDetail", () => {
       }
     }
     expect(checked).toBeGreaterThan(0);
+  });
+
+  it("el detalle cambia con la semilla secreta y el resumen no", () => {
+    const coord = { x: 1, y: 1, z: 1 };
+    // El resumen (posición, nombre, clase) no depende de la semilla secreta: es público.
+    expect(generateSector(SEED, coord)).toEqual(sector);
+    let differ = 0;
+    for (const s of sector.systems) {
+      const a = generateSystemDetail(SEED, s, DETAIL);
+      const b = generateSystemDetail(SEED, s, DETAIL + 1);
+      expect(a.summary).toEqual(s);
+      expect(b.summary).toEqual(s);
+      if (JSON.stringify(a) !== JSON.stringify(b)) differ++;
+    }
+    // Con otra semilla secreta, (casi) todos los sistemas tienen otro detalle.
+    expect(differ).toBeGreaterThanOrEqual(sector.systems.length - 1);
   });
 });

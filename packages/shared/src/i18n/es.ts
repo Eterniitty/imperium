@@ -99,6 +99,8 @@ export const es = {
   "view.back": "Volver al mapa",
 
   "system.unexplored": "Sin explorar",
+  "system.loading": "Cargando datos…",
+  "system.unexploredHint": "Nadie de tu imperio ha estado aquí: envía una flota o salta con tu nave para descubrir sus planetas.",
   "system.class": "Clase estelar",
   "system.distance": "Distancia",
   "system.coords": "Coordenadas",
@@ -221,6 +223,7 @@ export const es = {
   "settings.uiScale.auto": "Automático según la ventana ({percent} %)",
   "error.unknown_emperor": "No hay ningún Emperador con ese nombre.",
   "error.cannot_ally_self": "No puedes añadirte a ti mismo.",
+  "error.not_discovered": "Tu Emperador aún no ha explorado ese sistema.",
   "settings.tab.social": "Compañeros",
   "social.visibility": "Quién ve dónde estás",
   "social.visibility.public": "Todos",

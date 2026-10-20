@@ -4,6 +4,8 @@ import { GENERATOR_VERSION, type ApiError, type HealthResponse } from "@imperium
 import { authRoutes } from "./auth/routes";
 import type { ServerConfig } from "./config";
 import type { Database } from "./db/client";
+import { discoveryRoutes } from "./discovery/routes";
+import { DiscoveryService } from "./discovery/service";
 import { emperorRoutes } from "./emperor/routes";
 import { EmperorService } from "./emperor/service";
 import { EventWorker } from "./events/queue";
@@ -73,19 +75,38 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   const emperors = new EmperorService(deps.db, config);
   const fleets = new FleetService(deps.db, config);
   const social = new SocialService(deps.db);
-  const hub = new Hub(emperors, fleets, social, app.log, config.TIME_SCALE);
-  const space = new SpaceService(config, emperors, social, app.log, (emperorId) => void hub.publish(emperorId));
+  const discoveries = new DiscoveryService(deps.db, config);
+  const hub = new Hub(emperors, fleets, social, discoveries, app.log, config.TIME_SCALE);
+  const space = new SpaceService(
+    config,
+    emperors,
+    social,
+    app.log,
+    (emperorId) => void hub.publish(emperorId),
+    // El borde del sistema depende de su detalle, que se genera con la semilla secreta.
+    (summary) => discoveries.detail(summary),
+  );
   app.addHook("onClose", async () => space.stop());
   app.decorate("space", space);
   await app.register(emperorRoutes, { config, db: deps.db, emperors, hub });
   await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, space, hub });
   await app.register(socialRoutes, { config, db: deps.db, emperors, social, hub });
+  await app.register(discoveryRoutes, { config, db: deps.db, emperors, discoveries });
 
-  // Cola de eventos programados: llegadas de flotas (y, más adelante, construcciones…).
+  // Cola de eventos programados: llegadas de flotas y del Emperador (y, más adelante, construcciones…).
+  // Al llegar se descubre lo que cubre el escáner (niebla de guerra).
   const worker = new EventWorker(deps.db, app.log);
   worker.on("fleet.arrive", async (tx, { fleetId }) => {
     const owner = await fleets.arrive(tx, fleetId);
-    if (owner) return () => void hub.publishFleet(owner, fleetId);
+    const found = await discoveries.fleetArrived(tx, fleetId);
+    return () => {
+      if (owner) void hub.publishFleet(owner, fleetId);
+      if (found) void hub.publishDiscovered(found.emperorId, found.systemIds);
+    };
+  });
+  worker.on("emperor.arrive", async (tx, { emperorId, systemId }) => {
+    const found = await discoveries.emperorArrived(tx, emperorId, systemId);
+    if (found) return () => void hub.publishDiscovered(found.emperorId, found.systemIds);
   });
   if (deps.startWorker !== false) {
     app.addHook("onReady", async () => worker.start());

@@ -101,16 +101,24 @@ function moonsFor(rng: Rng, type: PlanetType, crystalChance: number): Moon[] {
 }
 
 /**
- * Genera el detalle completo de un sistema a partir de su resumen.
- * Determinista: el servidor y el cliente obtienen exactamente lo mismo.
+ * Genera el detalle completo de un sistema (planetas, recursos, anomalía) a
+ * partir de su resumen. Determinista para las mismas semillas.
+ *
+ * Niebla de guerra: además de la semilla pública del universo, depende de
+ * `detailSeed`, una semilla secreta **propia de cada sistema** (entero de 32
+ * bits) que solo conoce el servidor. Así, quien tenga el cliente y la semilla
+ * pública no puede calcular el detalle de un sistema que no ha descubierto.
+ * El servidor la deriva de su secreto `DETAIL_SEED` con una función resumen
+ * criptográfica por sistema: descubrir la de un sistema no revela las demás.
  */
 export function generateSystemDetail(
   universeSeed: number,
   summary: StarSystemSummary,
+  detailSeed: number,
   generatorVersion: number = GENERATOR_VERSION,
 ): StarSystemDetail {
   const { sector, index, starClass } = summary;
-  const rng = new Rng(hashInts(universeSeed, generatorVersion, sector.x, sector.y, sector.z, index, 0x5157));
+  const rng = new Rng(hashInts(universeSeed, generatorVersion, sector.x, sector.y, sector.z, index, 0x5157, detailSeed));
   const info = STAR_CLASSES[starClass];
   const exotic = EXOTIC.has(starClass);
 

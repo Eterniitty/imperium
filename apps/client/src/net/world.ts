@@ -29,6 +29,8 @@ export interface WorldState {
   emperors: Record<string, EmperorView>;
   /** Flotas propias, por id. */
   fleets: Record<string, Fleet>;
+  /** Sistemas descubiertos por el Emperador propio (niebla de guerra): solo de ellos hay detalle. */
+  discovered: Record<string, true>;
   /** Escala del tiempo de juego del servidor (para estimar duraciones de viaje). */
   timeScale: number;
   myEmperorId: string | null;
@@ -40,6 +42,7 @@ export const worldStore = createStore<WorldState>()(() => ({
   status: "idle",
   emperors: {},
   fleets: {},
+  discovered: {},
   timeScale: 1,
   myEmperorId: null,
   clockOffset: 0,
@@ -85,7 +88,7 @@ class Connection {
     this.ws?.close(1000, "bye");
     this.ws = null;
     this.failPending();
-    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, myEmperorId: null });
+    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, myEmperorId: null });
     resetSpace();
   }
 
@@ -175,7 +178,9 @@ class Connection {
         } else {
           const fleets: Record<string, Fleet> = {};
           for (const f of msg.data.fleets) fleets[f.id] = f;
-          worldStore.setState({ fleets });
+          const discovered: Record<string, true> = {};
+          for (const id of msg.data.discovered) discovered[id] = true;
+          worldStore.setState({ fleets, discovered });
         }
         return;
       }
@@ -189,9 +194,14 @@ class Connection {
         const state = worldStore.getState();
         const emperors = { ...state.emperors };
         const fleets = { ...state.fleets };
+        let discovered = state.discovered;
         for (const op of msg.ops) {
-          const [kind, id] = op.path.split(".") as ["emperors" | "fleets", string];
-          if (kind === "emperors") {
+          const dot = op.path.indexOf(".");
+          const kind = op.path.slice(0, dot) as "emperors" | "fleets" | "discovered";
+          const id = op.path.slice(dot + 1);
+          if (kind === "discovered") {
+            discovered = { ...discovered, [id]: true };
+          } else if (kind === "emperors") {
             if (op.v) emperors[id] = op.v as EmperorView;
             else delete emperors[id];
           } else {
@@ -199,7 +209,7 @@ class Connection {
             else delete fleets[id];
           }
         }
-        worldStore.setState({ emperors, fleets });
+        worldStore.setState({ emperors, fleets, discovered });
         this.syncOwn();
         return;
       }

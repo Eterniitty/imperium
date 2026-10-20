@@ -1,6 +1,6 @@
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
-import { generateSector, generateSystemDetail } from "@imperium/procgen";
+import { generateSector } from "@imperium/procgen";
 import {
   parseSystemId,
   translate,
@@ -17,6 +17,15 @@ import { UNIVERSE_SEED } from "../config";
 
 export type ViewMode = "galaxy" | "system";
 
+/**
+ * Detalle del sistema seleccionado (niebla de guerra; ver `details.ts`):
+ * - none: no hay sistema seleccionado.
+ * - unexplored: el Emperador no lo ha descubierto (o no hay servidor): sin detalle.
+ * - loading: descubierto, pidiendo el detalle al servidor.
+ * - explored: `detail` tiene el detalle.
+ */
+export type DetailStatus = "none" | "unexplored" | "loading" | "explored";
+
 export interface GameState {
   started: boolean;
   view: ViewMode;
@@ -32,7 +41,9 @@ export interface GameState {
 
   hovered: StarSystemSummary | null;
   selected: StarSystemSummary | null;
+  /** Detalle del sistema seleccionado, solo si lo ha descubierto; lo rellena `details.ts`. */
   detail: StarSystemDetail | null;
+  detailStatus: DetailStatus;
   selectedPlanet: number | null;
   /** Aviso breve en pantalla (salir de un sistema, error de un salto…). */
   notice: { key: I18nKey; params?: Record<string, string | number>; id: number } | null;
@@ -93,6 +104,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   hovered: null,
   selected: null,
   detail: null,
+  detailStatus: "none",
   selectedPlanet: null,
   notice: null,
   settingsOpen: false,
@@ -122,11 +134,8 @@ export const gameStore = createStore<GameState>()((set, get) => ({
 
   select: (s) => {
     if (get().selected?.id === s?.id) return;
-    set({
-      selected: s,
-      detail: s ? generateSystemDetail(UNIVERSE_SEED, s) : null,
-      selectedPlanet: null,
-    });
+    // El detalle lo pone `details.ts`, que escucha este cambio (al momento si ya lo tiene en caché).
+    set({ selected: s, detail: null, detailStatus: s ? "loading" : "none", selectedPlanet: null });
   },
 
   selectPlanet: (index) => set({ selectedPlanet: index }),

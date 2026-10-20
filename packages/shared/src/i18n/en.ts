@@ -97,6 +97,8 @@ export const en: Record<I18nKey, string> = {
   "view.back": "Back to map",
 
   "system.unexplored": "Unexplored",
+  "system.loading": "Loading data…",
+  "system.unexploredHint": "No one from your empire has been here: send a fleet or jump with your ship to discover its planets.",
   "system.class": "Stellar class",
   "system.distance": "Distance",
   "system.coords": "Coordinates",
@@ -219,6 +221,7 @@ export const en: Record<I18nKey, string> = {
   "settings.uiScale.auto": "Automatic for your window ({percent} %)",
   "error.unknown_emperor": "There is no Emperor with that name.",
   "error.cannot_ally_self": "You cannot add yourself.",
+  "error.not_discovered": "Your Emperor hasn't explored that system yet.",
   "settings.tab.social": "Companions",
   "social.visibility": "Who sees where you are",
   "social.visibility.public": "Everyone",

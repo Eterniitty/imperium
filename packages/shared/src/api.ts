@@ -5,6 +5,7 @@
  */
 import type { WorldPosition } from "./coords";
 import type { Locale } from "./i18n";
+import type { StarSystemDetail } from "./types";
 
 /** Respuesta de `GET /api/health`. */
 export interface HealthResponse {
@@ -137,7 +138,13 @@ export type ApiErrorCode =
   | "unknown_system"
   | "unknown_emperor"
   | "cannot_ally_self"
+  | "not_discovered"
   | "internal";
+
+/** Respuesta de `GET /api/systems/:systemId`: detalle de un sistema descubierto (niebla de guerra). */
+export interface SystemDetailResponse {
+  detail: StarSystemDetail;
+}
 
 /** Respuesta de `POST /api/ws/ticket`: ticket de un solo uso para abrir el WebSocket. */
 export interface WsTicketResponse {

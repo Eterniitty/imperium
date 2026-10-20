@@ -1,6 +1,15 @@
 import { randomInt } from "node:crypto";
-import { generateSector, generateSystemDetail } from "@imperium/procgen";
-import { parseSystemId, type StarClass, type StarSystemDetail, type StarSystemSummary, type SystemLocation, type Travel } from "@imperium/shared";
+import { generateSector } from "@imperium/procgen";
+import {
+  distance,
+  parseSystemId,
+  worldToSector,
+  type StarClass,
+  type StarSystemSummary,
+  type SystemLocation,
+  type Travel,
+  type WorldPosition,
+} from "@imperium/shared";
 import { settle } from "@imperium/sim";
 
 /**
@@ -46,6 +55,23 @@ export function findSystem(universeSeed: number, systemId: string): StarSystemSu
   return system && system.id === systemId ? system : null;
 }
 
+/**
+ * Sistemas a `rangeLy` años luz o menos de `center` (incluido el propio, si
+ * está en el centro). Recorre solo los sectores que corta la esfera.
+ */
+export function systemsInRange(universeSeed: number, center: WorldPosition, rangeLy: number): StarSystemSummary[] {
+  const min = worldToSector({ x: center.x - rangeLy, y: center.y - rangeLy, z: center.z - rangeLy });
+  const max = worldToSector({ x: center.x + rangeLy, y: center.y + rangeLy, z: center.z + rangeLy });
+  const out: StarSystemSummary[] = [];
+  for (let x = min.x; x <= max.x; x++)
+    for (let y = min.y; y <= max.y; y++)
+      for (let z = min.z; z <= max.z; z++)
+        for (const s of generateSector(universeSeed, { x, y, z }).systems) {
+          if (distance(center, s.position) <= rangeLy) out.push(s);
+        }
+  return out;
+}
+
 export function toLocation(s: StarSystemSummary): SystemLocation {
   return { systemId: s.id, systemName: s.name, position: s.position };
 }
@@ -76,10 +102,4 @@ export function placeFromRow(universeSeed: number, row: PlaceRow, now: number): 
     travel = { to: toLocation(dest), departAt: row.departAt.getTime(), arriveAt: row.arriveAt.getTime() };
   }
   return settle({ location: toLocation(system), travel }, now);
-}
-
-/** Detalle de un sistema existente (planetas, recursos…), o null si el id no existe. */
-export function systemDetailFor(universeSeed: number, systemId: string): StarSystemDetail | null {
-  const summary = findSystem(universeSeed, systemId);
-  return summary ? generateSystemDetail(universeSeed, summary) : null;
 }

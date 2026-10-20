@@ -14,14 +14,15 @@ export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;
 /**
  * Temas de suscripción:
  * - emperors: todos los Emperadores (público).
- * - me: lo privado del jugador (sus flotas).
+ * - me: lo privado del jugador (sus flotas y los sistemas que ha descubierto).
  */
 export type Topic = "emperors" | "me";
 
 /** Contenido de la instantánea de cada tema. */
 export interface TopicData {
   emperors: { emperors: EmperorView[] };
-  me: { fleets: Fleet[] };
+  /** `discovered`: ids de los sistemas descubiertos (niebla de guerra); solo de ellos se puede pedir el detalle. */
+  me: { fleets: Fleet[]; discovered: string[] };
 }
 
 /** Emperador visto por los demás jugadores: añade si está conectado. */
@@ -94,7 +95,11 @@ export type CommandError =
   | "internal";
 
 /** Cambio sobre un tema: `v` es el nuevo valor, o null si desaparece. */
-export type DeltaOp = { path: `emperors.${string}`; v: EmperorView | null } | { path: `fleets.${string}`; v: Fleet | null };
+export type DeltaOp =
+  | { path: `emperors.${string}`; v: EmperorView | null }
+  | { path: `fleets.${string}`; v: Fleet | null }
+  /** Sistema recién descubierto (nunca se olvida, así que siempre es `true`). */
+  | { path: `discovered.${string}`; v: true };
 
 export type ServerMessage =
   /**

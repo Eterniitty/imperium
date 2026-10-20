@@ -12,6 +12,7 @@ export function SystemPanel() {
   const t = useT();
   const selected = useGame((s) => s.selected);
   const detail = useGame((s) => s.detail);
+  const detailStatus = useGame((s) => s.detailStatus);
   const focus = useGame((s) => s.focusWorld);
   const hovered = useGame((s) => s.hovered);
   const emperor = useAuth((s) => s.emperor);
@@ -39,7 +40,7 @@ export function SystemPanel() {
     setMoving(false);
   };
 
-  if (!selected || !detail) {
+  if (!selected) {
     return (
       <aside className="side panel side-empty">
         {hovered ? (
@@ -80,7 +81,8 @@ export function SystemPanel() {
         <span className="dot big" style={{ background: starColorCss(selected.starClass), boxShadow: `0 0 18px ${starColorCss(selected.starClass)}` }} />
         <div>
           <h2>{selected.name}</h2>
-          <div className="tag unknown">{t("system.unexplored")}</div>
+          {detailStatus === "unexplored" && <div className="tag unknown">{t("system.unexplored")}</div>}
+          {detailStatus === "loading" && <div className="tag unknown">{t("system.loading")}</div>}
           {emperorHere && <div className="tag emperor">{t("emperor.here")}</div>}
         </div>
         <button className="icon-btn" aria-label={t("system.close")} onClick={() => gameStore.getState().select(null)}>
@@ -99,30 +101,40 @@ export function SystemPanel() {
         <dd className="mono">
           {d.toFixed(1)} {t("unit.ly")}
         </dd>
-        <dt>{t("system.energy")}</dt>
-        <dd>
-          <Meter value={detail.energy / 5} color={RESOURCE_COLORS.energy} /> <span className="mono">{detail.energy}</span>
-        </dd>
-        <dt>{t("system.belts")}</dt>
-        <dd>{detail.belts.length || t("system.none")}</dd>
-        <dt>{t("system.anomaly")}</dt>
-        <dd className={detail.anomaly ? "anomaly" : ""}>{detail.anomaly ? t(`anomaly.${detail.anomaly}`) : t("system.none")}</dd>
+        {detail && (
+          <>
+            <dt>{t("system.energy")}</dt>
+            <dd>
+              <Meter value={detail.energy / 5} color={RESOURCE_COLORS.energy} /> <span className="mono">{detail.energy}</span>
+            </dd>
+            <dt>{t("system.belts")}</dt>
+            <dd>{detail.belts.length || t("system.none")}</dd>
+            <dt>{t("system.anomaly")}</dt>
+            <dd className={detail.anomaly ? "anomaly" : ""}>{detail.anomaly ? t(`anomaly.${detail.anomaly}`) : t("system.none")}</dd>
+          </>
+        )}
       </dl>
 
-      <h3>
-        {t("system.planets")} <span className="muted">({detail.planets.length})</span>
-      </h3>
-      <ul className="planet-list">
-        {detail.planets.map((pl) => (
-          <li key={pl.index}>
-            <span className={`ptype ptype-${pl.type}`} />
-            <span className="pname">{pl.name}</span>
-            <span className="muted small">{t(`planet.${pl.type}`)}</span>
-            <DepositChips planet={pl} />
-          </li>
-        ))}
-        {detail.planets.length === 0 && <li className="muted">{t("system.none")}</li>}
-      </ul>
+      {detail ? (
+        <>
+          <h3>
+            {t("system.planets")} <span className="muted">({detail.planets.length})</span>
+          </h3>
+          <ul className="planet-list">
+            {detail.planets.map((pl) => (
+              <li key={pl.index}>
+                <span className={`ptype ptype-${pl.type}`} />
+                <span className="pname">{pl.name}</span>
+                <span className="muted small">{t(`planet.${pl.type}`)}</span>
+                <DepositChips planet={pl} />
+              </li>
+            ))}
+            {detail.planets.length === 0 && <li className="muted">{t("system.none")}</li>}
+          </ul>
+        </>
+      ) : (
+        detailStatus === "unexplored" && <p className="muted small">{t("system.unexploredHint")}</p>
+      )}
 
       {(here.length > 0 || coming.length > 0) && (
         <>

@@ -4,7 +4,7 @@ import { buildApp } from "../src/app";
 import { emailRateKey, ipRateKey, RateLimiter } from "../src/auth/rateLimit";
 import { maskEmail, sessionCookieName } from "../src/auth/routes";
 import { generateToken, hashToken, normalizeEmail } from "../src/auth/tokens";
-import { loadConfig } from "../src/config";
+import { DEV_DETAIL_SEED, loadConfig } from "../src/config";
 import type { Database } from "../src/db/client";
 
 const BASE_ENV = { DATABASE_URL: "postgres://localhost/x", PUBLIC_URL: "http://localhost:5173" };
@@ -26,18 +26,21 @@ describe("configuración", () => {
     expect(loadConfig({ ...BASE_ENV, PUBLIC_URL: "http://a.test/" }).PUBLIC_URL).toBe("http://a.test");
   });
 
-  it("en producción exige correo real, cookies Secure y https", () => {
-    const prod = { ...BASE_ENV, APP_ENV: "production", PUBLIC_URL: "https://a.test" };
+  it("en producción exige correo real, cookies Secure, https y semilla de detalle propia", () => {
+    const prod = { ...BASE_ENV, APP_ENV: "production", PUBLIC_URL: "https://a.test", DETAIL_SEED: "x".repeat(32) };
     expect(() => loadConfig({ ...prod, MAIL_TRANSPORT: "console" })).toThrow(/MAIL_TRANSPORT/);
     expect(() => loadConfig({ ...prod, MAIL_TRANSPORT: "smtp", COOKIE_SECURE: "false" })).toThrow(/COOKIE_SECURE/);
     expect(() => loadConfig({ ...prod, MAIL_TRANSPORT: "smtp", PUBLIC_URL: "http://a.test" })).toThrow(/PUBLIC_URL/);
+    expect(() => loadConfig({ ...prod, MAIL_TRANSPORT: "smtp", DETAIL_SEED: undefined })).toThrow(/DETAIL_SEED/);
     expect(loadConfig({ ...prod, MAIL_TRANSPORT: "smtp" }).APP_ENV).toBe("production");
+    expect(loadConfig({ ...prod, MAIL_TRANSPORT: "smtp" }).DETAIL_SEED).toBe("x".repeat(32));
   });
 
   it("en pruebas permite correo por consola y cookies sin Secure", () => {
     const c = loadConfig({ ...BASE_ENV, APP_ENV: "staging", COOKIE_SECURE: "false" });
     expect(c.MAIL_TRANSPORT).toBe("console");
     expect(c.COOKIE_SECURE).toBe(false);
+    expect(c.DETAIL_SEED).toBe(DEV_DETAIL_SEED);
   });
 });
 

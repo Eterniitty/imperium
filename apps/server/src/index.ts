@@ -1,11 +1,16 @@
 import { buildApp } from "./app";
 import { loadConfig } from "./config";
 import { createDb } from "./db/client";
+import { DiscoveryService } from "./discovery/service";
 
 const config = loadConfig();
 const database = createDb(config.DATABASE_URL);
 await database.migrate();
 const app = await buildApp(config, { db: database.db });
+// Niebla de guerra: los Emperadores sin descubrimientos (creados antes de que
+// existiera) descubren su entorno. Idempotente; casi siempre no hace nada.
+const backfilled = await new DiscoveryService(database.db, config).backfill();
+if (backfilled > 0) app.log.info({ emperors: backfilled }, "Descubrimientos iniciales añadidos");
 app.addHook("onClose", () => database.close());
 
 // Cierre ordenado: systemd envía SIGTERM al reiniciar o parar el servicio.

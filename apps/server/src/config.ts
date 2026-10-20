@@ -4,6 +4,9 @@ import { z } from "zod";
  * Configuración del servidor, leída de las variables de entorno y validada al
  * arrancar. Si falta algo o tiene un valor no válido, el servidor no arranca.
  */
+/** Semilla de detalle de desarrollo, pruebas y staging. Pública: nunca en producción. */
+export const DEV_DETAIL_SEED = "aeonarch-dev-detail-seed";
+
 const EnvSchema = z
   .object({
     // Entorno de la aplicación (distinto de NODE_ENV, que afecta a las librerías):
@@ -23,6 +26,11 @@ const EnvSchema = z
     // Semilla del universo. Hasta el paso 4d, en que el servidor la enviará al
     // cliente, debe coincidir con VITE_UNIVERSE_SEED del cliente.
     UNIVERSE_SEED: z.string().min(1).default("imperium-alpha"),
+    // Semilla secreta del detalle de los sistemas (planetas, recursos, anomalías):
+    // niebla de guerra. Solo la conoce el servidor; el cliente recibe el detalle
+    // de los sistemas descubiertos. Obligatoria en producción (larga y aleatoria);
+    // si cambia, cambian todos los planetas: no se toca con partidas en marcha.
+    DETAIL_SEED: z.string().min(16).optional(),
     // Escala del tiempo de juego: multiplica la velocidad de viajes, construcción
     // y producción. 1 es el ritmo del diseño (horas reales); en el servidor de
     // pruebas se sube para poder ver las cosas sin esperar horas.
@@ -36,6 +44,9 @@ const EnvSchema = z
   })
   .superRefine((env, ctx) => {
     if (env.APP_ENV !== "production") return;
+    if (!env.DETAIL_SEED) {
+      ctx.addIssue({ code: "custom", path: ["DETAIL_SEED"], message: "en producción hace falta una semilla secreta de detalle" });
+    }
     if (env.MAIL_TRANSPORT === "console") {
       ctx.addIssue({ code: "custom", path: ["MAIL_TRANSPORT"], message: "en producción no se permite el correo por consola" });
     }
@@ -45,7 +56,9 @@ const EnvSchema = z
     if (!env.PUBLIC_URL.startsWith("https://")) {
       ctx.addIssue({ code: "custom", path: ["PUBLIC_URL"], message: "en producción la dirección pública debe usar https" });
     }
-  });
+  })
+  // Fuera de producción hay un valor por defecto, conocido: no protege nada.
+  .transform((env) => ({ ...env, DETAIL_SEED: env.DETAIL_SEED ?? DEV_DETAIL_SEED }));
 
 export type ServerConfig = z.infer<typeof EnvSchema>;
 

@@ -1,11 +1,11 @@
 import { EMPEROR_FLAGSHIP, PIRATE_RAIDER } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
-import type { ServerMessage, ShipPose, ShipState, Vec3, WeaponKind } from "@imperium/shared";
+import type { ServerMessage, ShipPose, ShipState, StarSystemDetail, StarSystemSummary, Vec3, WeaponKind } from "@imperium/shared";
 import { isTravelling, plausibleMove, systemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { ServerConfig } from "../config";
 import type { EmperorService } from "../emperor/service";
-import { systemDetailFor } from "../emperor/world";
+import { findSystem } from "../emperor/world";
 import type { Client } from "../realtime/hub";
 import type { SocialService } from "../social/service";
 import { Combatant, distance, forwardOf, MISSILE_LOCK_COS, normalize, rayHit } from "./combat";
@@ -72,6 +72,8 @@ export class SpaceService {
     private readonly log: FastifyBaseLogger,
     /** Se llama cuando un Emperador renace en otro sistema (para difundirlo). */
     private readonly onRespawn: (emperorId: string) => void = () => {},
+    /** Detalle de un sistema (con la semilla secreta del servidor), para conocer su borde. */
+    private readonly detailOf: (summary: StarSystemSummary) => StarSystemDetail,
     private readonly now: () => number = Date.now,
   ) {
     this.seed = universeSeedFromString(config.UNIVERSE_SEED);
@@ -95,8 +97,8 @@ export class SpaceService {
   private boundary(systemId: string): number {
     let b = this.boundaries.get(systemId);
     if (b === undefined) {
-      const detail = systemDetailFor(this.seed, systemId);
-      b = detail ? systemLayout(detail).boundary : 0;
+      const summary = findSystem(this.seed, systemId);
+      b = summary ? systemLayout(this.detailOf(summary)).boundary : 0;
       this.boundaries.set(systemId, b);
     }
     return b;
