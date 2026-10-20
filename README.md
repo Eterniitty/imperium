@@ -1,8 +1,8 @@
-# IMPERIUM
+# Aeonarch
 
 MMO espacial 3D para navegador. Cada jugador es un Emperador humano inmortal en un universo tridimensional infinito y en guerra permanente.
 
-> Nombre provisional: el nombre comercial del juego está pendiente.
+> Nombre interno del proyecto en el código: `imperium` (paquetes `@imperium/*`). El nombre del juego es **Aeonarch**.
 
 **Estado: Fase 3 — Prototipo local.** El universo se genera en el navegador; todavía no hay servidor, cuentas ni multijugador.
 

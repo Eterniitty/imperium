@@ -1,4 +1,4 @@
-# IMPERIUM — Arquitectura
+# Aeonarch — Arquitectura
 
 Arquitectura técnica prevista. El diseño de juego está en [diseno.md](diseno.md) y el despliegue en [despliegue.md](despliegue.md).
 

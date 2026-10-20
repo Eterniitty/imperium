@@ -1,4 +1,4 @@
-# IMPERIUM — Despliegue
+# Aeonarch — Despliegue
 
 Lista de comprobación del despliegue en **Hetzner CPX22** (Ubuntu 26.04, Núremberg).
 

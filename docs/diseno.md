@@ -1,4 +1,4 @@
-# IMPERIUM — Documento de diseño
+# Aeonarch — Documento de diseño
 
 Resumen de las decisiones de diseño acordadas. Este documento describe *qué* es el juego; la implementación técnica está en [arquitectura.md](arquitectura.md).
 

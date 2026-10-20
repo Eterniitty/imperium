@@ -4,7 +4,7 @@
  * estas claves por prioridad: personal > organización > pública > base.
  */
 export const es = {
-  "app.title": "IMPERIUM",
+  "app.title": "AEONARCH",
   "app.subtitle": "La guerra no termina. La humanidad tampoco.",
   "app.prototype": "Prototipo · Fase 3",
 

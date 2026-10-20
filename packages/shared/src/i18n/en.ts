@@ -2,7 +2,7 @@ import type { I18nKey } from "./es";
 
 /** Textos base en inglés. El tipo obliga a traducir todas las claves. */
 export const en: Record<I18nKey, string> = {
-  "app.title": "IMPERIUM",
+  "app.title": "AEONARCH",
   "app.subtitle": "The war never ends. Neither does humanity.",
   "app.prototype": "Prototype · Phase 3",
 
