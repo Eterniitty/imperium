@@ -16,7 +16,7 @@ export const AuthRequestBodySchema = z.object({
 });
 export type AuthRequestBody = z.input<typeof AuthRequestBodySchema>;
 
-/** Cuerpo de `POST /api/auth/verify`: canjear el token del enlace. */
+/** Cuerpo de `POST /api/auth/verify` (canjear el enlace) y `POST /api/auth/peek` (consultarlo). */
 export const AuthVerifyBodySchema = z.object({
   // 32 bytes en base64url = 43 caracteres.
   token: z.string().regex(/^[A-Za-z0-9_-]{43}$/),

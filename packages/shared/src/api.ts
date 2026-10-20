@@ -18,7 +18,11 @@ export interface HealthResponse {
 /** Validez del enlace de acceso, en minutos. */
 export const MAGIC_LINK_TTL_MINUTES = 15;
 
-/** Parámetro de la URL del cliente que lleva el token del enlace de acceso. */
+/**
+ * Parámetro del fragmento de la URL del cliente (`/#login=...`) que lleva el
+ * token del enlace de acceso. Va en el fragmento para que no llegue a ningún
+ * servidor ni quede en sus registros.
+ */
 export const LOGIN_TOKEN_PARAM = "login";
 
 /** Cuenta tal y como la ve su propietario. */
@@ -31,6 +35,12 @@ export interface AuthAccount {
 /** Respuesta de `GET /api/auth/me` y `POST /api/auth/verify`. */
 export interface AuthMeResponse {
   account: AuthAccount;
+}
+
+/** Respuesta de `POST /api/auth/peek`: a qué cuenta lleva un enlace, sin gastarlo. */
+export interface AuthPeekResponse {
+  /** Correo enmascarado, p. ej. "an***@ejemplo.com". */
+  email: string;
 }
 
 /** Códigos de error de la API; el cliente los traduce con claves `error.*`. */

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { GENERATOR_VERSION } from "@imperium/shared";
 import { buildApp } from "../src/app";
-import { RateLimiter } from "../src/auth/rateLimit";
+import { emailRateKey, ipRateKey, RateLimiter } from "../src/auth/rateLimit";
+import { maskEmail, sessionCookieName } from "../src/auth/routes";
 import { generateToken, hashToken, normalizeEmail } from "../src/auth/tokens";
 import { loadConfig } from "../src/config";
 import type { Database } from "../src/db/client";
@@ -70,6 +71,44 @@ describe("RateLimiter", () => {
     expect(rl.consume("b")).toBe(true);
     now = 1000;
     expect(rl.consume("a")).toBe(true);
+  });
+
+  it("con el tope de claves lleno rechaza claves nuevas y libera las caducadas", () => {
+    let now = 0;
+    const rl = new RateLimiter(5, 1000, () => now, 2);
+    expect(rl.consume("a")).toBe(true);
+    expect(rl.consume("b")).toBe(true);
+    expect(rl.consume("c")).toBe(false);
+    expect(rl.consume("a")).toBe(true);
+    now = 1000;
+    expect(rl.consume("c")).toBe(true);
+  });
+});
+
+describe("claves de límite", () => {
+  it("agrupa IPv6 por /64 y deja IPv4 como están", () => {
+    expect(ipRateKey("1.2.3.4")).toBe("1.2.3.4");
+    expect(ipRateKey("::ffff:1.2.3.4")).toBe("1.2.3.4");
+    expect(ipRateKey("2a01:4f8:1:2::5")).toBe("2a01:4f8:1:2::/64");
+    expect(ipRateKey("2a01:04f8:0001:0002:aaaa:bbbb:cccc:dddd")).toBe("2a01:4f8:1:2::/64");
+    expect(ipRateKey("2a01:4f8::1")).toBe("2a01:4f8:0:0::/64");
+    expect(ipRateKey("::1")).toBe("0:0:0:0::/64");
+  });
+
+  it("quita alias +etiqueta y los puntos de Gmail", () => {
+    expect(emailRateKey("ana+juego@ejemplo.com")).toBe("ana@ejemplo.com");
+    expect(emailRateKey("a.n.a+x@googlemail.com")).toBe("ana@gmail.com");
+    expect(emailRateKey("a.na@ejemplo.com")).toBe("a.na@ejemplo.com");
+  });
+
+  it("enmascara el correo", () => {
+    expect(maskEmail("andrea@ejemplo.com")).toBe("an***@ejemplo.com");
+    expect(maskEmail("a@b.com")).toBe("a***@b.com");
+  });
+
+  it("la cookie lleva el prefijo __Host- solo con HTTPS", () => {
+    expect(sessionCookieName({ COOKIE_SECURE: true })).toBe("__Host-aeon_session");
+    expect(sessionCookieName({ COOKIE_SECURE: false })).toBe("aeon_session");
   });
 });
 

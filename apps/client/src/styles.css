@@ -135,6 +135,8 @@ kbd {
 }
 .auth-input:focus { outline: 2px solid var(--cyan); outline-offset: 1px; }
 .auth-error { color: var(--danger); font-size: 13px; }
+.start-content > .auth-error { margin: 12px 0 0; }
+.auth-warning { color: var(--gold); font-size: 13px; }
 .link-btn {
   padding: 0;
   background: none;

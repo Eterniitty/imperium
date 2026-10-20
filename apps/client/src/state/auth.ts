@@ -5,6 +5,7 @@ import {
   type ApiError,
   type AuthAccount,
   type AuthMeResponse,
+  type AuthPeekResponse,
   type I18nKey,
   type Locale,
 } from "@imperium/shared";
@@ -15,20 +16,25 @@ import {
  * - offline: no hay servidor; el universo se sigue generando en el navegador.
  * - anonymous: hay servidor pero no sesión; se pide el correo.
  * - sent: enlace enviado, a la espera de que el jugador lo abra.
- * - verifying: canjeando el enlace que trae la URL.
+ * - confirm: la URL trae un enlace; se muestra a qué cuenta lleva y se pide confirmación.
+ * - verifying: canjeando el enlace.
  * - authenticated: sesión abierta.
  */
-export type AuthStatus = "loading" | "offline" | "anonymous" | "sent" | "verifying" | "authenticated";
+export type AuthStatus = "loading" | "offline" | "anonymous" | "sent" | "confirm" | "verifying" | "authenticated";
 
 export interface AuthState {
   status: AuthStatus;
   account: AuthAccount | null;
   sentTo: string | null;
+  /** Enlace pendiente de confirmar: el token (solo en memoria) y el correo enmascarado. */
+  pending: { token: string; email: string } | null;
   busy: boolean;
   error: I18nKey | null;
 
   init(): Promise<void>;
   requestLink(email: string, locale: Locale): Promise<void>;
+  confirmLogin(): Promise<void>;
+  cancelLogin(): void;
   reset(): void;
   logout(): Promise<void>;
 }
@@ -55,22 +61,30 @@ async function api<T>(method: "GET" | "POST", url: string, body?: unknown): Prom
   return { ok: false, status: res.status, error: code ? `error.${code}` : "error.internal" };
 }
 
-/** Saca el token de acceso de la URL y lo borra, para que no quede en el historial. */
+/**
+ * Saca el token de acceso del fragmento de la URL (`#login=...`) y lo borra de
+ * la barra de direcciones. El fragmento no se envía a ningún servidor.
+ */
 function takeLoginToken(): string | null {
-  const url = new URL(window.location.href);
-  const token = url.searchParams.get(LOGIN_TOKEN_PARAM);
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const token = params.get(LOGIN_TOKEN_PARAM);
   if (!token) return null;
-  url.searchParams.delete(LOGIN_TOKEN_PARAM);
-  window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+  params.delete(LOGIN_TOKEN_PARAM);
+  const rest = params.toString();
+  window.history.replaceState(null, "", window.location.pathname + window.location.search + (rest ? `#${rest}` : ""));
   return token;
 }
 
 let initialized = false;
 
-export const authStore = createStore<AuthState>()((set) => ({
+/** Estado de reposo según haya o no sesión abierta. */
+const idle = (account: AuthAccount | null) => ({ status: account ? ("authenticated" as const) : ("anonymous" as const), account });
+
+export const authStore = createStore<AuthState>()((set, get) => ({
   status: "loading",
   account: null,
   sentTo: null,
+  pending: null,
   busy: false,
   error: null,
 
@@ -80,19 +94,32 @@ export const authStore = createStore<AuthState>()((set) => ({
     initialized = true;
 
     const token = takeLoginToken();
-    if (token) {
-      set({ status: "verifying" });
-      const res = await api<AuthMeResponse>("POST", "/api/auth/verify", { token });
-      if (res.ok) return set({ status: "authenticated", account: res.data.account, error: null });
-      // Enlace no válido: se sigue con la comprobación normal para mostrar el error en su contexto.
-      set({ error: res.error });
-    }
-
     const me = await api<AuthMeResponse>("GET", "/api/auth/me");
-    if (me.ok) return set({ status: "authenticated", account: me.data.account });
     // 401: hay servidor pero no sesión. Cualquier otra cosa (sin red, proxy sin servidor): sin conexión.
-    set({ status: me.status === 401 ? "anonymous" : "offline" });
+    if (!me.ok && me.status !== 401) return set({ status: "offline" });
+    const account = me.ok ? me.data.account : null;
+
+    if (token) {
+      // No se canjea sin preguntar: un enlace ajeno metería al jugador en otra cuenta.
+      const peek = await api<AuthPeekResponse>("POST", "/api/auth/peek", { token });
+      if (peek.ok) return set({ status: "confirm", account, pending: { token, email: peek.data.email } });
+      return set({ ...idle(account), error: peek.error });
+    }
+    set(idle(account));
   },
+
+  confirmLogin: async () => {
+    const pending = get().pending;
+    if (!pending) return;
+    set({ status: "verifying", error: null });
+    const res = await api<AuthMeResponse>("POST", "/api/auth/verify", { token: pending.token });
+    if (res.ok) return set({ status: "authenticated", account: res.data.account, pending: null });
+    // Sin red se conserva el enlace para reintentar; si no es válido, se descarta.
+    if (res.status === 0) return set({ status: "confirm", error: res.error });
+    set({ ...idle(get().account), pending: null, error: res.error });
+  },
+
+  cancelLogin: () => set({ ...idle(get().account), pending: null, error: null }),
 
   requestLink: async (email, locale) => {
     set({ busy: true, error: null });

@@ -27,6 +27,7 @@ Hetzner **solo factura el tráfico saliente** (20 TB incluidos, ~1 €/TB adicio
 
 1. [ ] **Archivos estáticos fuera del servidor.** Audio, texturas y código del cliente se sirven desde **Cloudflare R2 / caché de Cloudflare**, **nunca** desde el servidor. El servidor solo atiende API y WebSocket.
 2. [ ] **Solo Cloudflare puede llegar al servidor.** El cortafuegos de Hetzner y UFW aceptan los puertos **80/443 únicamente desde los rangos IP de Cloudflare**. SSH es la única excepción. Mantener actualizada la lista de rangos.
+   - **IP real del jugador:** detrás de Cloudflare, la IP que ve Caddy es la del nodo de Cloudflare. Sin ajustar esto, los límites por IP se convierten en un bloqueo global del acceso. En Caddy: `trusted_proxies` con los rangos de Cloudflare y `client_ip_headers CF-Connecting-IP`.
 3. [ ] **Límites por IP y por cuenta** en la API HTTP, en las conexiones/mensajes WebSocket y en cualquier descarga.
 4. [ ] **Vigilante de tráfico saliente.** Mide el tráfico del mes, **avisa** al acercarse a un umbral y **corta automáticamente el acceso público** (cierra 80/443) al superar un umbral configurable (p. ej. **15 TB**). SSH sigue accesible para intervenir.
 

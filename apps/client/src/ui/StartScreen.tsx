@@ -8,7 +8,7 @@ import { LanguageToggle } from "./LanguageToggle";
 function AuthPanel() {
   const t = useT();
   const locale = useGame((s) => s.locale);
-  const { status, account, sentTo, busy, error } = useAuth((s) => s);
+  const { status, account, sentTo, pending, busy, error } = useAuth((s) => s);
   const [email, setEmail] = useState("");
 
   const enter = (
@@ -27,6 +27,28 @@ function AuthPanel() {
     case "verifying":
       return <p className="start-hint">{t(status === "loading" ? "auth.loading" : "auth.verifying")}</p>;
 
+    case "confirm":
+      return (
+        <div className="auth-box" role="dialog" aria-labelledby="auth-confirm-title">
+          <h2 className="auth-title" id="auth-confirm-title">
+            {t("auth.confirmTitle", { email: pending?.email ?? "" })}
+          </h2>
+          {account && <p className="auth-warning">{t("auth.confirmSwitch", { email: account.email })}</p>}
+          <p className="muted small">{t("auth.confirmHint")}</p>
+          {error && (
+            <p className="auth-error" role="alert">
+              {t(error)}
+            </p>
+          )}
+          <button className="btn btn-primary" onClick={() => void authStore.getState().confirmLogin()} autoFocus>
+            {t("auth.confirm")}
+          </button>
+          <button className="link-btn" onClick={() => authStore.getState().cancelLogin()}>
+            {t("auth.cancel")}
+          </button>
+        </div>
+      );
+
     case "offline":
       return (
         <>
@@ -39,6 +61,11 @@ function AuthPanel() {
       return (
         <>
           {enter}
+          {error && (
+            <p className="auth-error" role="alert">
+              {t(error)}
+            </p>
+          )}
           <p className="start-hint">
             {t("auth.signedInAs", { email: account?.email ?? "" })} ·{" "}
             <button className="link-btn" onClick={() => void authStore.getState().logout()} disabled={busy}>

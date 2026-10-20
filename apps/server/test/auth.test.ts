@@ -6,7 +6,7 @@ import { sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { LOGIN_TOKEN_PARAM, type Locale } from "@imperium/shared";
 import { buildApp } from "../src/app";
-import { SESSION_COOKIE } from "../src/auth/routes";
+import { sessionCookieName } from "../src/auth/routes";
 import { hashToken } from "../src/auth/tokens";
 import { loadConfig } from "../src/config";
 import { createDb } from "../src/db/client";
@@ -30,6 +30,7 @@ describe.skipIf(!TEST_DATABASE_URL)("acceso por enlace", () => {
     PUBLIC_URL: "http://juego.test",
     COOKIE_SECURE: "false",
   });
+  const SESSION_COOKIE = sessionCookieName(config);
   let app: Awaited<ReturnType<typeof buildApp>>;
 
   beforeAll(async () => {
@@ -54,7 +55,8 @@ describe.skipIf(!TEST_DATABASE_URL)("acceso por enlace", () => {
   const requestLink = (email: string, ip = "10.0.0.1") =>
     app.inject({ method: "POST", url: "/api/auth/request", payload: { email, locale: "en" }, remoteAddress: ip });
 
-  const tokenFromLink = (link: string) => new URL(link).searchParams.get(LOGIN_TOKEN_PARAM) ?? "";
+  // El token va en el fragmento (#login=...), no en la consulta.
+  const tokenFromLink = (link: string) => new URLSearchParams(new URL(link).hash.slice(1)).get(LOGIN_TOKEN_PARAM) ?? "";
 
   const verify = (token: string) => app.inject({ method: "POST", url: "/api/auth/verify", payload: { token } });
 
@@ -66,7 +68,7 @@ describe.skipIf(!TEST_DATABASE_URL)("acceso por enlace", () => {
     expect(sent).toHaveLength(1);
     expect(sent[0]?.to).toBe("ana@ejemplo.com");
     expect(sent[0]?.locale).toBe("en");
-    expect(sent[0]?.link.startsWith("http://juego.test/?login=")).toBe(true);
+    expect(sent[0]?.link.startsWith("http://juego.test/#login=")).toBe(true);
 
     const res = await verify(tokenFromLink(sent[0]!.link));
     expect(res.statusCode).toBe(200);
@@ -128,8 +130,8 @@ describe.skipIf(!TEST_DATABASE_URL)("acceso por enlace", () => {
 
   it("volver a entrar con el mismo correo usa la misma cuenta", async () => {
     await requestLink("f@ejemplo.com");
-    await requestLink("F@ejemplo.com");
     const a = await verify(tokenFromLink(sent[0]!.link));
+    await requestLink("F@ejemplo.com");
     const b = await verify(tokenFromLink(sent[1]!.link));
     expect(a.json().account.id).toBe(b.json().account.id);
   });
@@ -146,14 +148,55 @@ describe.skipIf(!TEST_DATABASE_URL)("acceso por enlace", () => {
     expect(sent).toHaveLength(0);
   });
 
-  it("limita las peticiones por correo y por IP", async () => {
-    for (let i = 0; i < 3; i++) expect((await requestLink("h@ejemplo.com", `10.0.1.${i}`)).statusCode).toBe(202);
-    expect((await requestLink("h@ejemplo.com", "10.0.1.9")).statusCode).toBe(429);
+  it("limita las peticiones por correo (en silencio, contando alias) y por IP", async () => {
+    for (let i = 0; i < 3; i++) expect((await requestLink(`h+${i}@ejemplo.com`, `10.0.1.${i}`)).statusCode).toBe(202);
+    // Superado el límite del correo: misma respuesta, pero no se envía nada.
+    expect((await requestLink("h@ejemplo.com", "10.0.1.9")).statusCode).toBe(202);
+    expect(sent).toHaveLength(3);
 
     for (let i = 0; i < 10; i++) expect((await requestLink(`ip${i}@ejemplo.com`, "10.0.2.1")).statusCode).toBe(202);
     const blocked = await requestLink("otro@ejemplo.com", "10.0.2.1");
     expect(blocked.statusCode).toBe(429);
     expect(blocked.json()).toEqual({ error: "rate_limited" });
+  });
+
+  it("las IPv6 del mismo /64 comparten límite", async () => {
+    for (let i = 0; i < 10; i++) expect((await requestLink(`v6${i}@ejemplo.com`, `2a01:4f8:1:2::${i + 1}`)).statusCode).toBe(202);
+    expect((await requestLink("v6x@ejemplo.com", "2a01:4f8:1:2:ffff::1")).statusCode).toBe(429);
+    expect((await requestLink("v6y@ejemplo.com", "2a01:4f8:1:3::1")).statusCode).toBe(202);
+  });
+
+  it("consultar un enlace muestra el correo enmascarado y no lo gasta", async () => {
+    await requestLink("andrea@ejemplo.com");
+    const token = tokenFromLink(sent[0]!.link);
+    const peek = await app.inject({ method: "POST", url: "/api/auth/peek", payload: { token } });
+    expect(peek.statusCode).toBe(200);
+    expect(peek.json()).toEqual({ email: "an***@ejemplo.com" });
+    expect((await verify(token)).statusCode).toBe(200);
+    const after = await app.inject({ method: "POST", url: "/api/auth/peek", payload: { token } });
+    expect(after.json()).toEqual({ error: "invalid_or_expired" });
+  });
+
+  it("al entrar, los demás enlaces pendientes de ese correo dejan de valer", async () => {
+    await requestLink("i@ejemplo.com");
+    await requestLink("i@ejemplo.com");
+    expect((await verify(tokenFromLink(sent[1]!.link))).statusCode).toBe(200);
+    expect((await verify(tokenFromLink(sent[0]!.link))).json()).toEqual({ error: "invalid_or_expired" });
+  });
+
+  it("entrar con un enlace cierra la sesión anterior del navegador", async () => {
+    await requestLink("j@ejemplo.com");
+    await requestLink("k@ejemplo.com");
+    const first = sessionCookie(await verify(tokenFromLink(sent[0]!.link)))!.value;
+    const second = await app.inject({
+      method: "POST",
+      url: "/api/auth/verify",
+      payload: { token: tokenFromLink(sent[1]!.link) },
+      cookies: { [SESSION_COOKIE]: first },
+    });
+    expect(second.json().account.email).toBe("k@ejemplo.com");
+    const old = await app.inject({ method: "GET", url: "/api/auth/me", cookies: { [SESSION_COOKIE]: first } });
+    expect(old.statusCode).toBe(401);
   });
 
   it("sin sesión, /me responde 401", async () => {
