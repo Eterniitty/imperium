@@ -140,6 +140,7 @@ Mensajes JSON con campo `t` (tipo). Ejemplos:
 - Al canjearlo se crea una sesión en **cookie `HttpOnly`, `Secure`, `SameSite=Lax`**.
 - Para el WebSocket, el cliente pide por HTTP un **ticket corto** de un solo uso que presenta al conectar.
 - `MAIL_TRANSPORT=console` imprime el enlace en el registro: **solo en desarrollo**; el servidor se niega a arrancar con ese valor en producción.
+- `MAIL_TRANSPORT=smtp` envía el correo (texto + HTML, en el idioma del jugador) por el SMTP de un proveedor transaccional con nodemailer (`SmtpMailer` en `apps/server/src/mail.ts`): TLS obligatorio, tiempos de espera acotados y comprobación de la conexión al arrancar. Si el envío falla se registra (correo enmascarado) y la respuesta es la misma de siempre. `MAIL_LOG_LINKS=true` escribe además el enlace en el registro (solo fuera de producción). Ver «Correo real» en `docs/despliegue.md`.
 
 ## 10. Modelo de datos (tablas previstas)
 
