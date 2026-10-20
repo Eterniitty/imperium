@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { check, index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 /**
  * Esquema de la base de datos. Tras cambiarlo: `pnpm --filter @imperium/server db:generate`
@@ -63,8 +63,18 @@ export const emperors = pgTable("emperors", {
   name: text("name").notNull(),
   /** Nombre en forma comparable (NFKC y minúsculas): impide "Aurelia" y "AURELIA" a la vez. */
   nameKey: text("name_key").notNull().unique(),
-  /** Sistema donde está: "sx:sy:sz:indice". */
+  /** Sistema donde está, o del que salió si está viajando: "sx:sy:sz:indice". */
   systemId: text("system_id").notNull(),
+  /**
+   * Viaje: destino y horas de salida y llegada (las tres o ninguna). Si la
+   * llegada ya pasó, el Emperador está en el destino aunque la fila no se haya
+   * actualizado: se normaliza en la siguiente escritura.
+   */
+  destSystemId: text("dest_system_id"),
+  departAt: timestamp("depart_at", { withTimezone: true }),
+  arriveAt: timestamp("arrive_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [
+  check("emperors_travel_complete", sql`(${t.destSystemId} IS NULL) = (${t.departAt} IS NULL) AND (${t.departAt} IS NULL) = (${t.arriveAt} IS NULL)`),
+]);

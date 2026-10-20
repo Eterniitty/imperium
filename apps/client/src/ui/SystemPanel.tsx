@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { distance, type I18nKey } from "@imperium/shared";
 import { engineRef } from "../engineRef";
+import { useWorld } from "../net/world";
 import { authStore, useAuth } from "../state/auth";
 import { gameStore, useGame, useT } from "../state/store";
 import { DepositChips, Meter, RESOURCE_COLORS, starColorCss } from "./common";
+import { formatDuration, useServerNow } from "./useNow";
 
 export function SystemPanel() {
   const t = useT();
@@ -12,6 +14,9 @@ export function SystemPanel() {
   const focus = useGame((s) => s.focusWorld);
   const hovered = useGame((s) => s.hovered);
   const emperor = useAuth((s) => s.emperor);
+  const world = useWorld((s) => s.emperors);
+  const myId = useWorld((s) => s.myEmperorId);
+  const now = useServerNow();
   const [moving, setMoving] = useState(false);
   const [moveError, setMoveError] = useState<I18nKey | null>(null);
 
@@ -41,7 +46,16 @@ export function SystemPanel() {
   }
 
   const d = distance(focus, selected.position);
-  const emperorHere = emperor?.location.systemId === selected.id;
+  const travelling = emperor?.travel && emperor.travel.arriveAt > now ? emperor.travel : null;
+  const emperorHere = !travelling && (emperor?.travel && emperor.travel.arriveAt <= now ? emperor.travel.to : emperor?.location)?.systemId === selected.id;
+  // Quién está en este sistema y quién viene de camino (con el viaje resuelto a la hora actual).
+  const others = Object.values(world).map((e) => {
+    const arrived = e.travel !== null && e.travel.arriveAt <= now;
+    const moving = e.travel !== null && !arrived;
+    return { e, at: moving ? null : arrived ? e.travel!.to.systemId : e.location.systemId, heading: moving ? e.travel!.to.systemId : null };
+  });
+  const here = others.filter((o) => o.at === selected.id);
+  const coming = others.filter((o) => o.heading === selected.id);
   const p = selected.position;
 
   return (
@@ -94,6 +108,31 @@ export function SystemPanel() {
         {detail.planets.length === 0 && <li className="muted">{t("system.none")}</li>}
       </ul>
 
+      {(here.length > 0 || coming.length > 0) && (
+        <>
+          {here.length > 0 && <h3>{t("emperor.othersHere")}</h3>}
+          <ul className="emperor-list">
+            {here.map(({ e }) => (
+              <li key={e.id} className={e.id === myId ? "own" : ""}>
+                <span className={e.online ? "server-dot online" : "server-dot"} aria-hidden="true" />
+                <strong>{e.name}</strong>
+                <span className="muted small">{e.id === myId ? t("emperor.you") : t(e.online ? "emperor.online" : "emperor.offline")}</span>
+              </li>
+            ))}
+          </ul>
+          {coming.length > 0 && <h3>{t("emperor.headingHere")}</h3>}
+          <ul className="emperor-list">
+            {coming.map(({ e }) => (
+              <li key={e.id} className={e.id === myId ? "own" : ""}>
+                <span className={e.online ? "server-dot online" : "server-dot"} aria-hidden="true" />
+                <strong>{e.name}</strong>
+                <span className="muted small mono">{formatDuration(e.travel!.arriveAt - now)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
       <div className="actions">
         <button className="btn" onClick={() => engineRef.current?.focusSelected()}>
           {t("system.focus")} <kbd>F</kbd>
@@ -102,7 +141,7 @@ export function SystemPanel() {
           {t("system.enter")} <kbd>↵</kbd>
         </button>
         {emperor && !emperorHere && (
-          <button className="btn" onClick={() => void moveHere(selected.id)} disabled={moving}>
+          <button className="btn" onClick={() => void moveHere(selected.id)} disabled={moving || travelling !== null}>
             {t(moving ? "emperor.moving" : "emperor.move")}
           </button>
         )}

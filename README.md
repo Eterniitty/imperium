@@ -4,7 +4,7 @@ MMO espacial 3D para navegador. Cada jugador es un Emperador humano inmortal en 
 
 > Nombre interno del proyecto en el código: `imperium` (paquetes `@imperium/*`). El nombre del juego es **Aeonarch**.
 
-**Estado: Fase 4 en curso — servidor autoritativo.** El universo aún se genera en el navegador. Ya hay servidor (`apps/server`) con cuentas, acceso por enlace de correo y Emperador persistente (nombre único y ubicación guardada); falta el multijugador.
+**Estado: Fase 4 terminada — servidor autoritativo y multijugador.** Hay servidor (`apps/server`) con cuentas, acceso por enlace de correo, Emperador persistente y un mundo compartido por WebSocket: los jugadores se ven y se ven viajar. Las estrellas aún se generan en cada navegador (con la misma semilla que el servidor).
 
 ## Qué funciona ahora
 
@@ -15,6 +15,9 @@ MMO espacial 3D para navegador. Cada jugador es un Emperador humano inmortal en 
 - Selección e inspección de sistemas: clase estelar, energía, planetas, cinturones, anomalías y recursos.
 - Vista de sistema con planetas, lunas, anillos y cinturones en órbita.
 - Viaje a cualquier sector por coordenadas.
+- Cuentas sin contraseña (enlace de un solo uso por correo) y un Emperador por cuenta, con nombre único.
+- Multijugador: todos los Emperadores en el mapa con su nombre, quién está conectado y quién hay en cada sistema.
+- Viaje del Emperador entre sistemas, validado en el servidor y visible en directo para los demás.
 
 ## Requisitos
 
@@ -99,4 +102,4 @@ docs/              Diseño, arquitectura y lista de despliegue
 
 ## Próxima fase
 
-Fase 4: servidor autoritativo, acceso por correo electrónico con enlace de un solo uso, Emperador persistente por cuenta y dos jugadores compartiendo el mismo universo.
+Por decidir (ver `CLAUDE.md`). Antes de abrir el juego al público hay que cumplir la lista de seguridad de `docs/despliegue.md`.

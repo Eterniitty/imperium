@@ -55,11 +55,25 @@ export interface EmperorLocation {
   position: WorldPosition;
 }
 
-/** Emperador tal y como lo ve su propietario. */
+/**
+ * Viaje en curso. El origen es `Emperor.location`; las horas son milisegundos
+ * desde 1970 según el reloj del servidor.
+ */
+export interface EmperorTravel {
+  to: EmperorLocation;
+  departAt: number;
+  arriveAt: number;
+}
+
+/**
+ * Emperador. Es información pública: lo ven todos los jugadores (no lleva nada
+ * de la cuenta). Mientras viaja, `location` es el sistema de origen.
+ */
 export interface Emperor {
   id: string;
   name: string;
   location: EmperorLocation;
+  travel: EmperorTravel | null;
 }
 
 /** Respuesta de `GET /api/emperor`, `POST /api/emperor` y `POST /api/emperor/move`. */
@@ -78,6 +92,11 @@ export type ApiErrorCode =
   | "name_taken"
   | "unknown_system"
   | "internal";
+
+/** Respuesta de `POST /api/ws/ticket`: ticket de un solo uso para abrir el WebSocket. */
+export interface WsTicketResponse {
+  ticket: string;
+}
 
 export interface ApiError {
   error: ApiErrorCode;

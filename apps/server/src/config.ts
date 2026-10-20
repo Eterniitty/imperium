@@ -23,6 +23,10 @@ const EnvSchema = z
     // Semilla del universo. Hasta el paso 4d, en que el servidor la enviará al
     // cliente, debe coincidir con VITE_UNIVERSE_SEED del cliente.
     UNIVERSE_SEED: z.string().min(1).default("imperium-alpha"),
+    // Velocidad de viaje de los Emperadores, en años luz por hora. El diseño pide
+    // viajes de horas; mientras sea un prototipo va rápida (1 a.l. por segundo)
+    // para poder ver el movimiento.
+    TRAVEL_SPEED_LYH: z.coerce.number().positive().default(3600),
     MAIL_TRANSPORT: z.enum(["console", "smtp"]).default("console"),
     // Sin HTTPS el navegador no guarda cookies Secure: solo se desactiva en desarrollo o pruebas.
     COOKIE_SECURE: z

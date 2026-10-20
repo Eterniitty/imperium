@@ -44,8 +44,16 @@ export const EmperorNameSchema = z
 export const EmperorCreateBodySchema = z.object({ name: EmperorNameSchema });
 export type EmperorCreateBody = z.input<typeof EmperorCreateBodySchema>;
 
-/** Cuerpo de `POST /api/emperor/move`. Coordenadas de sector acotadas para no generar sectores absurdos. */
-export const EmperorMoveBodySchema = z.object({
-  systemId: z.string().regex(/^-?\d{1,7}:-?\d{1,7}:-?\d{1,7}:\d{1,3}$/),
-});
-export type EmperorMoveBody = z.input<typeof EmperorMoveBodySchema>;
+/** Identificador de sistema. Coordenadas de sector acotadas para no generar sectores absurdos. */
+export const SystemIdSchema = z.string().regex(/^-?\d{1,7}:-?\d{1,7}:-?\d{1,7}:\d{1,3}$/);
+
+/** Mensajes del cliente por el WebSocket (ver `protocol.ts`). */
+export const ClientMessageSchema = z.discriminatedUnion("t", [
+  z.object({
+    t: z.literal("cmd"),
+    cmdId: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/),
+    op: z.literal("emperor.move"),
+    args: z.object({ systemId: SystemIdSchema }),
+  }),
+  z.object({ t: z.literal("sub"), topic: z.literal("emperors") }),
+]);

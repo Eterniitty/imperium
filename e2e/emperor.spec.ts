@@ -58,8 +58,12 @@ test("nombrar al Emperador, entrar en su sistema, trasladarlo y que lo recuerde"
   }, target);
   await expect(panel.getByRole("heading", { level: 2 })).toHaveText(target.name);
   await panel.getByRole("button", { name: "Trasladar al Emperador aquí" }).click();
-  await expect(panel.getByText("Tu Emperador está aquí")).toBeVisible();
-  await page.screenshot({ path: `${SHOTS}/4-trasladado.png` });
+  // Viaja: la barra superior muestra el destino y la cuenta atrás; al llegar, está allí.
+  await expect(page.getByText(`Viajando a ${target.name}`)).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Trasladar al Emperador aquí" })).toBeDisabled();
+  await page.screenshot({ path: `${SHOTS}/4-viajando.png` });
+  await expect(panel.getByText("Tu Emperador está aquí")).toBeVisible({ timeout: 30_000 });
+  await page.screenshot({ path: `${SHOTS}/5-llegado.png` });
 
   // Al recargar (sesión en cookie), el servidor recuerda dónde está.
   await page.reload();

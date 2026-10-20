@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { engineRef } from "../engineRef";
 import { useAuth } from "../state/auth";
+import { formatDuration, useServerNow } from "./useNow";
 import { useGame, useT } from "../state/store";
 import { LanguageToggle } from "./LanguageToggle";
 import { ServerStatus } from "./ServerStatus";
@@ -19,6 +20,8 @@ export function TopBar() {
   const selected = useGame((s) => s.selected);
   const flight = useGame((s) => s.flight);
   const emperor = useAuth((s) => s.emperor);
+  const now = useServerNow();
+  const travel = emperor?.travel && emperor.travel.arriveAt > now ? emperor.travel : null;
   const [target, setTarget] = useState({ x: "0", y: "0", z: "0" });
 
   const go = (e: FormEvent) => {
@@ -38,6 +41,11 @@ export function TopBar() {
         <button className="stat stat-button" onClick={() => engineRef.current?.goToEmperor()} title={t("emperor.goTo")}>
           <span className="stat-label">{t("emperor.label")}</span>
           <span className="stat-value">{emperor.name}</span>
+          {travel && (
+            <span className="stat-sub">
+              {t("emperor.travelling", { system: travel.to.systemName })} · <span className="mono">{formatDuration(travel.arriveAt - now)}</span>
+            </span>
+          )}
         </button>
       )}
 

@@ -131,3 +131,28 @@ export function planetTexture(type: PlanetType, key: string): THREE.Texture {
   planetCache.set(cacheKey, tex);
   return tex;
 }
+
+/** Rótulo de texto para un sprite: devuelve la textura y su proporción ancho/alto. */
+export function labelTexture(text: string, color: string): { texture: THREE.Texture; aspect: number } {
+  const font = "600 30px Rajdhani, system-ui, sans-serif";
+  const measure = document.createElement("canvas").getContext("2d")!;
+  measure.font = font;
+  const width = Math.ceil(measure.measureText(text).width) + 24;
+  const height = 44;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d")!;
+  ctx.font = font;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  // Contorno oscuro: se lee sobre cualquier fondo de estrellas.
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = "rgba(2, 3, 10, 0.85)";
+  ctx.strokeText(text, width / 2, height / 2);
+  ctx.fillStyle = color;
+  ctx.fillText(text, width / 2, height / 2);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return { texture, aspect: width / height };
+}

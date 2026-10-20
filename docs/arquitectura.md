@@ -117,6 +117,13 @@ Mensajes JSON con campo `t` (tipo). Ejemplos:
 
 - `seq` permite detectar huecos; ante uno, el cliente pide una nueva `snap`.
 
+### Implementado (Fase 4)
+
+- Conexión: `POST /api/ws/ticket` (con la cookie de sesión) devuelve un ticket de un solo uso válido 30 s; el cliente abre `/ws?v=<versión>&ticket=...`. El servidor rechaza antes de aceptar la conexión si el origen no es `PUBLIC_URL`, la versión del protocolo no coincide, el ticket no vale o hay demasiadas conexiones.
+- Al conectar, el servidor envía `hello` (id del Emperador propio y hora del servidor, para corregir el reloj local). El cliente pide `{"t":"sub","topic":"emperors"}` y recibe la `snap` con todos los Emperadores; después, `delta` con cada cambio (viajes, altas, conexiones y desconexiones).
+- Única orden por ahora: `emperor.move` (`args.systemId`). El viaje se guarda como destino y horas de salida y llegada; la posición se calcula al vuelo con `@imperium/sim` en el servidor y en el cliente, sin enviar posiciones.
+- Tipos en `packages/shared/src/protocol.ts`; esquema Zod de los mensajes del cliente en `schemas.ts`. Mensaje mal formado → cierre 4400; exceso de mensajes → 4429.
+
 ## 9. Autenticación por enlace mágico
 
 - El usuario introduce su correo; se genera un **token aleatorio de 32 bytes**.

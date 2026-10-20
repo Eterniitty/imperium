@@ -5,6 +5,9 @@ import { authRoutes } from "./auth/routes";
 import type { ServerConfig } from "./config";
 import type { Database } from "./db/client";
 import { emperorRoutes } from "./emperor/routes";
+import { EmperorService } from "./emperor/service";
+import { Hub } from "./realtime/hub";
+import { realtimeRoutes } from "./realtime/routes";
 import { createMailer, type Mailer } from "./mail";
 
 /** Versión del servidor; la inyecta esbuild al compilar y en desarrollo vale "dev". */
@@ -60,7 +63,10 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     mailer: deps.mailer ?? createMailer(config, app.log),
   });
 
-  await app.register(emperorRoutes, { config, db: deps.db });
+  const emperors = new EmperorService(deps.db, config);
+  const hub = new Hub(emperors, app.log);
+  await app.register(emperorRoutes, { config, db: deps.db, emperors, hub });
+  await app.register(realtimeRoutes, { config, db: deps.db, emperors, hub });
 
   return app;
 }

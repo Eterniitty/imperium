@@ -167,14 +167,8 @@ export const authStore = createStore<AuthState>()((set, get) => ({
     set({ busy: false, error: res.error });
   },
 
-  moveEmperor: async (systemId) => {
-    const res = await api<EmperorResponse>("POST", "/api/emperor/move", { systemId });
-    if (res.ok) {
-      set({ emperor: res.data.emperor });
-      return null;
-    }
-    return res.error;
-  },
+  // Importación diferida: la conexión importa este módulo.
+  moveEmperor: async (systemId) => (await import("../net/world")).connection.command("emperor.move", { systemId }),
 }));
 
 export function useAuth<T>(selector: (s: AuthState) => T): T {

@@ -62,13 +62,10 @@ describe.skipIf(!TEST_DATABASE_URL)("Emperador persistente", () => {
   const getEmperor = (cookies: Record<string, string>) => app.inject({ method: "GET", url: "/api/emperor", cookies });
   const create = (cookies: Record<string, string>, name: unknown) =>
     app.inject({ method: "POST", url: "/api/emperor", payload: { name }, cookies });
-  const move = (cookies: Record<string, string>, systemId: string) =>
-    app.inject({ method: "POST", url: "/api/emperor/move", payload: { systemId }, cookies });
 
   it("sin sesión no se puede consultar ni crear", async () => {
     expect((await getEmperor({})).statusCode).toBe(401);
     expect((await create({}, "Aurelia")).statusCode).toBe(401);
-    expect((await move({}, "0:0:0:0")).statusCode).toBe(401);
   });
 
   it("una cuenta nueva no tiene Emperador hasta que lo nombra", async () => {
@@ -86,6 +83,7 @@ describe.skipIf(!TEST_DATABASE_URL)("Emperador persistente", () => {
     const spawn = candidates.find((s) => s.id === emperor.location.systemId);
     expect(spawn).toBeDefined();
     expect(emperor.location).toEqual({ systemId: spawn!.id, systemName: spawn!.name, position: spawn!.position });
+    expect(emperor.travel).toBeNull();
   });
 
   it("sigue en el mismo sitio al cerrar sesión y volver a entrar", async () => {
@@ -124,32 +122,6 @@ describe.skipIf(!TEST_DATABASE_URL)("Emperador persistente", () => {
     }
     // Letras de cualquier alfabeto, guiones y apóstrofos internos sí valen.
     expect((await create(c, "Ñuño O'Brien-Søren")).statusCode).toBe(201);
-  });
-
-  it("se traslada a un sistema existente y el cambio persiste", async () => {
-    const c = await login("g@ejemplo.com");
-    const created: Emperor = (await create(c, "Galba")).json().emperor;
-    const target = spawnCandidates(seed).find((s) => s.id !== created.location.systemId)!;
-
-    const res = await move(c, target.id);
-    expect(res.statusCode).toBe(200);
-    expect(res.json().emperor.location.systemId).toBe(target.id);
-    expect((await getEmperor(c)).json().emperor.location.systemName).toBe(target.name);
-  });
-
-  it("no se traslada a sistemas inexistentes ni con identificadores mal formados", async () => {
-    const c = await login("h@ejemplo.com");
-    await create(c, "Helvia");
-    expect((await move(c, "0:0:0:999")).json()).toEqual({ error: "unknown_system" });
-    expect((await move(c, "00:0:0:0")).json()).toEqual({ error: "unknown_system" });
-    expect((await move(c, "-0:0:0:0")).json()).toEqual({ error: "unknown_system" });
-    expect((await move(c, "99999999:0:0:0")).statusCode).toBe(400);
-    expect((await move(c, "0:0:0")).statusCode).toBe(400);
-  });
-
-  it("sin Emperador no se puede trasladar", async () => {
-    const c = await login("i@ejemplo.com");
-    expect((await move(c, spawnCandidates(seed)[0]!.id)).json()).toEqual({ error: "no_emperor" });
   });
 
   it("al borrar la cuenta se borra su Emperador", async () => {

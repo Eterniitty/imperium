@@ -18,6 +18,8 @@ export default defineConfig({
     locale: "es-ES",
     viewport: { width: 1280, height: 800 },
     screenshot: "only-on-failure",
+    // Si una prueba falla, queda una traza para ver qué pasó: pnpm exec playwright show-trace <archivo>.
+    trace: "retain-on-failure",
     launchOptions: {
       // Sin tarjeta gráfica: WebGL por software para que Three.js funcione.
       args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
