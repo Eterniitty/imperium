@@ -124,6 +124,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     if (!done) return;
     return () => {
       void hub.publishColony(done.emperorId, done.colonyId);
+      // La capital paga el mantenimiento de la nave nueva: sus tasas han cambiado.
+      if (done.capitalId) void hub.publishColony(done.emperorId, done.capitalId);
       if (done.fleetId) void hub.publishFleet(done.emperorId, done.fleetId);
       if (done.discovered) void hub.publishDiscovered(done.discovered.emperorId, done.discovered.systemIds);
     };

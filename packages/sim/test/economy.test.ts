@@ -5,6 +5,8 @@ import {
   canAfford,
   colonyEnergy,
   colonyFlows,
+  installationsUpkeep,
+  upkeepShortage,
   flagshipHumansAfter,
   gameHours,
   installationAllowed,
@@ -93,7 +95,7 @@ describe("producción", () => {
   });
 
   it("la refinería convierte metal y volátiles en aleaciones y se frena al agotarlos", () => {
-    const flows = { extraction: { metal: 1, volatiles: 1, crystal: 0, alloys: 0 }, refinery: { metal: 6, volatiles: 2, alloys: 3 } };
+    const flows = { extraction: { metal: 1, volatiles: 1, crystal: 0, alloys: 0 }, refinery: { metal: 6, volatiles: 2, alloys: 3 }, upkeep: 0 };
     // Con 10 de metal: 2 horas a pleno rendimiento (pierde 5/h), luego al ritmo de la extracción (1/6).
     const s = advanceStock({ metal: 10, volatiles: 100, crystal: 0, alloys: 0 }, flows, 4);
     expect(s.metal).toBeCloseTo(0, 6);
@@ -127,5 +129,36 @@ describe("producción", () => {
     expect(installationAllowed("shipyard", {}, 0)).toBe(true);
     expect(installationAllowed("shipyard", {}, 1)).toBe(false);
     expect(installationAllowed("shipyard", { shipyard: 1 }, 0)).toBe(false);
+  });
+});
+
+describe("mantenimiento", () => {
+  const base = { extraction: { metal: 4, volatiles: 3, crystal: 0, alloys: 0 }, refinery: { metal: 6, volatiles: 2, alloys: 3 } };
+
+  it("las instalaciones consumen volátiles de su colonia", () => {
+    expect(installationsUpkeep({ mine: 2, refinery: 1, power_plant: 1, shipyard: 1 })).toBeCloseTo(2 * 0.5 + 1 + 0.5 + 1.5);
+    const rates = netRates({ metal: 100, volatiles: 100, crystal: 0, alloys: 0 }, { ...base, upkeep: 5 });
+    // 3 extraídos − 2 de la refinería − 5 de mantenimiento.
+    expect(rates.volatiles).toBeCloseTo(-4);
+  });
+
+  it("sin volátiles se paga primero el mantenimiento; la refinería usa lo que sobra", () => {
+    const empty = { metal: 100, volatiles: 0, crystal: 0, alloys: 0 };
+    // Sobra 1 de los 3 extraídos tras pagar 2: la refinería va a la mitad (necesita 2).
+    const some = netRates(empty, { ...base, upkeep: 2 });
+    expect(some.volatiles).toBeCloseTo(0);
+    expect(some.alloys).toBeCloseTo(1.5);
+    expect(upkeepShortage(empty, { ...base, upkeep: 2 })).toBe(false);
+    // Mantenimiento mayor que la extracción: desabastecida, refinería parada, el almacén no baja de cero.
+    const short = netRates(empty, { ...base, upkeep: 8 });
+    expect(short.alloys).toBe(0);
+    expect(short.volatiles).toBe(0);
+    expect(upkeepShortage(empty, { ...base, upkeep: 8 })).toBe(true);
+  });
+
+  it("la capital paga además el mantenimiento de las flotas", () => {
+    const planet = { habitability: 0.5, deposits: { metal: 1, volatiles: 1, crystal: 0 } as const, moons: [] };
+    expect(colonyFlows(planet, 3, {}, 500, 7).upkeep).toBe(7);
+    expect(colonyFlows(planet, 3, { mine: 1 }, 500).upkeep).toBe(0.5);
   });
 });

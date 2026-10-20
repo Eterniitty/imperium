@@ -16,11 +16,17 @@ import { Backdrop } from "./Backdrop";
 import { FlightController } from "./FlightController";
 import type { Keyboard } from "./input";
 import { createFlagship, disposeShip, SHIP_SCALE } from "./shipModel";
-import { glowTexture, planetTexture, ringTexture } from "./textures";
+import { glowTexture, labelTexture, planetTexture, ringTexture } from "./textures";
+import { claimsStore } from "../state/claims";
+import { ownColonyAt, planetLabel } from "../ui/colonies";
 import type { View } from "./View";
 
 interface PlanetVisual {
   index: number;
+  /** Designación del planeta (p. ej. «Velor III»); el rótulo usa el nombre personalizado si lo hay. */
+  designation: string;
+  /** Rótulo en la vista 3D y lo que muestra (para rehacerlo solo si cambia). */
+  label: { sprite: THREE.Sprite; key: string } | null;
   layout: PlanetLayout;
   pivot: THREE.Object3D;
   mesh: THREE.Mesh;
@@ -212,7 +218,7 @@ vertexShader: /* glsl */ `
 
       const orbitLine = this.makeOrbit(radius);
       this.content.add(orbitLine, pivot);
-      this.planets.push({ index: p.index, layout: pl, pivot, mesh, orbitLine, moons });
+      this.planets.push({ index: p.index, designation: p.name, label: null, layout: pl, pivot, mesh, orbitLine, moons });
       radius += size * 2 + 7;
     }
 
@@ -442,6 +448,39 @@ vertexShader: /* glsl */ `
     this.effects.explode(this.ship.position.clone());
   }
 
+  /**
+   * Rótulos de los planetas: su nombre (el que les puso su dueño, si lo hay) en
+   * dorado si son tuyos, en naranja si son de otro y en gris si están libres. A
+   * esta escala, de lejos los planetas son puntos: el rótulo ayuda a orientarse.
+   */
+  private updatePlanetLabels(): void {
+    const { claims, systemId } = claimsStore.getState();
+    const colonies = worldStore.getState().colonies;
+    const tmp = new THREE.Vector3();
+    for (const p of this.planets) {
+      const own = this.systemId ? ownColonyAt(colonies, this.systemId, p.index) : undefined;
+      const claim = systemId === this.systemId ? claims[p.index] : undefined;
+      const name = planetLabel({ name: p.designation, index: p.index }, claim, own);
+      const color = own ? "#e8b64c" : claim ? "#ff9f5a" : "#b9c3d6";
+      const key = `${name}|${color}`;
+      if (p.label?.key !== key) {
+        if (p.label) {
+          this.content.remove(p.label.sprite);
+          p.label.sprite.material.map?.dispose();
+          p.label.sprite.material.dispose();
+        }
+        const { texture, aspect } = labelTexture(name, color);
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, sizeAttenuation: false, transparent: true, opacity: 0.85 }));
+        sprite.scale.set(0.024 * aspect, 0.024, 1);
+        sprite.center.set(0.5, -0.9);
+        sprite.renderOrder = 9;
+        this.content.add(sprite);
+        p.label = { sprite, key };
+      }
+      p.label.sprite.position.copy(p.mesh.getWorldPosition(tmp));
+    }
+  }
+
   /** El servidor rechazó una posición imposible: la nave vuelve a la última válida. */
   private applyCorrection(): void {
     const c = spaceStore.getState().correction;
@@ -509,6 +548,7 @@ vertexShader: /* glsl */ `
       mat.opacity = p.index === selected ? 0.55 : p.index === this.hoveredPlanet ? 0.32 : 0.14;
       mat.color.setHex(p.index === selected ? 0xe8b64c : 0x3fd0ff);
     }
+    this.updatePlanetLabels();
     const sel = this.planets.find((p) => p.index === selected);
     if (sel) {
       sel.mesh.getWorldPosition(this.selectRing.position);

@@ -164,7 +164,15 @@ export function PlanetColony({ detail, planet }: { detail: StarSystemDetail; pla
               </button>
             </div>
           )}
-          <ColonyDetail colony={own} now={now} busy={busy} locale={locale} onBuild={(kind, itemId) => void run(connection.command("colony.build", { colonyId: own.id, kind, itemId }))} />
+          {emperorHere && <Disembark colony={own} aboard={aboard} now={now} busy={busy} onLand={(n) => void run(connection.command("colony.disembark", { colonyId: own.id, humans: n }))} />}
+          <ColonyDetail
+            colony={own}
+            now={now}
+            busy={busy}
+            locale={locale}
+            onBuild={(kind, itemId) => void run(connection.command("colony.build", { colonyId: own.id, kind, itemId }))}
+            onCancel={(buildId) => void run(connection.command("colony.cancel", { colonyId: own.id, buildId }))}
+          />
         </>
       )}
 
@@ -177,18 +185,46 @@ export function PlanetColony({ detail, planet }: { detail: StarSystemDetail; pla
   );
 }
 
+/** Desembarcar humanos de la nave del Emperador (presente en el sistema) en la colonia, sin pasar de su tope. */
+function Disembark({ colony, aboard, now, busy, onLand }: { colony: Colony; aboard: number; now: number; busy: boolean; onLand: (n: number) => void }) {
+  const t = useT();
+  const room = Math.max(0, Math.floor(colony.populationCap - livePopulation(colony, now)));
+  const max = Math.min(aboard, room);
+  const [n, setN] = useState("");
+  if (max < 1) return null;
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const v = Math.min(max, Math.max(1, Number.parseInt(n, 10) || max));
+    onLand(v);
+    setN("");
+  };
+  return (
+    <form className="claim-form" onSubmit={submit}>
+      <label>
+        <span className="muted small">{t("colony.disembarkLabel", { max })}</span>
+        <input type="number" min={1} max={max} placeholder={String(max)} value={n} onChange={(e) => setN(e.target.value.replace(/[^0-9]/g, ""))} />
+      </label>
+      <button className="btn" type="submit" disabled={busy}>
+        {t("colony.disembark")}
+      </button>
+    </form>
+  );
+}
+
 function ColonyDetail({
   colony,
   now,
   busy,
   locale,
   onBuild,
+  onCancel,
 }: {
   colony: Colony;
   now: number;
   busy: boolean;
   locale: Parameters<typeof contentText>[0];
   onBuild: (kind: "installation" | "ship", itemId: string) => void;
+  onCancel: (buildId: string) => void;
 }) {
   const t = useT();
   const stock = liveStock(colony, now);
@@ -208,7 +244,18 @@ function ColonyDetail({
         </dd>
         <dt>{t("colony.energy")}</dt>
         <dd className="small">{t("colony.energyValue", { produced: fmtRate(colony.energy.produced).replace("+", ""), consumed: fmtRate(colony.energy.consumed).replace("+", "") })}</dd>
+        <dt>{t("colony.upkeep")}</dt>
+        <dd className="small">
+          {t("colony.upkeepValue", { n: fmtRate(colony.upkeepPerHour).replace("+", "") })}
+          {colony.capital && <span className="tag capital">{t("colony.capital")}</span>}
+        </dd>
       </dl>
+      {colony.shortage && (
+        <p className="auth-warning" role="alert">
+          {t("colony.shortage")}
+        </p>
+      )}
+      {colony.capital && <p className="muted small">{t("colony.capitalHint")}</p>}
 
       <h3>{t("colony.stock")}</h3>
       <div className="deposits">
@@ -242,6 +289,14 @@ function ColonyDetail({
           <li key={b.id}>
             <strong>{itemName(b.kind, b.itemId)}</strong>
             <span className="muted small mono">{b.finishAt ? formatDuration(b.finishAt - now) : t("colony.waiting")}</span>
+            <button
+              className="link-btn small"
+              disabled={busy}
+              title={t(b.startedAt ? "colony.cancelStartedHint" : "colony.cancelQueuedHint")}
+              onClick={() => onCancel(b.id)}
+            >
+              {t("colony.cancelBuild")}
+            </button>
           </li>
         ))}
         {colony.builds.length === 0 && <li className="muted small">{t("colony.queueEmpty")}</li>}

@@ -535,3 +535,5 @@ kbd {
 .combat-target .ally { color: #5fd3e6; }
 .flight-speed.pulse { color: #8fe9ff; }
 .pulse-tag { margin-left: 8px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #8fe9ff; border: 1px solid rgba(143, 233, 255, 0.5); border-radius: 3px; padding: 1px 6px; vertical-align: middle; }
+.tag.capital { margin-left: 8px; background: rgba(232, 182, 76, 0.14); color: var(--gold); border: 1px solid rgba(232, 182, 76, 0.45); }
+.build-queue li .link-btn { margin-left: 8px; }

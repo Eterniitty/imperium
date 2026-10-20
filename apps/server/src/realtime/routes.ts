@@ -160,6 +160,8 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                   case "colony.claim": {
                     const res = await colonies.claim(owner.emperorId, msg.args);
                     if (res.ok) {
+                      // Todas sus colonias: la capital puede haber cambiado de mantenimiento (colonizador gastado).
+                      await hub.publishColonies(res.emperorId);
                       await hub.publishColony(res.emperorId, res.colonyId);
                       if (res.fleetId) await hub.publishFleet(res.emperorId, res.fleetId);
                       else await hub.publishHumans(res.emperorId);
@@ -174,6 +176,19 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                   case "colony.build": {
                     const res = await colonies.build(owner.emperorId, msg.args.colonyId, msg.args.kind, msg.args.itemId);
                     if (res.ok) await hub.publishColony(res.emperorId, res.colonyId);
+                    return res;
+                  }
+                  case "colony.cancel": {
+                    const res = await colonies.cancel(owner.emperorId, msg.args.colonyId, msg.args.buildId);
+                    if (res.ok) await hub.publishColony(res.emperorId, res.colonyId);
+                    return res;
+                  }
+                  case "colony.disembark": {
+                    const res = await colonies.disembark(owner.emperorId, msg.args.colonyId, msg.args.humans);
+                    if (res.ok) {
+                      await hub.publishColony(res.emperorId, res.colonyId);
+                      await hub.publishHumans(res.emperorId);
+                    }
                     return res;
                   }
                 }

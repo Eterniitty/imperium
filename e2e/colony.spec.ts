@@ -52,5 +52,22 @@ test("se reclama un planeta del sistema de inicio, se renombra y se construye un
   await expect(detail.locator(".build-queue")).toContainText("Nada en construcción", { timeout: 40_000 });
   await expect(detail.getByText("× 1")).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/11-colonia-mina.png` });
+
+  // Mantenimiento: la capital paga el de la flota inicial.
+  await expect(detail.getByText("Capital", { exact: true })).toBeVisible();
+  await expect(detail.getByText(/volátiles\/h/)).toBeVisible();
+
+  // Encargar una central de energía y cancelarla: vuelve la cola vacía.
+  await detail.getByRole("button", { name: /^Central de energía/ }).click();
+  await expect(detail.locator(".build-queue")).toContainText("Central de energía");
+  await detail.locator(".build-queue").getByRole("button", { name: "Cancelar" }).click();
+  await expect(detail.locator(".build-queue")).toContainText("Nada en construcción");
+
+  // Desembarcar humanos de la nave del Emperador (presente en el sistema).
+  const population = async () => Number((await detail.innerText()).match(/Población\s+([\d.,]+)/)?.[1]?.replace(/[.,]/g, "") ?? 0);
+  const before = await population();
+  await detail.getByLabel(/Humanos a desembarcar/).fill("5");
+  await detail.getByRole("button", { name: "Desembarcar" }).click();
+  await expect.poll(population).toBeGreaterThanOrEqual(before + 5);
   expect(errors).toEqual([]);
 });

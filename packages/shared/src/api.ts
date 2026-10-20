@@ -207,6 +207,12 @@ export interface Colony {
   ratesPerHour: Stock;
   /** Energía producida y consumida (local; no se almacena). */
   energy: { produced: number; consumed: number };
+  /** Mantenimiento en volátiles por hora real: el de sus instalaciones y, si es la capital, el de las flotas. */
+  upkeepPerHour: number;
+  /** Capital del Emperador (su colonia más antigua): paga el mantenimiento de las flotas. */
+  capital: boolean;
+  /** Le faltan volátiles para el mantenimiento: la refinería está parada. */
+  shortage: boolean;
   /** Instalaciones construidas, por id. */
   installations: Record<string, number>;
   builds: ColonyBuild[];

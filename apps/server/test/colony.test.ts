@@ -352,4 +352,80 @@ describe.skipIf(!TEST_DATABASE_URL)("colonias y economía", () => {
     expect(await db.select().from(colonies)).toHaveLength(2);
     expect(await db.select().from(colonyBuilds)).toEqual([]);
   });
+
+  describe("pendientes de la Fase 7", () => {
+    /** Colonia en el planeta 0 de `home`, con existencias de sobra. */
+    async function colonyOf(name: string, email: string) {
+      const a = await player(email, name);
+      const s = await connect(a.cookies);
+      expect(await s.cmd("colony.claim", { systemId: home.summary.id, planetIndex: 0, humans: need0 })).toMatchObject({ ok: true });
+      const [row] = await db.select().from(colonies).where(eq(colonies.emperorId, a.emperor.id));
+      await db.update(colonies).set({ ...ECONOMY.storage, resolvedAt: new Date() }).where(eq(colonies.id, row!.id));
+      return { a, s, id: row!.id };
+    }
+
+    it("cancelar: sin empezar se devuelve todo; empezado, la mitad, y arranca el siguiente", async () => {
+      const { s, id } = await colonyOf("Cancela", "c@ejemplo.com");
+      const mine = getInstallation("mine")!;
+      expect(await s.cmd("colony.build", { colonyId: id, kind: "installation", itemId: "mine" })).toMatchObject({ ok: true });
+      expect(await s.cmd("colony.build", { colonyId: id, kind: "installation", itemId: "power_plant" })).toMatchObject({ ok: true });
+      const queue = await db.select().from(colonyBuilds).where(eq(colonyBuilds.colonyId, id)).orderBy(colonyBuilds.seq);
+      const [first, second] = queue;
+      expect(first!.startedAt).not.toBeNull();
+      expect(second!.startedAt).toBeNull();
+      const before = (await db.select().from(colonies).where(eq(colonies.id, id)))[0]!;
+
+      // La mina estaba en marcha: devuelve la mitad y empieza la central.
+      expect(await s.cmd("colony.cancel", { colonyId: id, buildId: first!.id })).toMatchObject({ ok: true });
+      const after = (await db.select().from(colonies).where(eq(colonies.id, id)))[0]!;
+      expect(after.metal - before.metal).toBeCloseTo(mine.cost.metal * ECONOMY.cancelRefundStarted, 0);
+      const [now] = await db.select().from(colonyBuilds).where(eq(colonyBuilds.colonyId, id));
+      expect(now!.id).toBe(second!.id);
+      expect(now!.startedAt).not.toBeNull();
+      expect((await ledgerOf(id)).at(-1)).toMatchObject({ reason: "cancel", ref: "installation:mine" });
+
+      // El evento de la mina cancelada no hace nada; la central termina normalmente.
+      await finishBuilds();
+      expect((await db.select().from(installations).where(eq(installations.colonyId, id))).map((i) => i.kind)).toEqual(["power_plant"]);
+      expect(await s.cmd("colony.cancel", { colonyId: id, buildId: first!.id })).toMatchObject({ ok: false, error: "no_build" });
+    });
+
+    it("desembarcar humanos de la nave en una colonia propia, sin pasar del tope", async () => {
+      const { a, s, id } = await colonyOf("Desembarca", "d@ejemplo.com");
+      // Tras fundar, la nave puede haberse quedado casi sin humanos: se le dan los de su capacidad.
+      await db.update(emperors).set({ humans: HUMANS.flagshipCapacity, humansAt: new Date() }).where(eq(emperors.id, a.emperor.id));
+      const before = (await db.select().from(colonies).where(eq(colonies.id, id)))[0]!.population;
+      expect(await s.cmd("colony.disembark", { colonyId: id, humans: 10 })).toMatchObject({ ok: true });
+      const after = (await db.select().from(colonies).where(eq(colonies.id, id)))[0]!.population;
+      expect(after - before).toBeCloseTo(10, 0);
+      expect((await ledgerOf(id)).at(-1)).toMatchObject({ reason: "disembark", humans: 10 });
+      // Más de los que lleva, o por encima del tope del planeta.
+      expect(await s.cmd("colony.disembark", { colonyId: id, humans: 100_000 })).toMatchObject({ ok: false, error: "not_enough_humans" });
+      await db.update(colonies).set({ population: 1_000_000 }).where(eq(colonies.id, id));
+      expect(await s.cmd("colony.disembark", { colonyId: id, humans: 1 })).toMatchObject({ ok: false, error: "colony_full" });
+      // Si el Emperador no está en el sistema.
+      const far = spawnCandidates(seed).find((x) => x.id !== home.summary.id)!;
+      await db.update(emperors).set({ systemId: far.id }).where(eq(emperors.id, a.emperor.id));
+      expect(await s.cmd("colony.disembark", { colonyId: id, humans: 1 })).toMatchObject({ ok: false, error: "not_present" });
+    });
+
+    it("la capital paga el mantenimiento de las flotas; sin volátiles queda desabastecida", async () => {
+      const { a, s, id } = await colonyOf("Capital", "k@ejemplo.com");
+      const first = await s.op<Colony>(`colonies.${id}`);
+      expect(first.capital).toBe(true);
+      // Flota inicial: un explorador.
+      const explorerUpkeep = getShipClass("explorer")!.upkeepVolatilesPerHour;
+      expect(first.upkeepPerHour).toBeCloseTo(explorerUpkeep);
+      // Sin volátiles y con un mantenimiento enorme: desabastecida.
+      const [fleet] = await db.select().from(fleets).where(eq(fleets.emperorId, a.emperor.id));
+      await db.insert(ships).values(Array.from({ length: 40 }, () => ({ fleetId: fleet!.id, classId: "frigate", hull: 300 })));
+      await db.update(colonies).set({ volatiles: 0, resolvedAt: new Date() }).where(eq(colonies.id, id));
+      const from = s.messages.length;
+      expect(await s.cmd("colony.rename", { colonyId: id, name: "Hambre" })).toMatchObject({ ok: true });
+      const starving = await s.op<Colony>(`colonies.${id}`, from);
+      expect(starving.upkeepPerHour).toBeCloseTo(explorerUpkeep + 40 * getShipClass("frigate")!.upkeepVolatilesPerHour);
+      expect(starving.shortage).toBe(true);
+      expect(starving.stock.volatiles).toBe(0);
+    });
+  });
 });

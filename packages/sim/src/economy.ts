@@ -119,9 +119,25 @@ export function laborFactor(population: number): number {
 export interface ColonyFlows {
   extraction: StockAmounts;
   refinery: { metal: number; volatiles: number; alloys: number };
+  /**
+   * Mantenimiento en volátiles por hora: el de sus instalaciones y, si es la
+   * capital, el de las flotas del Emperador. Va antes que la refinería.
+   */
+  upkeep: number;
 }
 
-export function colonyFlows(planet: ColonyPlanet, starEnergy: number, installations: InstallationCounts, population: number): ColonyFlows {
+/** Mantenimiento por hora de las instalaciones de una colonia. */
+export function installationsUpkeep(installations: InstallationCounts): number {
+  let total = 0;
+  for (const def of INSTALLATIONS) total += def.upkeepVolatilesPerHour * (installations[def.id] ?? 0);
+  return total;
+}
+
+/**
+ * `extraUpkeep`: mantenimiento que paga esta colonia además del suyo (la
+ * capital paga el de las flotas del Emperador).
+ */
+export function colonyFlows(planet: ColonyPlanet, starEnergy: number, installations: InstallationCounts, population: number, extraUpkeep = 0): ColonyFlows {
   const rich = effectiveRichness(planet);
   const { efficiency } = colonyEnergy(starEnergy, installations);
   const labor = laborFactor(population);
@@ -140,7 +156,17 @@ export function colonyFlows(planet: ColonyPlanet, starEnergy: number, installati
       volatiles: ECONOMY.refinery.volatiles * refineries,
       alloys: ECONOMY.refinery.alloys * refineries,
     },
+    upkeep: installationsUpkeep(installations) + extraUpkeep,
   };
+}
+
+/**
+ * ¿Le faltan volátiles para pagar el mantenimiento? Con el almacén vacío y
+ * extrayendo menos de lo que debe: la refinería se para y no puede construir
+ * (un imperio sobredimensionado se desangra).
+ */
+export function upkeepShortage(stock: StockAmounts, flows: ColonyFlows): boolean {
+  return flows.upkeep > 0 && stock.volatiles <= EPS && flows.extraction.volatiles < flows.upkeep - EPS;
 }
 
 const EPS = 1e-9;
@@ -152,13 +178,16 @@ const EPS = 1e-9;
  */
 export function netRates(stock: StockAmounts, flows: ColonyFlows, storage: StockAmounts = ECONOMY.storage): StockAmounts {
   let f = stock.alloys >= storage.alloys - EPS ? 0 : 1;
-  for (const input of ["metal", "volatiles"] as const) {
-    const need = flows.refinery[input];
-    if (need > 0 && stock[input] <= EPS) f = Math.min(f, flows.extraction[input] / need);
-  }
+  // Con el almacén de volátiles vacío, primero se paga el mantenimiento y la refinería usa lo que sobre.
+  const volatilesEmpty = stock.volatiles <= EPS;
+  const volatilesForRefinery = volatilesEmpty ? Math.max(0, flows.extraction.volatiles - flows.upkeep) : Infinity;
+  if (flows.refinery.metal > 0 && stock.metal <= EPS) f = Math.min(f, flows.extraction.metal / flows.refinery.metal);
+  if (flows.refinery.volatiles > 0 && volatilesEmpty) f = Math.min(f, volatilesForRefinery / flows.refinery.volatiles);
+  // El mantenimiento solo consume lo que hay (lo que no se puede pagar, no se paga).
+  const upkeepPaid = volatilesEmpty ? Math.min(flows.upkeep, flows.extraction.volatiles) : flows.upkeep;
   const rates: StockAmounts = {
     metal: flows.extraction.metal - f * flows.refinery.metal,
-    volatiles: flows.extraction.volatiles - f * flows.refinery.volatiles,
+    volatiles: flows.extraction.volatiles - f * flows.refinery.volatiles - upkeepPaid,
     crystal: flows.extraction.crystal,
     alloys: f * flows.refinery.alloys,
   };
@@ -202,6 +231,8 @@ export interface ColonySite {
   planet: ColonyPlanet;
   starEnergy: number;
   installations: InstallationCounts;
+  /** Mantenimiento de las flotas, si esta colonia es la capital del Emperador. */
+  extraUpkeep?: number;
 }
 
 /** Pasos de como mucho una hora (la población cambia la producción); más allá de este número, un solo paso. */
@@ -209,13 +240,14 @@ const MAX_STEPS = 1000;
 
 /** Estado de una colonia tras `hours` horas de juego. */
 export function resolveColony(state: ColonyState, site: ColonySite, hours: number): ColonyState {
+  const extraUpkeep = site.extraUpkeep ?? 0;
   const cap = populationCap(site.planet.habitability);
   let population = state.population;
   let stock = state.stock;
   let left = hours;
   for (let i = 0; left > EPS; i++) {
     const step = i < MAX_STEPS ? Math.min(1, left) : left;
-    stock = advanceStock(stock, colonyFlows(site.planet, site.starEnergy, site.installations, population), step);
+    stock = advanceStock(stock, colonyFlows(site.planet, site.starEnergy, site.installations, population, extraUpkeep), step);
     population = populationAfter(population, cap, step);
     left -= step;
   }

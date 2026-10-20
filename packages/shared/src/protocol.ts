@@ -45,6 +45,10 @@ export interface CommandArgs {
   "colony.rename": { colonyId: string; name: string };
   /** Encarga una instalación o una nave (en el astillero); se paga al encargarla. */
   "colony.build": { colonyId: string; kind: "installation" | "ship"; itemId: string };
+  /** Cancela un encargo: se devuelve todo si aún no había empezado, la mitad si estaba en construcción. */
+  "colony.cancel": { colonyId: string; buildId: string };
+  /** Desembarca humanos de la nave del Emperador (presente en el sistema) en una colonia propia. */
+  "colony.disembark": { colonyId: string; humans: number };
 }
 export type CommandOp = keyof CommandArgs;
 
@@ -115,6 +119,8 @@ export type CommandError =
   | "needs_shipyard"
   | "limit_reached"
   | "queue_full"
+  | "no_build"
+  | "colony_full"
   | "rate_limited"
   | "internal";
 

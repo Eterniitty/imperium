@@ -69,6 +69,8 @@ export interface InstallationDefinition {
   energyUse: number;
   /** Máximo por colonia. */
   maxPerColony: number;
+  /** Mantenimiento: volátiles por hora que consume de su colonia mientras exista. */
+  upkeepVolatilesPerHour: number;
 }
 
 export const INSTALLATIONS: readonly InstallationDefinition[] = [
@@ -79,6 +81,7 @@ export const INSTALLATIONS: readonly InstallationDefinition[] = [
     buildTimeHours: 2,
     energyUse: 2,
     maxPerColony: 6,
+    upkeepVolatilesPerHour: 0.5,
   },
   {
     id: "refinery",
@@ -87,6 +90,7 @@ export const INSTALLATIONS: readonly InstallationDefinition[] = [
     buildTimeHours: 4,
     energyUse: 4,
     maxPerColony: 3,
+    upkeepVolatilesPerHour: 1,
   },
   {
     id: "power_plant",
@@ -95,6 +99,7 @@ export const INSTALLATIONS: readonly InstallationDefinition[] = [
     buildTimeHours: 3,
     energyUse: 0,
     maxPerColony: 4,
+    upkeepVolatilesPerHour: 0.5,
   },
   {
     id: "shipyard",
@@ -103,6 +108,7 @@ export const INSTALLATIONS: readonly InstallationDefinition[] = [
     buildTimeHours: 6,
     energyUse: 3,
     maxPerColony: 1,
+    upkeepVolatilesPerHour: 1.5,
   },
 ];
 
@@ -112,6 +118,8 @@ export function getInstallation(id: string): InstallationDefinition | undefined 
 
 /** Producción, energía y almacenes de una colonia. */
 export const ECONOMY = {
+  /** Parte del coste que se devuelve al cancelar un encargo ya empezado (sin empezar: todo). */
+  cancelRefundStarted: 0.5,
   /** Extracción por hora y punto de riqueza sin minas (la colonia rasca la superficie). */
   baseExtractionPerRichness: 2,
   /** Extracción por hora, mina y punto de riqueza (con toda la energía y mano de obra). */

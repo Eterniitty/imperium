@@ -169,6 +169,20 @@ export class Hub {
     });
   }
 
+  /** Envía a su dueño todas sus colonias (cuando cambia algo que afecta a varias, como la capital). */
+  publishColonies(emperorId: string): Promise<void> {
+    return this.enqueue(async () => {
+      const list = await this.colonies.list(emperorId);
+      if (list.length === 0) return;
+      this.send(
+        "me",
+        this.nextMeSeq(emperorId),
+        list.map((c) => ({ path: `colonies.${c.id}` as const, v: c })),
+        (c) => c.emperorId === emperorId,
+      );
+    });
+  }
+
   /** Envía a su dueño los humanos de la nave del Emperador (tras desembarcar). */
   publishHumans(emperorId: string): Promise<void> {
     return this.enqueue(async () => {
