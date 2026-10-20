@@ -82,6 +82,8 @@ export interface FleetShip {
   id: string;
   classId: string;
   hull: number;
+  /** Humanos a bordo (colonos del colonizador). */
+  humans: number;
 }
 
 /**
@@ -144,6 +146,87 @@ export type ApiErrorCode =
 /** Respuesta de `GET /api/systems/:systemId`: detalle de un sistema descubierto (niebla de guerra). */
 export interface SystemDetailResponse {
   detail: StarSystemDetail;
+}
+
+// --- Fase 7: humanos, colonias y economía ---
+
+/** Longitud mínima y máxima del nombre (personalizado) de un planeta. */
+export const PLANET_NAME_MIN = 2;
+export const PLANET_NAME_MAX = 32;
+
+/** Recursos almacenables de una colonia (la energía no se almacena ni se transporta). */
+export type StockId = "metal" | "volatiles" | "crystal" | "alloys";
+export type Stock = Record<StockId, number>;
+
+/**
+ * Humanos de la nave del Emperador (privado). La nave los genera sola hasta su
+ * capacidad: el valor actual es `count + perHour × horas desde at`, con tope.
+ */
+export interface EmperorHumans {
+  /** Humanos a la hora `at` (puede tener decimales; se muestran enteros). */
+  count: number;
+  capacity: number;
+  /** Humanos generados por hora real (ya con la escala de tiempo). */
+  perHour: number;
+  /** Hora del servidor de `count`. */
+  at: number;
+}
+
+/** Construcción en la cola de una colonia: una instalación o una nave (del astillero). */
+export interface ColonyBuild {
+  id: string;
+  kind: "installation" | "ship";
+  /** Id de la instalación (`INSTALLATIONS`) o de la clase de nave (`SHIP_CLASSES`). */
+  itemId: string;
+  /** Solo la primera de la cola está en marcha: horas del servidor de inicio y fin. */
+  startedAt: number | null;
+  finishAt: number | null;
+}
+
+/**
+ * Colonia propia (privada: solo la recibe su dueño). Los valores son los de la
+ * hora `at`; el cliente los hace avanzar con las tasas (por hora real) hasta
+ * el siguiente cambio, que manda el servidor.
+ */
+export interface Colony {
+  id: string;
+  systemId: string;
+  systemName: string;
+  planetIndex: number;
+  /** Nombre puesto por el dueño; null = la designación del planeta. */
+  name: string | null;
+  population: number;
+  populationCap: number;
+  /** Crecimiento de la población por hora real en `at`. */
+  populationPerHour: number;
+  stock: Stock;
+  storage: Stock;
+  /** Producción neta por hora real en `at` (negativa si se consume). */
+  ratesPerHour: Stock;
+  /** Energía producida y consumida (local; no se almacena). */
+  energy: { produced: number; consumed: number };
+  /** Instalaciones construidas, por id. */
+  installations: Record<string, number>;
+  builds: ColonyBuild[];
+  at: number;
+  foundedAt: number;
+}
+
+/**
+ * Dueño y nombre de un planeta reclamado. Es territorio, no posición: lo ve
+ * cualquiera que haya descubierto el sistema.
+ */
+export interface PlanetClaim {
+  planetIndex: number;
+  /** Nombre personalizado; null = la designación del planeta. */
+  name: string | null;
+  ownerId: string;
+  ownerName: string;
+}
+
+/** Respuesta de `GET /api/systems/:systemId/claims`: planetas con dueño de un sistema descubierto. */
+export interface SystemClaimsResponse {
+  claims: PlanetClaim[];
 }
 
 /** Respuesta de `POST /api/ws/ticket`: ticket de un solo uso para abrir el WebSocket. */

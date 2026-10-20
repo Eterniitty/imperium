@@ -1,4 +1,4 @@
-import { EMPEROR_FLAGSHIP, getShipClass, STARTING_FLEET } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, getShipClass, HUMANS, STARTING_FLEET } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import type { CommandError, Emperor } from "@imperium/shared";
 import { isTravelling, travelDurationMs } from "@imperium/sim";
@@ -73,7 +73,7 @@ export class EmperorService {
       // cogido, no inserta nada. Así dos peticiones simultáneas no crean dos.
       const [row] = await tx
         .insert(emperors)
-        .values({ accountId, name, nameKey: nameKey(name), systemId: spawn.id })
+        .values({ accountId, name, nameKey: nameKey(name), systemId: spawn.id, humans: HUMANS.flagshipStart })
         .onConflictDoNothing()
         .returning(columns);
       if (!row) return null;

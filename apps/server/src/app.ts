@@ -4,6 +4,8 @@ import { GENERATOR_VERSION, type ApiError, type HealthResponse } from "@imperium
 import { authRoutes } from "./auth/routes";
 import type { ServerConfig } from "./config";
 import type { Database } from "./db/client";
+import { colonyRoutes } from "./colony/routes";
+import { ColonyService } from "./colony/service";
 import { discoveryRoutes } from "./discovery/routes";
 import { DiscoveryService } from "./discovery/service";
 import { emperorRoutes } from "./emperor/routes";
@@ -76,7 +78,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   const fleets = new FleetService(deps.db, config);
   const social = new SocialService(deps.db);
   const discoveries = new DiscoveryService(deps.db, config);
-  const hub = new Hub(emperors, fleets, social, discoveries, app.log, config.TIME_SCALE);
+  const colonies = new ColonyService(deps.db, config, (summary) => discoveries.detail(summary));
+  const hub = new Hub(emperors, fleets, social, discoveries, colonies, app.log, config.TIME_SCALE);
   const space = new SpaceService(
     config,
     emperors,
@@ -95,9 +98,10 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   });
   app.decorate("space", space);
   await app.register(emperorRoutes, { config, db: deps.db, emperors, hub });
-  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, space, hub });
+  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, colonies, space, hub });
   await app.register(socialRoutes, { config, db: deps.db, emperors, social, hub });
   await app.register(discoveryRoutes, { config, db: deps.db, emperors, discoveries });
+  await app.register(colonyRoutes, { config, db: deps.db, emperors, discoveries, colonies });
 
   // Cola de eventos programados: llegadas de flotas y del Emperador (y, más adelante, construcciones…).
   // Al llegar se descubre lo que cubre el escáner (niebla de guerra).
@@ -114,11 +118,22 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     const found = await discoveries.emperorArrived(tx, emperorId, systemId);
     if (found) return () => void hub.publishDiscovered(found.emperorId, found.systemIds);
   });
+  // Fin de una construcción: instalación nueva o flota nueva con la nave construida.
+  worker.on("colony.build", async (tx, { buildId }) => {
+    const done = await colonies.completeBuild(tx, buildId);
+    if (!done) return;
+    return () => {
+      void hub.publishColony(done.emperorId, done.colonyId);
+      if (done.fleetId) void hub.publishFleet(done.emperorId, done.fleetId);
+      if (done.discovered) void hub.publishDiscovered(done.discovered.emperorId, done.discovered.systemIds);
+    };
+  });
   if (deps.startWorker !== false) {
     app.addHook("onReady", async () => worker.start());
     app.addHook("onClose", async () => worker.stop());
   }
   app.decorate("eventWorker", worker);
+  app.decorate("colonies", colonies);
 
   return app;
 }
@@ -126,6 +141,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
 declare module "fastify" {
   interface FastifyInstance {
     eventWorker: EventWorker;
+    colonies: ColonyService;
     space: SpaceService;
   }
 }

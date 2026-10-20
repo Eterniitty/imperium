@@ -134,10 +134,6 @@ export const ECONOMY = {
   maxQueue: 5,
 } as const;
 
-/** Longitud mínima y máxima del nombre de un planeta. */
-export const PLANET_NAME_MIN = 2;
-export const PLANET_NAME_MAX = 32;
-
 /** Errores de coherencia de los datos de economía (vacío si todo está bien). */
 export function validateEconomy(): string[] {
   const errors: string[] = [];

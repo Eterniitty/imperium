@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { bigserial, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { bigserial, check, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 
 /**
  * Esquema de la base de datos. Tras cambiarlo: `pnpm --filter @imperium/server db:generate`
@@ -78,9 +78,16 @@ export const emperors = pgTable("emperors", {
   destSystemId: text("dest_system_id"),
   departAt: timestamp("depart_at", { withTimezone: true }),
   arriveAt: timestamp("arrive_at", { withTimezone: true }),
+  /**
+   * Humanos en la nave del Emperador a la hora `humansAt` (Ley II: los genera
+   * sola hasta su capacidad; el valor actual se resuelve con `@imperium/sim`).
+   */
+  humans: doublePrecision("humans").notNull().default(200),
+  humansAt: timestamp("humans_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
+  check("emperors_humans_nonnegative", sql`${t.humans} >= 0`),
   check("emperors_visibility", sql`${t.visibility} IN ('public', 'allies', 'hidden')`),
   check("emperors_travel_complete", sql`(${t.destSystemId} IS NULL) = (${t.departAt} IS NULL) AND (${t.departAt} IS NULL) = (${t.arriveAt} IS NULL)`),
 ]);
@@ -120,9 +127,11 @@ export const ships = pgTable(
       .references(() => fleets.id, { onDelete: "cascade" }),
     classId: text("class_id").notNull(),
     hull: integer("hull").notNull(),
+    /** Humanos a bordo (los colonos de un colonizador). */
+    humans: integer("humans").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("ships_fleet_id_idx").on(t.fleetId)],
+  (t) => [index("ships_fleet_id_idx").on(t.fleetId), check("ships_humans_nonnegative", sql`${t.humans} >= 0`)],
 );
 
 /**
@@ -175,4 +184,107 @@ export const discoveries = pgTable(
     discoveredAt: timestamp("discovered_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.emperorId, t.systemId] })],
+);
+
+// --- Fase 7: colonias y economía ---
+
+/**
+ * Colonias: un planeta reclamado. El dueño (`emperorId`) puede cambiar (Fase 9:
+ * conquista), así que el planeta es la clave natural (un dueño por planeta).
+ * Población y existencias se guardan resueltas a la hora `resolvedAt`; el valor
+ * actual se calcula con `@imperium/sim` (resolución perezosa).
+ */
+export const colonies = pgTable(
+  "colonies",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    emperorId: uuid("emperor_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    systemId: text("system_id").notNull(),
+    planetIndex: integer("planet_index").notNull(),
+    /** Nombre puesto por el dueño (normalizado a NFC); null = la designación del planeta. */
+    name: text("name"),
+    population: doublePrecision("population").notNull(),
+    metal: doublePrecision("metal").notNull().default(0),
+    volatiles: doublePrecision("volatiles").notNull().default(0),
+    crystal: doublePrecision("crystal").notNull().default(0),
+    alloys: doublePrecision("alloys").notNull().default(0),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }).notNull(),
+    foundedAt: timestamp("founded_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("colonies_planet_unique").on(t.systemId, t.planetIndex),
+    index("colonies_emperor_id_idx").on(t.emperorId),
+    check(
+      "colonies_stock_nonnegative",
+      sql`${t.population} >= 0 AND ${t.metal} >= 0 AND ${t.volatiles} >= 0 AND ${t.crystal} >= 0 AND ${t.alloys} >= 0`,
+    ),
+  ],
+);
+
+/** Instalaciones construidas: una fila por instalación (la Fase 9 las conquistará una a una). */
+export const installations = pgTable(
+  "installations",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    colonyId: uuid("colony_id")
+      .notNull()
+      .references(() => colonies.id, { onDelete: "cascade" }),
+    /** Id de `INSTALLATIONS` en `@imperium/content`. */
+    kind: text("kind").notNull(),
+    builtAt: timestamp("built_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("installations_colony_id_idx").on(t.colonyId)],
+);
+
+/**
+ * Cola de construcción de cada colonia. Se paga al encargar; solo la primera
+ * (por `seq`) está en marcha, con `startedAt`/`finishAt` y un evento
+ * `colony.build` programado para su fin.
+ */
+export const colonyBuilds = pgTable(
+  "colony_builds",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    /** Orden de la cola. */
+    seq: bigserial("seq", { mode: "number" }).notNull(),
+    colonyId: uuid("colony_id")
+      .notNull()
+      .references(() => colonies.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    itemId: text("item_id").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    finishAt: timestamp("finish_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("colony_builds_colony_id_idx").on(t.colonyId, t.seq), check("colony_builds_kind", sql`${t.kind} IN ('installation', 'ship')`)],
+);
+
+/**
+ * Libro de recursos, solo inserción (docs/arquitectura.md §7): un asiento por
+ * cada cambio discreto (fundación, encargo, colonos que embarcan…). La
+ * producción continua no se asienta: es la resolución perezosa. Sin claves
+ * ajenas, para que los asientos sobrevivan a lo que describen; un disparador
+ * (en la migración) impide modificarlos o borrarlos.
+ */
+export const resourceLedger = pgTable(
+  "resource_ledger",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    emperorId: uuid("emperor_id"),
+    colonyId: uuid("colony_id"),
+    /** foundation | build | colonizer_boarding… */
+    reason: text("reason").notNull(),
+    /** Detalle: id de la instalación o clase de nave, de la flota… */
+    ref: text("ref"),
+    metal: doublePrecision("metal").notNull().default(0),
+    volatiles: doublePrecision("volatiles").notNull().default(0),
+    crystal: doublePrecision("crystal").notNull().default(0),
+    alloys: doublePrecision("alloys").notNull().default(0),
+    /** Humanos que entran (+) o salen (−) de la colonia. */
+    humans: doublePrecision("humans").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("resource_ledger_colony_id_idx").on(t.colonyId), index("resource_ledger_emperor_id_idx").on(t.emperorId)],
 );
