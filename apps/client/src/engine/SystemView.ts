@@ -1,12 +1,15 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
-import type { StarSystemDetail } from "@imperium/shared";
+import type { I18nKey, StarSystemDetail } from "@imperium/shared";
 import { PILOT_BOOST, PILOT_SPEED, planetAngle, systemLayout, type PlanetLayout, type SystemLayout } from "@imperium/sim";
-import { spaceStore } from "../net/space";
+import { resetSpace, spaceStore } from "../net/space";
 import { connection, serverNow } from "../net/world";
 import { RemoteShips } from "./RemoteShips";
-import { isBound } from "../state/settings";
+import { Effects } from "./Effects";
+import { worldStore } from "../net/world";
+import { EMPEROR_FLAGSHIP } from "@imperium/content";
+import { isBound, type Action } from "../state/settings";
 import { gameStore } from "../state/store";
 import { Backdrop } from "./Backdrop";
 import { FlightController } from "./FlightController";
@@ -30,6 +33,8 @@ export interface SystemViewEvents {
   onExit(): void;
   /** La nave cruzó el borde del sistema: pasar al espacio interestelar. `direction` es hacia dónde salió. */
   onLeave(direction: THREE.Vector3): void;
+  /** Aviso breve; `keyAction` añade como parámetro `key` la tecla de esa acción. */
+  notify(key: I18nKey, keyAction?: Action): void;
 }
 
 /** Cada cuánto se envía la posición propia al servidor mientras se pilota. */
@@ -69,6 +74,10 @@ export class SystemView implements View {
   private systemId: string | null = null;
   private poseTimer = 0;
   private remote = new RemoteShips();
+  private effects = new Effects(() => worldStore.getState().myEmperorId);
+  private targetRing: THREE.Sprite;
+  /** Cadencia local del cañón: no se envían disparos que el servidor rechazaría. */
+  private cannonReadyAt = 0;
 
   constructor(
     dom: HTMLElement,
@@ -90,7 +99,13 @@ export class SystemView implements View {
     this.selectRing.visible = false;
     this.selectRing.renderOrder = 10;
 
-    this.scene.add(this.backdrop.object, this.content, this.selectRing, this.remote.group);
+    this.targetRing = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: ringTexture(), color: 0xff5a5a, depthTest: false, sizeAttenuation: false, transparent: true }),
+    );
+    this.targetRing.scale.setScalar(0.06);
+    this.targetRing.visible = false;
+    this.targetRing.renderOrder = 11;
+    this.scene.add(this.backdrop.object, this.content, this.selectRing, this.remote.group, this.effects.group, this.targetRing);
     this.scene.add(new THREE.AmbientLight(0x5a6688, 0.9));
   }
 
@@ -293,8 +308,10 @@ export class SystemView implements View {
     if (!this.ship) return;
     // Deja de volar en el sistema compartido: los demás dejan de ver la nave.
     connection.send({ t: "leave" });
-    spaceStore.setState({ systemId: null, ships: {}, correction: null });
+    resetSpace();
     this.remote.clear();
+    this.effects.clear();
+    this.targetRing.visible = false;
     this.flight?.dispose();
     this.flight = null;
     this.content.remove(this.ship);
@@ -319,6 +336,65 @@ export class SystemView implements View {
     this.camera.up.copy(new THREE.Vector3(0, 1, 0).applyQuaternion(ship.quaternion));
     this.chaseTarget.copy(new THREE.Vector3(0, 0, -30).applyQuaternion(ship.quaternion).add(ship.position));
     this.camera.lookAt(this.chaseTarget);
+  }
+
+  /** Morro de la nave propia (vector unitario). */
+  private forward(): THREE.Vector3 {
+    return new THREE.Vector3(0, 0, -1).applyQuaternion(this.ship!.quaternion).normalize();
+  }
+
+  /** Mantener la tecla dispara el cañón a su cadencia, hacia donde apunta el morro. */
+  private fireCannon(): void {
+    if (!this.keyboard.action("fireCannon")) return;
+    const now = performance.now();
+    if (now < this.cannonReadyAt) return;
+    const cannon = EMPEROR_FLAGSHIP.combat.weapons.find((w) => w.kind === "cannon");
+    if (!cannon) return;
+    this.cannonReadyAt = now + cannon.cooldownSec * 1000;
+    const f = this.forward();
+    connection.send({ t: "fire", weapon: "cannon", dir: [f.x, f.y, f.z] });
+  }
+
+  /** Lanza un misil al objetivo fijado (el servidor comprueba alcance, ángulo y munición). */
+  private fireMissile(): void {
+    const target = spaceStore.getState().targetId;
+    if (!target) return this.events.notify("combat.noMissileTarget", "lockTarget");
+    const f = this.forward();
+    connection.send({ t: "fire", weapon: "missile", dir: [f.x, f.y, f.z], target });
+  }
+
+  /** Fija el siguiente enemigo, del más cercano al más lejano. */
+  private cycleTarget(): void {
+    const { ships, targetId } = spaceStore.getState();
+    const me = this.ship!.position;
+    const enemies = Object.values(ships)
+      .filter((s) => !s.state.ally)
+      .map((s) => ({ id: s.state.id, d: this.remote.positionOf(s.state.id)?.distanceTo(me) ?? Infinity }))
+      .sort((a, b) => a.d - b.d);
+    if (enemies.length === 0) return spaceStore.setState({ targetId: null });
+    const i = enemies.findIndex((e) => e.id === targetId);
+    spaceStore.setState({ targetId: enemies[(i + 1) % enemies.length]!.id });
+  }
+
+  /** Disparos, explosiones y recuadro del objetivo. */
+  private updateCombatVisuals(dt: number): void {
+    const state = spaceStore.getState();
+    if (state.shots.length || state.explosions.length) {
+      for (const s of state.shots) this.effects.add(s);
+      for (const e of state.explosions) this.effects.explode(e);
+      spaceStore.setState({ shots: [], explosions: [] });
+    }
+    const myId = worldStore.getState().myEmperorId;
+    this.effects.update(dt, serverNow(), (id) => (id === myId ? (this.ship?.position ?? null) : this.remote.positionOf(id)));
+    const target = state.targetId ? this.remote.positionOf(state.targetId) : null;
+    this.targetRing.visible = target !== null;
+    if (target) this.targetRing.position.copy(target);
+  }
+
+  /** La nave propia ha caído: explosión donde estaba. El motor la hace renacer. */
+  explodeOwnShip(): void {
+    if (!this.ship) return;
+    this.effects.explode(this.ship.position.clone());
   }
 
   /** El servidor rechazó una posición imposible: la nave vuelve a la última válida. */
@@ -400,6 +476,8 @@ export class SystemView implements View {
       this.applyCorrection();
       this.sendPose(dt);
       this.remote.update();
+      this.fireCannon();
+      this.updateCombatVisuals(dt);
       this.placeChaseCamera(1 - Math.exp(-dt * 8));
       gameStore.getState().setFlight(true, this.flight.speed);
       // Más allá del borde: espacio interestelar.
@@ -446,6 +524,8 @@ export class SystemView implements View {
   onKey(code: string): void {
     if (this.ship) {
       if (isBound("cameraView", code)) gameStore.getState().toggleCameraView();
+      else if (isBound("lockTarget", code)) this.cycleTarget();
+      else if (isBound("fireMissile", code)) this.fireMissile();
       return;
     }
     if (code === "Escape" || code === "Backspace") this.events.onExit();

@@ -1,4 +1,4 @@
-import type { FactionDefinition, ShipClassDefinition, SpeciesDefinition } from "./types";
+import type { FactionDefinition, ShipClassDefinition, ShipCombat, SpeciesDefinition } from "./types";
 import { SPECIES } from "./species";
 import { FACTIONS } from "./factions";
 import { SHIP_CLASSES } from "./ships";
@@ -99,6 +99,7 @@ export function validateContent(
     if (!(sh.buildTimeHours > 0)) errors.push(`${where}: buildTimeHours debe ser > 0`);
     if (!(sh.speedLyPerHour > 0)) errors.push(`${where}: speedLyPerHour debe ser > 0`);
     if (!(sh.scannerRangeLy > 0)) errors.push(`${where}: scannerRangeLy debe ser > 0`);
+    errors.push(...validateCombat(where, sh.combat));
   }
 
   // Claves i18n presentes y no vacías en ambos idiomas
@@ -107,5 +108,18 @@ export function validateContent(
     if (!en[key]?.trim()) errors.push(`Falta la clave i18n "${key}" en en`);
   }
 
+  return errors;
+}
+
+/** Errores en el escudo y las armas de una nave (también se usa para la nave del Emperador). */
+export function validateCombat(where: string, c: ShipCombat): string[] {
+  const errors: string[] = [];
+  if (!(c.shield >= 0) || !(c.shieldRegenPerSec >= 0) || !(c.shieldDelaySec >= 0)) errors.push(`${where}: escudo con valores negativos o inválidos`);
+  for (const w of c.weapons) {
+    if (!(w.damage > 0 && w.cooldownSec > 0 && w.rangeU > 0 && w.speedU > 0)) errors.push(`${where}: arma ${w.kind} con daño, cadencia, alcance o velocidad no positivos`);
+    if ((w.ammo === null) !== (w.ammoRegenSec === null)) errors.push(`${where}: arma ${w.kind}: munición y recarga van juntas`);
+    if (w.ammo !== null && !(w.ammo > 0 && (w.ammoRegenSec ?? 0) > 0)) errors.push(`${where}: arma ${w.kind}: munición y recarga deben ser > 0`);
+  }
+  if (new Set(c.weapons.map((w) => w.kind)).size !== c.weapons.length) errors.push(`${where}: dos armas del mismo tipo`);
   return errors;
 }

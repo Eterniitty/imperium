@@ -126,6 +126,16 @@ test("dos jugadores se ven en el mismo universo y se ven moverse", async ({ brow
   await expect.poll(() => spaceShips(ana), { timeout: 15_000 }).toEqual(["Bruno Segundo"]);
   await bruno.waitForTimeout(500);
   await bruno.screenshot({ path: `${SHOTS}/7b-vuelo-compartido.png` });
+
+  // Combate: HUD con escudo y casco; X fija a Ana como objetivo; F dispara el cañón.
+  await expect(bruno.locator(".combat-self")).toContainText("Escudo");
+  await expect(bruno.locator(".combat-self")).toContainText("Misiles 6/6");
+  await bruno.keyboard.press("KeyX");
+  await expect(bruno.locator(".combat-target")).toContainText("Ana Prima");
+  await bruno.keyboard.down("KeyF");
+  await bruno.waitForTimeout(600);
+  await bruno.screenshot({ path: `${SHOTS}/7c-combate.png` });
+  await bruno.keyboard.up("KeyF");
   await bruno.keyboard.press("KeyM");
 
   // Ana cierra el juego: Bruno la ve desconectada y el contador baja. Si el navegador

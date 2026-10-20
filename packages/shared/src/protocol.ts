@@ -70,7 +70,15 @@ export type ClientMessage =
   /** Pilotando dentro de `systemId`: posición actual (unas 8 veces por segundo). */
   | ({ t: "pose"; systemId: string } & ShipPose)
   /** Deja de pilotar en el sistema (vuelve al mapa o sale al espacio interestelar). */
-  | { t: "leave" };
+  | { t: "leave" }
+  /**
+   * Disparo. Cañón: en la dirección `dir` (vector unitario). Misil: hacia la nave
+   * `target` (fijada), que tiene que estar a tiro y delante.
+   */
+  | { t: "fire"; weapon: WeaponKind; dir: Vec3; target?: string };
+
+/** Tipos de arma (los mismos que en `@imperium/content`). */
+export type WeaponKind = "cannon" | "missile";
 
 /** Motivos por los que se rechaza una orden; el cliente los traduce con `error.*`. */
 export type CommandError =
@@ -104,6 +112,15 @@ export type ServerMessage =
   | { t: "ship"; ship: ShipState }
   /** Una nave deja el sistema. */
   | { t: "shipGone"; id: string; reason: "left" | "destroyed" }
+  /**
+   * Alguien disparó (para dibujarlo). `hitAt` es la hora del servidor del impacto,
+   * si lo hay; el daño llega aparte, con el nuevo estado de la nave (`ship`).
+   */
+  | { t: "shot"; id: string; weapon: WeaponKind; from: Vec3; dir: Vec3; target: string | null; speed: number; range: number; serverTime: number; hitAt: number | null }
+  /** Tu nave ha sido destruida: renaces en `systemId` (Núcleo Humano). */
+  | { t: "destroyed"; by: string; systemId: string }
+  /** Estado de tus armas: munición restante y cuándo vuelven a estar listas (hora del servidor). */
+  | { t: "weapons"; weapons: Array<{ kind: WeaponKind; ammo: number | null; ammoMax: number | null; readyAt: number }> }
   /** El servidor rechaza una posición imposible (demasiado rápida, fuera del sistema): la nave vuelve aquí. */
   | ({ t: "poseRejected" } & ShipPose)
   | { t: "ack"; cmdId: string; ok: true }

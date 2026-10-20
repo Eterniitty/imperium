@@ -79,4 +79,5 @@ export const ClientMessageSchema = z.union([
   z.object({ t: z.literal("sub"), topic: z.enum(["emperors", "me"]) }),
   z.object({ t: z.literal("pose"), systemId: SystemIdSchema, p: Vec3Schema, q: QuatSchema, v: Vec3Schema }),
   z.object({ t: z.literal("leave") }),
+  z.object({ t: z.literal("fire"), weapon: z.enum(["cannon", "missile"]), dir: Vec3Schema, target: z.string().max(64).optional() }),
 ]);

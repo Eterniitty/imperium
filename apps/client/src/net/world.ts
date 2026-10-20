@@ -14,7 +14,7 @@ import {
   type WsTicketResponse,
 } from "@imperium/shared";
 import { api, authStore } from "../state/auth";
-import { addSample, spaceStore, type RemoteShip } from "./space";
+import { addSample, resetSpace, spaceStore, type RemoteShip } from "./space";
 
 /**
  * Estado del mundo compartido que llega por el WebSocket:
@@ -86,7 +86,7 @@ class Connection {
     this.ws = null;
     this.failPending();
     worldStore.setState({ status: "idle", emperors: {}, fleets: {}, myEmperorId: null });
-    spaceStore.setState({ systemId: null, ships: {}, correction: null });
+    resetSpace();
   }
 
   /** Envía un mensaje sin esperar respuesta (posiciones al pilotar). Sin conexión, se descarta. */
@@ -210,6 +210,7 @@ class Connection {
         return;
       }
       case "ship": {
+        if (msg.ship.id === worldStore.getState().myEmperorId) return spaceStore.setState({ self: msg.ship });
         const ships = { ...spaceStore.getState().ships };
         const prev = ships[msg.ship.id];
         const ship: RemoteShip = { state: msg.ship, samples: prev?.samples ?? [] };
@@ -227,11 +228,27 @@ class Connection {
         return;
       }
       case "shipGone": {
-        const ships = { ...spaceStore.getState().ships };
+        const state = spaceStore.getState();
+        const ships = { ...state.ships };
+        const gone = ships[msg.id];
         delete ships[msg.id];
-        spaceStore.setState({ ships });
+        const last = gone?.samples.at(-1);
+        spaceStore.setState({
+          ships,
+          targetId: state.targetId === msg.id ? null : state.targetId,
+          explosions: msg.reason === "destroyed" && last ? [...state.explosions, last.p] : state.explosions,
+        });
         return;
       }
+      case "shot":
+        spaceStore.setState({ shots: [...spaceStore.getState().shots, msg] });
+        return;
+      case "weapons":
+        spaceStore.setState({ weapons: msg.weapons });
+        return;
+      case "destroyed":
+        spaceStore.setState({ destroyed: { by: msg.by, systemId: msg.systemId } });
+        return;
       case "poseRejected":
         spaceStore.setState({ correction: { p: msg.p, q: msg.q, v: msg.v } });
         return;

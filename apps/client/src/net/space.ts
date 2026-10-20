@@ -1,5 +1,5 @@
 import { createStore } from "zustand/vanilla";
-import type { Quat, ShipPose, ShipState, Vec3 } from "@imperium/shared";
+import type { Quat, ServerMessage, ShipPose, ShipState, Vec3, WeaponKind } from "@imperium/shared";
 
 /** Muestra de posición de otra nave, con la hora del servidor en que se envió. */
 export interface PoseSample {
@@ -23,9 +23,28 @@ export interface SpaceState {
   ships: Record<string, RemoteShip>;
   /** Corrección del servidor pendiente de aplicar a la nave propia. */
   correction: ShipPose | null;
+  /** Estado de la nave propia (casco y escudo) según el servidor. */
+  self: ShipState | null;
+  /** Armas propias: munición y cuándo vuelven a estar listas. */
+  weapons: Array<{ kind: WeaponKind; ammo: number | null; ammoMax: number | null; readyAt: number }>;
+  /** Nave enemiga fijada para los misiles. */
+  targetId: string | null;
+  /** Disparos recibidos pendientes de dibujar (la vista los recoge y vacía la lista). */
+  shots: Array<Extract<ServerMessage, { t: "shot" }>>;
+  /** Naves destruidas pendientes de dibujar su explosión. */
+  explosions: Vec3[];
+  /** La nave propia fue destruida: dónde renace y quién la derribó. */
+  destroyed: { by: string; systemId: string } | null;
 }
 
-export const spaceStore = createStore<SpaceState>()(() => ({ systemId: null, ships: {}, correction: null }));
+const EMPTY = { systemId: null, ships: {}, correction: null, self: null, weapons: [], targetId: null, shots: [], explosions: [], destroyed: null };
+
+export const spaceStore = createStore<SpaceState>()(() => ({ ...EMPTY }));
+
+/** Vacía el espacio local (al dejar de pilotar). Conserva un aviso de destrucción pendiente. */
+export function resetSpace(): void {
+  spaceStore.setState({ ...EMPTY, destroyed: spaceStore.getState().destroyed });
+}
 
 const MAX_SAMPLES = 8;
 

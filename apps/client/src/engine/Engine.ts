@@ -3,6 +3,7 @@ import type { I18nKey, SectorCoord, StarSystemSummary, WorldPosition } from "@im
 import { generateSystemDetail } from "@imperium/procgen";
 import { UNIVERSE_SEED } from "../config";
 import { isTravelling, positionAt } from "@imperium/sim";
+import { spaceStore } from "../net/space";
 import { serverNow, worldStore } from "../net/world";
 import { authStore } from "../state/auth";
 import { findSystemSummary, gameStore } from "../state/store";
@@ -33,6 +34,7 @@ export class Engine {
   private unsubscribeSettings: () => void;
   /** Salto en curso seguido por la cámara: origen y destino, para entrar al llegar por el lado correcto. */
   private jumping: { from: WorldPosition; to: WorldPosition } | null = null;
+  private destroyedShown = false;
 
   constructor(private container: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -54,6 +56,10 @@ export class Engine {
     this.system = new SystemView(dom, this.keyboard, {
       onExit: () => this.exitSystem(),
       onLeave: (direction) => this.leaveSystem(direction),
+      notify: (key, action) => {
+        const code = action ? settingsStore.getState().bindings[action][0] : undefined;
+        this.notify(key, action ? { key: code ? keyLabel(code, gameStore.getState().locale) : "—" } : undefined);
+      },
     });
     this.active = this.galaxy;
     this.active.activate();
@@ -167,6 +173,26 @@ export class Engine {
 
   private notify(key: I18nKey, params?: Record<string, string | number>): void {
     gameStore.getState().notify(key, params);
+  }
+
+  /**
+   * Si la nave propia cayó: explosión, aviso y, cuando el servidor confirma el
+   * renacimiento en el Núcleo Humano, se vuelve a pilotar allí.
+   */
+  private checkDestroyed(): void {
+    const destroyed = spaceStore.getState().destroyed;
+    if (!destroyed) return;
+    if (!this.destroyedShown) {
+      this.destroyedShown = true;
+      this.system.explodeOwnShip();
+      this.notify("combat.destroyed", { by: destroyed.by });
+    }
+    const emperor = this.emperor();
+    if (emperor?.location.systemId !== destroyed.systemId) return;
+    spaceStore.setState({ destroyed: null });
+    this.destroyedShown = false;
+    if (this.active === this.system) this.system.stopPiloting();
+    this.pilot(null);
   }
 
   /** Cada fotograma: si se está siguiendo un salto y la nave llegó, se entra pilotando en el destino. */
@@ -293,6 +319,7 @@ export class Engine {
     this.timer.update(time);
     const dt = Math.min(this.timer.getDelta(), 0.1);
     this.checkArrival();
+    this.checkDestroyed();
     this.active.update(dt);
     this.renderer.render(this.active.scene, this.active.camera);
 

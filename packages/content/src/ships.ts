@@ -1,4 +1,11 @@
-import type { ShipClassDefinition, ShipClassId } from "./types";
+import type { ShipClassDefinition, ShipClassId, ShipCombat, WeaponDefinition } from "./types";
+
+/** Cañón estándar: ráfagas rápidas, sin límite de munición. */
+const CANNON: WeaponDefinition = { kind: "cannon", damage: 14, cooldownSec: 0.2, rangeU: 140, speedU: 260, ammo: null, ammoRegenSec: null };
+/** Cañón ligero de las naves que no son de combate. */
+const CANNON_LIGHT: WeaponDefinition = { ...CANNON, damage: 6, cooldownSec: 0.35 };
+/** Misil: mucho daño, sigue al objetivo fijado; munición limitada que se repone con el tiempo. */
+const MISSILE: WeaponDefinition = { kind: "missile", damage: 90, cooldownSec: 2.5, rangeU: 260, speedU: 110, ammo: 6, ammoRegenSec: 15 };
 
 /**
  * Clases de nave humanas del MVP. Escala decidida el 20-10-2026: saltar entre
@@ -20,6 +27,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = [
     scannerRangeLy: 25,
     upkeepVolatilesPerHour: 1,
     consumedOnUse: false,
+    combat: { shield: 40, shieldRegenPerSec: 8, shieldDelaySec: 4, weapons: [CANNON_LIGHT] },
   },
   {
     id: "freighter",
@@ -35,6 +43,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = [
     scannerRangeLy: 5,
     upkeepVolatilesPerHour: 2,
     consumedOnUse: false,
+    combat: { shield: 60, shieldRegenPerSec: 6, shieldDelaySec: 5, weapons: [] },
   },
   {
     id: "colonizer",
@@ -50,6 +59,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = [
     scannerRangeLy: 8,
     upkeepVolatilesPerHour: 4,
     consumedOnUse: true,
+    combat: { shield: 80, shieldRegenPerSec: 6, shieldDelaySec: 5, weapons: [] },
   },
   {
     id: "frigate",
@@ -65,6 +75,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = [
     scannerRangeLy: 12,
     upkeepVolatilesPerHour: 3,
     consumedOnUse: false,
+    combat: { shield: 150, shieldRegenPerSec: 12, shieldDelaySec: 4, weapons: [CANNON, MISSILE] },
   },
 ];
 
@@ -77,12 +88,17 @@ export function getShipClass(id: ShipClassId): ShipClassDefinition | undefined {
  * Nave del Emperador. No se construye: cada Emperador tiene la suya. Rápida y
  * con buen escáner, pero sola no gana batallas.
  */
-export const EMPEROR_FLAGSHIP = {
+export const EMPEROR_FLAGSHIP: {
+  speedLyPerHour: number;
+  scannerRangeLy: number;
+  hull: number;
+  combat: ShipCombat;
+} = {
   speedLyPerHour: 200,
   scannerRangeLy: 15,
   hull: 400,
-  shield: 200,
-} as const;
+  combat: { shield: 200, shieldRegenPerSec: 20, shieldDelaySec: 4, weapons: [CANNON, MISSILE] },
+};
 
 /** Naves con las que empieza cada Emperador nuevo, como su primera flota. */
 export const STARTING_FLEET: readonly ShipClassId[] = ["explorer"];

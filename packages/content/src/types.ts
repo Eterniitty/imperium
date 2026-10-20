@@ -171,4 +171,33 @@ export interface ShipClassDefinition {
   upkeepVolatilesPerHour: number;
   /** Se consume al cumplir su función (el colonizador al fundar). */
   consumedOnUse: boolean;
+  /** Combate en tiempo real: escudo y armas. */
+  combat: ShipCombat;
+}
+
+/** Tipos de arma: cañón (proyectil recto, rápido) o misil (sigue al objetivo fijado). */
+export type WeaponKind = "cannon" | "missile";
+
+/** Arma de una nave. Distancias en unidades de sistema (us), tiempos en segundos. */
+export interface WeaponDefinition {
+  kind: WeaponKind;
+  damage: number;
+  /** Tiempo mínimo entre disparos. */
+  cooldownSec: number;
+  rangeU: number;
+  /** Velocidad del proyectil (us/s). */
+  speedU: number;
+  /** Munición máxima (null = ilimitada) y segundos para recuperar una unidad. */
+  ammo: number | null;
+  ammoRegenSec: number | null;
+}
+
+/** Defensas y armamento de una nave para el combate en tiempo real. */
+export interface ShipCombat {
+  /** Escudo: absorbe el daño antes que el casco y se recarga si no recibe impactos. */
+  shield: number;
+  /** Recarga del escudo por segundo, tras `shieldDelaySec` sin recibir daño. */
+  shieldRegenPerSec: number;
+  shieldDelaySec: number;
+  weapons: WeaponDefinition[];
 }

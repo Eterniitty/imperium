@@ -8,6 +8,7 @@ import { connection, worldStore } from "../net/world";
 import { authStore } from "../state/auth";
 import { gameStore, useGame } from "../state/store";
 import { FlightHud } from "./FlightHud";
+import { CombatHud } from "./CombatHud";
 import { FleetsPanel } from "./FleetsPanel";
 import { Notice } from "./Notice";
 import { SettingsPanel } from "./SettingsPanel";
@@ -80,6 +81,7 @@ export function App() {
         ) : (
           <>
             <FlightHud />
+            <CombatHud />
             <PlanetPanel />
           </>
         )}

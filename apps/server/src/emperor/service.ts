@@ -83,6 +83,20 @@ export class EmperorService {
   }
 
   /**
+   * Renace tras caer en combate: aparece en un sistema del Núcleo Humano, sin
+   * viaje. (Las Cunas de linaje, más adelante, darán otros lugares.)
+   */
+  async respawn(emperorId: string): Promise<Emperor | null> {
+    const spawn = pickSpawnSystem(this.seed);
+    const [row] = await this.db
+      .update(emperors)
+      .set({ systemId: spawn.id, destSystemId: null, departAt: null, arriveAt: null, updatedAt: sql`now()` })
+      .where(eq(emperors.id, emperorId))
+      .returning(columns);
+    return row ? this.toEmperor(row) : null;
+  }
+
+  /**
    * Orden de viaje. La fila se bloquea durante la transacción: dos órdenes
    * simultáneas del mismo Emperador se aplican una detrás de otra.
    */

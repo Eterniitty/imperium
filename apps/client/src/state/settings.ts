@@ -8,7 +8,7 @@ import { useStore } from "zustand";
  */
 export const ACTIONS = {
   // Pilotar la nave (y el vuelo libre de cámara en el mapa).
-  flight: ["forward", "back", "strafeLeft", "strafeRight", "up", "down", "rollLeft", "rollRight", "turnLeft", "turnRight", "pitchUp", "pitchDown", "boost", "cameraView"],
+  flight: ["forward", "back", "strafeLeft", "strafeRight", "up", "down", "rollLeft", "rollRight", "turnLeft", "turnRight", "pitchUp", "pitchDown", "boost", "cameraView", "fireCannon", "fireMissile", "lockTarget"],
   // Mover la cámara por el mapa galáctico.
   map: ["mapForward", "mapBack", "mapLeft", "mapRight", "mapUp", "mapDown", "mapBoost", "flightMode", "focus", "enter", "deselect"],
   // En cualquier momento.
@@ -36,6 +36,9 @@ export const DEFAULT_BINDINGS: Bindings = {
   pitchDown: ["ArrowDown"],
   boost: ["ShiftLeft", "ShiftRight"],
   cameraView: ["KeyT"],
+  fireCannon: ["KeyF"],
+  fireMissile: ["KeyR"],
+  lockTarget: ["KeyX"],
   mapForward: ["KeyW", "ArrowUp"],
   mapBack: ["KeyS", "ArrowDown"],
   mapLeft: ["KeyA", "ArrowLeft"],

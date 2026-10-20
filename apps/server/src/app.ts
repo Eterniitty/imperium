@@ -74,8 +74,9 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   const fleets = new FleetService(deps.db, config);
   const social = new SocialService(deps.db);
   const hub = new Hub(emperors, fleets, social, app.log, config.TIME_SCALE);
-  const space = new SpaceService(config, emperors, social, app.log);
+  const space = new SpaceService(config, emperors, social, app.log, (emperorId) => void hub.publish(emperorId));
   app.addHook("onClose", async () => space.stop());
+  app.decorate("space", space);
   await app.register(emperorRoutes, { config, db: deps.db, emperors, hub });
   await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, space, hub });
   await app.register(socialRoutes, { config, db: deps.db, emperors, social, hub });
@@ -98,5 +99,6 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
 declare module "fastify" {
   interface FastifyInstance {
     eventWorker: EventWorker;
+    space: SpaceService;
   }
 }

@@ -84,6 +84,11 @@ export class RemoteShips {
     this.visuals.delete(id);
   }
 
+  /** Dónde se dibuja ahora una nave ajena, o null si no está. */
+  positionOf(id: string): THREE.Vector3 | null {
+    return this.visuals.get(id)?.ship.position ?? null;
+  }
+
   clear(): void {
     for (const [id, v] of this.visuals) this.remove(id, v);
   }

@@ -1,6 +1,6 @@
 import { EMPEROR_FLAGSHIP } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
-import type { ShipPose, ShipState } from "@imperium/shared";
+import type { ServerMessage, ShipPose, ShipState, Vec3, WeaponKind } from "@imperium/shared";
 import { isTravelling, plausibleMove, systemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { ServerConfig } from "../config";
@@ -8,6 +8,7 @@ import type { EmperorService } from "../emperor/service";
 import { systemDetailFor } from "../emperor/world";
 import type { Client } from "../realtime/hub";
 import type { SocialService } from "../social/service";
+import { Combatant, distance, forwardOf, MISSILE_LOCK_COS, normalize, rayHit } from "./combat";
 
 /** Una nave presente en un sistema. */
 interface Member {
@@ -18,31 +19,42 @@ interface Member {
   clients: Set<Client>;
   pose: ShipPose;
   poseAt: number;
+  /** Posiciones recientes, para dar por buenos los impactos contra donde el tirador veía al objetivo. */
+  history: Array<{ t: number; p: Vec3 }>;
   /** Cambió de posición desde la última difusión. */
   dirty: boolean;
-  /** Compañeros (aliados mutuos), para marcar `ally` y, más adelante, evitar el fuego amigo. */
+  /** Compañeros (aliados mutuos): se marcan como `ally` y no se les puede dañar. */
   allies: Set<string>;
-  hull: number;
-  hullMax: number;
-  shield: number;
-  shieldMax: number;
+  combat: Combatant;
+  /** Escudo enviado por última vez a los demás (para difundir la recarga solo si cambia). */
+  sentShield: number;
 }
 
 const TICK_MS = 100;
+/** Cada cuánto se difunde el escudo que se recarga (no hace falta a 10 Hz). */
+const SHIELD_BROADCAST_MS = 500;
 /** Margen fuera del borde antes de rechazar una posición (salir del sistema es legal, pero se avisa con `leave`). */
 const BOUNDARY_SLACK = 30;
+/** Hasta cuánto atrás se buscan posiciones del objetivo para los impactos (latencia del tirador). */
+const LAG_COMPENSATION_MS = 300;
+const HISTORY_SIZE = 12;
 
 /**
- * Espacio local: quién vuela en cada sistema, sus posiciones y su estado. Vive
+ * Espacio local: quién vuela en cada sistema, sus posiciones y el combate. Vive
  * en memoria (un solo proceso). Valida cada posición (no ir más rápido que la
- * nave, no salir del sistema) y difunde a los presentes unas 10 veces por segundo.
+ * nave, no salir del sistema) y cada disparo (cadencia, munición, alcance), y
+ * difunde a los presentes unas 10 veces por segundo.
  */
 export class SpaceService {
   private readonly members = new Map<string, Member>();
   private readonly rooms = new Map<string, Set<Member>>();
+  /** Estado de combate por Emperador; dura aunque salga del sistema. */
+  private readonly combatants = new Map<string, Combatant>();
   private readonly boundaries = new Map<string, number>();
   private readonly seed: number;
   private readonly timer: ReturnType<typeof setInterval>;
+  private readonly timeouts = new Set<ReturnType<typeof setTimeout>>();
+  private lastShieldBroadcast = 0;
   /** Uniones en curso, para no validar dos veces a la vez la misma nave. */
   private readonly joining = new Map<string, Promise<Member | null>>();
 
@@ -51,6 +63,8 @@ export class SpaceService {
     private readonly emperors: EmperorService,
     private readonly social: SocialService,
     private readonly log: FastifyBaseLogger,
+    /** Se llama cuando un Emperador renace en otro sistema (para difundirlo). */
+    private readonly onRespawn: (emperorId: string) => void = () => {},
     private readonly now: () => number = Date.now,
   ) {
     this.seed = universeSeedFromString(config.UNIVERSE_SEED);
@@ -59,6 +73,16 @@ export class SpaceService {
 
   stop(): void {
     clearInterval(this.timer);
+    for (const t of this.timeouts) clearTimeout(t);
+    this.timeouts.clear();
+  }
+
+  private later(ms: number, fn: () => void): void {
+    const t = setTimeout(() => {
+      this.timeouts.delete(t);
+      fn();
+    }, ms);
+    this.timeouts.add(t);
   }
 
   private boundary(systemId: string): number {
@@ -71,21 +95,37 @@ export class SpaceService {
     return b;
   }
 
+  private combatantOf(emperorId: string): Combatant {
+    let c = this.combatants.get(emperorId);
+    if (!c) this.combatants.set(emperorId, (c = new Combatant(EMPEROR_FLAGSHIP.hull, EMPEROR_FLAGSHIP.combat, this.now())));
+    return c;
+  }
+
   private stateFor(m: Member, viewer: Member | null): ShipState {
     return {
       id: m.emperorId,
       name: m.name,
-      ally: viewer !== null && viewer.allies.has(m.emperorId),
+      ally: viewer !== null && viewer !== m && viewer.allies.has(m.emperorId),
       ...m.pose,
-      hull: m.hull,
-      hullMax: m.hullMax,
-      shield: m.shield,
-      shieldMax: m.shieldMax,
+      hull: Math.round(m.combat.hull),
+      hullMax: m.combat.hullMax,
+      shield: Math.round(m.combat.shield),
+      shieldMax: m.combat.shieldMax,
     };
   }
 
-  private sendTo(m: Member, msg: Parameters<Client["send"]>[0]): void {
+  private sendTo(m: Member, msg: ServerMessage): void {
     for (const c of m.clients) c.send(msg);
+  }
+
+  /** Estado de una nave a todos los del sistema (cada uno con su marca de compañero), ella incluida. */
+  private broadcastState(m: Member): void {
+    m.sentShield = Math.round(m.combat.shield);
+    for (const o of this.rooms.get(m.systemId) ?? []) this.sendTo(o, { t: "ship", ship: this.stateFor(m, o) });
+  }
+
+  private sendWeapons(m: Member): void {
+    this.sendTo(m, { t: "weapons", weapons: m.combat.weaponsView(this.now()) });
   }
 
   /** Posición recibida de un cliente que pilota en `systemId`. */
@@ -105,6 +145,8 @@ export class SpaceService {
     }
     m.pose = pose;
     m.poseAt = t;
+    m.history.push({ t, p: pose.p });
+    if (m.history.length > HISTORY_SIZE) m.history.shift();
     m.dirty = true;
   }
 
@@ -137,12 +179,11 @@ export class SpaceService {
       clients: new Set([client]),
       pose,
       poseAt: this.now(),
+      history: [{ t: this.now(), p: pose.p }],
       dirty: false,
       allies,
-      hull: EMPEROR_FLAGSHIP.hull,
-      hullMax: EMPEROR_FLAGSHIP.hull,
-      shield: EMPEROR_FLAGSHIP.shield,
-      shieldMax: EMPEROR_FLAGSHIP.shield,
+      combat: this.combatantOf(emperor.id),
+      sentShield: -1,
     };
     let room = this.rooms.get(systemId);
     if (!room) this.rooms.set(systemId, (room = new Set()));
@@ -151,11 +192,14 @@ export class SpaceService {
     for (const o of room) this.sendTo(o, { t: "ship", ship: this.stateFor(m, o) });
     room.add(m);
     this.members.set(emperor.id, m);
+    // La nave propia: casco, escudo y armas.
+    client.send({ t: "ship", ship: this.stateFor(m, m) });
+    this.sendWeapons(m);
     this.log.debug({ emperorId: emperor.id, systemId }, "Nave entra en el sistema");
     return m;
   }
 
-  /** La nave deja su sistema (vuelve al mapa, salta, se desconecta…). */
+  /** La nave deja su sistema (vuelve al mapa, salta, se desconecta, cae…). */
   leave(emperorId: string, reason: "left" | "destroyed"): void {
     const m = this.members.get(emperorId);
     if (!m) return;
@@ -173,19 +217,128 @@ export class SpaceService {
     if (m.clients.size === 0) this.leave(m.emperorId, "left");
   }
 
+  /** Estado de combate de un Emperador (para tests y diagnóstico). */
+  combatOf(emperorId: string): Combatant {
+    return this.combatantOf(emperorId);
+  }
+
   /** Naves presentes en un sistema (para tests y diagnóstico). */
   shipsIn(systemId: string): string[] {
     return [...(this.rooms.get(systemId) ?? [])].map((m) => m.emperorId);
   }
 
+  /** ¿Puede `a` dañar a `b`? No a sí mismo ni a sus compañeros. */
+  private hostile(a: Member, b: Member): boolean {
+    return a !== b && !a.allies.has(b.emperorId);
+  }
+
+  /** Posiciones de un objetivo a tener en cuenta: la actual y las recientes (latencia del tirador). */
+  private recentPositions(o: Member, now: number): Vec3[] {
+    return [o.pose.p, ...o.history.filter((h) => now - h.t <= LAG_COMPENSATION_MS).map((h) => h.p)];
+  }
+
+  /** Disparo de la nave de este cliente. Lo que no cumple las reglas se ignora. */
+  fire(client: Client, weapon: WeaponKind, dirIn: Vec3, targetId?: string): void {
+    const m = this.members.get(client.emperorId);
+    const dir = normalize(dirIn);
+    if (!m || !dir) return;
+    const room = this.rooms.get(m.systemId);
+    if (!room) return;
+    const now = this.now();
+
+    let target: Member | null = null;
+    let hitDistance: number | null = null;
+    if (weapon === "missile") {
+      // Misil: objetivo fijado, enemigo, a tiro y delante del morro.
+      target = targetId ? (this.members.get(targetId) ?? null) : null;
+      const def = m.combat.weapons.get("missile")?.def;
+      if (!def || !target || target.systemId !== m.systemId || !this.hostile(m, target)) return;
+      const d = distance(m.pose.p, target.pose.p);
+      const to = normalize([target.pose.p[0] - m.pose.p[0], target.pose.p[1] - m.pose.p[1], target.pose.p[2] - m.pose.p[2]]);
+      const fwd = forwardOf(m.pose.q);
+      if (d > def.rangeU || !to || to[0] * fwd[0] + to[1] * fwd[1] + to[2] * fwd[2] < MISSILE_LOCK_COS) return;
+      hitDistance = d;
+    }
+    const def = m.combat.tryFire(weapon, now);
+    if (!def) return;
+
+    if (weapon === "cannon") {
+      // Cañón: el enemigo más cercano que el proyectil roza (ahora o hace un instante).
+      for (const o of room) {
+        if (!this.hostile(m, o)) continue;
+        for (const p of this.recentPositions(o, now)) {
+          const t = rayHit(m.pose.p, dir, p, def.rangeU);
+          if (t !== null && (hitDistance === null || t < hitDistance)) {
+            hitDistance = t;
+            target = o;
+          }
+        }
+      }
+    }
+
+    const hitAt = target && hitDistance !== null ? now + (hitDistance / def.speedU) * 1000 : null;
+    const shot: ServerMessage = {
+      t: "shot",
+      id: m.emperorId,
+      weapon,
+      from: m.pose.p,
+      dir,
+      target: weapon === "missile" ? (target?.emperorId ?? null) : null,
+      speed: def.speedU,
+      range: def.rangeU,
+      serverTime: now,
+      hitAt,
+    };
+    for (const o of room) this.sendTo(o, shot);
+    this.sendWeapons(m);
+
+    if (target && hitAt !== null) {
+      const victim = target;
+      const attacker = m;
+      this.later(hitAt - now, () => this.hit(victim.emperorId, def.damage, attacker.name, weapon === "missile" ? attacker.systemId : null));
+    }
+  }
+
+  /** Llega un impacto. Si el objetivo ya no está (saltó, se fue), se pierde; un misil lo sigue dentro del sistema. */
+  private hit(victimId: string, damage: number, attackerName: string, missileSystem: string | null): void {
+    const v = this.members.get(victimId);
+    if (!v || (missileSystem !== null && v.systemId !== missileSystem)) return;
+    const destroyed = v.combat.damage(damage, this.now());
+    this.broadcastState(v);
+    if (destroyed) void this.destroy(v, attackerName);
+  }
+
+  /** Nave destruida: sale del sistema y el Emperador renace en el Núcleo Humano con la nave reparada. */
+  private async destroy(v: Member, by: string): Promise<void> {
+    const clients = [...v.clients];
+    this.leave(v.emperorId, "destroyed");
+    v.combat.restore(this.now());
+    try {
+      const emperor = await this.emperors.respawn(v.emperorId);
+      if (!emperor) return;
+      for (const c of clients) c.send({ t: "destroyed", by, systemId: emperor.location.systemId });
+      this.onRespawn(v.emperorId);
+    } catch (err) {
+      this.log.error(err, "Error al hacer renacer a un Emperador");
+    }
+  }
+
   private tick(): void {
-    const serverTime = this.now();
+    const now = this.now();
     for (const room of this.rooms.values()) {
       const changed = [...room].filter((m) => m.dirty);
-      if (changed.length === 0) continue;
-      for (const m of changed) m.dirty = false;
-      const ships = changed.map((m) => ({ id: m.emperorId, ...m.pose }));
-      for (const m of room) this.sendTo(m, { t: "poses", serverTime, ships: ships.filter((s) => s.id !== m.emperorId) });
+      if (changed.length > 0) {
+        for (const m of changed) m.dirty = false;
+        const ships = changed.map((m) => ({ id: m.emperorId, ...m.pose }));
+        for (const m of room) this.sendTo(m, { t: "poses", serverTime: now, ships: ships.filter((s) => s.id !== m.emperorId) });
+      }
+    }
+    // Recarga de escudos: se calcula siempre y se difunde de vez en cuando.
+    const broadcast = now - this.lastShieldBroadcast >= SHIELD_BROADCAST_MS;
+    if (broadcast) this.lastShieldBroadcast = now;
+    for (const m of this.members.values()) {
+      m.combat.regenShield(TICK_MS / 1000, now);
+      if (broadcast && Math.round(m.combat.shield) !== m.sentShield) this.broadcastState(m);
     }
   }
 }

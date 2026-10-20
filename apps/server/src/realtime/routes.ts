@@ -43,6 +43,8 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
   const messagesPerAccount = new RateLimiter(60, 10_000);
   // Las posiciones al pilotar van aparte: unas 8 por segundo, con margen.
   const posesPerAccount = new RateLimiter(25, 1_000);
+  // Disparos: el cañón dispara 5 veces por segundo; el servidor aplica la cadencia real de cada arma.
+  const shotsPerAccount = new RateLimiter(15, 1_000);
   // Solo se aceptan conexiones abiertas desde la propia web del juego: otra web
   // no puede abrir un WebSocket en nombre del jugador.
   const allowedOrigin = new URL(config.PUBLIC_URL).origin;
@@ -119,7 +121,7 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
         if (!parsed?.success) return socket.close(WS_CLOSE.protocol, "invalid message");
 
         const msg = parsed.data;
-        const limiter = msg.t === "pose" ? posesPerAccount : messagesPerAccount;
+        const limiter = msg.t === "pose" ? posesPerAccount : msg.t === "fire" ? shotsPerAccount : messagesPerAccount;
         if (!limiter.consume(owner.accountId)) return socket.close(WS_CLOSE.rateLimited, "rate limited");
         switch (msg.t) {
           case "pose":
@@ -127,6 +129,9 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
             return;
           case "leave":
             space.leaveClient(client);
+            return;
+          case "fire":
+            space.fire(client, msg.weapon, msg.dir, msg.target);
             return;
           case "sub":
             void hub.subscribe(client, msg.topic);

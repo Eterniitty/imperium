@@ -487,3 +487,18 @@ kbd {
 .social-add { margin-top: 16px; }
 .social-add-row { display: flex; gap: 8px; }
 .social-add-row .auth-input { flex: 1; }
+
+/* Combate. */
+.combat-self { position: absolute; left: 12px; bottom: 12px; padding: 10px 14px; width: 260px; font-size: 12px; }
+.combat-row { display: grid; grid-template-columns: 56px 1fr 34px; align-items: center; gap: 8px; margin: 3px 0; }
+.combat-row.weapons { display: flex; gap: 10px; margin-top: 8px; }
+.combat-bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.combat-bar span { display: block; height: 100%; transition: width 0.2s; }
+.combat-bar.shield span { background: linear-gradient(90deg, #3fd0ff, #8fe9ff); }
+.combat-bar.hull span { background: linear-gradient(90deg, #e8b64c, #ffd27a); }
+.combat-target .combat-bar { margin-top: 4px; }
+.weapon { color: var(--muted); }
+.weapon.ready { color: #8fe9ff; }
+.combat-target { position: absolute; right: 12px; bottom: 12px; padding: 10px 14px; width: 220px; font-size: 13px; }
+.combat-target .enemy { color: #ff7a6a; }
+.combat-target .ally { color: #5fd3e6; }

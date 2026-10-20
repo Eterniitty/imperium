@@ -12,6 +12,7 @@ import { sessionCookieName } from "../src/auth/routes";
 import { loadConfig } from "../src/config";
 import { createDb } from "../src/db/client";
 import type { Mailer } from "../src/mail";
+import { spawnCandidates } from "../src/emperor/world";
 import { resetTestDatabase } from "./resetDb";
 
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
@@ -101,6 +102,7 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
   const SESSION_COOKIE = sessionCookieName(config);
   const seed = universeSeedFromString(config.UNIVERSE_SEED);
   const coreSystems = generateSector(seed, { x: 0, y: 0, z: 0 }).systems;
+  const spawnSystems = new Set(spawnCandidates(seed).map((s) => s.id));
   let app: Awaited<ReturnType<typeof buildApp>>;
   let wsUrl = "";
   const sockets: TestSocket[] = [];
@@ -447,7 +449,8 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       sb.send({ t: "pose", systemId, ...pose([110, 0, 0]) });
       const seenB = await sb.next(is("space"));
       expect(seenB.ships).toMatchObject([{ id: a.emperor.id, name: "Aurelia", ally: false, p: [100, 0, 0], hull: 400, shield: 200 }]);
-      expect((await sa.next(is("ship"))).ship).toMatchObject({ id: b.emperor.id, name: "Brennus" });
+      const other = (m: ServerMessage): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id;
+      expect((await sa.next(other)).ship).toMatchObject({ id: b.emperor.id, name: "Brennus" });
 
       // B se mueve: A recibe su posición (y no la suya propia).
       const from = sa.messages.length;
@@ -485,10 +488,93 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       sa.send({ t: "pose", systemId, ...pose([100, 0, 0]) });
       await sa.next(is("space"));
       sb.send({ t: "pose", systemId, ...pose([120, 0, 0]) });
-      await sa.next(is("ship"));
+      await sa.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id);
       const dest = coreSystems.find((s) => s.id !== systemId)!;
       sb.send({ t: "cmd", cmdId: "salto-0001", op: "emperor.move", args: { systemId: dest.id } });
       expect(await sa.next(is("shipGone"))).toEqual({ t: "shipGone", id: b.emperor.id, reason: "left" });
+    });
+  });
+
+  describe("combate en tiempo real", () => {
+    const pose = (p: [number, number, number]) => ({ p, q: [0, 0, 0, 1] as [number, number, number, number], v: [0, 0, 0] as [number, number, number] });
+    const settle = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+
+    /** A y B en el mismo sistema: A en z=100 mirando a -Z; B delante, en z=80. */
+    async function duel(allies = false) {
+      const a = await player("a@ejemplo.com", "Aurelia", "hidden");
+      const b = await player("b@ejemplo.com", "Brennus", "hidden");
+      if (allies) {
+        await social(a.cookies, "/api/social/allies", { name: "Brennus" });
+        await social(b.cookies, "/api/social/allies", { name: "Aurelia" });
+      }
+      const sa = await connect(a.cookies);
+      const sb = await connect(b.cookies);
+      const systemId = a.emperor.location.systemId;
+      if (b.emperor.location.systemId !== systemId) {
+        sb.send({ t: "cmd", cmdId: "duelo-0001", op: "emperor.move", args: { systemId } });
+        await sb.next(is("ack"));
+        await settle(1100);
+      }
+      sa.send({ t: "pose", systemId, ...pose([0, 0, 100]) });
+      await sa.next(is("space"));
+      sb.send({ t: "pose", systemId, ...pose([0, 0, 80]) });
+      await sa.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id);
+      await settle(100);
+      return { a, b, sa, sb, systemId };
+    }
+
+    it("un cañonazo que acierta baja el escudo del enemigo y ambos lo ven", async () => {
+      const { b, sa, sb } = await duel();
+      const from = sb.messages.length;
+      sa.send({ t: "fire", weapon: "cannon", dir: [0, 0, -1] });
+      const shot = await sb.next(is("shot"), from);
+      expect(shot).toMatchObject({ weapon: "cannon", target: null, speed: 260 });
+      expect(shot.hitAt).not.toBeNull();
+      const hurt = await sb.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id, from);
+      expect(hurt.ship).toMatchObject({ shield: 186, hull: 400 });
+      expect((await sa.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id && m.ship.shield === 186)).ship.hull).toBe(400);
+    });
+
+    it("fallar no hace daño, y entre compañeros no hay fuego amigo", async () => {
+      const { a, b, sa } = await duel(true);
+      sa.send({ t: "fire", weapon: "cannon", dir: [0, 0, -1] });
+      sa.send({ t: "fire", weapon: "missile", dir: [0, 0, -1], target: b.emperor.id });
+      await settle(400);
+      expect(app.space.combatOf(b.emperor.id).shield).toBe(200);
+      void a;
+    });
+
+    it("el misil exige objetivo enemigo a tiro y delante; acierta y gasta munición", async () => {
+      const { b, sa } = await duel();
+      // Sin objetivo: nada.
+      sa.send({ t: "fire", weapon: "missile", dir: [0, 0, -1] });
+      await settle(200);
+      expect(sa.messages.filter(is("shot"))).toEqual([]);
+      sa.send({ t: "fire", weapon: "missile", dir: [0, 0, -1], target: b.emperor.id });
+      const shot = await sa.next(is("shot"));
+      expect(shot).toMatchObject({ weapon: "missile", target: b.emperor.id });
+      const weapons = await sa.next((m): m is Extract<ServerMessage, { t: "weapons" }> => m.t === "weapons" && m.weapons.some((w) => w.kind === "missile" && w.ammo === 5));
+      expect(weapons.weapons.find((w) => w.kind === "missile")).toMatchObject({ ammo: 5, ammoMax: 6 });
+      await settle(400);
+      expect(app.space.combatOf(b.emperor.id).shield).toBe(110);
+    });
+
+    it("una nave destruida sale del sistema y su Emperador renace en el Núcleo Humano", async () => {
+      const { b, sa, sb, systemId } = await duel();
+      const victim = app.space.combatOf(b.emperor.id);
+      victim.shield = 0;
+      victim.hull = 10;
+      sa.send({ t: "fire", weapon: "cannon", dir: [0, 0, -1] });
+      const gone = await sa.next(is("shipGone"));
+      expect(gone).toEqual({ t: "shipGone", id: b.emperor.id, reason: "destroyed" });
+      const destroyed = await sb.next(is("destroyed"));
+      expect(destroyed.by).toBe("Aurelia");
+      expect(spawnSystems.has(destroyed.systemId)).toBe(true);
+      expect(app.space.shipsIn(systemId)).not.toContain(b.emperor.id);
+      // Renace con la nave reparada.
+      expect([victim.hull, victim.shield]).toEqual([400, 200]);
+      const res = await app.inject({ method: "GET", url: "/api/emperor", cookies: b.cookies });
+      expect(res.json().emperor).toMatchObject({ location: { systemId: destroyed.systemId }, travel: null });
     });
   });
 });

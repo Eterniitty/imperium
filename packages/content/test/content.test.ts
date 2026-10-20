@@ -127,3 +127,18 @@ describe("i18n", () => {
     expect(Object.keys(contentEs).sort()).toEqual(Object.keys(contentEn).sort());
   });
 });
+
+describe("combate", () => {
+  it("las naves y la del Emperador tienen escudo y armas válidos", async () => {
+    const { SHIP_CLASSES, EMPEROR_FLAGSHIP, validateCombat } = await import("../src");
+    for (const s of SHIP_CLASSES) expect(validateCombat(s.id, s.combat)).toEqual([]);
+    expect(validateCombat("emperador", EMPEROR_FLAGSHIP.combat)).toEqual([]);
+    expect(EMPEROR_FLAGSHIP.combat.weapons.map((w) => w.kind)).toEqual(["cannon", "missile"]);
+  });
+
+  it("detecta armas mal definidas", async () => {
+    const { validateCombat } = await import("../src");
+    const bad = { shield: 10, shieldRegenPerSec: 1, shieldDelaySec: 1, weapons: [{ kind: "missile" as const, damage: 0, cooldownSec: 1, rangeU: 1, speedU: 1, ammo: 3, ammoRegenSec: null }] };
+    expect(validateCombat("x", bad).length).toBeGreaterThanOrEqual(2);
+  });
+});
