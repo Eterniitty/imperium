@@ -3,10 +3,10 @@
  * docs/arquitectura.md §8. Los esquemas Zod de lo que envía el cliente están en
  * `schemas.ts`.
  */
-import type { Emperor, Fleet } from "./api";
+import type { Colony, Emperor, EmperorHumans, Fleet } from "./api";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
-export const PROTOCOL_VERSION = 3;
+export const PROTOCOL_VERSION = 4;
 
 /** Tamaño máximo de un mensaje del cliente, en bytes. */
 export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;
@@ -14,7 +14,7 @@ export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;
 /**
  * Temas de suscripción:
  * - emperors: todos los Emperadores (público).
- * - me: lo privado del jugador (sus flotas y los sistemas que ha descubierto).
+ * - me: lo privado del jugador (sus flotas, los sistemas que ha descubierto, sus colonias y sus humanos).
  */
 export type Topic = "emperors" | "me";
 
@@ -22,7 +22,7 @@ export type Topic = "emperors" | "me";
 export interface TopicData {
   emperors: { emperors: EmperorView[] };
   /** `discovered`: ids de los sistemas descubiertos (niebla de guerra); solo de ellos se puede pedir el detalle. */
-  me: { fleets: Fleet[]; discovered: string[] };
+  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans };
 }
 
 /** Emperador visto por los demás jugadores: añade si está conectado. */
@@ -34,6 +34,17 @@ export interface EmperorView extends Emperor {
 export interface CommandArgs {
   "emperor.move": { systemId: string };
   "fleet.move": { fleetId: string; systemId: string };
+  /**
+   * Reclama un planeta libre de un sistema descubierto. Sin `fleetId`, desembarca
+   * `humans` de la nave del Emperador, que tiene que estar allí (no de viaje);
+   * con `fleetId`, desembarcan los colonos de un colonizador de esa flota (que
+   * se consume).
+   */
+  "colony.claim": { systemId: string; planetIndex: number; humans?: number; fleetId?: string };
+  /** Renombra un planeta propio. */
+  "colony.rename": { colonyId: string; name: string };
+  /** Encarga una instalación o una nave (en el astillero); se paga al encargarla. */
+  "colony.build": { colonyId: string; kind: "installation" | "ship"; itemId: string };
 }
 export type CommandOp = keyof CommandArgs;
 
@@ -91,6 +102,19 @@ export type CommandError =
   | "already_there"
   | "no_emperor"
   | "no_fleet"
+  | "not_discovered"
+  | "unknown_planet"
+  | "planet_owned"
+  | "not_present"
+  | "not_enough_humans"
+  | "no_colonizer"
+  | "no_colony"
+  | "invalid_name"
+  | "unknown_item"
+  | "insufficient_resources"
+  | "needs_shipyard"
+  | "limit_reached"
+  | "queue_full"
   | "rate_limited"
   | "internal";
 
@@ -99,7 +123,11 @@ export type DeltaOp =
   | { path: `emperors.${string}`; v: EmperorView | null }
   | { path: `fleets.${string}`; v: Fleet | null }
   /** Sistema recién descubierto (nunca se olvida, así que siempre es `true`). */
-  | { path: `discovered.${string}`; v: true };
+  | { path: `discovered.${string}`; v: true }
+  /** Colonia propia: nueva, cambiada o perdida (null). */
+  | { path: `colonies.${string}`; v: Colony | null }
+  /** Humanos de la nave del Emperador (el id es el del Emperador propio). */
+  | { path: `humans.${string}`; v: EmperorHumans };
 
 export type ServerMessage =
   /**

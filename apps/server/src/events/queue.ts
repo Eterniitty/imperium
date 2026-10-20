@@ -12,6 +12,8 @@ export interface EventPayloads {
   "fleet.arrive": { fleetId: string };
   /** El Emperador llega a un sistema tras un salto (para descubrir lo que cubre su escáner). */
   "emperor.arrive": { emperorId: string; systemId: string };
+  /** Termina una construcción de una colonia (instalación o nave). */
+  "colony.build": { buildId: string };
 }
 export type EventKind = keyof EventPayloads;
 

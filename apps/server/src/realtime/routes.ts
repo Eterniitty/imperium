@@ -13,6 +13,7 @@ import { ClientMessageSchema } from "@imperium/shared/schemas";
 import { accountFromRequest, sessionCookieName } from "../auth/routes";
 import { RateLimiter } from "../auth/rateLimit";
 import type { ServerConfig } from "../config";
+import type { ColonyService } from "../colony/service";
 import type { Database } from "../db/client";
 import type { EmperorService } from "../emperor/service";
 import type { FleetService } from "../fleet/service";
@@ -25,6 +26,7 @@ export interface RealtimeDeps {
   db: Database;
   emperors: EmperorService;
   fleets: FleetService;
+  colonies: ColonyService;
   space: SpaceService;
   hub: Hub;
 }
@@ -35,7 +37,7 @@ const HEARTBEAT_MS = 30_000;
 const MAX_CONNECTIONS_PER_ACCOUNT = 5;
 const MAX_CONNECTIONS = 1_000;
 
-export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, space, hub }: RealtimeDeps) {
+export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, colonies, space, hub }: RealtimeDeps) {
   const cookieName = sessionCookieName(config);
   const tickets = new TicketStore();
   const ticketsPerAccount = new RateLimiter(30, MINUTE);
@@ -152,6 +154,26 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                   case "fleet.move": {
                     const res = await fleets.move(owner.emperorId, msg.args.fleetId, msg.args.systemId);
                     if (res.ok) await hub.publishFleet(res.emperorId, res.fleet.id);
+                    return res;
+                  }
+                  // Fase 7: colonias (ver colony/service.ts).
+                  case "colony.claim": {
+                    const res = await colonies.claim(owner.emperorId, msg.args);
+                    if (res.ok) {
+                      await hub.publishColony(res.emperorId, res.colonyId);
+                      if (res.fleetId) await hub.publishFleet(res.emperorId, res.fleetId);
+                      else await hub.publishHumans(res.emperorId);
+                    }
+                    return res;
+                  }
+                  case "colony.rename": {
+                    const res = await colonies.rename(owner.emperorId, msg.args.colonyId, msg.args.name);
+                    if (res.ok) await hub.publishColony(res.emperorId, res.colonyId);
+                    return res;
+                  }
+                  case "colony.build": {
+                    const res = await colonies.build(owner.emperorId, msg.args.colonyId, msg.args.kind, msg.args.itemId);
+                    if (res.ok) await hub.publishColony(res.emperorId, res.colonyId);
                     return res;
                   }
                 }

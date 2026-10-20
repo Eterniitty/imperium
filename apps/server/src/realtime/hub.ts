@@ -1,5 +1,6 @@
 import type { FastifyBaseLogger } from "fastify";
 import { PROTOCOL_VERSION, type CommandError, type DeltaOp, type Emperor, type EmperorView, type ServerMessage, type Topic } from "@imperium/shared";
+import type { ColonyService } from "../colony/service";
 import type { DiscoveryService } from "../discovery/service";
 import type { EmperorService } from "../emperor/service";
 import type { FleetService } from "../fleet/service";
@@ -25,7 +26,8 @@ const PROCESSED_PER_ACCOUNT = 100;
  * Centro de difusión. Temas:
  * - "emperors": los Emperadores que cada jugador puede ver (según su
  *   visibilidad y sus compañeros); a cada cliente le llega solo lo suyo.
- * - "me": privado de cada Emperador (sus flotas y descubrimientos); su `seq` es propio de cada uno.
+ * - "me": privado de cada Emperador (sus flotas, descubrimientos, colonias y
+ *   humanos); su `seq` es propio de cada uno.
  *
  * Todo lo que lee la base de datos y envía pasa por una cola, en orden: así
  * ninguna instantánea se cruza con un cambio y `seq` no tiene huecos.
@@ -45,6 +47,7 @@ export class Hub {
     private readonly fleets: FleetService,
     private readonly social: SocialService,
     private readonly discoveries: DiscoveryService,
+    private readonly colonies: ColonyService,
     private readonly log: FastifyBaseLogger,
     private readonly timeScale: number,
     private readonly now: () => number = Date.now,
@@ -105,9 +108,14 @@ export class Hub {
         client.known = new Set(visible.map((e) => e.id));
         client.send({ t: "snap", topic, seq: this.emperorsSeq, serverTime: this.now(), data: { emperors: visible.map((e) => this.view(e)) } });
       } else {
-        const [fleets, discovered] = await Promise.all([this.fleets.byEmperor(client.emperorId), this.discoveries.list(client.emperorId)]);
-        if (!this.clients.has(client)) return;
-        client.send({ t: "snap", topic, seq: this.meSeq.get(client.emperorId) ?? 0, serverTime: this.now(), data: { fleets, discovered } });
+        const [fleets, discovered, colonies, humans] = await Promise.all([
+          this.fleets.byEmperor(client.emperorId),
+          this.discoveries.list(client.emperorId),
+          this.colonies.list(client.emperorId),
+          this.colonies.humans(client.emperorId),
+        ]);
+        if (!this.clients.has(client) || !humans) return;
+        client.send({ t: "snap", topic, seq: this.meSeq.get(client.emperorId) ?? 0, serverTime: this.now(), data: { fleets, discovered, colonies, humans } });
       }
       client.subscribed.add(topic);
     });
@@ -151,6 +159,29 @@ export class Hub {
       this.meSeq.set(emperorId, seq);
       this.send("me", seq, [{ path: `fleets.${fleetId}`, v: fleet }], (c) => c.emperorId === emperorId);
     });
+  }
+
+  /** Envía a su dueño el estado actual de una colonia (null si ya no es suya). */
+  publishColony(emperorId: string, colonyId: string): Promise<void> {
+    return this.enqueue(async () => {
+      const colony = await this.colonies.byId(emperorId, colonyId);
+      this.send("me", this.nextMeSeq(emperorId), [{ path: `colonies.${colonyId}`, v: colony }], (c) => c.emperorId === emperorId);
+    });
+  }
+
+  /** Envía a su dueño los humanos de la nave del Emperador (tras desembarcar). */
+  publishHumans(emperorId: string): Promise<void> {
+    return this.enqueue(async () => {
+      const humans = await this.colonies.humans(emperorId);
+      if (!humans) return;
+      this.send("me", this.nextMeSeq(emperorId), [{ path: `humans.${emperorId}`, v: humans }], (c) => c.emperorId === emperorId);
+    });
+  }
+
+  private nextMeSeq(emperorId: string): number {
+    const seq = (this.meSeq.get(emperorId) ?? 0) + 1;
+    this.meSeq.set(emperorId, seq);
+    return seq;
   }
 
   /** Avisa a su dueño de los sistemas que acaba de descubrir (niebla de guerra). */

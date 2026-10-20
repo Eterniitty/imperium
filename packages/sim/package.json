@@ -12,6 +12,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@imperium/content": "workspace:*",
     "@imperium/procgen": "workspace:*",
     "@imperium/shared": "workspace:*"
   }

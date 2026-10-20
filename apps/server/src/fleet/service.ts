@@ -41,7 +41,7 @@ export class FleetService {
   private async toFleets(db: Database | Tx, rows: Row[]): Promise<Fleet[]> {
     if (rows.length === 0) return [];
     const shipRows = await db
-      .select({ id: ships.id, fleetId: ships.fleetId, classId: ships.classId, hull: ships.hull })
+      .select({ id: ships.id, fleetId: ships.fleetId, classId: ships.classId, hull: ships.hull, humans: ships.humans })
       .from(ships)
       .where(inArray(ships.fleetId, rows.map((r) => r.id)))
       .orderBy(asc(ships.createdAt));
@@ -50,7 +50,7 @@ export class FleetService {
       id: r.id,
       number: r.number,
       ...placeFromRow(this.seed, r, now),
-      ships: shipRows.filter((s) => s.fleetId === r.id).map(({ id, classId, hull }) => ({ id, classId, hull })),
+      ships: shipRows.filter((s) => s.fleetId === r.id).map(({ id, classId, hull, humans }) => ({ id, classId, hull, humans })),
     }));
   }
 

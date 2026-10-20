@@ -132,6 +132,20 @@ Mensajes JSON con campo `t` (tipo). Ejemplos:
 - `GET /api/systems/:systemId` (cookie de sesión, 120 por minuto y cuenta): `{ detail }` si se ha descubierto; si no, 403 `not_discovered`.
 - Tema `me`: la instantánea lleva `discovered` (ids) y cada descubrimiento llega como `{ path: "discovered.<id>", v: true }`. `PROTOCOL_VERSION` = 3.
 
+### Implementado (Fase 7): humanos, colonias y economía
+
+- **Datos** en `packages/content/src/economy.ts` (`HUMANS`, `SHIP_HUMAN_CAPACITY`, `POPULATION`, `INSTALLATIONS`, `ECONOMY`); **reglas puras** en `packages/sim/src/economy.ts` (generación de humanos, colonos mínimos, crecimiento logístico, energía, mano de obra, extracción, refinería, `advanceStock` lineal a trozos, `resolveColony` a pasos de una hora de juego). Las tasas son por hora de juego: horas = Δms × `TIME_SCALE` / 3,6e6; las construcciones duran `horas / TIME_SCALE`.
+- **Modelo de datos** (migración `0006`):
+  - `emperors.humans` + `humans_at`: humanos de la nave del Emperador resueltos a esa hora (crecen solos hasta 500).
+  - `ships.humans`: colonos a bordo.
+  - `colonies (id, emperor_id, system_id, planet_index, name, population, metal, volatiles, crystal, alloys, resolved_at, founded_at)`, único por `(system_id, planet_index)`. `emperor_id` es el dueño y puede cambiar (conquista, Fase 9). Población y existencias son las de `resolved_at`: toda escritura resuelve antes a la hora actual.
+  - `installations (id, colony_id, kind, built_at)`: una fila por instalación.
+  - `colony_builds (id, seq, colony_id, kind, item_id, started_at, finish_at)`: cola; solo la primera está en marcha y tiene un evento `colony.build` programado. Se paga al encargar; al terminar, la siguiente empieza a la hora de fin de la anterior.
+  - `resource_ledger (id, emperor_id, colony_id, reason, ref, metal, volatiles, crystal, alloys, humans, created_at)`: solo inserción (un disparador impide `UPDATE` y `DELETE`); sin claves ajenas para sobrevivir a lo que describe. Motivos: `foundation`, `build`, `colonizer_boarding`. La producción continua no se asienta (es la resolución perezosa).
+- **Órdenes** (WebSocket, `cmd`): `colony.claim { systemId, planetIndex, humans?, fleetId? }` (sistema descubierto, planeta libre; sin `fleetId` desembarcan `humans` de la nave del Emperador, que debe estar allí y parada; con `fleetId`, los colonos del colonizador de esa flota, que se consume y, si la flota se queda vacía, desaparece), `colony.rename { colonyId, name }` (solo el dueño; mismas reglas que el nombre de Emperador, 2–32 caracteres) y `colony.build { colonyId, kind: "installation" | "ship", itemId }` (naves solo con astillero). Errores nuevos en `CommandError`.
+- **Quién ve qué**: el tema privado `me` lleva `colonies` (población, existencias, tasas por hora real, energía, instalaciones y cola) y `humans`; cambios `colonies.<id>` (null si se pierde) y `humans.<emperorId>`. Dueño y nombre de los planetas (territorio) se piden a `GET /api/systems/:id/claims`, solo para sistemas descubiertos. `PROTOCOL_VERSION` = 4.
+- **Evento** `colony.build { buildId }`: resuelve la colonia hasta la hora de fin con lo que tenía, añade la instalación o crea una flota nueva con la nave (el colonizador embarca colonos de la colonia, dejando 50) y pone en marcha la siguiente.
+
 ## 9. Autenticación por enlace mágico
 
 - El usuario introduce su correo; se genera un **token aleatorio de 32 bytes**.
@@ -148,7 +162,7 @@ Mensajes JSON con campo `t` (tipo). Ejemplos:
 - `organizations`, `organization_members`
 - `emperors`, `heirs`, `lineage_cradles`
 - `sectors_touched` (solo sectores con cambios), `sector_leases`
-- `colonies`, `installations`, `inventories`
+- `colonies`, `installations`, `colony_builds` (hechas en la Fase 7; las existencias van en la propia colonia)
 - `fleets`, `ships`
 - `resource_ledger`
 - `scheduled_events`

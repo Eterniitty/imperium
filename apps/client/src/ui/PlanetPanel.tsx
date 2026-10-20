@@ -1,5 +1,9 @@
+import { useWorld } from "../net/world";
+import { useClaims } from "../state/claims";
 import { gameStore, useGame, useT } from "../state/store";
+import { ownColonyAt, planetLabel } from "./colonies";
 import { Deposits, DepositChips, Meter, RESOURCE_COLORS } from "./common";
+import { PlanetColony } from "./PlanetColony";
 
 export function PlanetPanel() {
   const t = useT();
@@ -7,6 +11,8 @@ export function PlanetPanel() {
   const detailStatus = useGame((s) => s.detailStatus);
   const selected = useGame((s) => s.selected);
   const selectedPlanet = useGame((s) => s.selectedPlanet);
+  const colonies = useWorld((s) => s.colonies);
+  const claims = useClaims();
   if (!detail) {
     // Sin explorar (o el detalle aún no ha llegado): solo se sabe la estrella.
     if (!selected) return null;
@@ -24,6 +30,9 @@ export function PlanetPanel() {
     );
   }
   const planet = detail.planets.find((p) => p.index === selectedPlanet) ?? null;
+  // Nombre que ha puesto su dueño (Fase 7), o la designación.
+  const label = (pl: (typeof detail.planets)[number]) =>
+    planetLabel(pl, claims.systemId === detail.summary.id ? claims.claims[pl.index] : undefined, ownColonyAt(colonies, detail.summary.id, pl.index));
 
   return (
     <aside className="side panel">
@@ -44,7 +53,7 @@ export function PlanetPanel() {
             onClick={() => gameStore.getState().selectPlanet(pl.index === selectedPlanet ? null : pl.index)}
           >
             <span className={`ptype ptype-${pl.type}`} />
-            <span className="pname">{pl.name}</span>
+            <span className="pname">{label(pl)}</span>
             <DepositChips planet={pl} />
           </li>
         ))}
@@ -52,7 +61,7 @@ export function PlanetPanel() {
 
       {planet ? (
         <div className="planet-detail">
-          <h3>{planet.name}</h3>
+          <h3>{label(planet)}</h3>
           <div className="muted">{t(`planet.${planet.type}`)}</div>
           <dl className="facts">
             <dt>{t("system.orbit")}</dt>
@@ -77,6 +86,7 @@ export function PlanetPanel() {
             </span>
             <span className="mono">{detail.energy}</span>
           </div>
+          <PlanetColony detail={detail} planet={planet} />
         </div>
       ) : (
         <p className="muted small">{t("system.planetHint")}</p>
