@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Engine } from "../engine/Engine";
 import { engineRef } from "../engineRef";
 import { gameStore, useGame } from "../state/store";
+import { FlightHud } from "./FlightHud";
 import { HelpPanel } from "./HelpPanel";
 import { Legend } from "./Legend";
 import { PlanetPanel } from "./PlanetPanel";
@@ -37,6 +38,7 @@ export function App() {
         <TopBar />
         {view === "galaxy" ? (
           <>
+            <FlightHud />
             <SystemPanel />
             <Legend />
           </>

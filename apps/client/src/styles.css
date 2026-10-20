@@ -350,3 +350,35 @@ kbd {
   .topbar { gap: 12px; left: 8px; right: 8px; }
   .side { left: 8px; right: 8px; width: auto; top: auto; bottom: 8px; max-height: 50%; }
 }
+
+/* ---------- Modo vuelo ---------- */
+
+.mode { display: inline-flex; border: 1px solid var(--panel-border); border-radius: 4px; overflow: hidden; }
+.mode .lang-btn { padding: 5px 10px; font-size: 12.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+.mode kbd { margin-left: 4px; font-size: 10px; padding: 0 3px; }
+
+.flight-hud { position: absolute; inset: 0; pointer-events: none !important; }
+.crosshair {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  color: var(--gold);
+  opacity: 0.75;
+}
+.flight-readout {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  padding: 8px 18px;
+  text-align: center;
+  min-width: 220px;
+}
+.flight-speed { font-family: var(--font-display); font-weight: 700; font-size: 26px; color: var(--gold); font-variant-numeric: tabular-nums; }
+.flight-speed small { font-size: 13px; color: var(--muted); margin-left: 4px; }
+.flight-bar { height: 3px; margin: 6px 0 4px; background: rgba(255, 255, 255, 0.08); border-radius: 2px; overflow: hidden; }
+.flight-bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--gold)); }
+.help-sep { margin-top: 6px; }

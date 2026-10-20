@@ -1,0 +1,109 @@
+import * as THREE from "three";
+import type { Keyboard } from "./input";
+
+/**
+ * Vuelo libre tipo nave en primera persona, con inercia.
+ * - Arrastrar con el ratón orienta la nave (el cursor sigue libre para seleccionar).
+ * - W/S acelera hacia delante/atrás, A/D desplazamiento lateral,
+ *   Espacio/C sube/baja, Q/E alabeo, flechas giran.
+ * - Mayús activa el impulso.
+ * La velocidad no cambia de golpe: se aproxima a la deseada, lo que da
+ * sensación de masa.
+ */
+export class FlightController {
+  enabled = false;
+  readonly velocity = new THREE.Vector3();
+
+  /** Velocidad de crucero en años luz por segundo (representación, no simulación). */
+  baseSpeed = 25;
+  boostFactor = 6;
+  lookSensitivity = 0.0022;
+  rollSpeed = 1.4;
+  turnSpeed = 1.1;
+  /** Mayor = responde antes; menor = más inercia. */
+  responsiveness = 2.5;
+
+  private dragging = false;
+  private lastX = 0;
+  private lastY = 0;
+  private tmp = new THREE.Vector3();
+  private desired = new THREE.Vector3();
+
+  constructor(
+    private camera: THREE.PerspectiveCamera,
+    private dom: HTMLElement,
+    private keyboard: Keyboard,
+  ) {
+    dom.addEventListener("pointerdown", this.onDown);
+    window.addEventListener("pointermove", this.onMove);
+    window.addEventListener("pointerup", this.onUp);
+  }
+
+  get speed(): number {
+    return this.velocity.length();
+  }
+
+  private onDown = (e: PointerEvent) => {
+    if (!this.enabled) return;
+    this.dragging = true;
+    this.lastX = e.clientX;
+    this.lastY = e.clientY;
+  };
+
+  private onMove = (e: PointerEvent) => {
+    if (!this.enabled || !this.dragging) return;
+    const dx = e.clientX - this.lastX;
+    const dy = e.clientY - this.lastY;
+    this.lastX = e.clientX;
+    this.lastY = e.clientY;
+    // Rotación en los ejes locales de la nave: así no hay "polo" que bloquee el giro.
+    this.camera.rotateY(-dx * this.lookSensitivity);
+    this.camera.rotateX(-dy * this.lookSensitivity);
+  };
+
+  private onUp = () => {
+    this.dragging = false;
+  };
+
+  /** Detiene la nave en seco (al cambiar de modo o teletransportar). */
+  stop(): void {
+    this.velocity.set(0, 0, 0);
+  }
+
+  /** Devuelve el desplazamiento aplicado este fotograma. */
+  update(dt: number): THREE.Vector3 {
+    const kb = this.keyboard;
+    if (kb.isDown("KeyQ")) this.camera.rotateZ(this.rollSpeed * dt);
+    if (kb.isDown("KeyE")) this.camera.rotateZ(-this.rollSpeed * dt);
+    if (kb.isDown("ArrowLeft")) this.camera.rotateY(this.turnSpeed * dt);
+    if (kb.isDown("ArrowRight")) this.camera.rotateY(-this.turnSpeed * dt);
+    if (kb.isDown("ArrowUp")) this.camera.rotateX(this.turnSpeed * dt);
+    if (kb.isDown("ArrowDown")) this.camera.rotateX(-this.turnSpeed * dt);
+
+    // Entrada en ejes locales: -Z es "delante" en Three.js.
+    const input = this.tmp.set(0, 0, 0);
+    if (kb.isDown("KeyW")) input.z -= 1;
+    if (kb.isDown("KeyS")) input.z += 1;
+    if (kb.isDown("KeyA")) input.x -= 1;
+    if (kb.isDown("KeyD")) input.x += 1;
+    if (kb.isDown("Space")) input.y += 1;
+    if (kb.isDown("KeyC")) input.y -= 1;
+    if (input.lengthSq() > 0) input.normalize();
+
+    const boost = kb.isDown("ShiftLeft") || kb.isDown("ShiftRight") ? this.boostFactor : 1;
+    this.desired.copy(input).applyQuaternion(this.camera.quaternion).multiplyScalar(this.baseSpeed * boost);
+    const k = 1 - Math.exp(-dt * this.responsiveness);
+    this.velocity.lerp(this.desired, k);
+    if (this.velocity.lengthSq() < 1e-6 && input.lengthSq() === 0) this.velocity.set(0, 0, 0);
+
+    const step = this.velocity.clone().multiplyScalar(dt);
+    this.camera.position.add(step);
+    return step;
+  }
+
+  dispose(): void {
+    this.dom.removeEventListener("pointerdown", this.onDown);
+    window.removeEventListener("pointermove", this.onMove);
+    window.removeEventListener("pointerup", this.onUp);
+  }
+}

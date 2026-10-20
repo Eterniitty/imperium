@@ -66,6 +66,10 @@ export class Engine {
     this.galaxy.enterSelected();
   }
 
+  toggleFlight(): void {
+    if (this.active === this.galaxy) this.galaxy.setFlightMode(!this.galaxy.isFlying);
+  }
+
   goToSector(c: SectorCoord): void {
     if (this.active === this.system) this.exitSystem();
     this.galaxy.goToSector(c);

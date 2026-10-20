@@ -18,6 +18,11 @@ export const es = {
   "hud.goto": "Ir",
   "hud.gotoTitle": "Viajar a un sector",
   "hud.language": "Idioma",
+  "hud.modeFlight": "Vuelo",
+  "hud.modeOrbit": "Órbita",
+  "hud.modeTitle": "Cambiar entre vista de órbita y vuelo de nave (V)",
+  "flight.speed": "Velocidad",
+  "flight.hint": "Arrastra para orientar la nave · W acelerar · Mayús impulso",
 
   "view.galaxy": "Mapa estelar",
   "view.system": "Sistema",
@@ -87,6 +92,9 @@ export const es = {
   "help.boost": "Mayús: viaje rápido",
   "help.select": "Clic: seleccionar · Doble clic o Intro: entrar",
   "help.focus": "F: centrar selección · Esc: volver / deseleccionar",
+  "help.flightToggle": "V: alternar modo vuelo (nave) / órbita",
+  "help.flightLook": "Vuelo: arrastrar para orientar · flechas: girar · Q / E: alabeo",
+  "help.flightMove": "Vuelo: W / S avanzar / frenar · A / D lateral · Espacio / C subir / bajar",
 
   "legend.title": "Clases estelares",
 } as const;

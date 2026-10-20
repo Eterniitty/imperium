@@ -24,6 +24,8 @@ export interface GameState {
   loadedSectors: number;
   loadedSystems: number;
   fps: number;
+  flight: boolean;
+  flightSpeed: number;
 
   hovered: StarSystemSummary | null;
   selected: StarSystemSummary | null;
@@ -37,6 +39,7 @@ export interface GameState {
   select(s: StarSystemSummary | null): void;
   selectPlanet(index: number | null): void;
   setNavigation(focus: WorldPosition, sector: SectorCoord): void;
+  setFlight(flight: boolean, speed: number): void;
   setStats(stats: { loadedSectors: number; loadedSystems: number; fps: number }): void;
 }
 
@@ -62,6 +65,8 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   loadedSectors: 0,
   loadedSystems: 0,
   fps: 0,
+  flight: false,
+  flightSpeed: 0,
 
   hovered: null,
   selected: null,
@@ -98,6 +103,8 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   selectPlanet: (index) => set({ selectedPlanet: index }),
 
   setNavigation: (focusWorld, focusSector) => set({ focusWorld, focusSector }),
+
+  setFlight: (flight, flightSpeed) => set({ flight, flightSpeed: Math.round(flightSpeed * 10) / 10 }),
 
   setStats: (stats) => set(stats),
 }));

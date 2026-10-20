@@ -11,6 +11,7 @@ import {
 import { REBASE_DISTANCE } from "../config";
 import { gameStore } from "../state/store";
 import { Backdrop } from "./Backdrop";
+import { FlightController } from "./FlightController";
 import type { Keyboard } from "./input";
 import { SectorManager } from "./SectorManager";
 import { ringTexture } from "./textures";
@@ -52,6 +53,8 @@ export class GalaxyView implements View {
   private lastSector: SectorCoord | null = null;
   private navTimer = 0;
   private height = 1;
+  private flight: FlightController;
+  private flightMode = false;
 
   constructor(
     dom: HTMLElement,
@@ -72,6 +75,7 @@ export class GalaxyView implements View {
     this.controls.target.set(0, 0, 0);
     this.controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.ROTATE };
     this.controls.enabled = false;
+    this.flight = new FlightController(this.camera, dom, keyboard);
 
     this.sectors.setOrigin(this.origin);
     this.scene.add(this.backdrop.object, this.sectors.group);
@@ -110,12 +114,44 @@ export class GalaxyView implements View {
   }
 
   activate(): void {
-    this.controls.enabled = true;
+    this.controls.enabled = !this.flightMode;
+    this.flight.enabled = this.flightMode;
   }
 
   deactivate(): void {
     this.controls.enabled = false;
+    this.flight.enabled = false;
+    this.flight.stop();
     this.hoverRing.visible = false;
+  }
+
+  get isFlying(): boolean {
+    return this.flightMode;
+  }
+
+  /**
+   * Alterna entre el modo órbita (mapa estratégico) y el modo vuelo (nave).
+   * Al volver a órbita, el punto de giro se coloca delante de la nave.
+   */
+  setFlightMode(on: boolean): void {
+    if (on === this.flightMode) return;
+    this.flightMode = on;
+    this.fly = null;
+    this.flight.stop();
+    if (on) {
+      this.controls.enabled = false;
+      this.flight.enabled = true;
+    } else {
+      this.flight.enabled = false;
+      const forward = new THREE.Vector3();
+      this.camera.getWorldDirection(forward);
+      this.controls.target.copy(this.camera.position).addScaledVector(forward, 40);
+      // Quitar el alabeo: el modo órbita necesita el "arriba" del mundo.
+      this.camera.up.set(0, 1, 0);
+      this.camera.lookAt(this.controls.target);
+      this.controls.enabled = true;
+    }
+    gameStore.getState().setFlight(on, 0);
   }
 
   /** Posición absoluta del foco de la cámara. */
@@ -152,6 +188,7 @@ export class GalaxyView implements View {
 
   /** Salta a un sector (si está muy lejos, teletransporta sin animación). */
   goToSector(c: SectorCoord): void {
+    this.setFlightMode(false);
     const o = sectorOrigin(c);
     const center = { x: o.x + SECTOR_SIZE / 2, y: o.y + SECTOR_SIZE / 2, z: o.z + SECTOR_SIZE / 2 };
     const f = this.focusWorld();
@@ -172,19 +209,31 @@ export class GalaxyView implements View {
 
   focusSelected(): void {
     const sel = gameStore.getState().selected;
-    if (sel) this.flyTo(sel.position, 30);
+    if (!sel) return;
+    this.setFlightMode(false);
+    this.flyTo(sel.position, 30);
   }
 
   enterSelected(): void {
     const sel = gameStore.getState().selected;
     if (!sel) return;
+    this.setFlightMode(false);
     this.flyTo(sel.position, 10, () => this.onEnterSystem(sel));
   }
 
   update(dt: number): void {
-    this.updateFlight(dt);
-    this.updateKeyboardMovement(dt);
-    this.controls.update();
+    if (this.flightMode) {
+      this.flight.update(dt);
+      // El "foco" en vuelo es un punto justo delante de la nave: lo usan la
+      // carga de sectores, el desvanecimiento y el origen flotante.
+      const forward = new THREE.Vector3();
+      this.camera.getWorldDirection(forward);
+      this.controls.target.copy(this.camera.position).addScaledVector(forward, 20);
+    } else {
+      this.updateFlight(dt);
+      this.updateKeyboardMovement(dt);
+      this.controls.update();
+    }
     this.rebaseIfNeeded();
 
     const focus = this.focusWorld();
@@ -206,6 +255,7 @@ export class GalaxyView implements View {
     if (this.navTimer <= 0) {
       this.navTimer = 0.2;
       gameStore.getState().setNavigation(focus, sector);
+      if (this.flightMode) gameStore.getState().setFlight(true, this.flight.speed);
     }
 
     this.updateMarkers();
@@ -305,12 +355,14 @@ export class GalaxyView implements View {
   }
 
   onKey(code: string): void {
-    if (code === "KeyF") this.focusSelected();
+    if (code === "KeyV") this.setFlightMode(!this.flightMode);
+    else if (code === "KeyF") this.focusSelected();
     else if (code === "Enter" || code === "NumpadEnter") this.enterSelected();
     else if (code === "Escape") gameStore.getState().select(null);
   }
 
   dispose(): void {
+    this.flight.dispose();
     this.controls.dispose();
     this.sectors.clear();
   }

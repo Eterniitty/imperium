@@ -18,6 +18,9 @@ export function HelpPanel() {
           <li>{t("help.boost")}</li>
           <li>{t("help.select")}</li>
           <li>{t("help.focus")}</li>
+          <li className="help-sep">{t("help.flightToggle")}</li>
+          <li>{t("help.flightLook")}</li>
+          <li>{t("help.flightMove")}</li>
         </ul>
       )}
     </div>

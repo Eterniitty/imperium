@@ -15,6 +15,7 @@ export function TopBar() {
   const loaded = useGame((s) => s.loadedSystems);
   const fps = useGame((s) => s.fps);
   const selected = useGame((s) => s.selected);
+  const flight = useGame((s) => s.flight);
   const [target, setTarget] = useState({ x: "0", y: "0", z: "0" });
 
   const go = (e: FormEvent) => {
@@ -76,6 +77,16 @@ export function TopBar() {
       )}
 
       <div className="topbar-right">
+        {view === "galaxy" && (
+          <div className="mode" role="group" title={t("hud.modeTitle")}>
+            <button className={flight ? "lang-btn" : "lang-btn active"} aria-pressed={!flight} onClick={() => flight && engineRef.current?.toggleFlight()}>
+              {t("hud.modeOrbit")}
+            </button>
+            <button className={flight ? "lang-btn active" : "lang-btn"} aria-pressed={flight} onClick={() => !flight && engineRef.current?.toggleFlight()}>
+              {t("hud.modeFlight")} <kbd>V</kbd>
+            </button>
+          </div>
+        )}
         <span className="fps mono">
           {fps} {t("hud.fps")}
         </span>

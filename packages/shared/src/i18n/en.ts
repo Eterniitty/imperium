@@ -16,6 +16,11 @@ export const en: Record<I18nKey, string> = {
   "hud.goto": "Go",
   "hud.gotoTitle": "Travel to a sector",
   "hud.language": "Language",
+  "hud.modeFlight": "Flight",
+  "hud.modeOrbit": "Orbit",
+  "hud.modeTitle": "Switch between orbit view and ship flight (V)",
+  "flight.speed": "Speed",
+  "flight.hint": "Drag to steer the ship · W accelerate · Shift boost",
 
   "view.galaxy": "Star map",
   "view.system": "System",
@@ -85,6 +90,9 @@ export const en: Record<I18nKey, string> = {
   "help.boost": "Shift: fast travel",
   "help.select": "Click: select · Double click or Enter: enter",
   "help.focus": "F: focus selection · Esc: back / deselect",
+  "help.flightToggle": "V: toggle flight (ship) / orbit mode",
+  "help.flightLook": "Flight: drag to steer · arrows: turn · Q / E: roll",
+  "help.flightMove": "Flight: W / S forward / brake · A / D strafe · Space / C up / down",
 
   "legend.title": "Stellar classes",
 };
