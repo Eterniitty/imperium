@@ -48,3 +48,23 @@ export const sessions = pgTable(
   },
   (t) => [index("sessions_account_id_idx").on(t.accountId)],
 );
+
+/**
+ * Emperadores: uno por cuenta. Solo se guarda el sistema donde está; su nombre y
+ * su posición se deducen del generador procedural, que es determinista.
+ */
+export const emperors = pgTable("emperors", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  accountId: uuid("account_id")
+    .notNull()
+    .unique()
+    .references(() => accounts.id, { onDelete: "cascade" }),
+  /** Nombre tal y como lo escribió el jugador (normalizado a NFC). */
+  name: text("name").notNull(),
+  /** Nombre en forma comparable (NFKC y minúsculas): impide "Aurelia" y "AURELIA" a la vez. */
+  nameKey: text("name_key").notNull().unique(),
+  /** Sistema donde está: "sx:sy:sz:indice". */
+  systemId: text("system_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

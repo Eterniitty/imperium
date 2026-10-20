@@ -1,18 +1,19 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { MAGIC_LINK_TTL_MINUTES } from "@imperium/shared";
+import { EMPEROR_NAME_MAX, EMPEROR_NAME_MIN, MAGIC_LINK_TTL_MINUTES } from "@imperium/shared";
 import { authStore, useAuth } from "../state/auth";
-import { gameStore, useGame, useT } from "../state/store";
+import { findSystemSummary, gameStore, useGame, useT } from "../state/store";
 import { LanguageToggle } from "./LanguageToggle";
 
 /** Formulario de acceso o botón de entrada, según el estado de la sesión. */
 function AuthPanel() {
   const t = useT();
   const locale = useGame((s) => s.locale);
-  const { status, account, sentTo, pending, busy, error } = useAuth((s) => s);
+  const { status, account, emperor, sentTo, pending, busy, error } = useAuth((s) => s);
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
 
   const enter = (
-    <button className="btn btn-primary start-button" onClick={() => gameStore.getState().start()} autoFocus>
+    <button className="btn btn-primary start-button" onClick={() => gameStore.getState().start(emperor?.location)} autoFocus>
       {t("start.enter")}
     </button>
   );
@@ -21,6 +22,20 @@ function AuthPanel() {
     e.preventDefault();
     if (!busy) void authStore.getState().requestLink(email, locale);
   };
+
+  const crown = (e: FormEvent) => {
+    e.preventDefault();
+    if (!busy) void authStore.getState().createEmperor(name);
+  };
+
+  const signedIn = (
+    <p className="start-hint">
+      {t("auth.signedInAs", { email: account?.email ?? "" })} ·{" "}
+      <button className="link-btn" onClick={() => void authStore.getState().logout()} disabled={busy}>
+        {t("auth.logout")}
+      </button>
+    </p>
+  );
 
   switch (status) {
     case "loading":
@@ -57,21 +72,55 @@ function AuthPanel() {
         </>
       );
 
+    case "naming":
+      return (
+        <>
+          <form className="auth-box" onSubmit={crown}>
+            <h2 className="auth-title">{t("emperor.title")}</h2>
+            <label className="auth-label" htmlFor="emperor-name">
+              {t("emperor.nameLabel")}
+            </label>
+            <input
+              id="emperor-name"
+              className="auth-input"
+              type="text"
+              autoComplete="off"
+              spellCheck={false}
+              required
+              minLength={EMPEROR_NAME_MIN}
+              maxLength={EMPEROR_NAME_MAX}
+              placeholder={t("emperor.namePlaceholder")}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+            />
+            <p className="muted small">{t("emperor.nameRules", { min: EMPEROR_NAME_MIN, max: EMPEROR_NAME_MAX })}</p>
+            {error && (
+              <p className="auth-error" role="alert">
+                {t(error)}
+              </p>
+            )}
+            <button className="btn btn-primary" type="submit" disabled={busy}>
+              {t(busy ? "emperor.creating" : "emperor.create")}
+            </button>
+            <p className="start-hint">{t("emperor.hint")}</p>
+          </form>
+          {signedIn}
+        </>
+      );
+
     case "authenticated":
       return (
         <>
+          {emperor && <p className="start-emperor">{t("emperor.at", { name: emperor.name, system: emperor.location.systemName })}</p>}
+          {emperor && !findSystemSummary(emperor.location.systemId) && <p className="auth-warning">{t("emperor.mismatch")}</p>}
           {enter}
           {error && (
             <p className="auth-error" role="alert">
               {t(error)}
             </p>
           )}
-          <p className="start-hint">
-            {t("auth.signedInAs", { email: account?.email ?? "" })} ·{" "}
-            <button className="link-btn" onClick={() => void authStore.getState().logout()} disabled={busy}>
-              {t("auth.logout")}
-            </button>
-          </p>
+          {signedIn}
         </>
       );
 

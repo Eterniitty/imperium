@@ -9,6 +9,7 @@ import {
   type WorldPosition,
 } from "@imperium/shared";
 import { REBASE_DISTANCE } from "../config";
+import { authStore } from "../state/auth";
 import { gameStore } from "../state/store";
 import { Backdrop } from "./Backdrop";
 import { FlightController } from "./FlightController";
@@ -48,6 +49,7 @@ export class GalaxyView implements View {
   private sectorBox: THREE.LineSegments;
   private selectRing: THREE.Sprite;
   private hoverRing: THREE.Sprite;
+  private emperorRing: THREE.Sprite;
   private link: THREE.Line;
   private fly: FlyAnimation | null = null;
   private lastSector: SectorCoord | null = null;
@@ -101,6 +103,14 @@ export class GalaxyView implements View {
     this.hoverRing.visible = false;
     this.hoverRing.renderOrder = 10;
 
+    // Dónde está el Emperador del jugador: siempre visible, por encima de todo.
+    this.emperorRing = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: ringTexture(), color: 0xc792ff, depthTest: false, sizeAttenuation: false, transparent: true }),
+    );
+    this.emperorRing.scale.setScalar(0.075);
+    this.emperorRing.visible = false;
+    this.emperorRing.renderOrder = 11;
+
     // Línea del foco a la selección: muestra distancia y dirección.
     const linkGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
     this.link = new THREE.Line(
@@ -110,7 +120,7 @@ export class GalaxyView implements View {
     this.link.visible = false;
     this.link.frustumCulled = false;
 
-    this.scene.add(this.selectRing, this.hoverRing, this.link);
+    this.scene.add(this.selectRing, this.hoverRing, this.emperorRing, this.link);
   }
 
   activate(): void {
@@ -188,23 +198,31 @@ export class GalaxyView implements View {
 
   /** Salta a un sector (si está muy lejos, teletransporta sin animación). */
   goToSector(c: SectorCoord): void {
-    this.setFlightMode(false);
     const o = sectorOrigin(c);
-    const center = { x: o.x + SECTOR_SIZE / 2, y: o.y + SECTOR_SIZE / 2, z: o.z + SECTOR_SIZE / 2 };
+    if (this.goTo({ x: o.x + SECTOR_SIZE / 2, y: o.y + SECTOR_SIZE / 2, z: o.z + SECTOR_SIZE / 2 }, 160)) {
+      gameStore.getState().select(null);
+    }
+  }
+
+  /**
+   * Lleva el foco a una posición absoluta: volando si está cerca, o
+   * teletransportando si está lejos. Devuelve true si teletransportó.
+   */
+  goTo(target: WorldPosition, distance: number): boolean {
+    this.setFlightMode(false);
     const f = this.focusWorld();
-    const dist = Math.hypot(center.x - f.x, center.y - f.y, center.z - f.z);
-    if (dist < SECTOR_SIZE * 6) {
-      this.flyTo(center, 160);
-      return;
+    if (Math.hypot(target.x - f.x, target.y - f.y, target.z - f.z) < SECTOR_SIZE * 6) {
+      this.flyTo(target, distance);
+      return false;
     }
     this.fly = null;
-    const offset = this.camera.position.clone().sub(this.controls.target).setLength(160);
-    this.origin = center;
+    const offset = this.camera.position.clone().sub(this.controls.target).setLength(distance);
+    this.origin = { ...target };
     this.controls.target.set(0, 0, 0);
     this.camera.position.copy(offset);
     this.sectors.clear();
     this.sectors.setOrigin(this.origin);
-    gameStore.getState().select(null);
+    return true;
   }
 
   focusSelected(): void {
@@ -315,6 +333,13 @@ export class GalaxyView implements View {
     } else {
       this.selectRing.visible = false;
       this.link.visible = false;
+    }
+    const emperor = authStore.getState().emperor;
+    if (emperor) {
+      this.emperorRing.position.copy(this.sectors.toScene(emperor.location.position));
+      this.emperorRing.visible = true;
+    } else {
+      this.emperorRing.visible = false;
     }
     if (hovered && hovered.id !== selected?.id && this.controls.enabled) {
       this.hoverRing.position.copy(this.sectors.toScene(hovered.position));

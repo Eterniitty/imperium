@@ -12,5 +12,8 @@ export default defineConfig({
   test: {
     include: ["packages/*/test/**/*.test.ts", "apps/*/test/**/*.test.ts"],
     environment: "node",
+    // Los tests de integración del servidor comparten la base de datos de pruebas
+    // y la vacían al empezar: en paralelo se pisarían.
+    fileParallelism: false,
   },
 });

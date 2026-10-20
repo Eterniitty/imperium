@@ -4,6 +4,7 @@ import { GENERATOR_VERSION, type ApiError, type HealthResponse } from "@imperium
 import { authRoutes } from "./auth/routes";
 import type { ServerConfig } from "./config";
 import type { Database } from "./db/client";
+import { emperorRoutes } from "./emperor/routes";
 import { createMailer, type Mailer } from "./mail";
 
 /** Versión del servidor; la inyecta esbuild al compilar y en desarrollo vale "dev". */
@@ -58,6 +59,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     db: deps.db,
     mailer: deps.mailer ?? createMailer(config, app.log),
   });
+
+  await app.register(emperorRoutes, { config, db: deps.db });
 
   return app;
 }

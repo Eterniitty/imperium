@@ -11,8 +11,8 @@ Idioma de trabajo: **español** (código y comentarios en español; identificado
 
 ## Estado
 - Fase 1 (diseño), 2 (arquitectura) y 3 (prototipo local) terminadas.
-- **Fase 4 en curso** — servidor autoritativo (Fastify + ws), acceso por correo con enlace de un solo uso, Emperador persistente, dos jugadores en el mismo universo. Pasos: 4a esqueleto del servidor (hecho), 4b base de datos y cuentas (hecho), 4c Emperador persistente, 4d WebSocket y dos jugadores.
-- El cliente aún genera el universo localmente.
+- **Fase 4 en curso** — servidor autoritativo (Fastify + ws), acceso por correo con enlace de un solo uso, Emperador persistente, dos jugadores en el mismo universo. Pasos: 4a esqueleto del servidor (hecho), 4b base de datos y cuentas (hecho), 4c Emperador persistente (hecho: nombre único, aparece en el Núcleo Humano, traslado provisional instantáneo), 4d WebSocket y dos jugadores.
+- El cliente aún genera el universo localmente; servidor y cliente deben usar la misma semilla (`UNIVERSE_SEED` / `VITE_UNIVERSE_SEED`).
 
 ## Reglas del proyecto
 1. Trabaja por fases. No construyas todo de golpe ni avances a arquitectura distribuida sin un prototipo jugable.

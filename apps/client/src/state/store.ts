@@ -1,8 +1,11 @@
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
-import { generateSystemDetail } from "@imperium/procgen";
+import { generateSector, generateSystemDetail } from "@imperium/procgen";
 import {
+  parseSystemId,
   translate,
+  worldToSector,
+  type EmperorLocation,
   type I18nKey,
   type Locale,
   type SectorCoord,
@@ -32,7 +35,8 @@ export interface GameState {
   detail: StarSystemDetail | null;
   selectedPlanet: number | null;
 
-  start(): void;
+  /** Entra en el juego; con Emperador, la cámara empieza en su sistema y lo selecciona. */
+  start(at?: EmperorLocation): void;
   setLocale(locale: Locale): void;
   setView(view: ViewMode): void;
   setHovered(s: StarSystemSummary | null): void;
@@ -41,6 +45,16 @@ export interface GameState {
   setNavigation(focus: WorldPosition, sector: SectorCoord): void;
   setFlight(flight: boolean, speed: number): void;
   setStats(stats: { loadedSectors: number; loadedSystems: number; fps: number }): void;
+}
+
+/**
+ * Resumen de un sistema generado en este cliente. Null si no existe, lo que
+ * indica que el cliente y el servidor usan semillas distintas.
+ */
+export function findSystemSummary(systemId: string): StarSystemSummary | null {
+  const { sector, index } = parseSystemId(systemId);
+  const s = generateSector(UNIVERSE_SEED, sector).systems[index];
+  return s && s.id === systemId ? s : null;
 }
 
 const LOCALE_KEY = "imperium.locale";
@@ -73,7 +87,11 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   detail: null,
   selectedPlanet: null,
 
-  start: () => set({ started: true }),
+  start: (at) => {
+    if (!at) return set({ started: true });
+    set({ started: true, focusWorld: { ...at.position }, focusSector: worldToSector(at.position) });
+    get().select(findSystemSummary(at.systemId));
+  },
 
   setLocale: (locale) => {
     try {

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { engineRef } from "../engineRef";
+import { useAuth } from "../state/auth";
 import { useGame, useT } from "../state/store";
 import { LanguageToggle } from "./LanguageToggle";
 import { ServerStatus } from "./ServerStatus";
@@ -17,6 +18,7 @@ export function TopBar() {
   const fps = useGame((s) => s.fps);
   const selected = useGame((s) => s.selected);
   const flight = useGame((s) => s.flight);
+  const emperor = useAuth((s) => s.emperor);
   const [target, setTarget] = useState({ x: "0", y: "0", z: "0" });
 
   const go = (e: FormEvent) => {
@@ -31,6 +33,13 @@ export function TopBar() {
       <div className="brand">
         <span className="brand-mark">✦</span> {t("app.title")}
       </div>
+
+      {emperor && (
+        <button className="stat stat-button" onClick={() => engineRef.current?.goToEmperor()} title={t("emperor.goTo")}>
+          <span className="stat-label">{t("emperor.label")}</span>
+          <span className="stat-value">{emperor.name}</span>
+        </button>
+      )}
 
       {view === "system" ? (
         <>

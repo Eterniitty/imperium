@@ -3,6 +3,7 @@
  * de lo que entra en el servidor están en `schemas.ts`, aparte, para que el
  * cliente no cargue Zod.
  */
+import type { WorldPosition } from "./coords";
 import type { Locale } from "./i18n";
 
 /** Respuesta de `GET /api/health`. */
@@ -43,12 +44,39 @@ export interface AuthPeekResponse {
   email: string;
 }
 
+/** Longitud mínima y máxima del nombre de un Emperador. */
+export const EMPEROR_NAME_MIN = 3;
+export const EMPEROR_NAME_MAX = 24;
+
+/** Dónde está un Emperador: el sistema estelar y su posición absoluta. */
+export interface EmperorLocation {
+  systemId: string;
+  systemName: string;
+  position: WorldPosition;
+}
+
+/** Emperador tal y como lo ve su propietario. */
+export interface Emperor {
+  id: string;
+  name: string;
+  location: EmperorLocation;
+}
+
+/** Respuesta de `GET /api/emperor`, `POST /api/emperor` y `POST /api/emperor/move`. */
+export interface EmperorResponse {
+  emperor: Emperor;
+}
+
 /** Códigos de error de la API; el cliente los traduce con claves `error.*`. */
 export type ApiErrorCode =
   | "invalid_request"
   | "unauthenticated"
   | "invalid_or_expired"
   | "rate_limited"
+  | "no_emperor"
+  | "emperor_exists"
+  | "name_taken"
+  | "unknown_system"
   | "internal";
 
 export interface ApiError {

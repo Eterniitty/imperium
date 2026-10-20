@@ -1,5 +1,7 @@
-import { distance } from "@imperium/shared";
+import { useEffect, useState } from "react";
+import { distance, type I18nKey } from "@imperium/shared";
 import { engineRef } from "../engineRef";
+import { authStore, useAuth } from "../state/auth";
 import { gameStore, useGame, useT } from "../state/store";
 import { DepositChips, Meter, RESOURCE_COLORS, starColorCss } from "./common";
 
@@ -9,6 +11,18 @@ export function SystemPanel() {
   const detail = useGame((s) => s.detail);
   const focus = useGame((s) => s.focusWorld);
   const hovered = useGame((s) => s.hovered);
+  const emperor = useAuth((s) => s.emperor);
+  const [moving, setMoving] = useState(false);
+  const [moveError, setMoveError] = useState<I18nKey | null>(null);
+
+  // El error de un traslado solo tiene sentido para el sistema en que se intentó.
+  useEffect(() => setMoveError(null), [selected?.id]);
+
+  const moveHere = async (systemId: string) => {
+    setMoving(true);
+    setMoveError(await authStore.getState().moveEmperor(systemId));
+    setMoving(false);
+  };
 
   if (!selected || !detail) {
     return (
@@ -27,6 +41,7 @@ export function SystemPanel() {
   }
 
   const d = distance(focus, selected.position);
+  const emperorHere = emperor?.location.systemId === selected.id;
   const p = selected.position;
 
   return (
@@ -36,6 +51,7 @@ export function SystemPanel() {
         <div>
           <h2>{selected.name}</h2>
           <div className="tag unknown">{t("system.unexplored")}</div>
+          {emperorHere && <div className="tag emperor">{t("emperor.here")}</div>}
         </div>
         <button className="icon-btn" aria-label={t("system.close")} onClick={() => gameStore.getState().select(null)}>
           ×
@@ -85,7 +101,17 @@ export function SystemPanel() {
         <button className="btn btn-primary" onClick={() => engineRef.current?.enterSelected()}>
           {t("system.enter")} <kbd>↵</kbd>
         </button>
+        {emperor && !emperorHere && (
+          <button className="btn" onClick={() => void moveHere(selected.id)} disabled={moving}>
+            {t(moving ? "emperor.moving" : "emperor.move")}
+          </button>
+        )}
       </div>
+      {moveError && (
+        <p className="auth-error" role="alert">
+          {t(moveError)}
+        </p>
+      )}
     </aside>
   );
 }

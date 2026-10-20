@@ -20,6 +20,9 @@ const EnvSchema = z
     // Dirección pública del cliente; los enlaces de acceso apuntan aquí. Nunca se
     // deduce de la cabecera Host, que un atacante puede falsear.
     PUBLIC_URL: z.url().transform((u) => u.replace(/\/+$/, "")),
+    // Semilla del universo. Hasta el paso 4d, en que el servidor la enviará al
+    // cliente, debe coincidir con VITE_UNIVERSE_SEED del cliente.
+    UNIVERSE_SEED: z.string().min(1).default("imperium-alpha"),
     MAIL_TRANSPORT: z.enum(["console", "smtp"]).default("console"),
     // Sin HTTPS el navegador no guarda cookies Secure: solo se desactiva en desarrollo o pruebas.
     COOKIE_SECURE: z

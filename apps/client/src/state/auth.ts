@@ -6,6 +6,8 @@ import {
   type AuthAccount,
   type AuthMeResponse,
   type AuthPeekResponse,
+  type Emperor,
+  type EmperorResponse,
   type I18nKey,
   type Locale,
 } from "@imperium/shared";
@@ -18,13 +20,15 @@ import {
  * - sent: enlace enviado, a la espera de que el jugador lo abra.
  * - confirm: la URL trae un enlace; se muestra a qué cuenta lleva y se pide confirmación.
  * - verifying: canjeando el enlace.
- * - authenticated: sesión abierta.
+ * - naming: sesión abierta, pero la cuenta aún no tiene Emperador; se pide su nombre.
+ * - authenticated: sesión abierta y Emperador cargado.
  */
-export type AuthStatus = "loading" | "offline" | "anonymous" | "sent" | "confirm" | "verifying" | "authenticated";
+export type AuthStatus = "loading" | "offline" | "anonymous" | "sent" | "confirm" | "verifying" | "naming" | "authenticated";
 
 export interface AuthState {
   status: AuthStatus;
   account: AuthAccount | null;
+  emperor: Emperor | null;
   sentTo: string | null;
   /** Enlace pendiente de confirmar: el token (solo en memoria) y el correo enmascarado. */
   pending: { token: string; email: string } | null;
@@ -37,12 +41,15 @@ export interface AuthState {
   cancelLogin(): void;
   reset(): void;
   logout(): Promise<void>;
+  createEmperor(name: string): Promise<void>;
+  /** Traslada al Emperador al sistema indicado. Devuelve el error, si lo hay. */
+  moveEmperor(systemId: string): Promise<I18nKey | null>;
 }
 
 /** Resultado de una llamada a la API: el cuerpo, o el código de error traducible. */
 type ApiResult<T> = { ok: true; data: T } | { ok: false; status: number; error: I18nKey };
 
-async function api<T>(method: "GET" | "POST", url: string, body?: unknown): Promise<ApiResult<T>> {
+export async function api<T>(method: "GET" | "POST", url: string, body?: unknown): Promise<ApiResult<T>> {
   let res: Response;
   try {
     res = await fetch(url, {
@@ -77,12 +84,23 @@ function takeLoginToken(): string | null {
 
 let initialized = false;
 
-/** Estado de reposo según haya o no sesión abierta. */
-const idle = (account: AuthAccount | null) => ({ status: account ? ("authenticated" as const) : ("anonymous" as const), account });
+/**
+ * Estado de reposo según haya o no sesión abierta. Con sesión, carga el
+ * Emperador: si la cuenta aún no tiene, toca nombrarlo.
+ */
+async function idle(account: AuthAccount | null): Promise<Partial<AuthState>> {
+  if (!account) return { status: "anonymous", account: null, emperor: null };
+  const res = await api<EmperorResponse>("GET", "/api/emperor");
+  if (res.ok) return { status: "authenticated", account, emperor: res.data.emperor };
+  if (res.status === 404) return { status: "naming", account, emperor: null };
+  if (res.status === 401) return { status: "anonymous", account: null, emperor: null, error: res.error };
+  return { status: "offline", account: null, emperor: null };
+}
 
 export const authStore = createStore<AuthState>()((set, get) => ({
   status: "loading",
   account: null,
+  emperor: null,
   sentTo: null,
   pending: null,
   busy: false,
@@ -103,9 +121,9 @@ export const authStore = createStore<AuthState>()((set, get) => ({
       // No se canjea sin preguntar: un enlace ajeno metería al jugador en otra cuenta.
       const peek = await api<AuthPeekResponse>("POST", "/api/auth/peek", { token });
       if (peek.ok) return set({ status: "confirm", account, pending: { token, email: peek.data.email } });
-      return set({ ...idle(account), error: peek.error });
+      return set({ ...(await idle(account)), error: peek.error });
     }
-    set(idle(account));
+    set(await idle(account));
   },
 
   confirmLogin: async () => {
@@ -113,13 +131,16 @@ export const authStore = createStore<AuthState>()((set, get) => ({
     if (!pending) return;
     set({ status: "verifying", error: null });
     const res = await api<AuthMeResponse>("POST", "/api/auth/verify", { token: pending.token });
-    if (res.ok) return set({ status: "authenticated", account: res.data.account, pending: null });
+    if (res.ok) return set({ ...(await idle(res.data.account)), pending: null });
     // Sin red se conserva el enlace para reintentar; si no es válido, se descarta.
     if (res.status === 0) return set({ status: "confirm", error: res.error });
-    set({ ...idle(get().account), pending: null, error: res.error });
+    set({ ...(await idle(get().account)), pending: null, error: res.error });
   },
 
-  cancelLogin: () => set({ ...idle(get().account), pending: null, error: null }),
+  cancelLogin: () => {
+    const { account, emperor } = get();
+    set({ status: !account ? "anonymous" : emperor ? "authenticated" : "naming", pending: null, error: null });
+  },
 
   requestLink: async (email, locale) => {
     set({ busy: true, error: null });
@@ -133,7 +154,26 @@ export const authStore = createStore<AuthState>()((set, get) => ({
   logout: async () => {
     set({ busy: true });
     await api("POST", "/api/auth/logout");
-    set({ busy: false, status: "anonymous", account: null, sentTo: null, error: null });
+    set({ busy: false, status: "anonymous", account: null, emperor: null, sentTo: null, error: null });
+  },
+
+  createEmperor: async (name) => {
+    set({ busy: true, error: null });
+    const res = await api<EmperorResponse>("POST", "/api/emperor", { name });
+    if (res.ok) return set({ busy: false, status: "authenticated", emperor: res.data.emperor });
+    // Si otra pestaña ya lo creó, se carga el existente.
+    if (res.status === 409 && res.error === "error.emperor_exists") return set({ busy: false, ...(await idle(get().account)) });
+    if (res.status === 401) return set({ busy: false, status: "anonymous", account: null, error: res.error });
+    set({ busy: false, error: res.error });
+  },
+
+  moveEmperor: async (systemId) => {
+    const res = await api<EmperorResponse>("POST", "/api/emperor/move", { systemId });
+    if (res.ok) {
+      set({ emperor: res.data.emperor });
+      return null;
+    }
+    return res.error;
   },
 }));
 

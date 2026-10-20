@@ -2,7 +2,8 @@ import * as THREE from "three";
 import type { SectorCoord, StarSystemSummary } from "@imperium/shared";
 import { generateSystemDetail } from "@imperium/procgen";
 import { UNIVERSE_SEED } from "../config";
-import { gameStore } from "../state/store";
+import { authStore } from "../state/auth";
+import { findSystemSummary, gameStore } from "../state/store";
 import { GalaxyView } from "./GalaxyView";
 import { Keyboard } from "./input";
 import { SystemView } from "./SystemView";
@@ -73,6 +74,15 @@ export class Engine {
   goToSector(c: SectorCoord): void {
     if (this.active === this.system) this.exitSystem();
     this.galaxy.goToSector(c);
+  }
+
+  /** Centra la vista en el sistema donde está el Emperador y lo selecciona. */
+  goToEmperor(): void {
+    const emperor = authStore.getState().emperor;
+    if (!emperor) return;
+    if (this.active === this.system) this.exitSystem();
+    this.galaxy.goTo(emperor.location.position, 30);
+    gameStore.getState().select(findSystemSummary(emperor.location.systemId));
   }
 
   enterSystem(s: StarSystemSummary): void {
