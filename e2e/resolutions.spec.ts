@@ -28,7 +28,8 @@ async function checkLayout(page: Page, label: string) {
 }
 
 test("la interfaz cabe en distintas resoluciones, pilotando y en el mapa", async ({ page }) => {
-  test.setTimeout(120_000);
+  // Cuatro tamaños con capturas: en la máquina de pruebas (2 CPU, WebGL por software) ronda los 2 minutos.
+  test.setTimeout(240_000);
   await page.goto("/");
   await page.getByLabel("Correo electrónico").fill("pantallas@aeonarch.test");
   await page.getByRole("button", { name: "Enviar enlace de acceso" }).click();

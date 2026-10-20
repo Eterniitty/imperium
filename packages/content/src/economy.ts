@@ -44,9 +44,13 @@ export const SHIP_HUMAN_CAPACITY: Partial<Record<ShipClassId, number>> = {
 
 /** Crecimiento de la población de una colonia (logístico, hacia un tope). */
 export const POPULATION = {
-  /** Tope de población: `capMin + capPerHabitability × habitabilidad`. */
-  capMin: 100,
-  capPerHabitability: 9900,
+  /**
+   * Tope de población: `capMin + capPerHabitability × habitabilidad`. El mínimo
+   * cubre siempre a los colonos necesarios para fundar (hasta 200 en un mundo
+   * hostil): ninguna colonia nace por encima de lo que su planeta admite.
+   */
+  capMin: 400,
+  capPerHabitability: 9600,
   /** Tasa de crecimiento logístico por hora (≈ duplica la población en un día y medio). */
   growthPerHour: 0.02,
 } as const;
@@ -148,6 +152,8 @@ export function validateEconomy(): string[] {
   }
   if (HUMANS.flagshipStart > HUMANS.flagshipCapacity) errors.push("La nave del Emperador empieza con más humanos de los que caben");
   if (HUMANS.minColonistsBase + HUMANS.minColonistsHostile > HUMANS.flagshipCapacity) errors.push("Hay planetas que ni la nave del Emperador llena podría colonizar");
+  if (HUMANS.minColonistsBase + HUMANS.minColonistsHostile > POPULATION.capMin)
+    errors.push("Los colonos mínimos de un mundo hostil superan su tope de población: la colonia nacería menguando");
   for (const [id, cap] of Object.entries(SHIP_HUMAN_CAPACITY)) if (!(cap > 0)) errors.push(`nave ${id}: capacidad de humanos no positiva`);
   for (const r of STOCK_IDS) if (ECONOMY.foundingStock[r] > ECONOMY.storage[r]) errors.push(`Existencias iniciales de ${r} por encima del almacén`);
   return errors;

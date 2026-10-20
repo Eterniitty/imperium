@@ -339,7 +339,8 @@ describe.skipIf(!TEST_DATABASE_URL)("colonias y economía", () => {
     expect(fleet.ships).toEqual([{ id: expect.any(String), classId: "colonizer", hull: getShipClass("colonizer")!.hull, humans: boarded }]);
     const colony = await s.op<Colony>(`colonies.${id}`, from);
     expect(colony.population).toBeGreaterThanOrEqual(HUMANS.colonyKeep);
-    expect(colony.population).toBeLessThan(HUMANS.colonyKeep + 1);
+    // Los embarcados son enteros y la población sigue creciendo un instante: margen de un par de humanos.
+    expect(colony.population).toBeLessThan(HUMANS.colonyKeep + 2);
     expect((await ledgerOf(id)).map((l) => [l.reason, l.humans])).toEqual([
       ["foundation", need0],
       ["build", 0],
