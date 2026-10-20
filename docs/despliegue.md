@@ -16,7 +16,8 @@ Lista de comprobación del despliegue en **Hetzner CPX22** (Ubuntu 26.04, Núrem
 
 - **Cliente:** `./scripts/deploy-client.sh` compila y copia el cliente a `/var/www/aeonarch`. La carpeta pertenece al usuario `imperium`, así que no necesita sudo.
 - **Servidor:** `./scripts/deploy-server.sh` compila el servidor y reinicia el servicio de usuario de systemd `aeonarch-server` (`deploy/aeonarch-server.service`). Escucha solo en `127.0.0.1:3000`; Caddy le pasa `/api/*` y `/ws`, detrás del mismo `basicauth`.
-- Registro del servidor: `journalctl --user -u aeonarch-server -f`.
+- Registro del servidor: `journalctl --user -u aeonarch-server -f`. Con `MAIL_TRANSPORT=console`, los enlaces de acceso aparecen ahí: `journalctl --user -u aeonarch-server | grep 'Enlace de acceso'`.
+- Base de datos: PostgreSQL del paquete de Ubuntu, solo escucha en local; el servidor entra por socket sin contraseña y aplica las migraciones al arrancar.
 - Preparación única (con sudo): `sudo loginctl enable-linger imperium`, para que el servicio arranque con el sistema y no dependa de una sesión abierta.
 - Caddy: la configuración de referencia está en `deploy/Caddyfile` (sin el hash de la contraseña).
 
@@ -33,7 +34,7 @@ Hetzner **solo factura el tráfico saliente** (20 TB incluidos, ~1 €/TB adicio
 
 - [ ] Docker y Docker Compose.
 - [ ] Caddy como proxy inverso con HTTPS (certificado de origen de Cloudflare o ACME).
-- [ ] PostgreSQL (contenedor, volumen local, sin exponer puertos al exterior).
+- [x] PostgreSQL (paquete de Ubuntu, solo local, sin exponer puertos al exterior).
 - [ ] Redis (contenedor, sin exponer puertos al exterior).
 - [ ] **Copias de seguridad fuera del servidor** (p. ej. `pg_dump` cifrado a almacenamiento externo), con restauración probada.
 - [ ] Correo: dominio propio con **SPF** y **DKIM** (y DMARC) para los enlaces mágicos. Verificar que `MAIL_TRANSPORT` no es `console` en producción.

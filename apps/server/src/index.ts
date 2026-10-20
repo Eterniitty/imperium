@@ -1,8 +1,12 @@
 import { buildApp } from "./app";
 import { loadConfig } from "./config";
+import { createDb } from "./db/client";
 
 const config = loadConfig();
-const app = buildApp(config);
+const database = createDb(config.DATABASE_URL);
+await database.migrate();
+const app = await buildApp(config, { db: database.db });
+app.addHook("onClose", () => database.close());
 
 // Cierre ordenado: systemd envía SIGTERM al reiniciar o parar el servicio.
 for (const signal of ["SIGTERM", "SIGINT"] as const) {
@@ -20,6 +24,7 @@ for (const signal of ["SIGTERM", "SIGINT"] as const) {
 
 try {
   await app.listen({ host: config.SERVER_HOST, port: config.SERVER_PORT });
+  app.log.info({ appEnv: config.APP_ENV, mail: config.MAIL_TRANSPORT }, "Servidor listo");
 } catch (err) {
   app.log.fatal(err, "No se pudo arrancar el servidor");
   process.exit(1);

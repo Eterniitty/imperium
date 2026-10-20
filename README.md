@@ -4,7 +4,7 @@ MMO espacial 3D para navegador. Cada jugador es un Emperador humano inmortal en 
 
 > Nombre interno del proyecto en el código: `imperium` (paquetes `@imperium/*`). El nombre del juego es **Aeonarch**.
 
-**Estado: Fase 4 en curso — servidor autoritativo.** El universo aún se genera en el navegador. Ya existe el esqueleto del servidor (`apps/server`); faltan cuentas, persistencia y multijugador.
+**Estado: Fase 4 en curso — servidor autoritativo.** El universo aún se genera en el navegador. Ya hay servidor (`apps/server`) con cuentas y acceso por enlace de correo; faltan el Emperador persistente y el multijugador.
 
 ## Qué funciona ahora
 
@@ -20,6 +20,7 @@ MMO espacial 3D para navegador. Cada jugador es un Emperador humano inmortal en 
 
 - [Node.js](https://nodejs.org/) 22 o superior.
 - [pnpm](https://pnpm.io/) 10. Si no lo tienes: `npm install -g pnpm` (o `corepack enable`).
+- [PostgreSQL](https://www.postgresql.org/) 16 o superior, solo para el servidor de juego.
 
 ## Puesta en marcha
 
@@ -32,11 +33,13 @@ pnpm dev
 
 Abre <http://localhost:5173> en el navegador y pulsa **Despertar**.
 
-Para levantar también el servidor de juego, en otra terminal:
+Para levantar también el servidor de juego necesitas PostgreSQL y un `.env` (copia `.env.example` y ajusta `DATABASE_URL`). En otra terminal:
 
 ```bash
 pnpm dev:server
 ```
+
+El servidor aplica las migraciones de la base de datos al arrancar. Con `MAIL_TRANSPORT=console`, el enlace de acceso aparece en su registro en lugar de enviarse por correo.
 
 Vite redirige `/api` y `/ws` al servidor local (`127.0.0.1:3000`). Sin servidor, el cliente funciona igual y la barra superior muestra «Servidor: sin conexión».
 
@@ -67,7 +70,7 @@ cp .env.example .env        # en Windows (CMD): copy .env.example .env
 ## Comprobaciones
 
 ```bash
-pnpm test        # tests (generación procedural, contenido y servidor)
+pnpm test        # tests (generación procedural, contenido y servidor; los de base de datos necesitan TEST_DATABASE_URL)
 pnpm typecheck   # tipos de TypeScript en todos los paquetes
 pnpm build       # compilación de producción (apps/client/dist y apps/server/dist)
 ```
@@ -76,7 +79,7 @@ pnpm build       # compilación de producción (apps/client/dist y apps/server/d
 
 ```
 apps/client        Cliente: React (interfaz) + Three.js (motor 3D propio)
-apps/server        Servidor de juego: Fastify (API HTTP; WebSocket en camino)
+apps/server        Servidor de juego: Fastify + PostgreSQL (Drizzle); cuentas por enlace de correo
 packages/shared    Tipos, coordenadas, constantes e idiomas base (es/en)
 packages/procgen   Generación determinista del universo (compartida con el futuro servidor)
 packages/content   Fichas de especies, facciones y naves como datos
