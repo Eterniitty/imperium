@@ -250,6 +250,8 @@ export const es = {
   "combat.ally": "compañero",
   "combat.destroyed": "Tu nave ha sido destruida por {by}. Renaces en el Núcleo Humano.",
   "combat.noMissileTarget": "Fija un objetivo enemigo con {key} para lanzar misiles.",
+  "npc.pirate": "Carroñero",
+  "combat.pirates": "Carroñeros en el sistema",
   "help.title": "Controles",
   "help.rotate": "Arrastrar con botón derecho o izquierdo: girar",
   "help.pan": "Arrastrar con botón central / Mayús+arrastrar: desplazar",

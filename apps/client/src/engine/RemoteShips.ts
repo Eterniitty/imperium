@@ -1,11 +1,13 @@
 import * as THREE from "three";
 import { serverNow } from "../net/world";
-import { spaceStore, type PoseSample } from "../net/space";
+import { shipName, spaceStore, type PoseSample } from "../net/space";
+import { gameStore } from "../state/store";
 import { createFlagship, disposeShip } from "./shipModel";
 import { labelTexture } from "./textures";
 
 const ALLY_COLOR = "#5fd3e6";
 const OTHER_COLOR = "#ff9f5a";
+const PIRATE_COLOR = "#ff5a5a";
 /** Se dibuja ligeramente en el pasado para tener siempre dos muestras entre las que interpolar. */
 const INTERP_DELAY_MS = 150;
 const LABEL_HEIGHT = 0.028;
@@ -46,15 +48,17 @@ export class RemoteShips {
 
   update(): void {
     const { ships } = spaceStore.getState();
+    const locale = gameStore.getState().locale;
     const t = serverNow() - INTERP_DELAY_MS;
     for (const [id, remote] of Object.entries(ships)) {
-      const key = `${remote.state.name}|${remote.state.ally}`;
+      const name = shipName(remote.state, locale);
+      const key = `${name}|${remote.state.ally}|${remote.state.kind}`;
       let v = this.visuals.get(id);
       if (v && v.key !== key) {
         this.remove(id, v);
         v = undefined;
       }
-      if (!v) v = this.add(id, remote.state.name, remote.state.ally, key);
+      if (!v) v = this.add(id, name, remote.state.kind === "pirate" ? PIRATE_COLOR : remote.state.ally ? ALLY_COLOR : OTHER_COLOR, remote.state.kind === "pirate", key);
       if (sampleAt(remote.samples, t, v.ship.position, v.ship.quaternion)) {
         v.label.position.copy(v.ship.position);
       }
@@ -62,9 +66,10 @@ export class RemoteShips {
     for (const [id, v] of this.visuals) if (!ships[id]) this.remove(id, v);
   }
 
-  private add(id: string, name: string, ally: boolean, key: string): Visual {
-    const color = ally ? ALLY_COLOR : OTHER_COLOR;
+  private add(id: string, name: string, color: string, small: boolean, key: string): Visual {
     const ship = createFlagship(color);
+    // Los piratas, algo más pequeños que la nave de un Emperador.
+    if (small) ship.scale.setScalar(0.75);
     const { texture, aspect } = labelTexture(name, color);
     const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, sizeAttenuation: false, transparent: true }));
     label.scale.set(LABEL_HEIGHT * aspect, LABEL_HEIGHT, 1);

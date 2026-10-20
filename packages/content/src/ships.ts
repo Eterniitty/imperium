@@ -114,3 +114,34 @@ export function fleetSpeedLyPerHour(classIds: readonly string[]): number {
   if (!Number.isFinite(speed)) throw new Error("Una flota sin naves no puede viajar");
   return speed;
 }
+
+/**
+ * Asaltante de los Carroñeros (IA). Más débil que la nave del Emperador, pero
+ * suelen ir en grupo. Viven fuera del Núcleo Humano y atacan a quien se acerca.
+ * Distancias y velocidades en unidades de sistema.
+ */
+export const PIRATE_RAIDER: {
+  speciesId: string;
+  hull: number;
+  speedU: number;
+  /** Distancia a la que detectan y persiguen a una nave. */
+  aggroRangeU: number;
+  /** Distancia a la que intentan mantenerse del objetivo. */
+  preferredRangeU: number;
+  /** Segundos hasta que reaparecen tras ser destruidos. */
+  respawnSec: number;
+  combat: ShipCombat;
+} = {
+  speciesId: "scavengers",
+  hull: 120,
+  speedU: 34,
+  aggroRangeU: 220,
+  preferredRangeU: 55,
+  respawnSec: 300,
+  combat: {
+    shield: 40,
+    shieldRegenPerSec: 6,
+    shieldDelaySec: 4,
+    weapons: [{ kind: "cannon", damage: 7, cooldownSec: 0.45, rangeU: 120, speedU: 220, ammo: null, ammoRegenSec: null }],
+  },
+};

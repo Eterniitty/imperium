@@ -248,6 +248,8 @@ export const en: Record<I18nKey, string> = {
   "combat.ally": "companion",
   "combat.destroyed": "Your ship was destroyed by {by}. You are reborn in the Human Core.",
   "combat.noMissileTarget": "Lock an enemy target with {key} to launch missiles.",
+  "npc.pirate": "Scavenger",
+  "combat.pirates": "Scavengers in the system",
   "help.title": "Controls",
   "help.rotate": "Left or right drag: rotate",
   "help.pan": "Middle drag / Shift+drag: pan",

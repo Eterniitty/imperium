@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { I18nKey, SectorCoord, StarSystemSummary, WorldPosition } from "@imperium/shared";
+import { translate, type I18nKey, type SectorCoord, type StarSystemSummary, type WorldPosition } from "@imperium/shared";
 import { generateSystemDetail } from "@imperium/procgen";
 import { UNIVERSE_SEED } from "../config";
 import { isTravelling, positionAt } from "@imperium/sim";
@@ -185,7 +185,7 @@ export class Engine {
     if (!this.destroyedShown) {
       this.destroyedShown = true;
       this.system.explodeOwnShip();
-      this.notify("combat.destroyed", { by: destroyed.by });
+      this.notify("combat.destroyed", { by: destroyed.by || translate(gameStore.getState().locale, "npc.pirate") });
     }
     const emperor = this.emperor();
     if (emperor?.location.systemId !== destroyed.systemId) return;

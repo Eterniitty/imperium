@@ -55,6 +55,8 @@ export interface ShipPose {
 export interface ShipState extends ShipPose {
   /** Id del Emperador (o de la nave de la IA). */
   id: string;
+  /** Nave de un Emperador o pirata de la IA (su nombre se traduce en el cliente). */
+  kind: "emperor" | "pirate";
   name: string;
   /** Compañero del jugador que la recibe (no se le puede disparar). */
   ally: boolean;

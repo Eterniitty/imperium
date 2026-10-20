@@ -1,4 +1,4 @@
-import { EMPEROR_FLAGSHIP } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, PIRATE_RAIDER } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import type { ServerMessage, ShipPose, ShipState, Vec3, WeaponKind } from "@imperium/shared";
 import { isTravelling, plausibleMove, systemLayout } from "@imperium/sim";
@@ -9,10 +9,15 @@ import { systemDetailFor } from "../emperor/world";
 import type { Client } from "../realtime/hub";
 import type { SocialService } from "../social/service";
 import { Combatant, distance, forwardOf, MISSILE_LOCK_COS, normalize, rayHit } from "./combat";
+import { pirateCount, pirateHome, stepPirate } from "./pirates";
 
-/** Una nave presente en un sistema. */
+/** Una nave presente en un sistema: de un Emperador o un pirata de la IA. */
 interface Member {
+  /** Id del Emperador, o "pirate:<sistema>:<n>" para los piratas. */
   emperorId: string;
+  kind: "emperor" | "pirate";
+  /** Solo piratas: dónde viven y un valor fijo para variar su forma de rodear. */
+  ai?: { home: Vec3; phase: number };
   name: string;
   systemId: string;
   /** Conexiones que pilotan esta nave (normalmente una; varias pestañas a la vez). */
@@ -55,6 +60,8 @@ export class SpaceService {
   private readonly timer: ReturnType<typeof setInterval>;
   private readonly timeouts = new Set<ReturnType<typeof setTimeout>>();
   private lastShieldBroadcast = 0;
+  /** Piratas destruidos y hasta cuándo no reaparecen. */
+  private readonly deadPirates = new Map<string, number>();
   /** Uniones en curso, para no validar dos veces a la vez la misma nave. */
   private readonly joining = new Map<string, Promise<Member | null>>();
 
@@ -104,6 +111,7 @@ export class SpaceService {
   private stateFor(m: Member, viewer: Member | null): ShipState {
     return {
       id: m.emperorId,
+      kind: m.kind,
       name: m.name,
       ally: viewer !== null && viewer !== m && viewer.allies.has(m.emperorId),
       ...m.pose,
@@ -174,6 +182,7 @@ export class SpaceService {
     this.leave(emperor.id, "left");
     const m: Member = {
       emperorId: emperor.id,
+      kind: "emperor",
       name: emperor.name,
       systemId,
       clients: new Set([client]),
@@ -187,6 +196,7 @@ export class SpaceService {
     };
     let room = this.rooms.get(systemId);
     if (!room) this.rooms.set(systemId, (room = new Set()));
+    this.spawnPirates(systemId, room);
 
     client.send({ t: "space", systemId, serverTime: this.now(), ships: [...room].map((o) => this.stateFor(o, m)) });
     for (const o of room) this.sendTo(o, { t: "ship", ship: this.stateFor(m, o) });
@@ -206,8 +216,47 @@ export class SpaceService {
     this.members.delete(emperorId);
     const room = this.rooms.get(m.systemId);
     room?.delete(m);
-    if (room && room.size === 0) this.rooms.delete(m.systemId);
     for (const o of room ?? []) this.sendTo(o, { t: "shipGone", id: emperorId, reason });
+    // Sin jugadores, el sistema se "duerme": los piratas dejan de simularse.
+    if (room && ![...room].some((o) => o.kind === "emperor")) {
+      for (const o of room) {
+        this.members.delete(o.emperorId);
+        this.combatants.delete(o.emperorId);
+      }
+      this.rooms.delete(m.systemId);
+    }
+  }
+
+  /** Crea los piratas que viven en el sistema (los que no estén muertos esperando reaparecer). */
+  private spawnPirates(systemId: string, room: Set<Member>): void {
+    const count = pirateCount(systemId);
+    const now = this.now();
+    for (let i = 0; i < count; i++) {
+      const id = `pirate:${systemId}:${i}`;
+      if (this.members.has(id) || (this.deadPirates.get(id) ?? 0) > now) continue;
+      this.deadPirates.delete(id);
+      const home = pirateHome(systemId, i, this.boundary(systemId));
+      const combat = new Combatant(PIRATE_RAIDER.hull, PIRATE_RAIDER.combat, now);
+      this.combatants.set(id, combat);
+      const m: Member = {
+        emperorId: id,
+        kind: "pirate",
+        ai: { home, phase: (i * 0.37) % 1 },
+        name: "",
+        systemId,
+        clients: new Set(),
+        pose: { p: home, q: [0, 0, 0, 1], v: [0, 0, 0] },
+        poseAt: now,
+        history: [{ t: now, p: home }],
+        dirty: true,
+        allies: new Set(),
+        combat,
+        sentShield: -1,
+      };
+      for (const o of room) this.sendTo(o, { t: "ship", ship: this.stateFor(m, o) });
+      room.add(m);
+      this.members.set(id, m);
+    }
   }
 
   /** Una conexión se cierra o deja de pilotar: si era la última de su nave, la nave sale. */
@@ -227,9 +276,10 @@ export class SpaceService {
     return [...(this.rooms.get(systemId) ?? [])].map((m) => m.emperorId);
   }
 
-  /** ¿Puede `a` dañar a `b`? No a sí mismo ni a sus compañeros. */
+  /** ¿Puede `a` dañar a `b`? No a sí mismo, ni a sus compañeros, ni un pirata a otro. */
   private hostile(a: Member, b: Member): boolean {
-    return a !== b && !a.allies.has(b.emperorId);
+    if (a === b || (a.kind === "pirate" && b.kind === "pirate")) return false;
+    return !a.allies.has(b.emperorId);
   }
 
   /** Posiciones de un objetivo a tener en cuenta: la actual y las recientes (latencia del tirador). */
@@ -240,6 +290,11 @@ export class SpaceService {
   /** Disparo de la nave de este cliente. Lo que no cumple las reglas se ignora. */
   fire(client: Client, weapon: WeaponKind, dirIn: Vec3, targetId?: string): void {
     const m = this.members.get(client.emperorId);
+    if (m) this.fireFrom(m, weapon, dirIn, targetId);
+  }
+
+  /** Disparo de cualquier nave (jugador o pirata), con las mismas reglas para todas. */
+  private fireFrom(m: Member, weapon: WeaponKind, dirIn: Vec3, targetId?: string): void {
     const dir = normalize(dirIn);
     if (!m || !dir) return;
     const room = this.rooms.get(m.systemId);
@@ -295,7 +350,9 @@ export class SpaceService {
     if (target && hitAt !== null) {
       const victim = target;
       const attacker = m;
-      this.later(hitAt - now, () => this.hit(victim.emperorId, def.damage, attacker.name, weapon === "missile" ? attacker.systemId : null));
+      // Quien derriba: el nombre del Emperador, o vacío para un pirata (el cliente lo traduce).
+      const by = attacker.kind === "pirate" ? "" : attacker.name;
+      this.later(hitAt - now, () => this.hit(victim.emperorId, def.damage, by, weapon === "missile" ? attacker.systemId : null));
     }
   }
 
@@ -310,6 +367,12 @@ export class SpaceService {
 
   /** Nave destruida: sale del sistema y el Emperador renace en el Núcleo Humano con la nave reparada. */
   private async destroy(v: Member, by: string): Promise<void> {
+    if (v.kind === "pirate") {
+      this.leave(v.emperorId, "destroyed");
+      this.combatants.delete(v.emperorId);
+      this.deadPirates.set(v.emperorId, this.now() + PIRATE_RAIDER.respawnSec * 1000);
+      return;
+    }
     const clients = [...v.clients];
     this.leave(v.emperorId, "destroyed");
     v.combat.restore(this.now());
@@ -323,8 +386,46 @@ export class SpaceService {
     }
   }
 
+  /** Mueve los piratas y los hace disparar cuando tienen a un enemigo delante y a tiro. */
+  private stepPirates(now: number): void {
+    const dt = TICK_MS / 1000;
+    for (const room of this.rooms.values()) {
+      for (const m of room) {
+        if (m.kind !== "pirate" || !m.ai) continue;
+        // El enemigo más cercano dentro de su radio de detección.
+        let target: Member | null = null;
+        let best = PIRATE_RAIDER.aggroRangeU;
+        for (const o of room) {
+          if (o.kind !== "emperor") continue;
+          const d = distance(m.pose.p, o.pose.p);
+          if (d < best) {
+            best = d;
+            target = o;
+          }
+        }
+        const step = stepPirate(m.pose.p, m.pose.v, m.ai.home, target?.pose.p ?? null, dt, m.ai.phase);
+        m.pose = step;
+        m.poseAt = now;
+        m.history.push({ t: now, p: step.p });
+        if (m.history.length > HISTORY_SIZE) m.history.shift();
+        m.dirty = true;
+        if (target) {
+          const to = normalize([target.pose.p[0] - step.p[0], target.pose.p[1] - step.p[1], target.pose.p[2] - step.p[2]]);
+          const cannon = PIRATE_RAIDER.combat.weapons[0]!;
+          // Puntería imperfecta (unos 4°): de lejos fallan más, de cerca casi nunca.
+          const j = () => (Math.random() - 0.5) * 0.14;
+          if (to && best <= cannon.rangeU) this.fireFrom(m, "cannon", [to[0] + j(), to[1] + j(), to[2] + j()]);
+        }
+      }
+      // Reaparecen los que ya cumplieron su espera.
+      const any = room.values().next().value as Member | undefined;
+      if (any) this.spawnPirates(any.systemId, room);
+    }
+  }
+
   private tick(): void {
     const now = this.now();
+    this.stepPirates(now);
     for (const room of this.rooms.values()) {
       const changed = [...room].filter((m) => m.dirty);
       if (changed.length > 0) {

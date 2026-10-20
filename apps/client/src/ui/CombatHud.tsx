@@ -1,5 +1,5 @@
 import { useStore } from "zustand";
-import { spaceStore } from "../net/space";
+import { shipName, spaceStore } from "../net/space";
 import { useGame, useT } from "../state/store";
 import { useKeyLabels } from "./keys";
 import { useServerNow } from "./useNow";
@@ -17,6 +17,7 @@ export function CombatHud() {
   const t = useT();
   const keys = useKeyLabels();
   const view = useGame((s) => s.view);
+  const locale = useGame((s) => s.locale);
   const flight = useGame((s) => s.flight);
   const self = useStore(spaceStore, (s) => s.self);
   const weapons = useStore(spaceStore, (s) => s.weapons);
@@ -59,7 +60,7 @@ export function CombatHud() {
         {target && dist !== null ? (
           <>
             <div className="stat-label">{t("combat.target")}</div>
-            <strong className={target.ally ? "ally" : "enemy"}>{target.name}</strong>
+            <strong className={target.ally ? "ally" : "enemy"}>{shipName(target, locale)}</strong>
             <span className="mono small"> · {dist.toFixed(0)} u</span>
             <Bar value={target.shield} max={target.shieldMax} kind="shield" />
             <Bar value={target.hull} max={target.hullMax} kind="hull" />
