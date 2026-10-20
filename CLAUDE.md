@@ -9,6 +9,7 @@ Idioma de trabajo: **español** (código y comentarios en español; identificado
 - `docs/despliegue.md` — servidor, seguridad y costes.
 - `README.md` — cómo ejecutar y comprobar el proyecto.
 - `docs/hoja-de-ruta.md` — fases pendientes en orden; la siguiente es la primera sin marcar.
+- `docs/lore.md` — lore del universo (Emperadores, las tres leyes, la Gran Hostilidad, especies). Aún no integrado, pero el diseño debe respetarlo.
 
 ## Estado
 - Fase 1 (diseño), 2 (arquitectura) y 3 (prototipo local) terminadas.
