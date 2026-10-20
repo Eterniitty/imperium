@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { distance, type I18nKey } from "@imperium/shared";
+import { distance, type Fleet, type I18nKey } from "@imperium/shared";
 import { engineRef } from "../engineRef";
-import { useWorld } from "../net/world";
+import { connection, useWorld } from "../net/world";
 import { authStore, useAuth } from "../state/auth";
 import { gameStore, useGame, useT } from "../state/store";
 import { DepositChips, Meter, RESOURCE_COLORS, starColorCss } from "./common";
@@ -15,6 +15,7 @@ export function SystemPanel() {
   const hovered = useGame((s) => s.hovered);
   const emperor = useAuth((s) => s.emperor);
   const world = useWorld((s) => s.emperors);
+  const fleets = useWorld((s) => s.fleets);
   const myId = useWorld((s) => s.myEmperorId);
   const now = useServerNow();
   const [moving, setMoving] = useState(false);
@@ -26,6 +27,12 @@ export function SystemPanel() {
   const moveHere = async (systemId: string) => {
     setMoving(true);
     setMoveError(await authStore.getState().moveEmperor(systemId));
+    setMoving(false);
+  };
+
+  const sendFleet = async (fleetId: string, systemId: string) => {
+    setMoving(true);
+    setMoveError(await connection.command("fleet.move", { fleetId, systemId }));
     setMoving(false);
   };
 
@@ -56,6 +63,12 @@ export function SystemPanel() {
   });
   const here = others.filter((o) => o.at === selected.id);
   const coming = others.filter((o) => o.heading === selected.id);
+  // Flotas propias: las que están aquí y las que, paradas en otro sitio, se pueden enviar.
+  const ownFleets = (Object.values(fleets) as Fleet[]).sort((a, b) => a.number - b.number);
+  const fleetAt = (f: Fleet) => (f.travel && f.travel.arriveAt <= now ? f.travel.to : f.location).systemId;
+  const fleetMoving = (f: Fleet) => f.travel !== null && f.travel.arriveAt > now;
+  const fleetsHere = ownFleets.filter((f) => !fleetMoving(f) && fleetAt(f) === selected.id);
+  const sendable = ownFleets.filter((f) => !fleetMoving(f) && fleetAt(f) !== selected.id);
   const p = selected.position;
 
   return (
@@ -133,6 +146,20 @@ export function SystemPanel() {
         </>
       )}
 
+      {fleetsHere.length > 0 && (
+        <>
+          <h3>{t("fleet.here")}</h3>
+          <ul className="emperor-list">
+            {fleetsHere.map((f) => (
+              <li key={f.id} className="fleet">
+                <strong>{t("fleet.name", { n: f.number })}</strong>
+                <span className="muted small">{t("fleet.ships", { count: f.ships.length })}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
       <div className="actions">
         <button className="btn" onClick={() => engineRef.current?.focusSelected()}>
           {t("system.focus")} <kbd>F</kbd>
@@ -146,6 +173,15 @@ export function SystemPanel() {
           </button>
         )}
       </div>
+      {sendable.length > 0 && (
+        <div className="actions">
+          {sendable.map((f) => (
+            <button key={f.id} className="btn" onClick={() => void sendFleet(f.id, selected.id)} disabled={moving}>
+              {t("fleet.send", { name: t("fleet.name", { n: f.number }) })}
+            </button>
+          ))}
+        </div>
+      )}
       {moveError && (
         <p className="auth-error" role="alert">
           {t(moveError)}

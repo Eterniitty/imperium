@@ -1,11 +1,12 @@
+import { EMPEROR_FLAGSHIP, getShipClass, STARTING_FLEET } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import type { CommandError, Emperor } from "@imperium/shared";
-import { isTravelling, settle, travelDurationMs } from "@imperium/sim";
+import { isTravelling, travelDurationMs } from "@imperium/sim";
 import { eq, sql } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { emperors } from "../db/schema";
-import { findSystem, nameKey, pickSpawnSystem, toLocation } from "./world";
+import { emperors, fleets, ships } from "../db/schema";
+import { findSystem, nameKey, pickSpawnSystem, placeFromRow, type PlaceRow } from "./world";
 
 const columns = {
   id: emperors.id,
@@ -15,7 +16,7 @@ const columns = {
   departAt: emperors.departAt,
   arriveAt: emperors.arriveAt,
 };
-type Row = { id: string; name: string; systemId: string; destSystemId: string | null; departAt: Date | null; arriveAt: Date | null };
+type Row = PlaceRow & { name: string };
 
 export type CreateResult = { ok: true; emperor: Emperor } | { ok: false; error: "emperor_exists" | "name_taken" };
 export type MoveResult = { ok: true; emperor: Emperor } | { ok: false; error: CommandError };
@@ -26,29 +27,20 @@ export type MoveResult = { ok: true; emperor: Emperor } | { ok: false; error: Co
  */
 export class EmperorService {
   private readonly seed: number;
+  /** Velocidad de la nave del Emperador, ya multiplicada por la escala de tiempo. */
   private readonly speed: number;
 
   constructor(
     private readonly db: Database,
-    config: Pick<ServerConfig, "UNIVERSE_SEED" | "TRAVEL_SPEED_LYH">,
+    config: Pick<ServerConfig, "UNIVERSE_SEED" | "TIME_SCALE">,
     private readonly now: () => number = Date.now,
   ) {
     this.seed = universeSeedFromString(config.UNIVERSE_SEED);
-    this.speed = config.TRAVEL_SPEED_LYH;
+    this.speed = EMPEROR_FLAGSHIP.speedLyPerHour * config.TIME_SCALE;
   }
 
-  /** Fila → Emperador, con el viaje ya resuelto si terminó. */
   private toEmperor(row: Row): Emperor {
-    const system = findSystem(this.seed, row.systemId);
-    // Solo pasaría si cambiase la semilla o el generador con Emperadores ya creados.
-    if (!system) throw new Error(`El Emperador ${row.id} está en un sistema inexistente: ${row.systemId}`);
-    let travel: Emperor["travel"] = null;
-    if (row.destSystemId && row.departAt && row.arriveAt) {
-      const dest = findSystem(this.seed, row.destSystemId);
-      if (!dest) throw new Error(`El Emperador ${row.id} viaja a un sistema inexistente: ${row.destSystemId}`);
-      travel = { to: toLocation(dest), departAt: row.departAt.getTime(), arriveAt: row.arriveAt.getTime() };
-    }
-    return settle({ id: row.id, name: row.name, location: toLocation(system), travel }, this.now());
+    return { id: row.id, name: row.name, ...placeFromRow(this.seed, row, this.now()) };
   }
 
   async byAccount(accountId: string): Promise<Emperor | null> {
@@ -67,16 +59,25 @@ export class EmperorService {
     return rows.map((r) => this.toEmperor(r));
   }
 
+  /** Crea el Emperador y su flota inicial en el mismo sistema, todo o nada. */
   async create(accountId: string, name: string): Promise<CreateResult> {
     const spawn = pickSpawnSystem(this.seed);
-    // Sin objetivo de conflicto: si ya hay Emperador en la cuenta o el nombre está
-    // cogido, no inserta nada. Así dos peticiones simultáneas no crean dos.
-    const [row] = await this.db
-      .insert(emperors)
-      .values({ accountId, name, nameKey: nameKey(name), systemId: spawn.id })
-      .onConflictDoNothing()
-      .returning(columns);
-    if (row) return { ok: true, emperor: this.toEmperor(row) };
+    const created = await this.db.transaction(async (tx) => {
+      // Sin objetivo de conflicto: si ya hay Emperador en la cuenta o el nombre está
+      // cogido, no inserta nada. Así dos peticiones simultáneas no crean dos.
+      const [row] = await tx
+        .insert(emperors)
+        .values({ accountId, name, nameKey: nameKey(name), systemId: spawn.id })
+        .onConflictDoNothing()
+        .returning(columns);
+      if (!row) return null;
+      const [fleet] = await tx.insert(fleets).values({ emperorId: row.id, number: 1, systemId: spawn.id }).returning({ id: fleets.id });
+      await tx.insert(ships).values(
+        STARTING_FLEET.map((classId) => ({ fleetId: fleet!.id, classId, hull: getShipClass(classId)!.hull })),
+      );
+      return row;
+    });
+    if (created) return { ok: true, emperor: this.toEmperor(created) };
     const existing = await this.byAccount(accountId);
     return { ok: false, error: existing ? "emperor_exists" : "name_taken" };
   }

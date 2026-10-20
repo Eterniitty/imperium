@@ -6,8 +6,10 @@ import {
   type CommandArgs,
   type CommandOp,
   type EmperorView,
+  type Fleet,
   type I18nKey,
   type ServerMessage,
+  type Topic,
   type WsTicketResponse,
 } from "@imperium/shared";
 import { api, authStore } from "../state/auth";
@@ -23,6 +25,10 @@ export interface WorldState {
   status: WorldStatus;
   /** Todos los Emperadores, por id. */
   emperors: Record<string, EmperorView>;
+  /** Flotas propias, por id. */
+  fleets: Record<string, Fleet>;
+  /** Escala del tiempo de juego del servidor (para estimar duraciones de viaje). */
+  timeScale: number;
   myEmperorId: string | null;
   /** Diferencia entre el reloj del servidor y el local, en milisegundos. */
   clockOffset: number;
@@ -31,6 +37,8 @@ export interface WorldState {
 export const worldStore = createStore<WorldState>()(() => ({
   status: "idle",
   emperors: {},
+  fleets: {},
+  timeScale: 1,
   myEmperorId: null,
   clockOffset: 0,
 }));
@@ -59,7 +67,7 @@ class Connection {
   private wanted = false;
   private attempt = 0;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
-  private lastSeq = -1;
+  private lastSeq: Record<Topic, number> = { emperors: -1, me: -1 };
   private pending = new Map<string, Pending>();
 
   start(): void {
@@ -75,7 +83,7 @@ class Connection {
     this.ws?.close(1000, "bye");
     this.ws = null;
     this.failPending();
-    worldStore.setState({ status: "idle", emperors: {}, myEmperorId: null });
+    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, myEmperorId: null });
   }
 
   /** Envía una orden y espera su confirmación. Devuelve el error traducible, o null si se aceptó. */
@@ -116,6 +124,7 @@ class Connection {
     ws.onopen = () => {
       this.attempt = 0;
       ws.send(JSON.stringify({ t: "sub", topic: "emperors" }));
+      ws.send(JSON.stringify({ t: "sub", topic: "me" }));
     };
     ws.onmessage = (e) => this.handle(JSON.parse(String(e.data)) as ServerMessage);
     ws.onclose = (e) => {
@@ -146,30 +155,43 @@ class Connection {
   private handle(msg: ServerMessage): void {
     switch (msg.t) {
       case "hello":
-        worldStore.setState({ myEmperorId: msg.emperorId, clockOffset: msg.serverTime - Date.now() });
+        worldStore.setState({ myEmperorId: msg.emperorId, clockOffset: msg.serverTime - Date.now(), timeScale: msg.timeScale });
         return;
       case "snap": {
-        this.lastSeq = msg.seq;
-        const emperors: Record<string, EmperorView> = {};
-        for (const e of msg.data.emperors) emperors[e.id] = e;
-        worldStore.setState({ status: "open", emperors });
-        this.syncOwn();
+        this.lastSeq[msg.topic] = msg.seq;
+        if (msg.topic === "emperors") {
+          const emperors: Record<string, EmperorView> = {};
+          for (const e of msg.data.emperors) emperors[e.id] = e;
+          worldStore.setState({ status: "open", emperors });
+          this.syncOwn();
+        } else {
+          const fleets: Record<string, Fleet> = {};
+          for (const f of msg.data.fleets) fleets[f.id] = f;
+          worldStore.setState({ fleets });
+        }
         return;
       }
       case "delta": {
-        if (msg.seq !== this.lastSeq + 1) {
+        if (msg.seq !== this.lastSeq[msg.topic] + 1) {
           // Se perdió algún cambio: se pide el estado completo de nuevo.
-          this.ws?.send(JSON.stringify({ t: "sub", topic: "emperors" }));
+          this.ws?.send(JSON.stringify({ t: "sub", topic: msg.topic }));
           return;
         }
-        this.lastSeq = msg.seq;
-        const emperors = { ...worldStore.getState().emperors };
+        this.lastSeq[msg.topic] = msg.seq;
+        const state = worldStore.getState();
+        const emperors = { ...state.emperors };
+        const fleets = { ...state.fleets };
         for (const op of msg.ops) {
-          const id = op.path.slice("emperors.".length);
-          if (op.v) emperors[id] = op.v;
-          else delete emperors[id];
+          const [kind, id] = op.path.split(".") as ["emperors" | "fleets", string];
+          if (kind === "emperors") {
+            if (op.v) emperors[id] = op.v as EmperorView;
+            else delete emperors[id];
+          } else {
+            if (op.v) fleets[id] = op.v as Fleet;
+            else delete fleets[id];
+          }
         }
-        worldStore.setState({ emperors });
+        worldStore.setState({ emperors, fleets });
         this.syncOwn();
         return;
       }

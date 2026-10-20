@@ -5,6 +5,7 @@ import { connection, worldStore } from "../net/world";
 import { authStore } from "../state/auth";
 import { gameStore, useGame } from "../state/store";
 import { FlightHud } from "./FlightHud";
+import { FleetsPanel } from "./FleetsPanel";
 import { HelpPanel } from "./HelpPanel";
 import { Legend } from "./Legend";
 import { PlanetPanel } from "./PlanetPanel";
@@ -46,6 +47,7 @@ export function App() {
         {view === "galaxy" ? (
           <>
             <FlightHud />
+            <FleetsPanel />
             <SystemPanel />
             {!hasSelection && <Legend />}
           </>

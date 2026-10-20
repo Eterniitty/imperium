@@ -35,6 +35,9 @@ importers:
       '@fontsource/rajdhani':
         specifier: ^5.3.0
         version: 5.3.0
+      '@imperium/content':
+        specifier: workspace:*
+        version: link:../../packages/content
       '@imperium/procgen':
         specifier: workspace:*
         version: link:../../packages/procgen
@@ -81,6 +84,9 @@ importers:
       '@fastify/websocket':
         specifier: ^11.3.4
         version: 11.3.4
+      '@imperium/content':
+        specifier: workspace:*
+        version: link:../../packages/content
       '@imperium/procgen':
         specifier: workspace:*
         version: link:../../packages/procgen

@@ -40,8 +40,8 @@ export default async function globalSetup() {
       PUBLIC_URL: `http://localhost:${CLIENT_PORT}`,
       MAIL_TRANSPORT: "console",
       COOKIE_SECURE: "false",
-      // 10 a.l. por segundo: los viajes duran unos segundos, lo justo para verlos.
-      TRAVEL_SPEED_LYH: "36000",
+      // Una hora de juego por segundo: el Emperador va a 10 a.l./s y un explorador a 12.
+      TIME_SCALE: "3600",
     },
   });
 

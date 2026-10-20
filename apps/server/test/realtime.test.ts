@@ -5,7 +5,7 @@
 import { sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import WebSocket from "ws";
-import { LOGIN_TOKEN_PARAM, PROTOCOL_VERSION, WS_CLOSE, type Emperor, type ServerMessage } from "@imperium/shared";
+import { LOGIN_TOKEN_PARAM, PROTOCOL_VERSION, WS_CLOSE, type Emperor, type EmperorView, type Fleet, type ServerMessage, type Topic } from "@imperium/shared";
 import { generateSector, universeSeedFromString } from "@imperium/procgen";
 import { buildApp } from "../src/app";
 import { sessionCookieName } from "../src/auth/routes";
@@ -68,6 +68,19 @@ const is =
   (m: ServerMessage): m is Extract<ServerMessage, { t: K }> =>
     m.t === t;
 
+type Snap<T extends Topic> = Extract<ServerMessage, { t: "snap"; topic: T }>;
+type Delta = Extract<ServerMessage, { t: "delta" }>;
+/** Instantánea de un tema. */
+const snapOf =
+  <T extends Topic>(topic: T) =>
+  (m: ServerMessage): m is Snap<T> =>
+    m.t === "snap" && m.topic === topic;
+/** Cambio de un tema. */
+const deltaOf =
+  (topic: Topic) =>
+  (m: ServerMessage): m is Delta =>
+    m.t === "delta" && m.topic === topic;
+
 describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
   const sent: string[] = [];
   const mailer: Mailer = {
@@ -76,14 +89,14 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
     },
   };
   const database = createDb(TEST_DATABASE_URL ?? "");
-  // Velocidad enorme: cualquier viaje dura el mínimo (1 s).
+  // Escala de tiempo enorme: cualquier viaje dura el mínimo (1 s).
   const config = loadConfig({
     APP_ENV: "test",
     LOG_LEVEL: "silent",
     DATABASE_URL: TEST_DATABASE_URL,
     PUBLIC_URL: ORIGIN,
     COOKIE_SECURE: "false",
-    TRAVEL_SPEED_LYH: "1e12",
+    TIME_SCALE: "1e7",
   });
   const SESSION_COOKIE = sessionCookieName(config);
   const seed = universeSeedFromString(config.UNIVERSE_SEED);
@@ -146,7 +159,9 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
     const s = await open(`v=${PROTOCOL_VERSION}&ticket=${await ticket(cookies)}`);
     if (typeof s === "number") throw new Error(`Conexión rechazada: ${s}`);
     s.send({ t: "sub", topic: "emperors" });
-    await s.next(is("snap"));
+    s.send({ t: "sub", topic: "me" });
+    await s.next(snapOf("emperors"));
+    await s.next(snapOf("me"));
     return s;
   }
 
@@ -174,7 +189,7 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
     const b = await player("b@ejemplo.com", "Brennus");
     const sa = await connect(a.cookies);
     expect(sa.messages[0]).toMatchObject({ t: "hello", protocol: PROTOCOL_VERSION, emperorId: a.emperor.id });
-    const snap = await sa.next(is("snap"));
+    const snap = await sa.next(snapOf("emperors"));
     expect(snap.data.emperors.map((e) => [e.name, e.online])).toEqual([
       ["Aurelia", true],
       ["Brennus", false],
@@ -183,11 +198,11 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
     // B se conecta: A lo ve pasar a en línea; y al desconectarse, a desconectado.
     const from = sa.messages.length;
     const sb = await connect(b.cookies);
-    const online = await sa.next(is("delta"), from);
+    const online = await sa.next(deltaOf("emperors"), from);
     expect(online.ops).toEqual([{ path: `emperors.${b.emperor.id}`, v: { ...b.emperor, online: true } }]);
     sb.ws.close();
-    const offline = await sa.next((m): m is Extract<ServerMessage, { t: "delta" }> => m.t === "delta" && m.seq === online.seq + 1, from);
-    expect(offline.ops[0]?.v?.online).toBe(false);
+    const offline = await sa.next((m): m is Delta => deltaOf("emperors")(m) && m.seq === online.seq + 1, from);
+    expect((offline.ops[0]?.v as EmperorView).online).toBe(false);
   });
 
   it("un jugador viaja y el otro lo ve moverse; al llegar, está en el destino", async () => {
@@ -201,8 +216,8 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
     sa.send({ t: "cmd", cmdId: "mover-0001", op: "emperor.move", args: { systemId: dest.id } });
     expect(await sa.next(is("ack"))).toEqual({ t: "ack", cmdId: "mover-0001", ok: true });
 
-    const delta = await sb.next(is("delta"), from);
-    const seen = delta.ops[0]!.v!;
+    const delta = await sb.next(deltaOf("emperors"), from);
+    const seen = delta.ops[0]!.v as EmperorView;
     expect(seen.location.systemId).toBe(a.emperor.location.systemId);
     expect(seen.travel?.to.systemId).toBe(dest.id);
     expect(seen.travel!.arriveAt - seen.travel!.departAt).toBe(1000);
@@ -233,7 +248,7 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       { t: "ack", cmdId: "repetida-01", ok: true },
     ]);
     // Un solo cambio difundido (además del de conectarse).
-    expect(sa.messages.filter(is("delta")).filter((d) => d.ops[0]?.v?.travel)).toHaveLength(1);
+    expect(sa.messages.filter(deltaOf("emperors")).filter((d) => (d.ops[0]?.v as EmperorView).travel)).toHaveLength(1);
   });
 
   it("rechaza destinos inexistentes o el sistema donde ya está", async () => {
@@ -269,7 +284,46 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
     const sa = await connect(a.cookies);
     const from = sa.messages.length;
     const b = await player("b@ejemplo.com", "Brennus");
-    const delta = await sa.next(is("delta"), from);
+    const delta = await sa.next(deltaOf("emperors"), from);
     expect(delta.ops).toEqual([{ path: `emperors.${b.emperor.id}`, v: { ...b.emperor, online: false } }]);
+  });
+
+  it("cada Emperador empieza con una flota con un explorador, y solo la ve él", async () => {
+    const a = await player("a@ejemplo.com", "Aurelia");
+    const b = await player("b@ejemplo.com", "Brennus");
+    const sa = await connect(a.cookies);
+    const sb = await connect(b.cookies);
+    const fleetsA = sa.messages.find(snapOf("me"))!.data.fleets;
+    expect(fleetsA).toHaveLength(1);
+    expect(fleetsA[0]).toMatchObject({ number: 1, location: a.emperor.location, travel: null, ships: [{ classId: "explorer", hull: 60 }] });
+    const fleetsB = sb.messages.find(snapOf("me"))!.data.fleets;
+    expect(fleetsB.map((f) => f.id)).not.toContain(fleetsA[0]!.id);
+  });
+
+  it("una flota viaja, solo su dueño ve el cambio y al llegar el servidor la deja en el destino", async () => {
+    const a = await player("a@ejemplo.com", "Aurelia");
+    const b = await player("b@ejemplo.com", "Brennus");
+    const sa = await connect(a.cookies);
+    const sb = await connect(b.cookies);
+    const fleet = sa.messages.find(snapOf("me"))!.data.fleets[0]!;
+    const dest = coreSystems.find((s) => s.id !== fleet.location.systemId)!;
+
+    // Otro jugador no puede mover una flota ajena.
+    sb.send({ t: "cmd", cmdId: "ajena-0001", op: "fleet.move", args: { fleetId: fleet.id, systemId: dest.id } });
+    expect(await sb.next(is("ack"))).toEqual({ t: "ack", cmdId: "ajena-0001", ok: false, error: "no_fleet" });
+
+    const from = sa.messages.length;
+    const fromB = sb.messages.length;
+    sa.send({ t: "cmd", cmdId: "flota-0001", op: "fleet.move", args: { fleetId: fleet.id, systemId: dest.id } });
+    expect(await sa.next(is("ack"), from)).toEqual({ t: "ack", cmdId: "flota-0001", ok: true });
+    const leaving = (await sa.next(deltaOf("me"), from)).ops[0]!.v as Fleet;
+    expect(leaving.travel?.to.systemId).toBe(dest.id);
+
+    // La llegada la procesa la cola de eventos y se avisa al dueño.
+    const arrived = await sa.next((m): m is Delta => deltaOf("me")(m) && (m.ops[0]!.v as Fleet).travel === null, from, 5000);
+    expect((arrived.ops[0]!.v as Fleet).location.systemId).toBe(dest.id);
+    const [row] = await database.db.execute(sql`SELECT system_id, dest_system_id FROM fleets WHERE id = ${fleet.id}`);
+    expect(row).toEqual({ system_id: dest.id, dest_system_id: null });
+    expect(sb.messages.slice(fromB).filter(deltaOf("me"))).toEqual([]);
   });
 });

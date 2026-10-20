@@ -15,6 +15,7 @@ import { RateLimiter } from "../auth/rateLimit";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
 import type { EmperorService } from "../emperor/service";
+import type { FleetService } from "../fleet/service";
 import type { Client, Hub } from "./hub";
 import { TicketStore } from "./tickets";
 
@@ -22,6 +23,7 @@ export interface RealtimeDeps {
   config: ServerConfig;
   db: Database;
   emperors: EmperorService;
+  fleets: FleetService;
   hub: Hub;
 }
 
@@ -31,7 +33,7 @@ const HEARTBEAT_MS = 30_000;
 const MAX_CONNECTIONS_PER_ACCOUNT = 5;
 const MAX_CONNECTIONS = 1_000;
 
-export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, hub }: RealtimeDeps) {
+export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, hub }: RealtimeDeps) {
   const cookieName = sessionCookieName(config);
   const tickets = new TicketStore();
   const ticketsPerAccount = new RateLimiter(30, MINUTE);
@@ -92,7 +94,7 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
       const owner = req.ticketOwner!;
       const client: Client = {
         ...owner,
-        subscribed: false,
+        subscribed: new Set(),
         send: (msg: ServerMessage) => {
           if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(msg));
         },
@@ -101,7 +103,6 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
       alive.set(socket, true);
       socket.on("pong", () => alive.set(socket, true));
       hub.add(client);
-      client.send({ t: "hello", protocol: PROTOCOL_VERSION, emperorId: owner.emperorId, serverTime: Date.now() });
 
       socket.on("message", (data, isBinary) => {
         if (!messagesPerAccount.consume(owner.accountId)) return socket.close(WS_CLOSE.rateLimited, "rate limited");
@@ -116,14 +117,23 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
         const msg = parsed.data;
         switch (msg.t) {
           case "sub":
-            void hub.subscribe(client);
+            void hub.subscribe(client, msg.topic);
             return;
           case "cmd":
             void hub
               .command(client, msg.cmdId, async () => {
-                const res = await emperors.move(owner.accountId, msg.args.systemId);
-                if (res.ok) await hub.publish(res.emperor.id);
-                return res;
+                switch (msg.op) {
+                  case "emperor.move": {
+                    const res = await emperors.move(owner.accountId, msg.args.systemId);
+                    if (res.ok) await hub.publish(res.emperor.id);
+                    return res;
+                  }
+                  case "fleet.move": {
+                    const res = await fleets.move(owner.emperorId, msg.args.fleetId, msg.args.systemId);
+                    if (res.ok) await hub.publishFleet(res.emperorId, res.fleet.id);
+                    return res;
+                  }
+                }
               })
               .then((ack) => client.send(ack));
             return;

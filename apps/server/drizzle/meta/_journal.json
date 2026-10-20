@@ -22,6 +22,13 @@
       "when": 1792517808072,
       "tag": "0002_panoramic_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792521295402,
+      "tag": "0003_worried_rocket_racer",
+      "breakpoints": true
     }
   ]
 }

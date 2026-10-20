@@ -5,7 +5,7 @@ import {
   parseSystemId,
   translate,
   worldToSector,
-  type EmperorLocation,
+  type SystemLocation,
   type I18nKey,
   type Locale,
   type SectorCoord,
@@ -36,7 +36,7 @@ export interface GameState {
   selectedPlanet: number | null;
 
   /** Entra en el juego; con Emperador, la cámara empieza en su sistema y lo selecciona. */
-  start(at?: EmperorLocation): void;
+  start(at?: SystemLocation): void;
   setLocale(locale: Locale): void;
   setView(view: ViewMode): void;
   setHovered(s: StarSystemSummary | null): void;

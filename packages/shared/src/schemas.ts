@@ -47,13 +47,21 @@ export type EmperorCreateBody = z.input<typeof EmperorCreateBodySchema>;
 /** Identificador de sistema. Coordenadas de sector acotadas para no generar sectores absurdos. */
 export const SystemIdSchema = z.string().regex(/^-?\d{1,7}:-?\d{1,7}:-?\d{1,7}:\d{1,3}$/);
 
+const CmdIdSchema = z.string().regex(/^[A-Za-z0-9_-]{8,64}$/);
+
 /** Mensajes del cliente por el WebSocket (ver `protocol.ts`). */
-export const ClientMessageSchema = z.discriminatedUnion("t", [
+export const ClientMessageSchema = z.union([
   z.object({
     t: z.literal("cmd"),
-    cmdId: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/),
+    cmdId: CmdIdSchema,
     op: z.literal("emperor.move"),
     args: z.object({ systemId: SystemIdSchema }),
   }),
-  z.object({ t: z.literal("sub"), topic: z.literal("emperors") }),
+  z.object({
+    t: z.literal("cmd"),
+    cmdId: CmdIdSchema,
+    op: z.literal("fleet.move"),
+    args: z.object({ fleetId: z.uuid(), systemId: SystemIdSchema }),
+  }),
+  z.object({ t: z.literal("sub"), topic: z.enum(["emperors", "me"]) }),
 ]);

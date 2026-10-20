@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { check, index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { bigserial, check, index, integer, jsonb, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 
 /**
  * Esquema de la base de datos. Tras cambiarlo: `pnpm --filter @imperium/server db:generate`
@@ -78,3 +78,60 @@ export const emperors = pgTable("emperors", {
 }, (t) => [
   check("emperors_travel_complete", sql`(${t.destSystemId} IS NULL) = (${t.departAt} IS NULL) AND (${t.departAt} IS NULL) = (${t.arriveAt} IS NULL)`),
 ]);
+
+/**
+ * Flotas: grupos de naves de un Emperador que viajan juntos. Igual que los
+ * Emperadores, guardan el sistema donde están (o de donde salieron) y el viaje.
+ */
+export const fleets = pgTable(
+  "fleets",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    emperorId: uuid("emperor_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    /** Número dentro del imperio: Flota 1, Flota 2… */
+    number: integer("number").notNull(),
+    systemId: text("system_id").notNull(),
+    destSystemId: text("dest_system_id"),
+    departAt: timestamp("depart_at", { withTimezone: true }),
+    arriveAt: timestamp("arrive_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("fleets_emperor_number_unique").on(t.emperorId, t.number),
+    check("fleets_travel_complete", sql`(${t.destSystemId} IS NULL) = (${t.departAt} IS NULL) AND (${t.departAt} IS NULL) = (${t.arriveAt} IS NULL)`),
+  ],
+);
+
+/** Naves. Cada una pertenece a una flota; su clase es un id de `@imperium/content`. */
+export const ships = pgTable(
+  "ships",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    fleetId: uuid("fleet_id")
+      .notNull()
+      .references(() => fleets.id, { onDelete: "cascade" }),
+    classId: text("class_id").notNull(),
+    hull: integer("hull").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("ships_fleet_id_idx").on(t.fleetId)],
+);
+
+/**
+ * Cola de eventos programados (llegadas, fin de construcciones…). Un trabajador
+ * los toma con `FOR UPDATE SKIP LOCKED` cuando vencen y los borra al procesarlos,
+ * en la misma transacción. Ver docs/arquitectura.md §5.
+ */
+export const scheduledEvents = pgTable(
+  "scheduled_events",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    dueAt: timestamp("due_at", { withTimezone: true }).notNull(),
+    kind: text("kind").notNull(),
+    payload: jsonb("payload").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("scheduled_events_due_at_idx").on(t.dueAt)],
+);

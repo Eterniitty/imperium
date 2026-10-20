@@ -329,7 +329,7 @@ export class GalaxyView implements View {
       this.selectRing.visible = false;
       this.link.visible = false;
     }
-    this.emperors.update();
+    this.emperors.update(this.camera);
     if (hovered && hovered.id !== selected?.id && this.controls.enabled) {
       this.hoverRing.position.copy(this.sectors.toScene(hovered.position));
       this.hoverRing.visible = true;

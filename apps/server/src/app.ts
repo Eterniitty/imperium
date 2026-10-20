@@ -6,6 +6,8 @@ import type { ServerConfig } from "./config";
 import type { Database } from "./db/client";
 import { emperorRoutes } from "./emperor/routes";
 import { EmperorService } from "./emperor/service";
+import { EventWorker } from "./events/queue";
+import { FleetService } from "./fleet/service";
 import { Hub } from "./realtime/hub";
 import { realtimeRoutes } from "./realtime/routes";
 import { createMailer, type Mailer } from "./mail";
@@ -18,6 +20,8 @@ export interface AppDeps {
   db: Database;
   /** Permite sustituir el correo en los tests. */
   mailer?: Mailer;
+  /** Los tests pueden procesar la cola a mano (`app.eventWorker.drain()`) en vez de arrancar el trabajador. */
+  startWorker?: boolean;
 }
 
 /**
@@ -64,9 +68,28 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   });
 
   const emperors = new EmperorService(deps.db, config);
-  const hub = new Hub(emperors, app.log);
+  const fleets = new FleetService(deps.db, config);
+  const hub = new Hub(emperors, fleets, app.log, config.TIME_SCALE);
   await app.register(emperorRoutes, { config, db: deps.db, emperors, hub });
-  await app.register(realtimeRoutes, { config, db: deps.db, emperors, hub });
+  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, hub });
+
+  // Cola de eventos programados: llegadas de flotas (y, más adelante, construcciones…).
+  const worker = new EventWorker(deps.db, app.log);
+  worker.on("fleet.arrive", async (tx, { fleetId }) => {
+    const owner = await fleets.arrive(tx, fleetId);
+    if (owner) return () => void hub.publishFleet(owner, fleetId);
+  });
+  if (deps.startWorker !== false) {
+    app.addHook("onReady", async () => worker.start());
+    app.addHook("onClose", async () => worker.stop());
+  }
+  app.decorate("eventWorker", worker);
 
   return app;
+}
+
+declare module "fastify" {
+  interface FastifyInstance {
+    eventWorker: EventWorker;
+  }
 }

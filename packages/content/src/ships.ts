@@ -72,3 +72,27 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = [
 export function getShipClass(id: ShipClassId): ShipClassDefinition | undefined {
   return SHIP_CLASSES.find((s) => s.id === id);
 }
+
+/**
+ * Nave del Emperador. No se construye: cada Emperador tiene la suya. Rápida y
+ * con buen escáner, pero sola no gana batallas.
+ */
+export const EMPEROR_FLAGSHIP = {
+  speedLyPerHour: 10,
+  scannerRangeLy: 15,
+} as const;
+
+/** Naves con las que empieza cada Emperador nuevo, como su primera flota. */
+export const STARTING_FLEET: readonly ShipClassId[] = ["explorer"];
+
+/** Velocidad de una flota: la de su nave más lenta (años luz por hora). */
+export function fleetSpeedLyPerHour(classIds: readonly string[]): number {
+  let speed = Infinity;
+  for (const id of classIds) {
+    const c = getShipClass(id as ShipClassId);
+    if (!c) throw new Error(`Clase de nave desconocida: ${id}`);
+    speed = Math.min(speed, c.speedLyPerHour);
+  }
+  if (!Number.isFinite(speed)) throw new Error("Una flota sin naves no puede viajar");
+  return speed;
+}

@@ -13,6 +13,7 @@
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
     "@fastify/websocket": "^11.3.4",
+    "@imperium/content": "workspace:*",
     "@imperium/procgen": "workspace:*",
     "@imperium/shared": "workspace:*",
     "@imperium/sim": "workspace:*",

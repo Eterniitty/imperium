@@ -3,7 +3,7 @@ import type { SectorCoord, StarSystemSummary } from "@imperium/shared";
 import { generateSystemDetail } from "@imperium/procgen";
 import { UNIVERSE_SEED } from "../config";
 import { positionAt } from "@imperium/sim";
-import { serverNow } from "../net/world";
+import { serverNow, worldStore } from "../net/world";
 import { authStore } from "../state/auth";
 import { findSystemSummary, gameStore } from "../state/store";
 import { GalaxyView } from "./GalaxyView";
@@ -86,6 +86,15 @@ export class Engine {
     // Si viaja, a donde está ahora; el sistema seleccionado es el de destino.
     this.galaxy.goTo(positionAt(emperor, serverNow()), 30);
     gameStore.getState().select(findSystemSummary((emperor.travel?.to ?? emperor.location).systemId));
+  }
+
+  /** Centra la vista en una flota propia y selecciona su sistema (o su destino, si viaja). */
+  goToFleet(fleetId: string): void {
+    const fleet = worldStore.getState().fleets[fleetId];
+    if (!fleet) return;
+    if (this.active === this.system) this.exitSystem();
+    this.galaxy.goTo(positionAt(fleet, serverNow()), 30);
+    gameStore.getState().select(findSystemSummary((fleet.travel?.to ?? fleet.location).systemId));
   }
 
   enterSystem(s: StarSystemSummary): void {

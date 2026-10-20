@@ -13,7 +13,8 @@ Idioma de trabajo: **español** (código y comentarios en español; identificado
 ## Estado
 - Fase 1 (diseño), 2 (arquitectura) y 3 (prototipo local) terminadas.
 - **Fase 4 terminada** — servidor autoritativo (Fastify + ws), acceso por correo con enlace de un solo uso, Emperador persistente (nombre único, aparece en el Núcleo Humano) y mundo compartido por WebSocket (ticket de un solo uso, `snap`/`delta`/`cmd`/`ack`, orden `emperor.move` con tiempo de viaje).
-- Provisional: velocidad de viaje alta (`TRAVEL_SPEED_LYH`, 1 a.l./s) para poder verlo; el diseño pide horas. Todos los jugadores reciben todos los Emperadores (sin zonas de interés por sector). Tickets, límites y órdenes procesadas viven en memoria (un solo proceso).
+- **Fase 5 en curso** (ver `docs/hoja-de-ruta.md`): 5a hecho (escala de tiempo `TIME_SCALE`, cola de eventos programados, flotas con orden `fleet.move`).
+- Provisional: en el servidor de pruebas `TIME_SCALE` es alto para ver los viajes; el diseño pide horas (`TIME_SCALE=1`). Todos los jugadores reciben todos los Emperadores (sin zonas de interés por sector). Tickets, límites y órdenes procesadas viven en memoria (un solo proceso).
 - El cliente aún genera el universo localmente; servidor y cliente deben usar la misma semilla (`UNIVERSE_SEED` / `VITE_UNIVERSE_SEED`).
 
 ## Reglas del proyecto

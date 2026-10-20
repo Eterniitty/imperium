@@ -48,19 +48,19 @@ export interface AuthPeekResponse {
 export const EMPEROR_NAME_MIN = 3;
 export const EMPEROR_NAME_MAX = 24;
 
-/** Dónde está un Emperador: el sistema estelar y su posición absoluta. */
-export interface EmperorLocation {
+/** Dónde está algo (un Emperador, una flota): el sistema estelar y su posición absoluta. */
+export interface SystemLocation {
   systemId: string;
   systemName: string;
   position: WorldPosition;
 }
 
 /**
- * Viaje en curso. El origen es `Emperor.location`; las horas son milisegundos
- * desde 1970 según el reloj del servidor.
+ * Viaje en curso. El origen es la `location` de quien viaja; las horas son
+ * milisegundos desde 1970 según el reloj del servidor.
  */
-export interface EmperorTravel {
-  to: EmperorLocation;
+export interface Travel {
+  to: SystemLocation;
   departAt: number;
   arriveAt: number;
 }
@@ -72,8 +72,28 @@ export interface EmperorTravel {
 export interface Emperor {
   id: string;
   name: string;
-  location: EmperorLocation;
-  travel: EmperorTravel | null;
+  location: SystemLocation;
+  travel: Travel | null;
+}
+
+/** Una nave de una flota. `classId` es una clase de `@imperium/content` (SHIP_CLASSES). */
+export interface FleetShip {
+  id: string;
+  classId: string;
+  hull: number;
+}
+
+/**
+ * Flota propia. Es información privada: solo la recibe su dueño. Viaja a la
+ * velocidad de su nave más lenta. Mientras viaja, `location` es el origen.
+ */
+export interface Fleet {
+  id: string;
+  /** Número de la flota dentro del imperio (Flota 1, Flota 2…). */
+  number: number;
+  location: SystemLocation;
+  travel: Travel | null;
+  ships: FleetShip[];
 }
 
 /** Respuesta de `GET /api/emperor`, `POST /api/emperor` y `POST /api/emperor/move`. */

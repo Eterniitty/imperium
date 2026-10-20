@@ -1,15 +1,20 @@
 import * as THREE from "three";
-import type { Emperor, EmperorView } from "@imperium/shared";
+import { translate, type Emperor, type EmperorView, type Fleet } from "@imperium/shared";
 import { positionAt } from "@imperium/sim";
 import { serverNow, worldStore } from "../net/world";
 import { authStore } from "../state/auth";
+import { gameStore } from "../state/store";
 import type { SectorManager } from "./SectorManager";
 import { labelTexture, ringTexture } from "./textures";
 
 const OWN_COLOR = "#c792ff";
 const OTHER_COLOR = "#ff9f5a";
+const FLEET_COLOR = "#5fd3e6";
 /** Altura del rótulo en pantalla (fracción de la altura de la vista). */
 const LABEL_HEIGHT = 0.03;
+/** Distancia en pantalla (coordenadas normalizadas) a la que dos rótulos se consideran solapados. */
+const LABEL_NEAR_X = 0.25;
+const LABEL_NEAR_Y = 0.06;
 
 interface Marker {
   ring: THREE.Sprite;
@@ -31,29 +36,47 @@ export class EmperorMarkers {
 
   constructor(private sectors: SectorManager) {}
 
-  /** Emperadores a dibujar: los del mundo compartido o, sin conexión, solo el propio. */
-  private list(): Array<{ e: Emperor; online: boolean; own: boolean }> {
-    const { emperors, myEmperorId } = worldStore.getState();
+  /**
+   * Qué dibujar: los Emperadores del mundo compartido (o, sin conexión, solo el
+   * propio) y las flotas propias.
+   */
+  private list(): Array<{ e: Pick<Emperor, "id" | "location" | "travel">; name: string; color: string; size: number; online: boolean }> {
+    const { emperors, myEmperorId, fleets } = worldStore.getState();
     const all = Object.values(emperors) as EmperorView[];
-    if (all.length > 0) return all.map((e) => ({ e, online: e.online, own: e.id === myEmperorId }));
     const own = authStore.getState().emperor;
-    return own ? [{ e: own, online: true, own: true }] : [];
+    const shown: Array<{ e: Emperor; online: boolean }> = all.length > 0 ? all.map((e) => ({ e, online: e.online })) : own ? [{ e: own, online: true }] : [];
+    const locale = gameStore.getState().locale;
+    return [
+      ...shown.map(({ e, online }) => {
+        const mine = e.id === (myEmperorId ?? own?.id);
+        return { e, name: e.name, color: mine ? OWN_COLOR : OTHER_COLOR, size: mine ? 0.075 : 0.06, online };
+      }),
+      ...(Object.values(fleets) as Fleet[]).map((f) => ({
+        e: f,
+        name: translate(locale, "fleet.name", { n: f.number }),
+        color: FLEET_COLOR,
+        size: 0.045,
+        online: true,
+      })),
+    ];
   }
 
-  update(): void {
+  update(camera: THREE.Camera): void {
     const now = serverNow();
     const seen = new Set<string>();
-    // Varios Emperadores en el mismo punto: los rótulos se apilan en vez de solaparse.
-    const stacks = new Map<string, number>();
-    for (const { e, online, own } of this.list()) {
+    // Rótulos cercanos en pantalla se apilan en vez de solaparse.
+    const placed: THREE.Vector3[] = [];
+    const ndc = new THREE.Vector3();
+    for (const item of this.list()) {
+      const { e } = item;
       seen.add(e.id);
-      const m = this.marker(e, own, online);
-      const world = positionAt(e, now);
-      const spot = `${world.x.toFixed(2)}:${world.y.toFixed(2)}:${world.z.toFixed(2)}`;
-      const level = stacks.get(spot) ?? 0;
-      stacks.set(spot, level + 1);
+      const m = this.marker(item);
+      const pos = this.sectors.toScene(positionAt(e, now));
+      ndc.copy(pos).project(camera);
+      let level = 0;
+      for (const p of placed) if (Math.abs(p.x - ndc.x) < LABEL_NEAR_X && Math.abs(p.y - ndc.y) < LABEL_NEAR_Y) level++;
+      placed.push(ndc.clone());
       m.label.center.set(0.5, -1.1 - level * 1.15);
-      const pos = this.sectors.toScene(world);
       m.ring.position.copy(pos);
       m.label.position.copy(pos);
       const travelling = e.travel !== null && e.travel.arriveAt > now;
@@ -72,22 +95,21 @@ export class EmperorMarkers {
     }
   }
 
-  private marker(e: Emperor, own: boolean, online: boolean): Marker {
-    const key = `${e.name}|${own}|${online}`;
+  private marker({ e, name, color, size, online }: { e: { id: string }; name: string; color: string; size: number; online: boolean }): Marker {
+    const key = `${name}|${color}|${online}`;
     const existing = this.markers.get(e.id);
     if (existing && existing.key === key) return existing;
     if (existing) this.removeMarker(e.id, existing);
 
-    const color = own ? OWN_COLOR : OTHER_COLOR;
     // Los desconectados se ven más tenues.
     const opacity = online ? 1 : 0.45;
     const ring = new THREE.Sprite(
       new THREE.SpriteMaterial({ map: ringTexture(), color, depthTest: false, sizeAttenuation: false, transparent: true, opacity }),
     );
-    ring.scale.setScalar(own ? 0.075 : 0.06);
+    ring.scale.setScalar(size);
     ring.renderOrder = 11;
 
-    const { texture, aspect } = labelTexture(e.name, color);
+    const { texture, aspect } = labelTexture(name, color);
     const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, sizeAttenuation: false, transparent: true, opacity }));
     label.scale.set(LABEL_HEIGHT * aspect, LABEL_HEIGHT, 1);
     label.renderOrder = 12;

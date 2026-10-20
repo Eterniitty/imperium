@@ -1,13 +1,14 @@
 import type { FastifyBaseLogger } from "fastify";
-import type { CommandError, Emperor, EmperorView, ServerMessage } from "@imperium/shared";
+import { PROTOCOL_VERSION, type CommandError, type DeltaOp, type Emperor, type EmperorView, type ServerMessage, type Topic } from "@imperium/shared";
 import type { EmperorService } from "../emperor/service";
+import type { FleetService } from "../fleet/service";
 
 /** Un jugador conectado por WebSocket. */
 export interface Client {
   accountId: string;
   emperorId: string;
-  /** Recibe los cambios solo tras pedir la instantánea (`sub`). */
-  subscribed: boolean;
+  /** Temas de los que recibe cambios: solo tras pedir su instantánea (`sub`). */
+  subscribed: Set<Topic>;
   send(msg: ServerMessage): void;
 }
 
@@ -17,20 +18,26 @@ type Ack = Extract<ServerMessage, { t: "ack" }>;
 const PROCESSED_PER_ACCOUNT = 100;
 
 /**
- * Centro de difusión del tema "emperors": quién está conectado, la instantánea
- * y los cambios. Todo lo que lee la base de datos y envía pasa por una cola, en
- * orden: así ninguna instantánea se cruza con un cambio y `seq` no tiene huecos.
+ * Centro de difusión. Temas:
+ * - "emperors": público, para todos.
+ * - "me": privado de cada Emperador (sus flotas); su `seq` es propio de cada uno.
+ *
+ * Todo lo que lee la base de datos y envía pasa por una cola, en orden: así
+ * ninguna instantánea se cruza con un cambio y `seq` no tiene huecos.
  */
 export class Hub {
   private readonly clients = new Set<Client>();
   private readonly online = new Map<string, number>();
   private readonly processed = new Map<string, Map<string, Promise<Ack>>>();
-  private seq = 0;
+  private emperorsSeq = 0;
+  private readonly meSeq = new Map<string, number>();
   private queue: Promise<unknown> = Promise.resolve();
 
   constructor(
     private readonly emperors: EmperorService,
+    private readonly fleets: FleetService,
     private readonly log: FastifyBaseLogger,
+    private readonly timeScale: number,
     private readonly now: () => number = Date.now,
   ) {}
 
@@ -57,6 +64,7 @@ export class Hub {
 
   add(client: Client): void {
     this.clients.add(client);
+    client.send({ t: "hello", protocol: PROTOCOL_VERSION, emperorId: client.emperorId, serverTime: this.now(), timeScale: this.timeScale });
     const n = (this.online.get(client.emperorId) ?? 0) + 1;
     this.online.set(client.emperorId, n);
     if (n === 1) void this.publish(client.emperorId);
@@ -70,29 +78,42 @@ export class Hub {
     void this.publish(client.emperorId);
   }
 
-  /** Envía la instantánea y, desde ese momento, los cambios. */
-  subscribe(client: Client): Promise<void> {
+  /** Envía la instantánea de un tema y, desde ese momento, sus cambios. */
+  subscribe(client: Client, topic: Topic): Promise<void> {
     return this.enqueue(async () => {
-      const all = await this.emperors.all();
-      if (!this.clients.has(client)) return;
-      client.send({ t: "snap", topic: "emperors", seq: this.seq, serverTime: this.now(), data: { emperors: all.map((e) => this.view(e)) } });
-      client.subscribed = true;
+      if (topic === "emperors") {
+        const all = await this.emperors.all();
+        if (!this.clients.has(client)) return;
+        client.send({ t: "snap", topic, seq: this.emperorsSeq, serverTime: this.now(), data: { emperors: all.map((e) => this.view(e)) } });
+      } else {
+        const fleets = await this.fleets.byEmperor(client.emperorId);
+        if (!this.clients.has(client)) return;
+        client.send({ t: "snap", topic, seq: this.meSeq.get(client.emperorId) ?? 0, serverTime: this.now(), data: { fleets } });
+      }
+      client.subscribed.add(topic);
     });
   }
 
-  /** Difunde el estado actual de un Emperador (leído de la base de datos al enviarlo). */
+  private send(topic: Topic, seq: number, ops: DeltaOp[], to: (c: Client) => boolean): void {
+    const msg: ServerMessage = { t: "delta", topic, seq, serverTime: this.now(), ops };
+    for (const c of this.clients) if (c.subscribed.has(topic) && to(c)) c.send(msg);
+  }
+
+  /** Difunde a todos el estado actual de un Emperador (leído de la base de datos al enviarlo). */
   publish(emperorId: string): Promise<void> {
     return this.enqueue(async () => {
       const e = await this.emperors.byId(emperorId);
-      this.seq++;
-      const msg: ServerMessage = {
-        t: "delta",
-        topic: "emperors",
-        seq: this.seq,
-        serverTime: this.now(),
-        ops: [{ path: `emperors.${emperorId}`, v: e ? this.view(e) : null }],
-      };
-      for (const c of this.clients) if (c.subscribed) c.send(msg);
+      this.send("emperors", ++this.emperorsSeq, [{ path: `emperors.${emperorId}`, v: e ? this.view(e) : null }], () => true);
+    });
+  }
+
+  /** Envía a su dueño el estado actual de una flota. */
+  publishFleet(emperorId: string, fleetId: string): Promise<void> {
+    return this.enqueue(async () => {
+      const fleet = await this.fleets.byId(fleetId);
+      const seq = (this.meSeq.get(emperorId) ?? 0) + 1;
+      this.meSeq.set(emperorId, seq);
+      this.send("me", seq, [{ path: `fleets.${fleetId}`, v: fleet }], (c) => c.emperorId === emperorId);
     });
   }
 
@@ -117,10 +138,5 @@ export class Hub {
     seen.set(cmdId, ack);
     if (seen.size > PROCESSED_PER_ACCOUNT) seen.delete(seen.keys().next().value!);
     return ack;
-  }
-
-  /** Cierra todas las conexiones (al apagar el servidor). */
-  closeAll(close: (c: Client) => void): void {
-    for (const c of this.clients) close(c);
   }
 }

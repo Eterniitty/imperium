@@ -319,6 +319,7 @@ kbd {
 .emperor-list li { display: flex; align-items: center; gap: 8px; }
 .emperor-list li strong { color: #ff9f5a; }
 .emperor-list li.own strong { color: #c792ff; }
+.emperor-list li.fleet strong { color: #5fd3e6; }
 .emperor-list li .muted { margin-left: auto; }
 .hover-tip { display: flex; align-items: center; gap: 8px; }
 
@@ -402,6 +403,11 @@ kbd {
   font-size: 12px;
   max-width: 360px;
 }
+.fleets { position: absolute; left: 12px; top: 74px; padding: 10px 14px; font-size: 12px; width: 280px; max-height: 40%; overflow-y: auto; }
+.fleet-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.fleet-row { display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left; background: none; border: 1px solid transparent; border-radius: 4px; padding: 6px 8px; color: inherit; font: inherit; cursor: pointer; }
+.fleet-row:hover { border-color: var(--panel-border); background: rgba(63, 208, 255, 0.06); }
+.fleet-row strong { color: #5fd3e6; }
 .help-toggle { background: none; border: none; padding: 0; cursor: pointer; margin: 0; }
 .help ul { margin: 8px 0 0; padding-left: 16px; color: #c3cbd9; line-height: 1.6; }
 
