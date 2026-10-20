@@ -88,6 +88,12 @@ export const es = {
   "emperor.moving": "Trasladando…",
   "emperor.mismatch": "Tu Emperador está en un sistema que este cliente no reconoce (semilla del universo distinta).",
   "mail.login.subject": "Tu enlace de acceso a Aeonarch",
+  "mail.login.intro": "Has pedido entrar en Aeonarch. Pulsa este enlace para acceder:",
+  "mail.login.button": "Entrar en Aeonarch",
+  "mail.login.copy": "Si el botón no funciona, copia esta dirección en tu navegador:",
+  "mail.login.expires": "El enlace caduca en {minutes} minutos y solo se puede usar una vez.",
+  "mail.login.ignore": "Si no lo has pedido tú, ignora este correo: sin el enlace nadie puede entrar en tu cuenta.",
+  "mail.login.footer": "Correo automático de Aeonarch; no respondas a este mensaje.",
 
   "server.label": "Servidor",
   "server.online": "En línea",

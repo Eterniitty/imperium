@@ -27,7 +27,16 @@ describe("configuración", () => {
   });
 
   it("en producción exige correo real, cookies Secure, https y semilla de detalle propia", () => {
-    const prod = { ...BASE_ENV, APP_ENV: "production", PUBLIC_URL: "https://a.test", DETAIL_SEED: "x".repeat(32) };
+    const prod = {
+      ...BASE_ENV,
+      APP_ENV: "production",
+      PUBLIC_URL: "https://a.test",
+      DETAIL_SEED: "x".repeat(32),
+      SMTP_HOST: "smtp.a.test",
+      SMTP_USER: "usuario",
+      SMTP_PASS: "contraseña",
+      MAIL_FROM: "Aeonarch <no-reply@a.test>",
+    };
     expect(() => loadConfig({ ...prod, MAIL_TRANSPORT: "console" })).toThrow(/MAIL_TRANSPORT/);
     expect(() => loadConfig({ ...prod, MAIL_TRANSPORT: "smtp", COOKIE_SECURE: "false" })).toThrow(/COOKIE_SECURE/);
     expect(() => loadConfig({ ...prod, MAIL_TRANSPORT: "smtp", PUBLIC_URL: "http://a.test" })).toThrow(/PUBLIC_URL/);

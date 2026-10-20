@@ -36,6 +36,23 @@ const EnvSchema = z
     // pruebas se sube para poder ver las cosas sin esperar horas.
     TIME_SCALE: z.coerce.number().positive().max(1e7).default(1),
     MAIL_TRANSPORT: z.enum(["console", "smtp"]).default("console"),
+    // Correo real (MAIL_TRANSPORT=smtp): servidor del proveedor de correo transaccional.
+    // Con smtp, SMTP_HOST, SMTP_USER, SMTP_PASS y MAIL_FROM son obligatorias.
+    SMTP_HOST: z.string().trim().min(1).optional(),
+    // 587: STARTTLS (obligatorio, nunca se envía en claro); 465: TLS directo.
+    SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+    // TLS directo desde el primer byte. Si no se indica, se deduce del puerto (465 → true).
+    SMTP_SECURE: z.enum(["true", "false"]).optional(),
+    SMTP_USER: z.string().min(1).optional(),
+    SMTP_PASS: z.string().min(1).optional(),
+    // Remitente, p. ej. "Aeonarch <no-reply@tu-dominio>". Su dominio se usa en el Message-ID.
+    MAIL_FROM: z.string().trim().min(1).optional(),
+    // Escribe también el enlace de acceso en el registro aunque se envíe por correo:
+    // para probar el correo real en staging. Prohibido en producción.
+    MAIL_LOG_LINKS: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((v) => v === "true"),
     // Sin HTTPS el navegador no guarda cookies Secure: solo se desactiva en desarrollo o pruebas.
     COOKIE_SECURE: z
       .enum(["true", "false"])
@@ -43,7 +60,18 @@ const EnvSchema = z
       .transform((v) => v === "true"),
   })
   .superRefine((env, ctx) => {
+    if (env.MAIL_TRANSPORT === "smtp") {
+      for (const key of ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "MAIL_FROM"] as const) {
+        if (!env[key]) ctx.addIssue({ code: "custom", path: [key], message: "obligatoria con MAIL_TRANSPORT=smtp" });
+      }
+      if (env.MAIL_FROM && !parseMailFrom(env.MAIL_FROM)) {
+        ctx.addIssue({ code: "custom", path: ["MAIL_FROM"], message: 'debe ser "Nombre <direccion@dominio>" o "direccion@dominio"' });
+      }
+    }
     if (env.APP_ENV !== "production") return;
+    if (env.MAIL_LOG_LINKS) {
+      ctx.addIssue({ code: "custom", path: ["MAIL_LOG_LINKS"], message: "en producción los enlaces de acceso nunca se escriben en el registro" });
+    }
     if (!env.DETAIL_SEED) {
       ctx.addIssue({ code: "custom", path: ["DETAIL_SEED"], message: "en producción hace falta una semilla secreta de detalle" });
     }
@@ -58,7 +86,23 @@ const EnvSchema = z
     }
   })
   // Fuera de producción hay un valor por defecto, conocido: no protege nada.
-  .transform((env) => ({ ...env, DETAIL_SEED: env.DETAIL_SEED ?? DEV_DETAIL_SEED }));
+  .transform((env) => ({
+    ...env,
+    DETAIL_SEED: env.DETAIL_SEED ?? DEV_DETAIL_SEED,
+    SMTP_SECURE: env.SMTP_SECURE === undefined ? env.SMTP_PORT === 465 : env.SMTP_SECURE === "true",
+  }));
+
+/**
+ * Dirección y dominio del remitente: "Aeonarch <no-reply@ejemplo.com>" o
+ * "no-reply@ejemplo.com". Null si no tiene forma de dirección de correo.
+ */
+export function parseMailFrom(from: string): { address: string; domain: string } | null {
+  const match = /^(?:[^<>]*<\s*([^<>\s@]+@([^<>\s@]+\.[^<>\s@]+))\s*>|([^<>\s@]+@([^<>\s@]+\.[^<>\s@]+)))$/.exec(from.trim());
+  if (!match) return null;
+  const address = match[1] ?? match[3];
+  const domain = match[2] ?? match[4];
+  return address && domain ? { address, domain: domain.toLowerCase() } : null;
+}
 
 export type ServerConfig = z.infer<typeof EnvSchema>;
 
