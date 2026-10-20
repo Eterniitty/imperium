@@ -37,4 +37,5 @@ Idioma de trabajo: **español** (código y comentarios en español; identificado
 - No quites el `basicauth` de Caddy ni abras puertos nuevos sin que el usuario lo pida explícitamente.
 - No actives copias de seguridad, volúmenes ni balanceadores de Hetzner (cuestan dinero) sin que el usuario lo decida.
 - **Nunca configures `ANTHROPIC_API_KEY`** en este servidor: el usuario usa su suscripción de Claude, y esa variable haría que se facturase como API.
-- Pide confirmación antes de cualquier comando con `sudo`, de borrar datos o de modificar `/etc`.
+- Pide confirmación antes de cualquier comando con `sudo` o de modificar `/etc`.
+- Puedes borrar datos sin pedir confirmación, pero **informa siempre al usuario de qué has borrado** (qué datos, de dónde y cuántos registros o archivos).
