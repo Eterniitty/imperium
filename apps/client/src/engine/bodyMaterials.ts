@@ -431,17 +431,22 @@ const STAR_FRAGMENT = /* glsl */ `
     float footprint = max(length(fwidth(dir)), 1e-7);
     // Granulado: celdas brillantes con canales oscuros, que hierven con el tiempo
     // (Voronoi con puntos en movimiento, algo deformado para que sea orgánico).
-    vec3 q = dir * gf + uSeed;
-    q += 0.6 * vec3(snoise(q * 0.3 + vec3(0.0, t * 0.03, 0.0)), snoise(q * 0.3 + vec3(t * 0.03, 7.3, 0.0)), 0.0);
-    vec2 w = worley(q, t * 0.35, 1.0);
-    float cells = smoothstep(0.0, 0.14, w.y - w.x) * (1.0 - 0.3 * w.x);
-    float oct = clamp(log2(0.5 / (footprint * gf * 3.0)) + 1.0, 0.0, uMaxOctaves - 3.0);
-    if (oct > 0.0) {
-      vec2 w2 = worley(q * 3.1 + vec3(4.0), t * 0.5, 1.0);
-      cells = cells * (1.0 - 0.12 * (1.0 - smoothstep(0.0, 0.12, w2.y - w2.x)) * clamp(oct, 0.0, 1.0));
+    // De lejos el granulado es más pequeño que un píxel: se usa su valor medio (sin
+    // calcularlo, que es lo más caro del shader) en vez de dejarlo parpadear.
+    float granK = clamp(1.6 - footprint * gf * 2.5, 0.0, 1.0);
+    float gran = 0.8;
+    if (granK > 0.0) {
+      vec3 q = dir * gf + uSeed;
+      q += 0.6 * vec3(snoise(q * 0.3 + vec3(0.0, t * 0.03, 0.0)), snoise(q * 0.3 + vec3(t * 0.03, 7.3, 0.0)), 0.0);
+      vec2 w = worley(q, t * 0.35, 1.0);
+      float cells = smoothstep(0.0, 0.14, w.y - w.x) * (1.0 - 0.3 * w.x);
+      float oct = clamp(log2(0.5 / (footprint * gf * 3.0)) + 1.0, 0.0, uMaxOctaves - 3.0);
+      if (oct > 0.0) {
+        vec2 w2 = worley(q * 3.1 + vec3(4.0), t * 0.5, 1.0);
+        cells = cells * (1.0 - 0.12 * (1.0 - smoothstep(0.0, 0.12, w2.y - w2.x)) * clamp(oct, 0.0, 1.0));
+      }
+      gran = mix(0.8, cells, granK);
     }
-    // De lejos el granulado es más pequeño que un píxel: se promedia en vez de parpadear.
-    float gran = mix(0.8, cells, clamp(1.6 - footprint * gf * 2.5, 0.0, 1.0));
     // Manchas (umbra y penumbra) que derivan despacio, más frecuentes en latitudes medias.
     float s = snoise(dir * 2.6 + uSeed * 0.5 + vec3(t * 0.004, 0.0, 0.0)) + 0.35 * snoise(dir * 7.0 + uSeed + vec3(0.0, t * 0.006, 0.0));
     s -= abs(dir.y) * 0.35;
@@ -483,9 +488,12 @@ const CORONA_FRAGMENT = /* glsl */ `
     vec3 dirW = normalize((vec4(closest, 0.0) * viewMatrix).xyz);
     float x = h - 1.0;
     float halo = 0.5 * exp(-x * 7.0) + 0.24 * exp(-x * 1.5);
-    float streak = snoise(dirW * 5.0 + uSeed + vec3(0.0, uTime * 0.02, 0.0)) + 0.5 * snoise(dirW * 13.0 + uSeed.zxy - vec3(uTime * 0.03));
-    float rays = 0.8 + 0.4 * streak * smoothstep(0.0, 0.35, x);
     float fade = 1.0 - smoothstep(2.8, 4.8, h);
+    // La corona ocupa mucha pantalla: donde apenas se ve, no se calcula el ruido.
+    if (halo * fade < 0.004) discard;
+    float streak = snoise(dirW * 5.0 + uSeed + vec3(0.0, uTime * 0.02, 0.0));
+    if (x < 0.8) streak += 0.5 * snoise(dirW * 13.0 + uSeed.zxy - vec3(uTime * 0.03)) * (1.0 - x / 0.8);
+    float rays = 0.8 + 0.4 * streak * smoothstep(0.0, 0.35, x);
     float a = halo * max(rays, 0.0) * fade * (uDark > 0.5 ? 0.45 : 1.0);
     vec3 col = mix(uColor, vec3(1.0), 0.35 * exp(-x * 8.0)) * a;
     gl_FragColor = vec4(col, 1.0);

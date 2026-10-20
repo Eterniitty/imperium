@@ -122,7 +122,12 @@ test("planetas y estrella de cerca, sin errores de shader", async ({ page }) => 
       radius: type.endsWith("giant") ? 9 : 1.2,
       moons: i === 0 ? [{ type: "barren", deposits: base.deposits }] : [],
     }));
-    sys.build({ ...detail, planets, belts: [] });
+    // Los anillos salen al azar (según el id del sistema): se prueba con ids
+    // distintos hasta que algún gigante los tenga, para comprobar también su shader.
+    for (let k = 0; k < 40; k++) {
+      sys.build({ ...detail, summary: { ...detail.summary, id: `${detail.summary.id}-prueba-${k}` }, planets, belts: [] });
+      if (sys.planets.some((p: any) => p.mesh.children.some((c: any) => c.material?.uniforms?.uInner))) break;
+    }
     for (const p of sys.planets) p.layout = { ...p.layout, angularSpeed: 1e-12 };
     sys.pilot(null);
   }, types);

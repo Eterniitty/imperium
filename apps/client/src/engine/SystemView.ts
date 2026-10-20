@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { withLogDepth } from "./logDepth";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
 import type { I18nKey, StarSystemDetail } from "@imperium/shared";
