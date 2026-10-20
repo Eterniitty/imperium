@@ -16,6 +16,7 @@ import { Hub } from "./realtime/hub";
 import { realtimeRoutes } from "./realtime/routes";
 import { socialRoutes } from "./social/routes";
 import { SocialService } from "./social/service";
+import { LogisticsService } from "./logistics/service";
 import { SpaceService } from "./space/service";
 import { createMailer, type Mailer } from "./mail";
 
@@ -79,6 +80,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   const social = new SocialService(deps.db);
   const discoveries = new DiscoveryService(deps.db, config);
   const colonies = new ColonyService(deps.db, config, (summary) => discoveries.detail(summary));
+  const logistics = new LogisticsService(deps.db, config, colonies, fleets);
   const hub = new Hub(emperors, fleets, social, discoveries, colonies, app.log, config.TIME_SCALE);
   const space = new SpaceService(
     config,
@@ -98,7 +100,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   });
   app.decorate("space", space);
   await app.register(emperorRoutes, { config, db: deps.db, emperors, hub });
-  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, colonies, space, hub });
+  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, colonies, logistics, space, hub });
   await app.register(socialRoutes, { config, db: deps.db, emperors, social, hub });
   await app.register(discoveryRoutes, { config, db: deps.db, emperors, discoveries });
   await app.register(colonyRoutes, { config, db: deps.db, emperors, discoveries, colonies });
@@ -109,9 +111,12 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   worker.on("fleet.arrive", async (tx, { fleetId }) => {
     const owner = await fleets.arrive(tx, fleetId);
     const found = await discoveries.fleetArrived(tx, fleetId);
+    // Ruta automática: descarga, carga y sale hacia la otra colonia.
+    const step = owner ? await logistics.onArrive(tx, fleetId) : null;
     return () => {
       if (owner) void hub.publishFleet(owner, fleetId);
       if (found) void hub.publishDiscovered(found.emperorId, found.systemIds);
+      if (step) for (const id of step.colonyIds) void hub.publishColony(step.emperorId, id);
     };
   });
   worker.on("emperor.arrive", async (tx, { emperorId, systemId }) => {

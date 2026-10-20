@@ -4,7 +4,7 @@ import { lastLoginLink } from "./mail";
 const SHOTS = "test-results/capturas";
 
 test("se reclama un planeta del sistema de inicio, se renombra y se construye una mina", async ({ page }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(180_000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
 
@@ -69,5 +69,16 @@ test("se reclama un planeta del sistema de inicio, se renombra y se construye un
   await detail.getByLabel(/Humanos a desembarcar/).fill("5");
   await detail.getByRole("button", { name: "Desembarcar" }).click();
   await expect.poll(population).toBeGreaterThanOrEqual(before + 5);
+
+  // Logística: la Flota 1 (un explorador, bodega de 20) carga 10 de metal en la colonia y los descarga.
+  const logistics = panel.locator(".logistics").first();
+  await expect(logistics).toContainText("Bodega: 0 / 20");
+  await logistics.getByLabel(/Metal/).fill("10");
+  await logistics.getByRole("button", { name: "Cargar", exact: true }).click();
+  await expect(logistics).toContainText("Bodega: 10 / 20");
+  await expect(page.locator(".fleets")).toContainText("Lleva 10 recursos");
+  await logistics.getByLabel(/Metal/).fill("10");
+  await logistics.getByRole("button", { name: "Descargar", exact: true }).click();
+  await expect(logistics).toContainText("Bodega: 0 / 20");
   expect(errors).toEqual([]);
 });

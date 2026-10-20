@@ -658,6 +658,30 @@ export class ColonyService {
     });
   }
 
+  /**
+   * Colonia propia bloqueada y resuelta a la hora `at` (con su mantenimiento),
+   * para quien vaya a cambiar sus existencias o población (logística). Null si
+   * no existe o no es de `emperorId`.
+   */
+  async lockResolved(tx: Tx, emperorId: string, colonyId: string, at: number): Promise<{ row: ColonyRow; state: ColonyState; cap: number } | null> {
+    const [row] = await tx
+      .select()
+      .from(colonies)
+      .where(and(eq(colonies.id, colonyId), eq(colonies.emperorId, emperorId)))
+      .for("update")
+      .limit(1);
+    if (!row) return null;
+    const counts = (await this.installationCounts(tx, [row.id])).get(row.id) ?? {};
+    const site = this.site(row, counts, await this.extraUpkeepOf(tx, row));
+    if (!site) return null;
+    return { row, state: this.resolve(row, site, at), cap: populationCap(site.planet.habitability) };
+  }
+
+  /** Guarda el estado de una colonia resuelto a la hora `at`. */
+  async writeState(tx: Tx, colonyId: string, state: ColonyState, at: number): Promise<void> {
+    await tx.update(colonies).set({ population: state.population, ...state.stock, resolvedAt: new Date(at) }).where(eq(colonies.id, colonyId));
+  }
+
   /** Asientos del libro de una colonia, en orden (para auditar y para los tests). */
   async ledger(colonyId: string) {
     return this.db.select().from(resourceLedger).where(eq(resourceLedger.colonyId, colonyId)).orderBy(asc(resourceLedger.id));

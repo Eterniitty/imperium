@@ -42,6 +42,15 @@ export const SHIP_HUMAN_CAPACITY: Partial<Record<ShipClassId, number>> = {
   colonizer: 1000,
 };
 
+/**
+ * Plazas para pasajeros (humanos que se trasladan entre colonias, no colonos
+ * que fundan): solo las naves de transporte. Los recursos van en la bodega
+ * (`cargo` de cada clase en ships.ts), compartida por todos los recursos.
+ */
+export const SHIP_PASSENGERS: Partial<Record<ShipClassId, number>> = {
+  freighter: 200,
+};
+
 /** Crecimiento de la población de una colonia (logístico, hacia un tope). */
 export const POPULATION = {
   /**

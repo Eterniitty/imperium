@@ -14,6 +14,7 @@ import { accountFromRequest, sessionCookieName } from "../auth/routes";
 import { RateLimiter } from "../auth/rateLimit";
 import type { ServerConfig } from "../config";
 import type { ColonyService } from "../colony/service";
+import type { LogisticsService } from "../logistics/service";
 import type { Database } from "../db/client";
 import type { EmperorService } from "../emperor/service";
 import type { FleetService } from "../fleet/service";
@@ -27,6 +28,7 @@ export interface RealtimeDeps {
   emperors: EmperorService;
   fleets: FleetService;
   colonies: ColonyService;
+  logistics: LogisticsService;
   space: SpaceService;
   hub: Hub;
 }
@@ -37,7 +39,7 @@ const HEARTBEAT_MS = 30_000;
 const MAX_CONNECTIONS_PER_ACCOUNT = 5;
 const MAX_CONNECTIONS = 1_000;
 
-export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, colonies, space, hub }: RealtimeDeps) {
+export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, colonies, logistics, space, hub }: RealtimeDeps) {
   const cookieName = sessionCookieName(config);
   const tickets = new TicketStore();
   const ticketsPerAccount = new RateLimiter(30, MINUTE);
@@ -153,8 +155,37 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                   }
                   case "fleet.move": {
                     const res = await fleets.move(owner.emperorId, msg.args.fleetId, msg.args.systemId);
-                    if (res.ok) await hub.publishFleet(res.emperorId, res.fleet.id);
+                    if (res.ok) {
+                      // Una orden de viaje a mano saca a la flota de su ruta automática.
+                      await logistics.clearRoute(owner.emperorId, res.fleet.id);
+                      await hub.publishFleet(res.emperorId, res.fleet.id);
+                    }
                     return res;
+                  }
+                  // Fase 8: logística (ver logistics/service.ts).
+                  case "fleet.transfer": {
+                    const a = msg.args;
+                    const res = await logistics.transfer(owner.emperorId, a.fleetId, a.colonyId, a.direction, a.amounts);
+                    if (res.ok) {
+                      await hub.publishFleet(res.emperorId, res.fleetId);
+                      await hub.publishColony(res.emperorId, res.colonyId);
+                    }
+                    return res;
+                  }
+                  case "fleet.route": {
+                    const { fleetId, ...route } = msg.args;
+                    const res = await logistics.setRoute(owner.emperorId, fleetId, route);
+                    if (res.ok) {
+                      await hub.publishFleet(res.emperorId, res.fleetId);
+                      for (const id of res.colonyIds) await hub.publishColony(res.emperorId, id);
+                    }
+                    return res;
+                  }
+                  case "fleet.routeStop": {
+                    const ok = await logistics.clearRoute(owner.emperorId, msg.args.fleetId);
+                    if (!ok) return { ok: false, error: "no_fleet" } as const;
+                    await hub.publishFleet(owner.emperorId, msg.args.fleetId);
+                    return { ok: true } as const;
                   }
                   // Fase 7: colonias (ver colony/service.ts).
                   case "colony.claim": {

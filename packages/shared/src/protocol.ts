@@ -3,7 +3,7 @@
  * docs/arquitectura.md §8. Los esquemas Zod de lo que envía el cliente están en
  * `schemas.ts`.
  */
-import type { Colony, Emperor, EmperorHumans, Fleet } from "./api";
+import type { Cargo, Colony, Emperor, EmperorHumans, Fleet, FleetRoute } from "./api";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
 export const PROTOCOL_VERSION = 4;
@@ -49,6 +49,12 @@ export interface CommandArgs {
   "colony.cancel": { colonyId: string; buildId: string };
   /** Desembarca humanos de la nave del Emperador (presente en el sistema) en una colonia propia. */
   "colony.disembark": { colonyId: string; humans: number };
+  /** Carga o descarga recursos y pasajeros entre una flota y una colonia propia del mismo sistema. */
+  "fleet.transfer": { fleetId: string; colonyId: string; direction: "load" | "unload"; amounts: Partial<Cargo> };
+  /** Pone a una flota en una ruta de transporte automática entre dos colonias propias. */
+  "fleet.route": FleetRoute & { fleetId: string };
+  /** Quita la ruta automática de una flota (se queda donde esté). */
+  "fleet.routeStop": { fleetId: string };
 }
 export type CommandOp = keyof CommandArgs;
 
@@ -121,6 +127,10 @@ export type CommandError =
   | "queue_full"
   | "no_build"
   | "colony_full"
+  | "cargo_full"
+  | "storage_full"
+  | "nothing_to_transfer"
+  | "invalid_route"
   | "rate_limited"
   | "internal";
 

@@ -97,6 +97,25 @@ export interface Fleet {
   location: SystemLocation;
   travel: Travel | null;
   ships: FleetShip[];
+  /** Lo que lleva en la bodega: recursos y pasajeros. */
+  cargo: Cargo;
+  /** Capacidad: bodega (todos los recursos juntos) y plazas de pasajeros. */
+  capacity: { resources: number; humans: number };
+  /** Ruta de transporte automática, si la tiene. */
+  route: FleetRoute | null;
+}
+
+/** Contenido de una bodega. */
+export type Cargo = Record<"metal" | "volatiles" | "crystal" | "alloys" | "humans", number>;
+
+/** Ruta automática: carga en el origen lo indicado, lo descarga todo en el destino y vuelve. */
+export interface FleetRoute {
+  fromColonyId: string;
+  toColonyId: string;
+  /** Recursos a cargar en el origen, en orden de prioridad. */
+  carry: Array<"metal" | "volatiles" | "crystal" | "alloys">;
+  /** Si también lleva pasajeros del origen al destino. */
+  humans: boolean;
 }
 
 /** Respuesta de `GET /api/emperor`, `POST /api/emperor` y `POST /api/emperor/move`. */

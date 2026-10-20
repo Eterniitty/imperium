@@ -3,6 +3,7 @@ import type { Fleet } from "@imperium/shared";
 import { engineRef } from "../engineRef";
 import { useWorld } from "../net/world";
 import { useGame, useT } from "../state/store";
+import { cargoSummary } from "./FleetLogistics";
 import { contentText, shipCounts } from "./fleets";
 import { formatDuration, useServerNow } from "./useNow";
 
@@ -40,6 +41,12 @@ export function FleetsPanel() {
                       .map(([id, n]) => t("ship.count", { count: n, name: contentText(locale, `ship.${id}.name`) }))
                       .join(" · ")}
                   </span>
+                  {cargoSummary(f).resources + cargoSummary(f).humans > 0 && (
+                    <span className="muted small">
+                      {t("logistics.carrying", { n: Math.round(cargoSummary(f).resources), h: Math.round(cargoSummary(f).humans) })}
+                    </span>
+                  )}
+                  {f.route && <span className="small route-tag">{t("logistics.onRoute")}</span>}
                 </button>
               </li>
             );

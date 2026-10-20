@@ -43,7 +43,9 @@ Orden de construcción de lo que pide [diseno.md](diseno.md). Cada fase se divid
 
 ## Fase 8 — Logística
 
-- Cargueros que transportan recursos y humanos entre colonias por rutas reales (interceptables). Red de suministro.
+- ✔ **Transporte**: cada flota tiene bodega (suma de la carga de sus naves; todos los recursos juntos) y plazas de pasajeros (carguero: 200). Orden `fleet.transfer` para cargar y descargar a mano en una colonia propia del sistema; la colonia conserva siempre sus colonos mínimos. Todo pasa por el libro de recursos.
+- ✔ **Rutas automáticas** (`fleet.route` / `fleet.routeStop`): en el origen carga lo indicado hasta llenar, en el destino lo descarga todo y vuelve, sola, en cada llegada (evento `fleet.arrive`). Se acaba si una colonia deja de ser tuya.
+- Pendiente: interceptar convoyes en ruta (con el combate de flotas, Fase 9) y red de suministro (instalaciones aisladas que se debilitan).
 
 ## Fase 9 — Guerra
 

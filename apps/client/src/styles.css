@@ -537,3 +537,13 @@ kbd {
 .pulse-tag { margin-left: 8px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #8fe9ff; border: 1px solid rgba(143, 233, 255, 0.5); border-radius: 3px; padding: 1px 6px; vertical-align: middle; }
 .tag.capital { margin-left: 8px; background: rgba(232, 182, 76, 0.14); color: var(--gold); border: 1px solid rgba(232, 182, 76, 0.45); }
 .build-queue li .link-btn { margin-left: 8px; }
+
+/* Logística. */
+.logistics { margin: 6px 0 10px; }
+.logistics-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.14em; color: #5fd3e6; margin: 14px 0 4px; }
+.logistics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 6px 10px; }
+.logistics-grid label { display: flex; flex-direction: column; gap: 2px; }
+.logistics-grid input { width: 100%; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--panel-border); background: rgba(20, 30, 50, 0.7); color: inherit; font-family: var(--font-mono); font-size: 12px; }
+.route-form { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.route-carry { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.route-tag { color: #5fd3e6; }

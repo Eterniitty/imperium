@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { bigserial, check, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { bigserial, boolean, check, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 
 /**
  * Esquema de la base de datos. Tras cambiarlo: `pnpm --filter @imperium/server db:generate`
@@ -288,3 +288,44 @@ export const resourceLedger = pgTable(
   },
   (t) => [index("resource_ledger_colony_id_idx").on(t.colonyId), index("resource_ledger_emperor_id_idx").on(t.emperorId)],
 );
+
+/**
+ * Bodega de una flota (Fase 8): recursos y pasajeros que transporta. La
+ * capacidad sale de sus naves (`cargo` y `SHIP_PASSENGERS` en content).
+ */
+export const fleetCargo = pgTable(
+  "fleet_cargo",
+  {
+    fleetId: uuid("fleet_id")
+      .primaryKey()
+      .references(() => fleets.id, { onDelete: "cascade" }),
+    metal: doublePrecision("metal").notNull().default(0),
+    volatiles: doublePrecision("volatiles").notNull().default(0),
+    crystal: doublePrecision("crystal").notNull().default(0),
+    alloys: doublePrecision("alloys").notNull().default(0),
+    humans: doublePrecision("humans").notNull().default(0),
+  },
+  (t) => [check("fleet_cargo_nonnegative", sql`${t.metal} >= 0 AND ${t.volatiles} >= 0 AND ${t.crystal} >= 0 AND ${t.alloys} >= 0 AND ${t.humans} >= 0`)],
+);
+
+/**
+ * Ruta de transporte automática de una flota entre dos colonias propias: en
+ * el origen carga lo indicado, en el destino lo descarga todo, y vuelve. Se
+ * borra si la flota recibe otra orden o una de las colonias deja de existir.
+ */
+export const fleetRoutes = pgTable("fleet_routes", {
+  fleetId: uuid("fleet_id")
+    .primaryKey()
+    .references(() => fleets.id, { onDelete: "cascade" }),
+  fromColonyId: uuid("from_colony_id")
+    .notNull()
+    .references(() => colonies.id, { onDelete: "cascade" }),
+  toColonyId: uuid("to_colony_id")
+    .notNull()
+    .references(() => colonies.id, { onDelete: "cascade" }),
+  /** Recursos a cargar en el origen, en orden de prioridad. */
+  carry: jsonb("carry").notNull(),
+  /** Si también lleva pasajeros (humanos) del origen al destino. */
+  humans: boolean("humans").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

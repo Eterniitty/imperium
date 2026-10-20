@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { distance, type Fleet, type I18nKey } from "@imperium/shared";
+import { distance, type Colony, type Fleet, type I18nKey } from "@imperium/shared";
 import { engineRef } from "../engineRef";
 import { connection, useWorld } from "../net/world";
 import { useAuth } from "../state/auth";
@@ -8,6 +8,7 @@ import { gameStore, useGame, useT } from "../state/store";
 import { useClaims } from "../state/claims";
 import { ownColonyAt, planetLabel } from "./colonies";
 import { DepositChips, Meter, RESOURCE_COLORS, starColorCss } from "./common";
+import { FleetLogistics } from "./FleetLogistics";
 import { PlanetColony } from "./PlanetColony";
 import { formatDuration, useServerNow } from "./useNow";
 
@@ -78,6 +79,8 @@ export function SystemPanel() {
   const fleetAt = (f: Fleet) => (f.travel && f.travel.arriveAt <= now ? f.travel.to : f.location).systemId;
   const fleetMoving = (f: Fleet) => f.travel !== null && f.travel.arriveAt > now;
   const fleetsHere = ownFleets.filter((f) => !fleetMoving(f) && fleetAt(f) === selected.id);
+  // Primera colonia propia del sistema (para cargar y descargar).
+  const colonyHere = (Object.values(colonies) as Colony[]).find((c) => c.systemId === selected.id);
   const sendable = ownFleets.filter((f) => !fleetMoving(f) && fleetAt(f) !== selected.id);
   const p = selected.position;
 
@@ -202,6 +205,16 @@ export function SystemPanel() {
               </li>
             ))}
           </ul>
+          {/* Logística: flotas con bodega paradas junto a una colonia propia de este sistema. */}
+          {colonyHere &&
+            fleetsHere
+              .filter((f) => f.capacity.resources + f.capacity.humans > 0)
+              .map((f) => (
+                <div key={f.id}>
+                  <h4 className="logistics-title">{t("logistics.title", { name: t("fleet.name", { n: f.number }) })}</h4>
+                  <FleetLogistics fleet={f} colony={colonyHere} />
+                </div>
+              ))}
         </>
       )}
 

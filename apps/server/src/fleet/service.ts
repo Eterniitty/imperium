@@ -1,11 +1,11 @@
-import { fleetSpeedLyPerHour } from "@imperium/content";
+import { fleetSpeedLyPerHour, getShipClass, SHIP_PASSENGERS, type ShipClassId } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
-import type { CommandError, Fleet } from "@imperium/shared";
+import type { Cargo, CommandError, Fleet, FleetRoute } from "@imperium/shared";
 import { isTravelling, travelDurationMs } from "@imperium/sim";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { fleets, ships } from "../db/schema";
+import { fleetCargo, fleetRoutes, fleets, ships } from "../db/schema";
 import { findSystem, placeFromRow } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
 
@@ -21,6 +21,19 @@ const columns = {
 type Row = { id: string; emperorId: string; number: number; systemId: string; destSystemId: string | null; departAt: Date | null; arriveAt: Date | null };
 
 export type FleetMoveResult = { ok: true; fleet: Fleet; emperorId: string } | { ok: false; error: CommandError };
+
+export const EMPTY_CARGO: Cargo = { metal: 0, volatiles: 0, crystal: 0, alloys: 0, humans: 0 };
+
+/** Capacidad de una flota: bodega (suma de la carga de sus naves) y plazas de pasajeros. */
+export function fleetCapacity(classIds: readonly string[]): Fleet["capacity"] {
+  let resources = 0;
+  let humans = 0;
+  for (const id of classIds) {
+    resources += getShipClass(id as ShipClassId)?.cargo ?? 0;
+    humans += SHIP_PASSENGERS[id as ShipClassId] ?? 0;
+  }
+  return { resources, humans };
+}
 
 /** Margen para dar por llegada una flota cuyo evento se procesa un instante antes de tiempo. */
 const ARRIVAL_TOLERANCE_MS = 1_000;
@@ -45,13 +58,28 @@ export class FleetService {
       .from(ships)
       .where(inArray(ships.fleetId, rows.map((r) => r.id)))
       .orderBy(asc(ships.createdAt));
+    const ids = rows.map((r) => r.id);
+    const [cargoRows, routeRows] = await Promise.all([
+      db.select().from(fleetCargo).where(inArray(fleetCargo.fleetId, ids)),
+      db.select().from(fleetRoutes).where(inArray(fleetRoutes.fleetId, ids)),
+    ]);
     const now = this.now();
-    return rows.map((r) => ({
-      id: r.id,
-      number: r.number,
-      ...placeFromRow(this.seed, r, now),
-      ships: shipRows.filter((s) => s.fleetId === r.id).map(({ id, classId, hull, humans }) => ({ id, classId, hull, humans })),
-    }));
+    return rows.map((r) => {
+      const fleetShips = shipRows.filter((s) => s.fleetId === r.id).map(({ id, classId, hull, humans }) => ({ id, classId, hull, humans }));
+      const c = cargoRows.find((x) => x.fleetId === r.id);
+      const route = routeRows.find((x) => x.fleetId === r.id);
+      return {
+        id: r.id,
+        number: r.number,
+        ...placeFromRow(this.seed, r, now),
+        ships: fleetShips,
+        cargo: c ? { metal: c.metal, volatiles: c.volatiles, crystal: c.crystal, alloys: c.alloys, humans: c.humans } : { ...EMPTY_CARGO },
+        capacity: fleetCapacity(fleetShips.map((s) => s.classId)),
+        route: route
+          ? { fromColonyId: route.fromColonyId, toColonyId: route.toColonyId, carry: route.carry as FleetRoute["carry"], humans: route.humans }
+          : null,
+      };
+    });
   }
 
   async byEmperor(emperorId: string): Promise<Fleet[]> {
@@ -69,10 +97,14 @@ export class FleetService {
    * el viaje y programa la llegada, todo en la misma transacción.
    */
   async move(emperorId: string, fleetId: string, systemId: string): Promise<FleetMoveResult> {
+    return this.db.transaction((tx) => this.moveTx(tx, emperorId, fleetId, systemId));
+  }
+
+  /** Igual que `move`, dentro de una transacción ya abierta (las rutas automáticas la usan al llegar). */
+  async moveTx(tx: Tx, emperorId: string, fleetId: string, systemId: string): Promise<FleetMoveResult> {
     const dest = findSystem(this.seed, systemId);
     if (!dest) return { ok: false, error: "unknown_system" };
-
-    return this.db.transaction(async (tx): Promise<FleetMoveResult> => {
+    {
       // Solo flotas propias: la de otro jugador responde igual que una inexistente.
       const rows = await tx
         .select(columns)
@@ -96,7 +128,7 @@ export class FleetService {
       await schedule(tx, "fleet.arrive", new Date(arriveAt), { fleetId });
       const [fleet] = await this.toFleets(tx, updated);
       return { ok: true, fleet: fleet!, emperorId };
-    });
+    }
   }
 
   /**

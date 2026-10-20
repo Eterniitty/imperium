@@ -69,6 +69,8 @@ export type EmperorCreateBody = z.input<typeof EmperorCreateBodySchema>;
 export const SystemIdSchema = z.string().regex(/^-?\d{1,7}:-?\d{1,7}:-?\d{1,7}:\d{1,3}$/);
 
 const CmdIdSchema = z.string().regex(/^[A-Za-z0-9_-]{8,64}$/);
+/** Cantidad a transportar: positiva y acotada. */
+const Amount = z.number().finite().min(0).max(1e7);
 /** Números finitos y acotados: nada de NaN, Infinity ni coordenadas absurdas. */
 const Coord = z.number().finite().min(-1e9).max(1e9);
 const Vec3Schema = z.tuple([Coord, Coord, Coord]);
@@ -113,6 +115,30 @@ export const ClientMessageSchema = z.union([
     args: z.object({ colonyId: z.uuid(), kind: z.enum(["installation", "ship"]), itemId: z.string().regex(/^[a-z_]{1,32}$/) }),
   }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("colony.cancel"), args: z.object({ colonyId: z.uuid(), buildId: z.uuid() }) }),
+  z.object({
+    t: z.literal("cmd"),
+    cmdId: CmdIdSchema,
+    op: z.literal("fleet.transfer"),
+    args: z.object({
+      fleetId: z.uuid(),
+      colonyId: z.uuid(),
+      direction: z.enum(["load", "unload"]),
+      amounts: z.object({ metal: Amount, volatiles: Amount, crystal: Amount, alloys: Amount, humans: Amount }).partial(),
+    }),
+  }),
+  z.object({
+    t: z.literal("cmd"),
+    cmdId: CmdIdSchema,
+    op: z.literal("fleet.route"),
+    args: z.object({
+      fleetId: z.uuid(),
+      fromColonyId: z.uuid(),
+      toColonyId: z.uuid(),
+      carry: z.array(z.enum(["metal", "volatiles", "crystal", "alloys"])).max(4),
+      humans: z.boolean(),
+    }),
+  }),
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("fleet.routeStop"), args: z.object({ fleetId: z.uuid() }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("colony.disembark"), args: z.object({ colonyId: z.uuid(), humans: z.number().int().min(1).max(100_000) }) }),
   z.object({ t: z.literal("sub"), topic: z.enum(["emperors", "me"]) }),
   z.object({ t: z.literal("pose"), systemId: SystemIdSchema, p: Vec3Schema, q: QuatSchema, v: Vec3Schema }),
