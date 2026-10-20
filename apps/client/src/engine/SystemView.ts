@@ -10,13 +10,15 @@ import { RemoteShips } from "./RemoteShips";
 import { Effects } from "./Effects";
 import { worldStore } from "../net/world";
 import { EMPEROR_FLAGSHIP } from "@imperium/content";
-import { isBound, type Action } from "../state/settings";
+import { isBound, settingsStore, type Action } from "../state/settings";
 import { gameStore } from "../state/store";
 import { Backdrop } from "./Backdrop";
 import { FlightController } from "./FlightController";
 import type { Keyboard } from "./input";
 import { createFlagship, disposeShip, SHIP_SCALE } from "./shipModel";
-import { glowTexture, labelTexture, planetTexture, ringTexture } from "./textures";
+import { glowTexture, labelTexture, ringTexture } from "./textures";
+import { CORONA_SCALE, createAtmosphereMaterial, createBodyUniforms, createCoronaMaterial, createPlanetMaterial, createRingMaterial, createStarSurfaceMaterial } from "./bodyMaterials";
+import { bodyDetailFor, bodySegments, planetLook } from "./planetLook";
 import { claimsStore } from "../state/claims";
 import { ownColonyAt, planetLabel } from "../ui/colonies";
 import type { View } from "./View";
@@ -68,7 +70,14 @@ export class SystemView implements View {
   private content = new THREE.Group();
   private backdrop = new Backdrop(9000, 4242);
   private planets: PlanetVisual[] = [];
-  private starMaterial: THREE.ShaderMaterial | null = null;
+  /** Uniformes comunes de planetas, lunas y estrella (tiempo, detalle, luz de la estrella). */
+  private bodyUniforms = createBodyUniforms();
+  /**
+   * Cuerpos con nivel de detalle: su esfera cambia de segmentos según la
+   * distancia a la cámara (en radios) para que la silueta no se vea poligonal
+   * de cerca sin pagar de lejos. Las esferas de cada nivel se crean al usarlas.
+   */
+  private lodBodies: Array<{ mesh: THREE.Mesh; radius: number; levels: Map<number, THREE.SphereGeometry> }> = [];
   private selectRing: THREE.Sprite;
   private raycaster = new THREE.Raycaster();
   private time = 0;
@@ -129,40 +138,22 @@ export class SystemView implements View {
     this.layout = layout;
     this.systemId = summary.id;
 
-    // Estrella.
+    // Estrella: superficie con granulado y manchas, y corona que no tapa el disco.
     const isBlackHole = summary.starClass === "BH";
     const starRadius = layout.starRadius;
-    this.starMaterial = new THREE.ShaderMaterial({
-      uniforms: { uColor: { value: starColor }, uTime: { value: 0 }, uDark: { value: isBlackHole ? 1 : 0 } },
-      ...withLogDepth({
-vertexShader: /* glsl */ `
-        varying vec3 vNormal; varying vec3 vPos;
-        void main() { vNormal = normalize(normalMatrix * normal); vPos = position;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
-      `,
-      fragmentShader: /* glsl */ `
-        uniform vec3 uColor; uniform float uTime; uniform float uDark;
-        varying vec3 vNormal; varying vec3 vPos;
-        float h(vec3 p){ return fract(sin(dot(p, vec3(12.9898,78.233,37.719))) * 43758.5453); }
-        void main() {
-          float rim = 1.0 - max(dot(vNormal, vec3(0.0, 0.0, 1.0)), 0.0);
-          float grain = h(floor(normalize(vPos) * 60.0 + uTime * 0.6)) * 0.12;
-          vec3 hot = mix(uColor, vec3(1.0), 0.25);
-          vec3 col = (mix(hot, uColor * 0.75, rim) + grain) * 0.85;
-          if (uDark > 0.5) col = uColor * pow(rim, 3.0) * 1.5;
-          gl_FragColor = vec4(col, 1.0);
-        }
-      `
-}),
-    });
-    const star = new THREE.Mesh(new THREE.SphereGeometry(starRadius, 48, 32), this.starMaterial);
+    // Semilla propia (no consume `rng`, para no alterar el resto del sistema).
+    const starRng = new Rng(hashString(`star:${summary.id}`));
+    const starSeed = new THREE.Vector3(starRng.range(-50, 50), starRng.range(-50, 50), starRng.range(-50, 50));
+    this.bodyUniforms.uSunColor.value.copy(starColor).lerp(new THREE.Color(1, 1, 1), 0.5).multiplyScalar(isBlackHole ? 0.35 : 1);
+    const star = new THREE.Mesh(this.sphereLevel(starRadius, 64), createStarSurfaceMaterial(starColor, starSeed, isBlackHole, this.bodyUniforms));
     this.content.add(star);
-
-    const glow = new THREE.Sprite(
-      new THREE.SpriteMaterial({ map: glowTexture(), color: starColor, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }),
+    this.trackLod(star, starRadius);
+    const corona = new THREE.Mesh(
+      new THREE.SphereGeometry(starRadius * CORONA_SCALE, 64, 32),
+      createCoronaMaterial(isBlackHole ? new THREE.Color(0xb98cff) : starColor, starRadius, starSeed, isBlackHole, this.bodyUniforms),
     );
-    glow.scale.setScalar(starRadius * (isBlackHole ? 6 : 9));
-    this.content.add(glow);
+    corona.renderOrder = 1;
+    this.content.add(corona);
 
     if (isBlackHole) {
       const disk = new THREE.Mesh(
@@ -183,12 +174,19 @@ vertexShader: /* glsl */ `
       const p = detail.planets.find((x) => x.index === pl.index)!;
       const size = pl.size;
       radius = pl.orbitRadius;
-      const mesh = new THREE.Mesh(
-        new THREE.SphereGeometry(size, 40, 24),
-        new THREE.MeshStandardMaterial({ map: planetTexture(p.type, `${summary.id}:${p.index}`), roughness: 0.9, metalness: 0 }),
-      );
+      // Superficie procedural en el shader, determinista por planeta (id del sistema e índice).
+      const look = planetLook(p.type, `${summary.id}:${p.index}`);
+      const mesh = new THREE.Mesh(this.sphereLevel(size, 32), createPlanetMaterial(look, size, this.bodyUniforms));
+      this.trackLod(mesh, size);
       mesh.userData.planetIndex = p.index;
       mesh.rotation.z = rng.range(-0.4, 0.4);
+      if (look.atmosphere) {
+        const shell = new THREE.Mesh(
+          new THREE.SphereGeometry(size * (1 + look.atmosphere.thickness), 128, 64),
+          createAtmosphereMaterial(look, size, this.bodyUniforms),
+        );
+        mesh.add(shell);
+      }
 
       const pivot = new THREE.Object3D();
       pivot.rotation.y = planetAngle(pl, serverNow());
@@ -198,8 +196,18 @@ vertexShader: /* glsl */ `
       // Anillos en algunos gigantes.
       if ((p.type === "gas_giant" || p.type === "ice_giant") && rng.chance(0.45)) {
         const ring = new THREE.Mesh(
-          new THREE.RingGeometry(size * 1.4, size * 2.2, 64),
-          new THREE.MeshBasicMaterial({ color: 0xd8c8a8, side: THREE.DoubleSide, transparent: true, opacity: 0.35, depthWrite: false }),
+          new THREE.RingGeometry(size * 1.4, size * 2.2, 256, 1),
+          createRingMaterial(
+            {
+              inner: 1.4,
+              outer: 2.2,
+              radius: size,
+              color: new THREE.Color(p.type === "ice_giant" ? 0xb8c8d8 : 0xd8c8a8),
+              seed: look.seed,
+              gap: 0.55 + (look.freq - 2) * 0.3,
+            },
+            this.bodyUniforms,
+          ),
         );
         ring.rotation.x = Math.PI / 2 + rng.range(-0.3, 0.3);
         mesh.add(ring);
@@ -207,10 +215,12 @@ vertexShader: /* glsl */ `
 
       const moons: PlanetVisual["moons"] = [];
       p.moons.forEach((m, mi) => {
+        const moonRadius = size * (0.12 + rng.range(0, 0.12));
         const moon = new THREE.Mesh(
-          new THREE.SphereGeometry(size * (0.12 + rng.range(0, 0.12)), 24, 16),
-          new THREE.MeshStandardMaterial({ map: planetTexture(m.type, `${summary.id}:${p.index}:m${mi}`), roughness: 1 }),
+          this.sphereLevel(moonRadius, 32),
+          createPlanetMaterial(planetLook(m.type, `${summary.id}:${p.index}:m${mi}`), moonRadius, this.bodyUniforms, false),
         );
+        this.trackLod(moon, moonRadius);
         mesh.add(moon);
         // Las lunas: posiciones relativas a la malla del planeta (que no está escalada), en metros.
         moons.push({ mesh: moon, radius: size * (2.5 + mi * 1.2), speed: rng.range(0.004, 0.012), phase: rng.range(0, Math.PI * 2) });
@@ -239,6 +249,34 @@ vertexShader: /* glsl */ `
     this.camera.position.set(0, extent * 0.55, extent * 1.15);
     this.controls.maxDistance = extent * 3;
     this.controls.update();
+  }
+
+  /** Esfera de `radius` metros con `segments` segmentos (la mitad en vertical). */
+  private sphereLevel(radius: number, segments: number): THREE.SphereGeometry {
+    return new THREE.SphereGeometry(radius, segments, Math.max(8, segments / 2));
+  }
+
+  private trackLod(mesh: THREE.Mesh, radius: number): void {
+    const geometry = mesh.geometry as THREE.SphereGeometry;
+    this.lodBodies.push({ mesh, radius, levels: new Map([[geometry.parameters.widthSegments, geometry]]) });
+  }
+
+  /** Detalle según la calidad elegida y la distancia: segmentos de cada esfera y octavas del ruido. */
+  private updateLod(): void {
+    const detail = bodyDetailFor(settingsStore.getState().prefs.quality);
+    this.bodyUniforms.uMaxOctaves.value = detail.maxOctaves;
+    const center = new THREE.Vector3();
+    for (const body of this.lodBodies) {
+      const distance = this.camera.position.distanceTo(body.mesh.getWorldPosition(center)) / body.radius;
+      const segments = bodySegments(distance, detail);
+      if ((body.mesh.geometry as THREE.SphereGeometry).parameters.widthSegments === segments) continue;
+      let geometry = body.levels.get(segments);
+      if (!geometry) {
+        geometry = this.sphereLevel(body.radius, segments);
+        body.levels.set(segments, geometry);
+      }
+      body.mesh.geometry = geometry;
+    }
   }
 
   private makeOrbit(radius: number): THREE.LineLoop {
@@ -274,10 +312,12 @@ vertexShader: /* glsl */ `
       if (o instanceof THREE.Mesh || o instanceof THREE.Points || o instanceof THREE.Line) {
         o.geometry.dispose();
         const mats = Array.isArray(o.material) ? o.material : [o.material];
-        // Las texturas de planeta están en caché y se reutilizan: no se liberan aquí.
         for (const m of mats) m.dispose();
       }
     });
+    // Niveles de detalle que no estaban en uso (el actual ya se liberó arriba).
+    for (const body of this.lodBodies) for (const g of body.levels.values()) g.dispose();
+    this.lodBodies = [];
     this.content.clear();
     this.planets = [];
     this.selectRing.visible = false;
@@ -533,7 +573,8 @@ vertexShader: /* glsl */ `
 
   update(dt: number): void {
     this.time += dt;
-    if (this.starMaterial) this.starMaterial.uniforms.uTime!.value = this.time;
+    // El tiempo de los shaders da la vuelta para no perder precisión en sesiones largas.
+    this.bodyUniforms.uTime.value = this.time % 100_000;
     const now = serverNow();
     const selected = gameStore.getState().selectedPlanet;
     for (const p of this.planets) {
@@ -576,6 +617,7 @@ vertexShader: /* glsl */ `
       this.controls.update();
     }
     this.backdrop.follow(this.camera);
+    this.updateLod();
   }
 
   resize(width: number, height: number): void {
