@@ -37,6 +37,8 @@ export class Hub {
   private emperorsSeq = 0;
   private readonly meSeq = new Map<string, number>();
   private queue: Promise<unknown> = Promise.resolve();
+  /** Apagando el servidor: ya no se difunde nada (la base de datos se va a cerrar). */
+  private closing = false;
 
   constructor(
     private readonly emperors: EmperorService,
@@ -62,8 +64,15 @@ export class Hub {
     return { ...e, online: (this.online.get(e.id) ?? 0) > 0 };
   }
 
+  /** Deja de difundir y espera a que termine lo que hubiera en la cola. */
+  async close(): Promise<void> {
+    this.closing = true;
+    await this.queue;
+  }
+
   /** Encola una tarea; un fallo se registra y no detiene la cola. */
   private enqueue(task: () => Promise<void>): Promise<void> {
+    if (this.closing) return Promise.resolve();
     const run = this.queue.then(task).catch((err: unknown) => this.log.error(err, "Error en la difusión"));
     this.queue = run;
     return run;

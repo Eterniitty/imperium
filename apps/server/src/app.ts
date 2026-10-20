@@ -87,6 +87,12 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     (summary) => discoveries.detail(summary),
   );
   app.addHook("onClose", async () => space.stop());
+  // Antes de cerrar conexiones: dejar de difundir y parar la cola de eventos, para que
+  // nada use la base de datos mientras se apaga.
+  app.addHook("preClose", async () => {
+    await worker.stop();
+    await hub.close();
+  });
   app.decorate("space", space);
   await app.register(emperorRoutes, { config, db: deps.db, emperors, hub });
   await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, space, hub });
