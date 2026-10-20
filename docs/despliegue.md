@@ -75,7 +75,11 @@ Hetzner **solo factura el tráfico saliente** (20 TB incluidos, ~1 €/TB adicio
 2. [ ] **Solo Cloudflare puede llegar al servidor.** El cortafuegos de Hetzner y UFW aceptan los puertos **80/443 únicamente desde los rangos IP de Cloudflare**. SSH es la única excepción. Mantener actualizada la lista de rangos.
    - **IP real del jugador:** detrás de Cloudflare, la IP que ve Caddy es la del nodo de Cloudflare. Sin ajustar esto, los límites por IP se convierten en un bloqueo global del acceso. En Caddy: `trusted_proxies` con los rangos de Cloudflare y `client_ip_headers CF-Connecting-IP`.
 3. [ ] **Límites por IP y por cuenta** en la API HTTP, en las conexiones/mensajes WebSocket y en cualquier descarga.
-4. [ ] **Vigilante de tráfico saliente.** Mide el tráfico del mes, **avisa** al acercarse a un umbral y **corta automáticamente el acceso público** (cierra 80/443) al superar un umbral configurable (p. ej. **15 TB**). SSH sigue accesible para intervenir.
+4. [x] **Vigilante de tráfico saliente.** Instalado (20-10-2026): `deploy/egress-watchdog.py`, servicio y temporizador `aeonarch-egress` (cada 5 min, como root). Acumula los bytes enviados por la interfaz pública en el mes natural (UTC; sobrevive a reinicios), **avisa** en el registro a 12 TB y a **15 TB detiene Caddy** (el juego deja de servirse; SSH sigue). No lo vuelve a arrancar solo.
+   - Estado: `python3 -I /usr/local/sbin/aeonarch-egress-watchdog --status`. Avisos: `journalctl -t aeonarch-egress`.
+   - Instalar o actualizar: `sudo ./deploy/install-egress-watchdog.sh`. Cambiar los umbrales: `EGRESS_LIMIT_TB` / `EGRESS_WARN_TB` en `deploy/aeonarch-egress.service`.
+   - Tras un corte: revisar el tráfico, y si procede `sudo systemctl start caddy`.
+   - Probado forzando el corte con un límite de 1 byte (detuvo Caddy) y restaurando.
 
 ## Después
 

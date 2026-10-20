@@ -1,0 +1,16 @@
+# Vigilante de tráfico saliente (ver deploy/egress-watchdog.py). Lo lanza aeonarch-egress.timer.
+[Unit]
+Description=Aeonarch: vigilante de tráfico saliente (corte a 15 TB/mes)
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=EGRESS_LIMIT_TB=15
+Environment=EGRESS_WARN_TB=12
+ExecStart=/usr/bin/python3 -I /usr/local/sbin/aeonarch-egress-watchdog
+# Solo necesita leer contadores, escribir su estado y detener Caddy.
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/aeonarch-egress
+PrivateTmp=true
+NoNewPrivileges=true
