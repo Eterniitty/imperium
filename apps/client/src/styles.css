@@ -415,6 +415,7 @@ kbd {
 .owner-other { color: #ff9f5a; font-weight: 600; }
 .planet-owner { font-size: 10.5px; color: #ff9f5a; white-space: nowrap; }
 .planet-owner.own { color: #7ee08a; }
+.planet-detail .colony h3 { margin-top: 16px; }
 .colony-claim { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .claim-form { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin-top: 12px; }
 .claim-form label { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 120px; }
