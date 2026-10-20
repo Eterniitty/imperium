@@ -20,9 +20,16 @@ pnpm typecheck
 echo "==> Compilando el cliente"
 pnpm build
 
-echo "==> Publicando en $WEB_ROOT (pide la contraseña de sudo)"
-sudo mkdir -p "$WEB_ROOT"
+echo "==> Publicando en $WEB_ROOT"
+# La carpeta pertenece al usuario de despliegue, así que no hace falta sudo.
+# Preparación única: sudo mkdir -p "$WEB_ROOT" && sudo chown -R "$USER:$USER" "$WEB_ROOT"
+if [ ! -w "$WEB_ROOT" ]; then
+  echo "Error: no se puede escribir en $WEB_ROOT. Ejecuta una vez:" >&2
+  echo "  sudo mkdir -p $WEB_ROOT && sudo chown -R $USER:$USER $WEB_ROOT" >&2
+  exit 1
+fi
 # --delete elimina archivos antiguos; se excluyen los mapas de código fuente.
-sudo rsync -a --delete --exclude='*.map' apps/client/dist/ "$WEB_ROOT/"
+# --chmod garantiza que Caddy (otro usuario) pueda leer todo.
+rsync -a --delete --exclude='*.map' --chmod=D755,F644 apps/client/dist/ "$WEB_ROOT/"
 
 echo "==> Listo. Recarga el navegador con Ctrl+F5."
