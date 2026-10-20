@@ -308,9 +308,9 @@ kbd {
   border-radius: 3px;
 }
 .tag.unknown { background: rgba(125, 138, 163, 0.18); color: #a8b3c7; border: 1px dashed rgba(125, 138, 163, 0.45); }
-.tag.emperor { background: rgba(199, 146, 255, 0.14); color: #c792ff; border: 1px solid rgba(199, 146, 255, 0.45); margin-left: 6px; }
+.tag.emperor { display: block; width: fit-content; background: rgba(199, 146, 255, 0.14); color: #c792ff; border: 1px solid rgba(199, 146, 255, 0.45); }
 .stat-button { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; text-align: left; font: inherit; }
-.stat-button .stat-value { color: #c792ff; }
+.stat-button .stat-value { color: #c792ff; white-space: nowrap; }
 .stat-button:hover .stat-value { text-decoration: underline; }
 .hover-tip { display: flex; align-items: center; gap: 8px; }
 

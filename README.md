@@ -73,7 +73,10 @@ cp .env.example .env        # en Windows (CMD): copy .env.example .env
 pnpm test        # tests (generación procedural, contenido y servidor; los de base de datos necesitan TEST_DATABASE_URL)
 pnpm typecheck   # tipos de TypeScript en todos los paquetes
 pnpm build       # compilación de producción (apps/client/dist y apps/server/dist)
+pnpm e2e         # pruebas en navegador (Playwright + Chromium sin ventana)
 ```
+
+`pnpm e2e` arranca su propio servidor (puerto 3100) y cliente (5174) contra `TEST_DATABASE_URL`, que se vacía, así que no toca el juego en marcha. No lo ejecutes a la vez que `pnpm test`. Las capturas quedan en `test-results/capturas/`. La primera vez en una máquina nueva: `pnpm exec playwright install chromium` y, con sudo, `playwright install-deps chromium`.
 
 ## Estructura
 

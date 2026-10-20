@@ -12,6 +12,7 @@ import { loadConfig } from "../src/config";
 import { createDb } from "../src/db/client";
 import { magicLinkTokens, sessions } from "../src/db/schema";
 import type { Mailer } from "../src/mail";
+import { resetTestDatabase } from "./resetDb";
 
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 
@@ -35,10 +36,7 @@ describe.skipIf(!TEST_DATABASE_URL)("acceso por enlace", () => {
 
   beforeAll(async () => {
     // Base de datos limpia: se borra todo y se aplican las migraciones desde cero.
-    await database.db.execute(sql`DROP SCHEMA IF EXISTS drizzle CASCADE`);
-    await database.db.execute(sql`DROP SCHEMA IF EXISTS public CASCADE`);
-    await database.db.execute(sql`CREATE SCHEMA public`);
-    await database.migrate();
+    await resetTestDatabase(database);
   });
 
   beforeEach(async () => {

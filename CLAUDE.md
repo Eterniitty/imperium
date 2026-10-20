@@ -20,7 +20,7 @@ Idioma de trabajo: **español** (código y comentarios en español; identificado
 3. La generación procedural (`packages/procgen`) debe ser determinista: solo operaciones enteras y `+ - * / sqrt`. Nada de `Math.sin/pow/log` en lo que afecte al juego. Cambios que alteren el universo exigen subir `GENERATOR_VERSION`.
 4. Especies, facciones y naves son **datos** en `packages/content`, no lógica.
 5. Todo texto visible usa claves i18n (`packages/shared/src/i18n`), con español e inglés.
-6. No digas que algo funciona sin haberlo ejecutado. Antes de dar algo por terminado: `pnpm test`, `pnpm typecheck` y `pnpm build`.
+6. No digas que algo funciona sin haberlo ejecutado. Antes de dar algo por terminado: `pnpm test`, `pnpm typecheck` y `pnpm build`. Si cambia la interfaz, también `pnpm e2e` (pruebas en navegador) y mira las capturas.
 7. Nunca subas credenciales. `.env` está en `.gitignore`; las variables se documentan en `.env.example`.
 8. Commits en español, descriptivos.
 

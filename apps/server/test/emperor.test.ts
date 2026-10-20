@@ -13,6 +13,7 @@ import { createDb } from "../src/db/client";
 import { emperors } from "../src/db/schema";
 import { spawnCandidates } from "../src/emperor/world";
 import type { Mailer } from "../src/mail";
+import { resetTestDatabase } from "./resetDb";
 
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 
@@ -36,10 +37,8 @@ describe.skipIf(!TEST_DATABASE_URL)("Emperador persistente", () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
 
   beforeAll(async () => {
-    await database.db.execute(sql`DROP SCHEMA IF EXISTS drizzle CASCADE`);
-    await database.db.execute(sql`DROP SCHEMA IF EXISTS public CASCADE`);
-    await database.db.execute(sql`CREATE SCHEMA public`);
-    await database.migrate();
+    // Base de datos limpia: se borra todo y se aplican las migraciones desde cero.
+    await resetTestDatabase(database);
   });
 
   beforeEach(async () => {
