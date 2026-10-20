@@ -25,7 +25,7 @@ export type PlanetType =
   | "ice_giant";
 
 /** Naturaleza física de la especie. */
-export type SpeciesNature = "biological" | "mechanical" | "hybrid" | "energy";
+export type SpeciesNature = "biological" | "mechanical" | "hybrid" | "energy" | "crystalline" | "exotic";
 
 /** Forma preferida de hacer la guerra. */
 export type WarDoctrine =
@@ -34,13 +34,44 @@ export type WarDoctrine =
   | "fortified_defense"
   | "assimilation"
   | "precision_strike"
-  | "raiding";
+  | "raiding"
+  /** Destrucción selectiva de lo que permite a la humanidad volver (reconstrucción, población). */
+  | "purge"
+  /** Tecnología antigua muy superior, escudos y recuperación de artefactos. */
+  | "ancient_technology"
+  /** Ocultación, interferencia de sensores y ataques a infraestructuras. */
+  | "stealth_sabotage"
+  /** Flotas nobles, comandantes de élite y campañas de conquista territorial. */
+  | "noble_conquest";
 
 /** Cómo se expande por el mapa. */
-export type ExpansionStyle = "fast_fragile" | "slow_solid" | "nomadic" | "static";
+export type ExpansionStyle = "fast_fragile" | "slow_solid" | "nomadic" | "static" | "extinct";
 
 /** Qué quiere de la humanidad. */
-export type StanceTowardHumanity = "exterminate" | "dominate" | "plunder" | "assimilate" | "territorial";
+export type StanceTowardHumanity =
+  | "exterminate"
+  | "dominate"
+  | "plunder"
+  | "assimilate"
+  | "territorial"
+  /** Someter a la humanidad a un orden calculable (límites a cambio de pactos). */
+  | "control"
+  /** Comerciar con quien respete sus rutas. */
+  | "trade"
+  /** Estudiar a los Emperadores y su persistencia. */
+  | "study"
+  /** Rivales naturales: demostrar quién merece gobernar. */
+  | "rivalry"
+  /** Dividida: unas facciones quieren acabar con la humanidad y otras ayudarla. */
+  | "divided"
+  /** Desconocida (civilizaciones desaparecidas). */
+  | "unknown";
+
+/** Disposición a pactar con los Emperadores. */
+export type DiplomacyStance = "never" | "conditional" | "open";
+
+/** Relación de una facción concreta con la humanidad. */
+export type FactionRelation = "hostile" | "neutral" | "potential_ally";
 
 /** Silueta dominante de naves y estructuras. */
 export type Silhouette = "organic" | "angular" | "crystalline" | "brutalist_scrap" | "geometric" | "ethereal";
@@ -88,10 +119,15 @@ export interface SpeciesDefinition {
   nameKey: string;
   /** Clave i18n de la descripción: `species.<id>.description`. */
   descriptionKey: string;
+  /** Clave i18n del lema (p. ej. «Purificación · Exterminio»): `species.<id>.motto`. */
+  mottoKey: string;
   nature: SpeciesNature;
   doctrine: WarDoctrine;
   expansion: ExpansionStyle;
   stance: StanceTowardHumanity;
+  diplomacy: DiplomacyStance;
+  /** Desaparecida: solo quedan ruinas y archivos (no actúa en el mundo). */
+  extinct: boolean;
   economy: EconomicNeeds;
   geography: GeographicPreferences;
   traits: SpeciesTraits;
@@ -112,7 +148,20 @@ export type StrategicGoal =
   | "consume_resources"
   | "assimilate_worlds"
   | "guard_anomalies"
-  | "destroy_rival_faction";
+  | "destroy_rival_faction"
+  | "prevent_human_rebirth"
+  | "impose_order"
+  | "protect_trade_routes"
+  | "preserve_knowledge"
+  | "study_emperors"
+  | "absorb_human_reproduction"
+  | "break_hive_mind"
+  | "vassalize_emperors"
+  | "surpass_emperors"
+  | "end_humanity"
+  | "liberate_emperors"
+  | "protect_human_colonies"
+  | "resist_annexation";
 
 /**
  * Modificadores de una facción sobre los rasgos de su especie. Son
@@ -129,6 +178,8 @@ export interface FactionDefinition {
   /** Clave i18n de la descripción: `faction.<id>.description`. */
   descriptionKey: string;
   goal: StrategicGoal;
+  /** Relación con la humanidad (dentro de una misma especie puede variar). */
+  relation: FactionRelation;
   traitModifiers: TraitModifiers;
   /** Ids de facciones con las que está enfrentada (pueden ser de su misma especie). */
   hostileTo: string[];

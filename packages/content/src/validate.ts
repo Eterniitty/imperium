@@ -55,7 +55,11 @@ export function validateContent(
     if (s.nameKey !== `species.${s.id}.name`) errors.push(`${where}: nameKey inesperada (${s.nameKey})`);
     if (s.descriptionKey !== `species.${s.id}.description`)
       errors.push(`${where}: descriptionKey inesperada (${s.descriptionKey})`);
-    keys.push(s.nameKey, s.descriptionKey);
+    if (s.mottoKey !== `species.${s.id}.motto`) errors.push(`${where}: mottoKey inesperada (${s.mottoKey})`);
+    keys.push(s.nameKey, s.descriptionKey, s.mottoKey);
+    // Una especie desaparecida solo deja ruinas: ni facciones activas ni expansión.
+    if (s.extinct !== (s.expansion === "extinct")) errors.push(`${where}: extinct y expansion "extinct" deben ir juntos`);
+    if (s.extinct && s.enabledInMvp) errors.push(`${where}: una especie desaparecida no puede estar activa`);
 
     for (const [k, v] of Object.entries(s.traits)) checkUnit(where, k, v);
     checkUnit(where, "anomalyAffinity", s.geography.anomalyAffinity);
@@ -72,6 +76,7 @@ export function validateContent(
   for (const f of factions) {
     const where = `facción ${f.id}`;
     if (!speciesIds.has(f.speciesId)) errors.push(`${where}: speciesId inexistente ${f.speciesId}`);
+    if (species.find((s) => s.id === f.speciesId)?.extinct) errors.push(`${where}: pertenece a una especie desaparecida`);
     keys.push(f.nameKey, f.descriptionKey);
     for (const [k, v] of Object.entries(f.traitModifiers)) {
       if (v === undefined || !Number.isFinite(v) || v < -1 || v > 1)

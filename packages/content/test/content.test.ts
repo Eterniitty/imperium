@@ -42,39 +42,69 @@ describe("validateContent", () => {
   });
 });
 
-describe("especies", () => {
-  it("hay seis arquetipos", () => {
-    expect(SPECIES).toHaveLength(6);
+describe("especies (docs/lore.md)", () => {
+  it("están todas las del lore, más los Carroñeros", () => {
+    expect(SPECIES.map((s) => s.id).sort()).toEqual(
+      ["aurelians", "elydri", "eradicators", "greys", "nihil", "precursors", "scavengers", "tharaxi", "vesperi", "void_nomads"].sort(),
+    );
   });
 
-  it("exactamente Hordas y Máquinas están activas en el MVP", () => {
-    expect(mvpSpecies().map((s) => s.id).sort()).toEqual(["horde", "machines"]);
+  it("solo los Carroñeros (piratas de la IA) están activos por ahora", () => {
+    expect(mvpSpecies().map((s) => s.id)).toEqual(["scavengers"]);
   });
 
   it("ninguna especie alienígena es jugable", () => {
     expect(SPECIES.every((s) => s.playable === false)).toBe(true);
   });
 
-  it("las Hordas son las más numerosas y los Antiguos los más avanzados", () => {
-    const maxBy = (k: "numbers" | "techLevel") =>
-      [...SPECIES].sort((a, b) => b.traits[k] - a.traits[k])[0]!.id;
-    expect(maxBy("numbers")).toBe("horde");
-    expect(maxBy("techLevel")).toBe("ancients");
+  it("los Tharaxi son los más numerosos; los Precursores, los más avanzados y desaparecidos", () => {
+    const maxBy = (k: "numbers" | "techLevel") => [...SPECIES].sort((a, b) => b.traits[k] - a.traits[k])[0]!.id;
+    expect(maxBy("numbers")).toBe("tharaxi");
+    expect(maxBy("techLevel")).toBe("precursors");
+    expect(SPECIES.filter((s) => s.extinct).map((s) => s.id)).toEqual(["precursors"]);
+  });
+
+  it("posturas del lore: Erradicadores exterminan y no pactan; Grises controlan con pactos; Nómadas comercian", () => {
+    const by = (id: string) => SPECIES.find((s) => s.id === id)!;
+    expect([by("eradicators").stance, by("eradicators").diplomacy]).toEqual(["exterminate", "never"]);
+    expect([by("greys").stance, by("greys").diplomacy]).toEqual(["control", "conditional"]);
+    expect([by("void_nomads").stance, by("void_nomads").expansion]).toEqual(["trade", "nomadic"]);
   });
 });
 
 describe("facciones", () => {
-  it("todas las especies tienen al menos una facción", () => {
-    for (const s of SPECIES) expect(factionsOfSpecies(s.id).length).toBeGreaterThanOrEqual(1);
+  it("toda especie que existe tiene al menos una facción; los Precursores, ninguna", () => {
+    for (const s of SPECIES) {
+      if (s.extinct) expect(factionsOfSpecies(s.id)).toEqual([]);
+      else expect(factionsOfSpecies(s.id).length).toBeGreaterThanOrEqual(1);
+    }
   });
 
-  it("Hordas y Máquinas tienen dos facciones enfrentadas", () => {
-    for (const id of ["horde", "machines"]) {
+  it("especies divididas: dos facciones enfrentadas con distinta relación con la humanidad", () => {
+    for (const id of ["tharaxi", "nihil", "aurelians", "vesperi"]) {
       const fs = factionsOfSpecies(id);
-      expect(fs).toHaveLength(2);
+      expect(fs, id).toHaveLength(2);
       expect(fs[0]!.hostileTo).toContain(fs[1]!.id);
       expect(fs[1]!.hostileTo).toContain(fs[0]!.id);
+      expect(fs[0]!.relation, id).not.toBe(fs[1]!.relation);
     }
+  });
+
+  it("la casta disidente Tharaxi y los Desatadores NIHIL pueden ser aliados", () => {
+    for (const id of ["tharaxi_severed_caste", "nihil_unbinding", "vesperi_wardens"]) {
+      expect(FACTIONS.find((f) => f.id === id)?.relation).toBe("potential_ally");
+    }
+  });
+
+  it("la validación rechaza facciones de especies desaparecidas", () => {
+    const text = validateContent({
+      species: SPECIES,
+      factions: [...FACTIONS, { ...FACTIONS[0]!, id: "eco_precursor", speciesId: "precursors", hostileTo: [] }],
+      ships: SHIP_CLASSES,
+      es: contentEs,
+      en: contentEn,
+    }).join("\n");
+    expect(text).toContain("desaparecida");
   });
 
   it("los rasgos efectivos quedan en [0,1]", () => {

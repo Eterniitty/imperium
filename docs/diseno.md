@@ -83,18 +83,22 @@ Los valores concretos están como datos en `packages/content/src/ships.ts`.
 
 ## 9. Especies y facciones como datos
 
-Las especies alienígenas no son jugables. Se definen como **datos** (`packages/content`): naturaleza, doctrina, expansión, postura hacia la humanidad, preferencias, rasgos y lenguaje visual. Nombres provisionales hasta que llegue el lore:
+Las especies alienígenas no son jugables. Se definen como **datos** (`packages/content`): naturaleza, doctrina, expansión, postura hacia la humanidad, disposición a pactar, preferencias, rasgos y lenguaje visual. Su historia y sus motivos están en [lore.md](lore.md) (la **Gran Hostilidad**: no todas son enemigas).
 
-| Arquetipo | Esencia | MVP |
-|---|---|---|
-| **Hordas** | Biológicas, brutales, muy prolíficas; enjambres baratos, abordajes, saqueo. | Sí |
-| **Antiguos** | Longevos, escasos, tecnología muy superior; defienden sus mundos. | No |
-| **Máquinas** | Sintéticas autorreplicantes, sin moral ni retirada; consumen metal. | Sí |
-| **Enjambre** | Biología colectiva que asimila mundos. | No |
-| **Etéreos** | Seres de energía/psíquicos cerca de anomalías; sabotaje. | No |
-| **Carroñeros** | Mezcla de especies; piratas que atacan rutas de suministro. | No |
+| Especie | Lema | Postura | Facciones |
+|---|---|---|---|
+| **Erradicadores** | Purificación · Exterminio | Exterminio; nunca pactan. Atacan Cunas y población. | El Veredicto Pálido |
+| **Grises** | Orden · Control | Control: pactos con límites a la expansión. | El Cálculo |
+| **Nómadas del Vacío** | Supervivencia · Libertad | Comercio; hostiles si se cortan sus rutas. | La Estela Libre |
+| **Precursores** | Misterio · Legado | Desaparecidos: solo ruinas y archivos. | — |
+| **ELYDRI** | Nada debe olvidarse | Estudian a los Emperadores. | El Archivo Viviente |
+| **THARAXI** | El individuo es prescindible | Asimilar la reproducción humana. | La Marea / La Casta Cercenada (posible aliada) |
+| **AURELIANOS** | El poder debe demostrarse | Rivales naturales. | Casa Solenne (vasallaje) / Casa Varek (superarlos) |
+| **NIHIL** | Toda existencia es una deuda | Divididos. | El Fin Callado / Los Desatadores (posible aliada) |
+| **VESPERI** | La vida local es sagrada | Protectores o resistentes. | Los Custodios (posible aliada) / La Última Frontera |
+| **Carroñeros** | Botín · Supervivencia | Saqueo. **Activos** como piratas de la IA. | Marea de Óxido |
 
-Cada especie tiene una o más **facciones**, que pueden estar enfrentadas entre sí (p. ej. dos clanes de Hordas).
+Los nombres de facción y los rasgos numéricos son provisionales. Solo los Carroñeros están en el juego por ahora; el resto se integrará con la IA (Fase 11).
 
 ## 10. Tres capas de IA
 

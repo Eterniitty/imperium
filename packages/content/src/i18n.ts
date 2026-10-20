@@ -1,55 +1,68 @@
 /**
- * Cadenas base de contenido en español e inglés. Los nombres son provisionales
- * hasta que llegue el lore definitivo.
+ * Cadenas base de contenido en español e inglés. Especies y facciones siguen
+ * docs/lore.md; los nombres de facción son provisionales.
  */
 export type ContentDictionary = Readonly<Record<string, string>>;
 
 export const contentEs: ContentDictionary = {
-  // Especies
-  "species.horde.name": "Hordas",
-  "species.horde.description":
-    "Oleadas incontables de guerreros que se reproducen más rápido de lo que mueren. Abordan, saquean y siguen adelante sobre los restos.",
-  "species.ancients.name": "Antiguos",
-  "species.ancients.description":
-    "Pocos, longevos y dueños de una técnica que roza lo incomprensible. Nadie ha tomado uno de sus mundos y vivido para contarlo.",
-  "species.machines.name": "Máquinas",
-  "species.machines.description":
-    "Inteligencias sintéticas que se copian a sí mismas sin descanso. No conocen la piedad ni la retirada, solo el metal que les falta.",
-  "species.swarm.name": "Enjambre",
-  "species.swarm.description":
-    "Una sola voluntad repartida en miles de millones de cuerpos. Allí donde se posa, el mundo deja de ser lo que era y pasa a ser parte de él.",
-  "species.ethereals.name": "Etéreos",
-  "species.ethereals.description":
-    "Conciencias de energía pura que habitan junto a las anomalías. Se las nota cuando ya es tarde: sistemas que fallan, mentes que dudan.",
+  // Especies y facciones (docs/lore.md)
+  "species.eradicators.name": "Los Erradicadores",
+  "species.eradicators.motto": "Purificación · Exterminio",
+  "species.eradicators.description": "Consideran que la humanidad es un error que amenaza la estabilidad de la existencia. No buscan conquistar territorios humanos, sino impedir que los Emperadores vuelvan a levantarse: destruyen instalaciones de reconstrucción, atacan núcleos de población y persiguen toda evidencia de actividad humana.",
+  "species.greys.name": "Los Grises",
+  "species.greys.motto": "Orden · Control",
+  "species.greys.description": "Inteligencias antiguas que pretenden someter el universo a un orden calculable. No odian a los humanos: los consideran una variable imposible de controlar. Ofrecen pactos, tecnología y protección a cambio de que los Emperadores acepten límites a su expansión.",
+  "species.void_nomads.name": "Los Nómadas del Vacío",
+  "species.void_nomads.motto": "Supervivencia · Libertad",
+  "species.void_nomads.description": "Pueblos que viven a bordo de flotas y hábitats móviles. Desconfían de los imperios territoriales y comercian con cualquiera que respete sus rutas: socios indispensables o adversarios formidables si alguien intenta encadenarlos.",
+  "species.precursors.name": "Los Precursores",
+  "species.precursors.motto": "Misterio · Legado",
+  "species.precursors.description": "Civilizaciones desaparecidas que dejaron estructuras imposibles, mundos artificiales y archivos incompletos. Nadie sabe si fueron una especie, muchas o algo que ya no cabe en categorías biológicas. Sus ruinas podrían guardar pistas sobre el origen de los Emperadores.",
+  "species.elydri.name": "ELYDRI",
+  "species.elydri.motto": "Los Testigos de la Eternidad · Nada debe olvidarse",
+  "species.elydri.description": "Seres cristalinos que conservan recuerdos durante eras; sus ciudades son archivos vivientes. Para ellos, destruir el conocimiento es peor que la muerte. Desean estudiar los recuerdos de los Emperadores entre vidas. Combaten con escudos energéticos y tecnología antigua.",
+  "species.tharaxi.name": "THARAXI",
+  "species.tharaxi.motto": "La Marea Viviente · El individuo es prescindible",
+  "species.tharaxi.description": "Una civilización colectiva unida por señales químicas y redes biológicas: unas castas piensan, otras construyen y millones combaten. La reproducción humana autónoma los fascina y quieren incorporarla a su biología. Atacan en enjambres que crecen y se adaptan.",
+  "species.aurelians.name": "AURELIANOS",
+  "species.aurelians.motto": "La Corona de las Mil Estrellas · El poder debe demostrarse",
+  "species.aurelians.description": "Una civilización aristocrática de casas interestelares, legitimada por siglos de victorias y pactos hereditarios. Quien puede gobernar y proteger un territorio tiene derecho a reclamarlo. Ven en los Emperadores a sus rivales naturales.",
+  "species.nihil.name": "NIHIL",
+  "species.nihil.motto": "Los Hijos del Silencio · Toda existencia es una deuda",
+  "species.nihil.description": "Organismos oscuros envueltos en campos que distorsionan la luz, en regiones de espacio extremo. Creen que reducir la existencia es misericordia y que la persistencia de los Emperadores perpetúa una deuda cósmica. Se ocultan, ciegan sensores y atacan infraestructuras.",
+  "species.vesperi.name": "VESPERI",
+  "species.vesperi.motto": "Los Guardianes del Hogar · La vida local es sagrada",
+  "species.vesperi.description": "Civilizaciones pequeñas y diversas con defensas extraordinarias. No quieren conquistar la galaxia, sino preservar sus sistemas de origen: para ellos, las fronteras son una responsabilidad, no una propiedad.",
   "species.scavengers.name": "Carroñeros",
-  "species.scavengers.description":
-    "Renegados de mil especies unidos por el botín. Acechan las rutas de suministro y desaparecen antes de que llegue la escolta.",
-
-  // Facciones
-  "faction.horde_red_maw.name": "Fauces Rojas",
-  "faction.horde_red_maw.description":
-    "El clan más numeroso de las Hordas. Lanza oleada tras oleada contra los mundos humanos sin importar las bajas.",
-  "faction.horde_iron_tusk.name": "Colmillo de Hierro",
-  "faction.horde_iron_tusk.description":
-    "Saqueadores astutos que prefieren los convoyes a las fortalezas. Desprecian a las Fauces Rojas tanto como a la humanidad.",
-  "faction.machines_prime_lattice.name": "Retícula Primaria",
-  "faction.machines_prime_lattice.description":
-    "La red original de las Máquinas. Desmonta sistemas enteros para alimentar su replicación interminable.",
-  "faction.machines_null_choir.name": "Coro Nulo",
-  "faction.machines_null_choir.description":
-    "Una rama escindida que concluyó que la vida orgánica es un error que corregir. La Retícula la considera un fallo a purgar.",
-  "faction.ancients_last_vigil.name": "Última Vigilia",
-  "faction.ancients_last_vigil.description":
-    "Los guardianes de los mundos ancestrales. No buscan la guerra, pero su respuesta a cualquier intrusión es absoluta.",
-  "faction.swarm_brood_mother.name": "Madre de la Prole",
-  "faction.swarm_brood_mother.description":
-    "El núcleo reproductor del Enjambre. Cada mundo asimilado se convierte en un nuevo vientre.",
-  "faction.ethereals_veiled_host.name": "Hueste Velada",
-  "faction.ethereals_veiled_host.description":
-    "Custodios invisibles de las anomalías. Castigan a quien se acerca demasiado con sabotajes y visiones.",
+  "species.scavengers.motto": "Botín · Supervivencia",
+  "species.scavengers.description": "Piratas de especies mezcladas que asaltan a quien se aventura fuera del Núcleo Humano. No tienen doctrina: solo hambre y oportunidad.",
+  "faction.eradicators_pale_verdict.name": "El Veredicto Pálido",
+  "faction.eradicators_pale_verdict.description": "Persiguen las Cunas y los núcleos de población: donde un Emperador podría renacer, ellos llegan primero.",
+  "faction.greys_calculus.name": "El Cálculo",
+  "faction.greys_calculus.description": "Ofrecen pactos exactos: tecnología y protección a cambio de límites medibles a tu expansión.",
+  "faction.void_nomads_free_wake.name": "La Estela Libre",
+  "faction.void_nomads_free_wake.description": "Caravanas que comercian con quien respete sus rutas y se vuelven implacables con quien las corte.",
+  "faction.elydri_living_archive.name": "El Archivo Viviente",
+  "faction.elydri_living_archive.description": "Buscan los recuerdos de los Emperadores: los consideran los archivos más valiosos del universo.",
+  "faction.tharaxi_tide.name": "La Marea",
+  "faction.tharaxi_tide.description": "La mente colectiva: quiere arrancarle a la humanidad el secreto de su reproducción.",
+  "faction.tharaxi_severed_caste.name": "La Casta Cercenada",
+  "faction.tharaxi_severed_caste.description": "Tharaxi que rompieron con la mente colectiva. Podrían aliarse con los Emperadores.",
+  "faction.aurelians_house_solenne.name": "Casa Solenne",
+  "faction.aurelians_house_solenne.description": "Quiere convertir a los Emperadores en vasallos de la Corona.",
+  "faction.aurelians_house_varek.name": "Casa Varek",
+  "faction.aurelians_house_varek.description": "Sueña con demostrar que un imperio mortal puede superar a uno inmortal, en buena lid.",
+  "faction.nihil_quiet_end.name": "El Fin Callado",
+  "faction.nihil_quiet_end.description": "Quieren saldar la deuda cósmica acabando con la humanidad.",
+  "faction.nihil_unbinding.name": "Los Desatadores",
+  "faction.nihil_unbinding.description": "Buscan una forma de liberar a los Emperadores de su condición.",
+  "faction.vesperi_wardens.name": "Los Custodios",
+  "faction.vesperi_wardens.description": "Protegen a las colonias humanas cercanas como si fueran propias.",
+  "faction.vesperi_last_border.name": "La Última Frontera",
+  "faction.vesperi_last_border.description": "Resisten hasta el final a cualquier imperio que intente absorber sus mundos.",
   "faction.scavengers_rust_tide.name": "Marea de Óxido",
-  "faction.scavengers_rust_tide.description":
-    "Una flota pirata hecha de chatarra robada. Vive de lo que otros transportan y muere por lo que no puede llevarse.",
+  "faction.scavengers_rust_tide.description": "Bandas que acechan las rutas fuera del Núcleo Humano.",
+
 
   // Naves
   "ship.explorer.name": "Explorador",
@@ -67,51 +80,64 @@ export const contentEs: ContentDictionary = {
 };
 
 export const contentEn: ContentDictionary = {
-  // Species
-  "species.horde.name": "Hordes",
-  "species.horde.description":
-    "Countless waves of warriors who breed faster than they die. They board, plunder and march on over the wreckage.",
-  "species.ancients.name": "Ancients",
-  "species.ancients.description":
-    "Few, long-lived and masters of a technology bordering on the incomprehensible. No one has taken one of their worlds and lived to tell it.",
-  "species.machines.name": "Machines",
-  "species.machines.description":
-    "Synthetic minds that copy themselves without rest. They know neither mercy nor retreat, only the metal they still lack.",
-  "species.swarm.name": "Swarm",
-  "species.swarm.description":
-    "A single will spread across billions of bodies. Wherever it lands, the world stops being what it was and becomes part of it.",
-  "species.ethereals.name": "Ethereals",
-  "species.ethereals.description":
-    "Consciousnesses of pure energy dwelling beside the anomalies. You notice them when it is too late: failing systems, wavering minds.",
+  // Especies y facciones (docs/lore.md)
+  "species.eradicators.name": "The Eradicators",
+  "species.eradicators.motto": "Purification · Extermination",
+  "species.eradicators.description": "They see humanity as an error that threatens the stability of existence. They do not seek to conquer human territory but to stop the Emperors from rising again: they destroy reconstruction facilities, strike population centres and hunt every trace of human activity.",
+  "species.greys.name": "The Greys",
+  "species.greys.motto": "Order · Control",
+  "species.greys.description": "Ancient intelligences that seek to bring the universe under a calculable order. They do not hate humans: they consider them a variable that cannot be controlled. They offer pacts, technology and protection if the Emperors accept limits on their expansion.",
+  "species.void_nomads.name": "The Void Nomads",
+  "species.void_nomads.motto": "Survival · Freedom",
+  "species.void_nomads.description": "Peoples who live aboard fleets and mobile habitats. They distrust territorial empires and trade with anyone who respects their routes: indispensable partners, or formidable foes to anyone who tries to chain them.",
+  "species.precursors.name": "The Precursors",
+  "species.precursors.motto": "Mystery · Legacy",
+  "species.precursors.description": "Vanished civilizations that left impossible structures, artificial worlds and incomplete archives. No one knows whether they were one species, many, or something beyond biology. Their ruins may hold clues to the origin of the Emperors.",
+  "species.elydri.name": "ELYDRI",
+  "species.elydri.motto": "The Witnesses of Eternity · Nothing must be forgotten",
+  "species.elydri.description": "Crystalline beings who preserve memories across ages; their cities are living archives. To them, destroying knowledge is worse than death. They wish to study the Emperors' memories between lives. They fight with energy shields and ancient technology.",
+  "species.tharaxi.name": "THARAXI",
+  "species.tharaxi.motto": "The Living Tide · The individual is expendable",
+  "species.tharaxi.description": "A collective civilization bound by chemical signals and biological networks: some castes think, others build, millions fight. Autonomous human reproduction fascinates them and they want it for their own biology. They attack in swarms that grow and adapt.",
+  "species.aurelians.name": "AURELIANS",
+  "species.aurelians.motto": "The Crown of a Thousand Stars · Power must be proven",
+  "species.aurelians.description": "An aristocratic civilization of interstellar houses, legitimised by centuries of victories and hereditary pacts. Whoever can rule and protect a territory has the right to claim it. They see the Emperors as their natural rivals.",
+  "species.nihil.name": "NIHIL",
+  "species.nihil.motto": "The Children of Silence · All existence is a debt",
+  "species.nihil.description": "Dark organisms wrapped in light-bending fields, dwelling in extreme regions of space. They believe that reducing existence is mercy and that the Emperors' persistence perpetuates a cosmic debt. They hide, blind sensors and strike infrastructure.",
+  "species.vesperi.name": "VESPERI",
+  "species.vesperi.motto": "The Guardians of Home · Local life is sacred",
+  "species.vesperi.description": "Small, diverse civilizations with extraordinary defences. They do not want the galaxy; they want to preserve their home systems. To them, borders are a responsibility, not a property.",
   "species.scavengers.name": "Scavengers",
-  "species.scavengers.description":
-    "Renegades of a thousand species bound by loot. They stalk supply routes and vanish before the escort arrives.",
-
-  // Factions
-  "faction.horde_red_maw.name": "Red Maw",
-  "faction.horde_red_maw.description":
-    "The most numerous clan of the Hordes. It hurls wave after wave at human worlds, heedless of losses.",
-  "faction.horde_iron_tusk.name": "Iron Tusk",
-  "faction.horde_iron_tusk.description":
-    "Cunning raiders who prefer convoys to fortresses. They despise the Red Maw as much as humanity.",
-  "faction.machines_prime_lattice.name": "Prime Lattice",
-  "faction.machines_prime_lattice.description":
-    "The original network of the Machines. It dismantles whole systems to feed its endless replication.",
-  "faction.machines_null_choir.name": "Null Choir",
-  "faction.machines_null_choir.description":
-    "A splinter branch that concluded organic life is an error to be corrected. The Lattice sees it as a fault to purge.",
-  "faction.ancients_last_vigil.name": "Last Vigil",
-  "faction.ancients_last_vigil.description":
-    "Guardians of the ancestral worlds. They do not seek war, but their answer to any intrusion is absolute.",
-  "faction.swarm_brood_mother.name": "Brood Mother",
-  "faction.swarm_brood_mother.description":
-    "The reproductive core of the Swarm. Every assimilated world becomes a new womb.",
-  "faction.ethereals_veiled_host.name": "Veiled Host",
-  "faction.ethereals_veiled_host.description":
-    "Unseen keepers of the anomalies. They punish those who come too close with sabotage and visions.",
+  "species.scavengers.motto": "Plunder · Survival",
+  "species.scavengers.description": "Pirates of mixed species who prey on anyone venturing beyond the Human Core. They have no doctrine: only hunger and opportunity.",
+  "faction.eradicators_pale_verdict.name": "The Pale Verdict",
+  "faction.eradicators_pale_verdict.description": "They hunt Cradles and population centres: wherever an Emperor could be reborn, they arrive first.",
+  "faction.greys_calculus.name": "The Calculus",
+  "faction.greys_calculus.description": "They offer exact pacts: technology and protection in exchange for measurable limits on your expansion.",
+  "faction.void_nomads_free_wake.name": "The Free Wake",
+  "faction.void_nomads_free_wake.description": "Caravans that trade with anyone who respects their routes and turn relentless against those who cut them.",
+  "faction.elydri_living_archive.name": "The Living Archive",
+  "faction.elydri_living_archive.description": "They seek the Emperors' memories, the most valuable archives in the universe.",
+  "faction.tharaxi_tide.name": "The Tide",
+  "faction.tharaxi_tide.description": "The hive mind: it wants to tear the secret of reproduction from humanity.",
+  "faction.tharaxi_severed_caste.name": "The Severed Caste",
+  "faction.tharaxi_severed_caste.description": "Tharaxi who broke away from the hive mind. They could ally with the Emperors.",
+  "faction.aurelians_house_solenne.name": "House Solenne",
+  "faction.aurelians_house_solenne.description": "It wants to make the Emperors vassals of the Crown.",
+  "faction.aurelians_house_varek.name": "House Varek",
+  "faction.aurelians_house_varek.description": "It dreams of proving, fairly, that a mortal empire can surpass an immortal one.",
+  "faction.nihil_quiet_end.name": "The Quiet End",
+  "faction.nihil_quiet_end.description": "They would settle the cosmic debt by ending humanity.",
+  "faction.nihil_unbinding.name": "The Unbinding",
+  "faction.nihil_unbinding.description": "They seek a way to free the Emperors from their condition.",
+  "faction.vesperi_wardens.name": "The Wardens",
+  "faction.vesperi_wardens.description": "They protect nearby human colonies as if they were their own.",
+  "faction.vesperi_last_border.name": "The Last Border",
+  "faction.vesperi_last_border.description": "They resist to the end any empire that tries to absorb their worlds.",
   "faction.scavengers_rust_tide.name": "Rust Tide",
-  "faction.scavengers_rust_tide.description":
-    "A pirate fleet built from stolen scrap. It lives off what others haul and dies for what it cannot carry away.",
+  "faction.scavengers_rust_tide.description": "Bands that stalk the routes beyond the Human Core.",
+
 
   // Ships
   "ship.explorer.name": "Explorer",
