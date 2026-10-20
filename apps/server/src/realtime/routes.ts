@@ -16,6 +16,7 @@ import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
 import type { EmperorService } from "../emperor/service";
 import type { FleetService } from "../fleet/service";
+import type { SpaceService } from "../space/service";
 import type { Client, Hub } from "./hub";
 import { TicketStore } from "./tickets";
 
@@ -24,6 +25,7 @@ export interface RealtimeDeps {
   db: Database;
   emperors: EmperorService;
   fleets: FleetService;
+  space: SpaceService;
   hub: Hub;
 }
 
@@ -33,12 +35,14 @@ const HEARTBEAT_MS = 30_000;
 const MAX_CONNECTIONS_PER_ACCOUNT = 5;
 const MAX_CONNECTIONS = 1_000;
 
-export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, hub }: RealtimeDeps) {
+export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, space, hub }: RealtimeDeps) {
   const cookieName = sessionCookieName(config);
   const tickets = new TicketStore();
   const ticketsPerAccount = new RateLimiter(30, MINUTE);
   // Mensajes por cuenta: holgado para jugar, corto para abusar.
   const messagesPerAccount = new RateLimiter(60, 10_000);
+  // Las posiciones al pilotar van aparte: unas 8 por segundo, con margen.
+  const posesPerAccount = new RateLimiter(25, 1_000);
   // Solo se aceptan conexiones abiertas desde la propia web del juego: otra web
   // no puede abrir un WebSocket en nombre del jugador.
   const allowedOrigin = new URL(config.PUBLIC_URL).origin;
@@ -106,7 +110,6 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
       hub.add(client);
 
       socket.on("message", (data, isBinary) => {
-        if (!messagesPerAccount.consume(owner.accountId)) return socket.close(WS_CLOSE.rateLimited, "rate limited");
         let parsed: ReturnType<typeof ClientMessageSchema.safeParse> | null = null;
         try {
           if (!isBinary) parsed = ClientMessageSchema.safeParse(JSON.parse(data.toString()));
@@ -116,7 +119,15 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
         if (!parsed?.success) return socket.close(WS_CLOSE.protocol, "invalid message");
 
         const msg = parsed.data;
+        const limiter = msg.t === "pose" ? posesPerAccount : messagesPerAccount;
+        if (!limiter.consume(owner.accountId)) return socket.close(WS_CLOSE.rateLimited, "rate limited");
         switch (msg.t) {
+          case "pose":
+            void space.pose(client, msg.systemId, { p: msg.p, q: msg.q, v: msg.v }).catch((err: unknown) => req.log.error(err, "Error en una posición"));
+            return;
+          case "leave":
+            space.leaveClient(client);
+            return;
           case "sub":
             void hub.subscribe(client, msg.topic);
             return;
@@ -126,7 +137,11 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                 switch (msg.op) {
                   case "emperor.move": {
                     const res = await emperors.move(owner.accountId, msg.args.systemId);
-                    if (res.ok) await hub.publish(res.emperor.id);
+                    if (res.ok) {
+                      // Al saltar, la nave deja el sistema en el que volaba.
+                      space.leave(res.emperor.id, "left");
+                      await hub.publish(res.emperor.id);
+                    }
                     return res;
                   }
                   case "fleet.move": {
@@ -143,6 +158,7 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
 
       socket.on("close", () => {
         sockets.delete(socket);
+        space.leaveClient(client);
         hub.remove(client);
       });
     },

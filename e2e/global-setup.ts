@@ -40,8 +40,8 @@ export default async function globalSetup() {
       PUBLIC_URL: `http://localhost:${CLIENT_PORT}`,
       MAIL_TRANSPORT: "console",
       COOKIE_SECURE: "false",
-      // Tiempo 180 veces más rápido: el Emperador va a 10 a.l./s y un explorador a 12.
-      TIME_SCALE: "180",
+      // Tiempo 600 veces más rápido: un salto dentro del Núcleo dura unos segundos.
+      TIME_SCALE: "600",
     },
   });
 

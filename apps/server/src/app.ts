@@ -12,6 +12,7 @@ import { Hub } from "./realtime/hub";
 import { realtimeRoutes } from "./realtime/routes";
 import { socialRoutes } from "./social/routes";
 import { SocialService } from "./social/service";
+import { SpaceService } from "./space/service";
 import { createMailer, type Mailer } from "./mail";
 
 /** Versión del servidor; la inyecta esbuild al compilar y en desarrollo vale "dev". */
@@ -73,8 +74,10 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   const fleets = new FleetService(deps.db, config);
   const social = new SocialService(deps.db);
   const hub = new Hub(emperors, fleets, social, app.log, config.TIME_SCALE);
+  const space = new SpaceService(config, emperors, social, app.log);
+  app.addHook("onClose", async () => space.stop());
   await app.register(emperorRoutes, { config, db: deps.db, emperors, hub });
-  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, hub });
+  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, space, hub });
   await app.register(socialRoutes, { config, db: deps.db, emperors, social, hub });
 
   // Cola de eventos programados: llegadas de flotas (y, más adelante, construcciones…).

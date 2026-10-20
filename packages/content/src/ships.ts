@@ -80,6 +80,8 @@ export function getShipClass(id: ShipClassId): ShipClassDefinition | undefined {
 export const EMPEROR_FLAGSHIP = {
   speedLyPerHour: 200,
   scannerRangeLy: 15,
+  hull: 400,
+  shield: 200,
 } as const;
 
 /** Naves con las que empieza cada Emperador nuevo, como su primera flota. */

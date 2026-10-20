@@ -1,6 +1,6 @@
 import { randomInt } from "node:crypto";
-import { generateSector } from "@imperium/procgen";
-import { parseSystemId, type StarClass, type StarSystemSummary, type SystemLocation, type Travel } from "@imperium/shared";
+import { generateSector, generateSystemDetail } from "@imperium/procgen";
+import { parseSystemId, type StarClass, type StarSystemDetail, type StarSystemSummary, type SystemLocation, type Travel } from "@imperium/shared";
 import { settle } from "@imperium/sim";
 
 /**
@@ -76,4 +76,10 @@ export function placeFromRow(universeSeed: number, row: PlaceRow, now: number): 
     travel = { to: toLocation(dest), departAt: row.departAt.getTime(), arriveAt: row.arriveAt.getTime() };
   }
   return settle({ location: toLocation(system), travel }, now);
+}
+
+/** Detalle de un sistema existente (planetas, recursos…), o null si el id no existe. */
+export function systemDetailFor(universeSeed: number, systemId: string): StarSystemDetail | null {
+  const summary = findSystem(universeSeed, systemId);
+  return summary ? generateSystemDetail(universeSeed, summary) : null;
 }

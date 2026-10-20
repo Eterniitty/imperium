@@ -2,8 +2,10 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
 import type { StarSystemDetail } from "@imperium/shared";
-import { planetAngle, systemLayout, type PlanetLayout, type SystemLayout } from "@imperium/sim";
-import { serverNow } from "../net/world";
+import { PILOT_BOOST, PILOT_SPEED, planetAngle, systemLayout, type PlanetLayout, type SystemLayout } from "@imperium/sim";
+import { spaceStore } from "../net/space";
+import { connection, serverNow } from "../net/world";
+import { RemoteShips } from "./RemoteShips";
 import { isBound } from "../state/settings";
 import { gameStore } from "../state/store";
 import { Backdrop } from "./Backdrop";
@@ -30,9 +32,9 @@ export interface SystemViewEvents {
   onLeave(direction: THREE.Vector3): void;
 }
 
-/** Velocidades de pilotaje, en unidades de sistema por segundo. */
-const PILOT_SPEED = 18;
-const PILOT_BOOST = 5;
+/** Cada cuánto se envía la posición propia al servidor mientras se pilota. */
+const POSE_INTERVAL = 0.125;
+
 /** Cámara de persecución (tercera persona): detrás y algo por encima de la nave. */
 const CHASE_OFFSET = new THREE.Vector3(0, 2.4, 10);
 /** Cámara de cabina (primera persona): en el puente, mirando al frente. */
@@ -64,6 +66,9 @@ export class SystemView implements View {
   private flight: FlightController | null = null;
   private chaseTarget = new THREE.Vector3();
   private leaving = false;
+  private systemId: string | null = null;
+  private poseTimer = 0;
+  private remote = new RemoteShips();
 
   constructor(
     dom: HTMLElement,
@@ -85,7 +90,7 @@ export class SystemView implements View {
     this.selectRing.visible = false;
     this.selectRing.renderOrder = 10;
 
-    this.scene.add(this.backdrop.object, this.content, this.selectRing);
+    this.scene.add(this.backdrop.object, this.content, this.selectRing, this.remote.group);
     this.scene.add(new THREE.AmbientLight(0x5a6688, 0.9));
   }
 
@@ -99,6 +104,7 @@ export class SystemView implements View {
 
     const layout = systemLayout(detail);
     this.layout = layout;
+    this.systemId = summary.id;
 
     // Estrella.
     const isBlackHole = summary.starClass === "BH";
@@ -285,6 +291,10 @@ export class SystemView implements View {
   /** Deja de pilotar y vuelve a la cámara orbital. */
   stopPiloting(): void {
     if (!this.ship) return;
+    // Deja de volar en el sistema compartido: los demás dejan de ver la nave.
+    connection.send({ t: "leave" });
+    spaceStore.setState({ systemId: null, ships: {}, correction: null });
+    this.remote.clear();
     this.flight?.dispose();
     this.flight = null;
     this.content.remove(this.ship);
@@ -309,6 +319,27 @@ export class SystemView implements View {
     this.camera.up.copy(new THREE.Vector3(0, 1, 0).applyQuaternion(ship.quaternion));
     this.chaseTarget.copy(new THREE.Vector3(0, 0, -30).applyQuaternion(ship.quaternion).add(ship.position));
     this.camera.lookAt(this.chaseTarget);
+  }
+
+  /** El servidor rechazó una posición imposible: la nave vuelve a la última válida. */
+  private applyCorrection(): void {
+    const c = spaceStore.getState().correction;
+    if (!c || !this.ship) return;
+    spaceStore.setState({ correction: null });
+    this.ship.position.set(...c.p);
+    this.ship.quaternion.set(...c.q);
+    this.flight?.stop();
+  }
+
+  /** Envía la posición propia unas 8 veces por segundo. */
+  private sendPose(dt: number): void {
+    this.poseTimer -= dt;
+    if (this.poseTimer > 0 || !this.ship || !this.systemId || !this.flight) return;
+    this.poseTimer = POSE_INTERVAL;
+    const { position: p, quaternion: q } = this.ship;
+    const v = this.flight.velocity;
+    const r = (n: number) => Math.round(n * 1000) / 1000;
+    connection.send({ t: "pose", systemId: this.systemId, p: [r(p.x), r(p.y), r(p.z)], q: [r(q.x), r(q.y), r(q.z), r(q.w)], v: [r(v.x), r(v.y), r(v.z)] });
   }
 
   /** Evita atravesar la estrella y los planetas: la nave se queda en su superficie. */
@@ -366,6 +397,9 @@ export class SystemView implements View {
     if (this.ship && this.flight) {
       this.flight.update(dt);
       this.collide();
+      this.applyCorrection();
+      this.sendPose(dt);
+      this.remote.update();
       this.placeChaseCamera(1 - Math.exp(-dt * 8));
       gameStore.getState().setFlight(true, this.flight.speed);
       // Más allá del borde: espacio interestelar.

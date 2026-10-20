@@ -113,6 +113,21 @@ test("dos jugadores se ven en el mismo universo y se ven moverse", async ({ brow
   await bruno.screenshot({ path: `${SHOTS}/7-ana-llega.png` });
   expect((await myEmperor(ana)).travel?.to.systemId).toBe(brunoSystem.id);
 
+  // Vuelo compartido: Ana entró pilotando al llegar; Bruno pasa a pilotar en su sistema.
+  // Cada uno tiene la nave del otro en su espacio local.
+  await bruno.keyboard.press("KeyM");
+  await expect(bruno.locator(".flight-hud")).toBeVisible();
+  const spaceShips = (page: Page) =>
+    page.evaluate(() => {
+      const space = (window as unknown as { __imperium: { space: { getState(): { ships: Record<string, { state: { name: string } }> } } } }).__imperium.space;
+      return Object.values(space.getState().ships).map((s) => s.state.name);
+    });
+  await expect.poll(() => spaceShips(bruno), { timeout: 15_000 }).toEqual(["Ana Prima"]);
+  await expect.poll(() => spaceShips(ana), { timeout: 15_000 }).toEqual(["Bruno Segundo"]);
+  await bruno.waitForTimeout(500);
+  await bruno.screenshot({ path: `${SHOTS}/7b-vuelo-compartido.png` });
+  await bruno.keyboard.press("KeyM");
+
   // Ana cierra el juego: Bruno la ve desconectada y el contador baja. Si el navegador
   // corta sin avisar, el servidor lo detecta en el siguiente latido (30 s como mucho).
   await ana.context().close();

@@ -3,6 +3,7 @@ import { useStore } from "zustand";
 import {
   PROTOCOL_VERSION,
   WS_CLOSE,
+  type ClientMessage,
   type CommandArgs,
   type CommandOp,
   type EmperorView,
@@ -13,6 +14,7 @@ import {
   type WsTicketResponse,
 } from "@imperium/shared";
 import { api, authStore } from "../state/auth";
+import { addSample, spaceStore, type RemoteShip } from "./space";
 
 /**
  * Estado del mundo compartido que llega por el WebSocket:
@@ -84,6 +86,12 @@ class Connection {
     this.ws = null;
     this.failPending();
     worldStore.setState({ status: "idle", emperors: {}, fleets: {}, myEmperorId: null });
+    spaceStore.setState({ systemId: null, ships: {}, correction: null });
+  }
+
+  /** Envía un mensaje sin esperar respuesta (posiciones al pilotar). Sin conexión, se descarta. */
+  send(msg: ClientMessage): void {
+    if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(msg));
   }
 
   /** Envía una orden y espera su confirmación. Devuelve el error traducible, o null si se aceptó. */
@@ -195,6 +203,38 @@ class Connection {
         this.syncOwn();
         return;
       }
+      case "space": {
+        const ships: Record<string, RemoteShip> = {};
+        for (const s of msg.ships) ships[s.id] = { state: s, samples: [{ t: msg.serverTime, p: s.p, q: s.q }] };
+        spaceStore.setState({ systemId: msg.systemId, ships });
+        return;
+      }
+      case "ship": {
+        const ships = { ...spaceStore.getState().ships };
+        const prev = ships[msg.ship.id];
+        const ship: RemoteShip = { state: msg.ship, samples: prev?.samples ?? [] };
+        if (!prev) addSample(ship, { t: msg.ship.p ? Date.now() + worldStore.getState().clockOffset : 0, p: msg.ship.p, q: msg.ship.q });
+        ships[msg.ship.id] = ship;
+        spaceStore.setState({ ships });
+        return;
+      }
+      case "poses": {
+        const ships = spaceStore.getState().ships;
+        for (const s of msg.ships) {
+          const ship = ships[s.id];
+          if (ship) addSample(ship, { t: msg.serverTime, p: s.p, q: s.q });
+        }
+        return;
+      }
+      case "shipGone": {
+        const ships = { ...spaceStore.getState().ships };
+        delete ships[msg.id];
+        spaceStore.setState({ ships });
+        return;
+      }
+      case "poseRejected":
+        spaceStore.setState({ correction: { p: msg.p, q: msg.q, v: msg.v } });
+        return;
       case "ack": {
         const p = this.pending.get(msg.cmdId);
         if (!p) return;

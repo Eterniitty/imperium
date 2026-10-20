@@ -57,6 +57,10 @@ export type EmperorCreateBody = z.input<typeof EmperorCreateBodySchema>;
 export const SystemIdSchema = z.string().regex(/^-?\d{1,7}:-?\d{1,7}:-?\d{1,7}:\d{1,3}$/);
 
 const CmdIdSchema = z.string().regex(/^[A-Za-z0-9_-]{8,64}$/);
+/** Números finitos y acotados: nada de NaN, Infinity ni coordenadas absurdas. */
+const Coord = z.number().finite().min(-1e6).max(1e6);
+const Vec3Schema = z.tuple([Coord, Coord, Coord]);
+const QuatSchema = z.tuple([z.number().min(-1.01).max(1.01), z.number().min(-1.01).max(1.01), z.number().min(-1.01).max(1.01), z.number().min(-1.01).max(1.01)]);
 
 /** Mensajes del cliente por el WebSocket (ver `protocol.ts`). */
 export const ClientMessageSchema = z.union([
@@ -73,4 +77,6 @@ export const ClientMessageSchema = z.union([
     args: z.object({ fleetId: z.uuid(), systemId: SystemIdSchema }),
   }),
   z.object({ t: z.literal("sub"), topic: z.enum(["emperors", "me"]) }),
+  z.object({ t: z.literal("pose"), systemId: SystemIdSchema, p: Vec3Schema, q: QuatSchema, v: Vec3Schema }),
+  z.object({ t: z.literal("leave") }),
 ]);

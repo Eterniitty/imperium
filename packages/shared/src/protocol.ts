@@ -6,7 +6,7 @@
 import type { Emperor, Fleet } from "./api";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 /** Tamaño máximo de un mensaje del cliente, en bytes. */
 export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;
@@ -36,9 +36,41 @@ export interface CommandArgs {
 }
 export type CommandOp = keyof CommandArgs;
 
+// --- Espacio local: naves volando dentro de un sistema (tiempo real) ---
+
+export type Vec3 = [number, number, number];
+export type Quat = [number, number, number, number];
+
+/** Posición (unidades de sistema), orientación y velocidad (u/s) de una nave. */
+export interface ShipPose {
+  p: Vec3;
+  q: Quat;
+  v: Vec3;
+}
+
+/**
+ * Nave visible en el sistema. Dentro de un mismo sistema los sensores detectan
+ * a todos los presentes, sea cual sea su visibilidad en el mapa galáctico.
+ */
+export interface ShipState extends ShipPose {
+  /** Id del Emperador (o de la nave de la IA). */
+  id: string;
+  name: string;
+  /** Compañero del jugador que la recibe (no se le puede disparar). */
+  ally: boolean;
+  hull: number;
+  hullMax: number;
+  shield: number;
+  shieldMax: number;
+}
+
 export type ClientMessage =
   | { [Op in CommandOp]: { t: "cmd"; cmdId: string; op: Op; args: CommandArgs[Op] } }[CommandOp]
-  | { t: "sub"; topic: Topic };
+  | { t: "sub"; topic: Topic }
+  /** Pilotando dentro de `systemId`: posición actual (unas 8 veces por segundo). */
+  | ({ t: "pose"; systemId: string } & ShipPose)
+  /** Deja de pilotar en el sistema (vuelve al mapa o sale al espacio interestelar). */
+  | { t: "leave" };
 
 /** Motivos por los que se rechaza una orden; el cliente los traduce con `error.*`. */
 export type CommandError =
@@ -64,6 +96,16 @@ export type ServerMessage =
   | { [K in Topic]: { t: "snap"; topic: K; seq: number; serverTime: number; data: TopicData[K] } }[Topic]
   /** Cambios incrementales. Si `seq` no es el siguiente al último recibido, se perdió algo: pide otra `snap`. */
   | { t: "delta"; topic: Topic; seq: number; serverTime: number; ops: DeltaOp[] }
+  /** Al entrar pilotando en un sistema: las demás naves presentes. */
+  | { t: "space"; systemId: string; serverTime: number; ships: ShipState[] }
+  /** Posiciones recientes de las naves del sistema (unas 10 veces por segundo). */
+  | { t: "poses"; serverTime: number; ships: Array<{ id: string } & ShipPose> }
+  /** Una nave entra en el sistema o cambia su estado (casco, escudo). */
+  | { t: "ship"; ship: ShipState }
+  /** Una nave deja el sistema. */
+  | { t: "shipGone"; id: string; reason: "left" | "destroyed" }
+  /** El servidor rechaza una posición imposible (demasiado rápida, fuera del sistema): la nave vuelve aquí. */
+  | ({ t: "poseRejected" } & ShipPose)
   | { t: "ack"; cmdId: string; ok: true }
   | { t: "ack"; cmdId: string; ok: false; error: CommandError };
 

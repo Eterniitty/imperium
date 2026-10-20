@@ -3,6 +3,7 @@ import { Engine } from "../engine/Engine";
 import { music } from "../audio/music";
 import { engineRef } from "../engineRef";
 import { settingsStore, uiScaleFor, useSettings } from "../state/settings";
+import { spaceStore } from "../net/space";
 import { connection, worldStore } from "../net/world";
 import { authStore } from "../state/auth";
 import { gameStore, useGame } from "../state/store";
@@ -51,7 +52,7 @@ export function App() {
     engineRef.current = engine;
     // Solo en desarrollo: acceso desde la consola del navegador para depurar.
     if (import.meta.env.DEV) {
-      (window as unknown as Record<string, unknown>).__imperium = { engine, store: gameStore, world: worldStore };
+      (window as unknown as Record<string, unknown>).__imperium = { engine, store: gameStore, world: worldStore, space: spaceStore };
     }
     // Con Emperador, se conecta al mundo compartido; sin servidor, el universo sigue siendo local.
     if (authStore.getState().emperor) connection.start();
