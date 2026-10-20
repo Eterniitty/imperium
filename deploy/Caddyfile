@@ -1,10 +1,21 @@
-# Configuración de Caddy de referencia (se copia a /etc/caddy/Caddyfile).
-# El hash de la contraseña NO se guarda aquí: sustituye HASH_DE_LA_CONTRASEÑA
-# por el que ya está en el servidor (se genera con `caddy hash-password`).
-:80 {
+# Configuración de Caddy de referencia (se copia a /etc/caddy/Caddyfile con
+# HASH_DE_LA_CONTRASEÑA sustituido por el hash real de `caddy hash-password`).
+#
+# El juego se sirve en https://aeonarch.de a través de Cloudflare (proxy):
+# - Cloudflare -> servidor va cifrado con un certificado de origen de Cloudflare
+#   (/etc/caddy/certs, válido hasta 2041) y el modo SSL "Full (strict)".
+# - El cortafuegos (UFW) solo acepta 80/443 desde las IP de Cloudflare.
+# - Como solo entra tráfico de Cloudflare, la cabecera CF-Connecting-IP (la IP
+#   real del jugador, puesta por Cloudflare) es de fiar y se pasa al juego para
+#   sus límites por IP. (La versión de Caddy de Ubuntu, 2.6, no tiene
+#   trusted_proxies.) Si algún día se abre 80/443 a todo el mundo, esto deja de
+#   ser seguro. Lista de IP de Cloudflare: https://www.cloudflare.com/ips/
+aeonarch.de, www.aeonarch.de {
+	tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
 	encode zstd gzip
 
-	# Todo el sitio, incluidas la API y el WebSocket, sigue tras usuario y contraseña.
+	# Todo el sitio, incluidas la API y el WebSocket, sigue tras usuario y contraseña
+	# hasta abrir el juego al público.
 	basicauth {
 		tester HASH_DE_LA_CONTRASEÑA
 	}
@@ -15,10 +26,15 @@
 		reverse_proxy 127.0.0.1:3000 {
 			# La contraseña de Caddy no tiene por qué llegar al juego.
 			header_up -Authorization
+			# La IP real del jugador (no la de Cloudflare) para los límites del juego.
+			header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
 		}
 	}
 
-	# Todo lo demás: el cliente compilado.
+	# Todo lo demás: el cliente compilado. Los archivos con huella en el nombre
+	# (assets/*) no cambian nunca: caché larga en Cloudflare y en el navegador.
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
 	handle {
 		root * /var/www/aeonarch
 		file_server

@@ -71,9 +71,12 @@ Comprobarlo:
 
 Hetzner **solo factura el tráfico saliente** (20 TB incluidos, ~1 €/TB adicional). Un ataque que descargue un archivo en bucle puede generar una factura. Estos puntos van **en este orden** y son obligatorios antes de publicar la dirección del juego:
 
-1. [ ] **Archivos estáticos fuera del servidor.** Audio, texturas y código del cliente se sirven desde **Cloudflare R2 / caché de Cloudflare**, **nunca** desde el servidor. El servidor solo atiende API y WebSocket.
-2. [ ] **Solo Cloudflare puede llegar al servidor.** El cortafuegos de Hetzner y UFW aceptan los puertos **80/443 únicamente desde los rangos IP de Cloudflare**. SSH es la única excepción. Mantener actualizada la lista de rangos.
-   - **IP real del jugador:** detrás de Cloudflare, la IP que ve Caddy es la del nodo de Cloudflare. Sin ajustar esto, los límites por IP se convierten en un bloqueo global del acceso. En Caddy: `trusted_proxies` con los rangos de Cloudflare y `client_ip_headers CF-Connecting-IP`.
+1. [x] **Archivos estáticos desde la caché de Cloudflare** (20-10-2026). El juego está en `https://aeonarch.de` detrás del proxy de Cloudflare (plan Free, sin coste). Cloudflare guarda en caché los `.js`, `.css`, fuentes e imágenes; Caddy marca `/assets/*` (nombres con huella) como `public, max-age=31536000, immutable`. El HTML no se guarda en caché (es pequeño). Pendiente si un día pesa mucho (audio, texturas grandes): Cloudflare R2.
+   - Nota mientras siga el `basicauth`: un recurso de `/assets/` ya guardado en la caché de Cloudflare se puede descargar sin contraseña conociendo su nombre con huella (que solo aparece en el `index.html`, protegido). Es el código del cliente, no datos.
+2. [x] **Solo Cloudflare puede llegar al servidor** (20-10-2026). UFW acepta 80/443 únicamente desde los rangos de Cloudflare (22 reglas con el comentario `cloudflare`; https://www.cloudflare.com/ips/); SSH es la única excepción. Si Cloudflare publica rangos nuevos, añadirlos con `sudo ufw allow proto tcp from <rango> to any port 80,443 comment cloudflare`.
+   - **Cifrado de extremo a extremo:** certificado de origen de Cloudflare en `/etc/caddy/certs/` (válido hasta 2041) y modo SSL **Full (strict)**. Copia del Caddyfile anterior: `/etc/caddy/Caddyfile.antes-cloudflare`. Referencia en `deploy/Caddyfile`.
+   - **IP real del jugador:** Caddy pasa al juego `CF-Connecting-IP` como `X-Forwarded-For` (la Caddy 2.6 de Ubuntu no tiene `trusted_proxies`; es seguro porque solo entra tráfico de Cloudflare).
+   - **Zona en Cloudflare** (configurada por API con el token de `CLOUDFLARE_API_TOKEN` en `~/imperium/.env`): HTTPS siempre, TLS ≥ 1.2, TLS 1.3, comprobación del navegador, y una regla de límite de peticiones para `/api/auth/request` (5 cada 10 s por IP y nodo). Pendiente (a mano, el token no tiene permiso): «Bot Fight Mode» en Seguridad → Bots.
 3. [ ] **Límites por IP y por cuenta** en la API HTTP, en las conexiones/mensajes WebSocket y en cualquier descarga.
 4. [x] **Vigilante de tráfico saliente.** Instalado (20-10-2026): `deploy/egress-watchdog.py`, servicio y temporizador `aeonarch-egress` (cada 5 min, como root). Acumula los bytes enviados por la interfaz pública en el mes natural (UTC; sobrevive a reinicios), **avisa** en el registro a 12 TB y a **15 TB detiene Caddy** (el juego deja de servirse; SSH sigue). No lo vuelve a arrancar solo.
    - Estado: `python3 -I /usr/local/sbin/aeonarch-egress-watchdog --status`. Avisos: `journalctl -t aeonarch-egress`.
@@ -84,7 +87,7 @@ Hetzner **solo factura el tráfico saliente** (20 TB incluidos, ~1 €/TB adicio
 ## Después
 
 - [ ] Docker y Docker Compose.
-- [ ] Caddy como proxy inverso con HTTPS (certificado de origen de Cloudflare o ACME).
+- [x] Caddy como proxy inverso con HTTPS (certificado de origen de Cloudflare).
 - [x] PostgreSQL (paquete de Ubuntu, solo local, sin exponer puertos al exterior).
 - [ ] Redis (contenedor, sin exponer puertos al exterior).
 - [ ] **Copias de seguridad fuera del servidor** (p. ej. `pg_dump` cifrado a almacenamiento externo), con restauración probada.

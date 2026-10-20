@@ -34,10 +34,10 @@ Idioma de trabajo: **español** (código y comentarios en español; identificado
 
 ## Servidor de producción (Hetzner CPX22, Ubuntu 26.04)
 - Usuario de trabajo: `imperium` (sudo con contraseña). Root bloqueado por SSH; solo clave SSH.
-- Cortafuegos UFW: abiertos solo OpenSSH y 80/tcp.
+- Dominio **`aeonarch.de`** en Cloudflare (plan Free; token de API en `.env` como `CLOUDFLARE_API_TOKEN`, solo para esa zona). Cortafuegos UFW: OpenSSH abierto; 80/443 **solo desde las IP de Cloudflare** (no quitar las reglas de SSH).
 - PostgreSQL 18 del paquete de Ubuntu, solo en local. Usuario `imperium` por socket, sin contraseña; bases `imperium` e `imperium_test` (esta se borra en cada `pnpm test`).
-- `.env` del servidor (no se sube): `APP_ENV=staging`, correo por consola (el enlace de acceso sale en `journalctl --user -u aeonarch-server`), `COOKIE_SECURE=false` hasta tener HTTPS.
-- Caddy sirve el cliente compilado desde `/var/www/aeonarch` en `:80`, **protegido con usuario y contraseña** (`basicauth`, la versión de Caddy de Ubuntu usa `basicauth`, no `basic_auth`). Configuración en `/etc/caddy/Caddyfile`.
+- `.env` del servidor (no se sube): `APP_ENV=staging`, correo por consola (el enlace de acceso sale en `journalctl --user -u aeonarch-server`), `PUBLIC_URL=https://aeonarch.de`, `COOKIE_SECURE=true`.
+- Caddy sirve `aeonarch.de` por HTTPS (certificado de origen de Cloudflare, SSL Full strict) y el cliente compilado desde `/var/www/aeonarch`, **protegido con usuario y contraseña** (`basicauth`, la versión de Caddy de Ubuntu usa `basicauth`, no `basic_auth`). Configuración en `/etc/caddy/Caddyfile`.
 - Desplegar el cliente: `./scripts/deploy-client.sh`; el servidor: `./scripts/deploy-server.sh`. Ninguno necesita sudo (ver `docs/despliegue.md`).
 
 ### Seguridad: prioridad máxima
