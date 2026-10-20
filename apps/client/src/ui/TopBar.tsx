@@ -6,6 +6,8 @@ import { useKeyLabels } from "./keys";
 import { formatDuration, useServerNow } from "./useNow";
 import { useGame, useT } from "../state/store";
 import { ServerStatus } from "./ServerStatus";
+import { useWorld } from "../net/world";
+import { fmtInt, fmtRate, liveHumans } from "./colonies";
 
 function fmt(n: number): string {
   return Math.round(n).toLocaleString();
@@ -21,6 +23,7 @@ export function TopBar() {
   const selected = useGame((s) => s.selected);
   const flight = useGame((s) => s.flight);
   const emperor = useAuth((s) => s.emperor);
+  const humans = useWorld((s) => s.humans);
   const keys = useKeyLabels();
   const now = useServerNow();
   const travel = emperor?.travel && emperor.travel.arriveAt > now ? emperor.travel : null;
@@ -49,6 +52,15 @@ export function TopBar() {
             </span>
           )}
         </button>
+      )}
+
+      {emperor && humans && (
+        <div className="stat humans-stat hide-sm" title={t("humans.title", { rate: fmtRate(humans.perHour).replace("+", "") })}>
+          <span className="stat-label">{t("humans.label")}</span>
+          <span className="stat-value mono">
+            {fmtInt(liveHumans(humans, now))} / {fmtInt(humans.capacity)}
+          </span>
+        </div>
       )}
 
       {emperor && (

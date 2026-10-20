@@ -193,6 +193,8 @@ export interface Colony {
   systemId: string;
   systemName: string;
   planetIndex: number;
+  /** Designación del planeta (p. ej. «Velor III»). */
+  planetName: string;
   /** Nombre puesto por el dueño; null = la designación del planeta. */
   name: string | null;
   population: number;

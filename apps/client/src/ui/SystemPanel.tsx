@@ -5,7 +5,10 @@ import { connection, useWorld } from "../net/world";
 import { useAuth } from "../state/auth";
 import { useKeyLabels } from "./keys";
 import { gameStore, useGame, useT } from "../state/store";
+import { useClaims } from "../state/claims";
+import { ownColonyAt, planetLabel } from "./colonies";
 import { DepositChips, Meter, RESOURCE_COLORS, starColorCss } from "./common";
+import { PlanetColony } from "./PlanetColony";
 import { formatDuration, useServerNow } from "./useNow";
 
 export function SystemPanel() {
@@ -20,6 +23,9 @@ export function SystemPanel() {
   const world = useWorld((s) => s.emperors);
   const fleets = useWorld((s) => s.fleets);
   const myId = useWorld((s) => s.myEmperorId);
+  const colonies = useWorld((s) => s.colonies);
+  const selectedPlanet = useGame((s) => s.selectedPlanet);
+  const claims = useClaims();
   const now = useServerNow();
   const [moving, setMoving] = useState(false);
   const [moveError, setMoveError] = useState<I18nKey | null>(null);
@@ -120,17 +126,41 @@ export function SystemPanel() {
           <h3>
             {t("system.planets")} <span className="muted">({detail.planets.length})</span>
           </h3>
-          <ul className="planet-list">
-            {detail.planets.map((pl) => (
-              <li key={pl.index}>
-                <span className={`ptype ptype-${pl.type}`} />
-                <span className="pname">{pl.name}</span>
-                <span className="muted small">{t(`planet.${pl.type}`)}</span>
-                <DepositChips planet={pl} />
-              </li>
-            ))}
+          {/* Fase 7: cada planeta muestra su nombre y su dueño; al elegirlo, se puede reclamar o gestionar. */}
+          <ul className="planet-list selectable">
+            {detail.planets.map((pl) => {
+              const own = ownColonyAt(colonies, detail.summary.id, pl.index);
+              const claim = claims.systemId === detail.summary.id ? claims.claims[pl.index] : undefined;
+              return (
+                <li
+                  key={pl.index}
+                  className={pl.index === selectedPlanet ? "active" : ""}
+                  onClick={() => gameStore.getState().selectPlanet(pl.index === selectedPlanet ? null : pl.index)}
+                >
+                  <span className={`ptype ptype-${pl.type}`} />
+                  <span className="pname">{planetLabel(pl, claim, own)}</span>
+                  {own ? (
+                    <span className="planet-owner own">{t("colony.yours")}</span>
+                  ) : claim ? (
+                    <span className="planet-owner">{claim.ownerName}</span>
+                  ) : (
+                    <span className="muted small">{t(`planet.${pl.type}`)}</span>
+                  )}
+                  <DepositChips planet={pl} />
+                </li>
+              );
+            })}
             {detail.planets.length === 0 && <li className="muted">{t("system.none")}</li>}
           </ul>
+          {(() => {
+            const pl = detail.planets.find((p) => p.index === selectedPlanet);
+            return pl ? (
+              <div className="planet-detail">
+                <h3>{planetLabel(pl, claims.systemId === detail.summary.id ? claims.claims[pl.index] : undefined, ownColonyAt(colonies, detail.summary.id, pl.index))}</h3>
+                <PlanetColony detail={detail} planet={pl} />
+              </div>
+            ) : null;
+          })()}
         </>
       ) : (
         detailStatus === "unexplored" && <p className="muted small">{t("system.unexploredHint")}</p>

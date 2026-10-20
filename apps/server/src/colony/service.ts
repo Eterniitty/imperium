@@ -144,7 +144,7 @@ export class ColonyService {
     return db.select().from(colonyBuilds).where(inArray(colonyBuilds.colonyId, colonyIds)).orderBy(asc(colonyBuilds.seq));
   }
 
-  private site(row: ColonyRow, counts: InstallationCounts): ColonySite | null {
+  private site(row: ColonyRow, counts: InstallationCounts): (ColonySite & { planet: Planet }) | null {
     const found = this.planet(row.systemId, row.planetIndex);
     if (!found) return null;
     return { planet: found.planet, starEnergy: found.detail.energy, installations: counts };
@@ -170,6 +170,7 @@ export class ColonyService {
       systemId: row.systemId,
       systemName: findSystem(this.seed, row.systemId)?.name ?? row.systemId,
       planetIndex: row.planetIndex,
+      planetName: site.planet.name,
       name: row.name,
       population: state.population,
       populationCap: cap,

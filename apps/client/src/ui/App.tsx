@@ -9,6 +9,7 @@ import { authStore } from "../state/auth";
 import { gameStore, useGame } from "../state/store";
 import { FlightHud } from "./FlightHud";
 import { CombatHud } from "./CombatHud";
+import { ColoniesPanel } from "./ColoniesPanel";
 import { FleetsPanel } from "./FleetsPanel";
 import { Notice } from "./Notice";
 import { SettingsPanel } from "./SettingsPanel";
@@ -74,7 +75,10 @@ export function App() {
         {view === "galaxy" ? (
           <>
             <FlightHud />
-            <FleetsPanel />
+            <div className="left-col">
+              <FleetsPanel />
+              <ColoniesPanel />
+            </div>
             <SystemPanel />
             {!hasSelection && <Legend />}
           </>

@@ -1,0 +1,56 @@
+import { expect, test } from "@playwright/test";
+import { lastLoginLink } from "./mail";
+
+const SHOTS = "test-results/capturas";
+
+test("se reclama un planeta del sistema de inicio, se renombra y se construye una mina", async ({ page }) => {
+  test.setTimeout(90_000);
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  await page.goto("/");
+  await page.getByLabel("Correo electrónico").fill("colona@aeonarch.test");
+  await page.getByRole("button", { name: "Enviar enlace de acceso" }).click();
+  const link = await lastLoginLink("colona@aeonarch.test");
+  await page.goto("about:blank");
+  await page.goto(link);
+  await page.getByRole("button", { name: "Entrar", exact: true }).click();
+  await page.getByLabel("Nombre del Emperador").fill("Colona Ilse");
+  await page.getByRole("button", { name: "Coronar" }).click();
+  await page.getByRole("button", { name: "Despertar" }).click();
+  await expect(page.locator(".flight-hud")).toBeVisible();
+  await page.keyboard.press("KeyM");
+
+  // Los humanos de la nave del Emperador, en la barra superior.
+  await expect(page.locator(".humans-stat")).toContainText("/ 500");
+
+  // El sistema de inicio está seleccionado y explorado: se elige su primer planeta.
+  const panel = page.locator("aside.side");
+  const planets = panel.locator(".planet-list li");
+  await expect(planets.first()).toBeVisible();
+  await planets.first().click();
+  const detail = panel.locator(".planet-detail");
+  await expect(detail.getByText("Sin dueño")).toBeVisible();
+
+  // Reclamar con los colonos mínimos (el valor por defecto).
+  await detail.getByRole("button", { name: "Reclamar", exact: true }).click();
+  await expect(detail.getByText("Tuyo")).toBeVisible();
+  await expect(detail.getByRole("heading", { name: "Existencias" })).toBeVisible();
+  await expect(page.locator(".colonies")).toBeVisible();
+
+  // Renombrar.
+  await detail.getByRole("button", { name: "Renombrar" }).click();
+  await detail.getByLabel("Nombre del planeta").fill("Nueva Esperanza");
+  await detail.getByRole("button", { name: "Guardar" }).click();
+  await expect(planets.first()).toContainText("Nueva Esperanza");
+  await expect(page.locator(".colonies")).toContainText("Nueva Esperanza");
+
+  // Encargar una mina: entra en la cola y, al terminar (evento del servidor), aparece construida.
+  await detail.getByRole("button", { name: /^Mina/ }).click();
+  await expect(detail.locator(".build-queue")).toContainText("Mina");
+  await page.screenshot({ path: `${SHOTS}/10-colonia.png` });
+  await expect(detail.locator(".build-queue")).toContainText("Nada en construcción", { timeout: 40_000 });
+  await expect(detail.getByText("× 1")).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/11-colonia-mina.png` });
+  expect(errors).toEqual([]);
+});

@@ -404,6 +404,36 @@ kbd {
   max-width: 360px;
 }
 .fleets { position: absolute; left: 12px; top: 74px; padding: 10px 14px; font-size: 12px; width: 280px; max-height: 40%; overflow-y: auto; }
+/* Columna izquierda del mapa: flotas y colonias, una debajo de otra. */
+.left-col { position: absolute; left: 12px; top: 74px; width: 280px; max-height: calc(100% - 200px); display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+.left-col > * { pointer-events: auto; }
+.left-col .fleets { position: static; width: auto; max-height: none; min-height: 0; flex: 0 1 auto; }
+.fleets.colonies .fleet-row strong { color: #7ee08a; }
+
+/* Colonias (Fase 7): dueño, reclamar, existencias y construcción. */
+.owner-own { color: #7ee08a; font-weight: 600; }
+.owner-other { color: #ff9f5a; font-weight: 600; }
+.planet-owner { font-size: 10.5px; color: #ff9f5a; white-space: nowrap; }
+.planet-owner.own { color: #7ee08a; }
+.colony-claim { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.claim-form { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin-top: 12px; }
+.claim-form label { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 120px; }
+.claim-form input {
+  background: rgba(8, 12, 22, 0.8);
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  color: var(--text);
+  font: inherit;
+  padding: 5px 8px;
+}
+.claim-form input:focus { outline: none; border-color: var(--cyan); }
+.rate { font-size: 11px; color: #7ee08a; margin-left: 4px; }
+.rate.neg { color: var(--danger); }
+.build-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.build-btn { width: 100%; display: flex; align-items: center; gap: 8px; justify-content: space-between; font-size: 12px; text-align: left; }
+.build-btn > span:first-child { flex: 1; }
+.cost { display: inline-flex; gap: 5px; }
+.humans-stat .stat-value { color: #7ee08a; }
 .fleet-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .fleet-row { display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left; background: none; border: 1px solid transparent; border-radius: 4px; padding: 6px 8px; color: inherit; font: inherit; cursor: pointer; }
 .fleet-row:hover { border-color: var(--panel-border); background: rgba(63, 208, 255, 0.06); }
