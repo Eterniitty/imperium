@@ -13,9 +13,9 @@ import { AuthRequestBodySchema, AuthVerifyBodySchema } from "@imperium/shared/sc
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
 import { accounts, magicLinkTokens, sessions } from "../db/schema";
-import type { Mailer } from "../mail";
+import { describeMailError, type Mailer } from "../mail";
 import { emailRateKey, ipRateKey, RateLimiter } from "./rateLimit";
-import { generateToken, hashToken, normalizeEmail } from "./tokens";
+import { generateToken, hashToken, maskEmail, normalizeEmail } from "./tokens";
 
 /**
  * Nombre de la cookie de sesión. Con HTTPS lleva el prefijo `__Host-`, que obliga
@@ -49,11 +49,8 @@ export async function accountFromRequest(db: Database, cookieName: string, req: 
   return row ? { ...row, locale: row.locale as Locale } : null;
 }
 
-/** "ana@ejemplo.com" → "an***@ejemplo.com": suficiente para reconocer la cuenta propia. */
-export function maskEmail(email: string): string {
-  const at = email.lastIndexOf("@");
-  return `${email.slice(0, Math.min(2, at))}***${email.slice(at)}`;
-}
+// Vive en tokens.ts (también lo usa el correo); se reexporta para no romper importaciones.
+export { maskEmail };
 
 function fail(reply: FastifyReply, status: number, error: ApiError["error"]) {
   return reply.code(status).send({ error } satisfies ApiError);
@@ -102,7 +99,13 @@ export async function authRoutes(app: FastifyInstance, { config, db, mailer }: A
     await db.delete(magicLinkTokens).where(lt(magicLinkTokens.expiresAt, new Date(Date.now() - DAY)));
 
     const link = `${config.PUBLIC_URL}/#${LOGIN_TOKEN_PARAM}=${token}`;
-    await mailer.sendLoginLink(email, link, parsed.data.locale);
+    try {
+      await mailer.sendLoginLink(email, link, parsed.data.locale);
+    } catch (err) {
+      // Si el envío falla se registra (correo enmascarado, sin el enlace) y se responde
+      // igual: la respuesta no puede servir para averiguar nada sobre el destinatario.
+      req.log.error({ mail: { to: maskEmail(email), error: describeMailError(err) } }, "No se pudo enviar el enlace de acceso");
+    }
     // La respuesta es la misma exista o no la cuenta: no revela qué correos están registrados.
     return reply.code(202).send({ ok: true });
   });

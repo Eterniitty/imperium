@@ -86,6 +86,12 @@ export const en: Record<I18nKey, string> = {
   "emperor.moving": "Moving…",
   "emperor.mismatch": "Your Emperor is in a system this client does not recognise (different universe seed).",
   "mail.login.subject": "Your Aeonarch sign-in link",
+  "mail.login.intro": "You asked to sign in to Aeonarch. Use this link to continue:",
+  "mail.login.button": "Sign in to Aeonarch",
+  "mail.login.copy": "If the button does not work, copy this address into your browser:",
+  "mail.login.expires": "The link expires in {minutes} minutes and can only be used once.",
+  "mail.login.ignore": "If you did not request it, you can ignore this email: nobody can sign in to your account without the link.",
+  "mail.login.footer": "Automated email from Aeonarch; please do not reply.",
 
   "server.label": "Server",
   "server.online": "Online",

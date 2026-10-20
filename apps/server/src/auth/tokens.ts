@@ -14,3 +14,14 @@ export function hashToken(token: string): string {
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
+
+/** "ana@ejemplo.com" → "an***@ejemplo.com": suficiente para reconocer la cuenta propia. */
+export function maskEmail(email: string): string {
+  const at = email.lastIndexOf("@");
+  return `${email.slice(0, Math.min(2, at))}***${email.slice(at)}`;
+}
+
+/** Enmascara cualquier dirección de correo que aparezca en un texto (p. ej. la respuesta de un servidor SMTP). */
+export function maskEmailsIn(text: string): string {
+  return text.replace(/[^\s<>"'(),;:[\]]+@[^\s<>"'(),;:[\]]+/g, (email) => maskEmail(email));
+}
