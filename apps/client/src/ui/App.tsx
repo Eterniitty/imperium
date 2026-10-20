@@ -7,6 +7,8 @@ import { gameStore, useGame } from "../state/store";
 import { FlightHud } from "./FlightHud";
 import { FleetsPanel } from "./FleetsPanel";
 import { HelpPanel } from "./HelpPanel";
+import { Notice } from "./Notice";
+import { SettingsPanel } from "./SettingsPanel";
 import { Legend } from "./Legend";
 import { PlanetPanel } from "./PlanetPanel";
 import { StartScreen } from "./StartScreen";
@@ -52,9 +54,14 @@ export function App() {
             {!hasSelection && <Legend />}
           </>
         ) : (
-          <PlanetPanel />
+          <>
+            <FlightHud />
+            <PlanetPanel />
+          </>
         )}
         <HelpPanel />
+        <Notice />
+        <SettingsPanel />
       </div>
     </div>
   );

@@ -1,9 +1,9 @@
 import type { ShipClassDefinition, ShipClassId } from "./types";
 
 /**
- * Clases de nave humanas del MVP. Ritmo de juego en horas: construir y viajar
- * llevan horas reales. Referencia: un sector mide 100 a.l.; un explorador lo
- * cruza en ~8 h, un carguero en ~25 h.
+ * Clases de nave humanas del MVP. Escala decidida el 20-10-2026: saltar entre
+ * estrellas cercanas (10–20 a.l.) lleva minutos; cruzar un sector (100 a.l.),
+ * entre media hora y una hora; construir sigue llevando horas.
  */
 export const SHIP_CLASSES: readonly ShipClassDefinition[] = [
   {
@@ -15,7 +15,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = [
     buildTimeHours: 2,
     hull: 60,
     attack: 2,
-    speedLyPerHour: 12,
+    speedLyPerHour: 240,
     cargo: 20,
     scannerRangeLy: 25,
     upkeepVolatilesPerHour: 1,
@@ -30,7 +30,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = [
     buildTimeHours: 3,
     hull: 50,
     attack: 0,
-    speedLyPerHour: 4,
+    speedLyPerHour: 90,
     cargo: 1000,
     scannerRangeLy: 5,
     upkeepVolatilesPerHour: 2,
@@ -45,7 +45,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = [
     buildTimeHours: 12,
     hull: 120,
     attack: 0,
-    speedLyPerHour: 3,
+    speedLyPerHour: 60,
     cargo: 300,
     scannerRangeLy: 8,
     upkeepVolatilesPerHour: 4,
@@ -60,7 +60,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = [
     buildTimeHours: 6,
     hull: 300,
     attack: 40,
-    speedLyPerHour: 7,
+    speedLyPerHour: 150,
     cargo: 40,
     scannerRangeLy: 12,
     upkeepVolatilesPerHour: 3,
@@ -78,7 +78,7 @@ export function getShipClass(id: ShipClassId): ShipClassDefinition | undefined {
  * con buen escáner, pero sola no gana batallas.
  */
 export const EMPEROR_FLAGSHIP = {
-  speedLyPerHour: 10,
+  speedLyPerHour: 200,
   scannerRangeLy: 15,
 } as const;
 

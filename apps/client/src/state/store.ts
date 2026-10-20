@@ -34,6 +34,11 @@ export interface GameState {
   selected: StarSystemSummary | null;
   detail: StarSystemDetail | null;
   selectedPlanet: number | null;
+  /** Aviso breve en pantalla (salir de un sistema, error de un salto…). */
+  notice: { key: I18nKey; params?: Record<string, string | number>; id: number } | null;
+  settingsOpen: boolean;
+  /** Cámara al pilotar: desde la cabina (primera persona) o desde detrás de la nave (tercera). */
+  cameraView: "first" | "third";
 
   /** Entra en el juego; con Emperador, la cámara empieza en su sistema y lo selecciona. */
   start(at?: SystemLocation): void;
@@ -45,6 +50,9 @@ export interface GameState {
   setNavigation(focus: WorldPosition, sector: SectorCoord): void;
   setFlight(flight: boolean, speed: number): void;
   setStats(stats: { loadedSectors: number; loadedSystems: number; fps: number }): void;
+  notify(key: I18nKey, params?: Record<string, string | number>): void;
+  setSettingsOpen(open: boolean): void;
+  toggleCameraView(): void;
 }
 
 /**
@@ -86,6 +94,9 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   selected: null,
   detail: null,
   selectedPlanet: null,
+  notice: null,
+  settingsOpen: false,
+  cameraView: "third",
 
   start: (at) => {
     if (!at) return set({ started: true });
@@ -125,6 +136,17 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   setFlight: (flight, flightSpeed) => set({ flight, flightSpeed: Math.round(flightSpeed * 10) / 10 }),
 
   setStats: (stats) => set(stats),
+
+  setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
+  toggleCameraView: () => set({ cameraView: get().cameraView === "first" ? "third" : "first" }),
+
+  notify: (key, params) => {
+    const id = (get().notice?.id ?? 0) + 1;
+    set({ notice: { key, params, id } });
+    setTimeout(() => {
+      if (get().notice?.id === id) set({ notice: null });
+    }, 5000);
+  },
 }));
 
 export function useGame<T>(selector: (s: GameState) => T): T {

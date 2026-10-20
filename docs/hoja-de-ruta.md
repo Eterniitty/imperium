@@ -15,6 +15,9 @@ Orden de construcción de lo que pide [diseno.md](diseno.md). Cada fase se divid
 - **Conquistar planetas** (sin entrar en ellos por ahora): **renombrarlos** y **obtener sus recursos y los de su estrella**.
 - **Navegar como en No Man's Sky**: no solo desde el mapa, sino pilotando por la galaxia, sin pantallas intermedias entre el espacio y los sistemas.
 - **Más masividad** y pensar bien la **escala** (distancias y tiempos).
+- **Escala decidida**: saltar entre estrellas cercanas lleva **minutos**; dentro del sistema se vuela en tiempo real.
+- **Ajustes con teclas configurables** y cámara en **primera y tercera persona** (sin entrar en la nave a pie).
+- **Combate**: disparar a otras naves, con **escudos, misiles y cañones según la clase de nave**; la nave del Emperador es una nave más de su flota.
 
 ## Fase 5 — Flotas y exploración
 
@@ -23,9 +26,9 @@ Orden de construcción de lo que pide [diseno.md](diseno.md). Cada fase se divid
 
 ## Fase 6 — Pilotar la nave del Emperador (estilo No Man's Sky)
 
-- **6a. La nave del Emperador.** Modelo 3D de la nave insignia en lugar de un anillo; las flotas pueden escoltarla (unirse a ella y viajar juntas).
-- **6b. Vuelo continuo.** El modo vuelo pasa a pilotar la nave: dentro de un sistema se vuela en tiempo real entre planetas (impulso); entre estrellas, salto (viaje con tiempo, validado en el servidor). Transición sin cortes entre el mapa galáctico y el sistema al acercarse a una estrella. El servidor valida la posición (velocidad máxima) y los demás jugadores ven la nave moverse.
-- **6c. Escala.** Distancias dentro del sistema (UA) y entre estrellas (años luz) coherentes, con origen flotante para no perder precisión.
+- **6a. Pilotar la nave.** ✔ Modelo 3D de la nave insignia. Se empieza a los mandos, dentro del sistema; vuelo en tiempo real entre planetas (que giran según la hora del servidor), cámara en primera y tercera persona, salir volando del sistema lleva al espacio interestelar y J salta a la estrella elegida (la cámara sigue a la nave y al llegar se entra pilotando). Ajustes con teclas configurables.
+- **6b. Vuelo compartido.** El servidor recibe y valida la posición de la nave dentro del sistema (velocidad máxima, borde) y los demás jugadores del mismo sistema la ven moverse. Las flotas pueden escoltar a la nave del Emperador.
+- **6c. Combate en tiempo real.** Armas y defensas como datos por clase de nave (cañones, misiles, escudos, casco). Disparos validados en el servidor (alcance, cadencia, munición), daño a escudos y casco, naves destruidas. La nave del Emperador pasa a ser una nave de su flota (las flotas que la escoltan combaten con ella).
 
 ## Fase 7 — Humanos, planetas y economía
 
@@ -41,7 +44,7 @@ Orden de construcción de lo que pide [diseno.md](diseno.md). Cada fase se divid
 
 - **9a. Combate de flotas** resuelto en el servidor por rondas y mostrado en 3D; interceptar flotas en tránsito.
 - **9b. Conquista de planetas ajenos.** Asedio con progreso y presencia sostenida; desembarco de tropas (humanos) para tomar el planeta o la instalación; captura en vez de destrucción.
-- **9c. Combate en tiempo real** pilotando la nave del Emperador con escolta de hasta ~5 naves por bando; por encima, pasa a rondas.
+- **9c. Combate a gran escala**: por encima de ~5 naves por bando, el combate en tiempo real (6c) pasa a rondas.
 
 ## Fase 10 — Muerte y linaje
 

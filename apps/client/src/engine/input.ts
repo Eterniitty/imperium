@@ -1,4 +1,10 @@
-/** Estado del teclado. Ignora las teclas pulsadas mientras se escribe en la interfaz. */
+import { settingsStore, type Action } from "../state/settings";
+
+/**
+ * Estado del teclado. Ignora las teclas pulsadas mientras se escribe en la
+ * interfaz. Las vistas preguntan por acciones (`action("forward")`), no por
+ * teclas: así las teclas se pueden cambiar en los ajustes.
+ */
 export class Keyboard {
   private down = new Set<string>();
   private onKeyPress: (code: string) => void;
@@ -12,7 +18,8 @@ export class Keyboard {
 
   private isTyping(e: KeyboardEvent): boolean {
     const t = e.target as HTMLElement | null;
-    return !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+    // También mientras se elige una tecla en los ajustes.
+    return !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable || !!t.closest("[data-capturing-key]"));
   }
 
   private handleDown = (e: KeyboardEvent) => {
@@ -29,6 +36,11 @@ export class Keyboard {
 
   isDown(code: string): boolean {
     return this.down.has(code);
+  }
+
+  /** ¿Está pulsada alguna de las teclas asignadas a la acción? */
+  action(action: Action): boolean {
+    return settingsStore.getState().bindings[action].some((code) => this.down.has(code));
   }
 
   dispose(): void {

@@ -21,6 +21,9 @@ test("la flota inicial aparece, se envía a otro sistema y llega", async ({ page
   await page.getByLabel("Nombre del Emperador").fill("Almirante Vex");
   await page.getByRole("button", { name: "Coronar" }).click();
   await page.getByRole("button", { name: "Despertar" }).click();
+  // Se empieza pilotando: M lleva al mapa.
+  await expect(page.locator(".flight-hud")).toBeVisible();
+  await page.keyboard.press("KeyM");
 
   // La flota inicial: un explorador, en el sistema del Emperador.
   const fleets = page.locator(".fleets");

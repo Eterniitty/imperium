@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { engineRef } from "../engineRef";
 import { useAuth } from "../state/auth";
+import { gameStore } from "../state/store";
+import { useKeyLabels } from "./keys";
 import { formatDuration, useServerNow } from "./useNow";
 import { useGame, useT } from "../state/store";
 import { LanguageToggle } from "./LanguageToggle";
@@ -20,6 +22,7 @@ export function TopBar() {
   const selected = useGame((s) => s.selected);
   const flight = useGame((s) => s.flight);
   const emperor = useAuth((s) => s.emperor);
+  const keys = useKeyLabels();
   const now = useServerNow();
   const travel = emperor?.travel && emperor.travel.arriveAt > now ? emperor.travel : null;
   const [target, setTarget] = useState({ x: "0", y: "0", z: "0" });
@@ -49,11 +52,19 @@ export function TopBar() {
         </button>
       )}
 
+      {emperor && (
+        <button className="btn" onClick={() => engineRef.current?.toggleMap()} title={t("action.toggleMap")}>
+          {t(view === "system" && flight ? "pilot.map" : "pilot.pilot")} <kbd>{keys.toggleMap}</kbd>
+        </button>
+      )}
+
       {view === "system" ? (
         <>
-          <button className="btn" onClick={() => engineRef.current?.exitSystem()}>
-            ← {t("view.back")}
-          </button>
+          {!flight && (
+            <button className="btn" onClick={() => engineRef.current?.exitSystem()}>
+              ← {t("view.back")}
+            </button>
+          )}
           <div className="stat">
             <span className="stat-label">{t("view.system")}</span>
             <span className="stat-value">{selected?.name}</span>
@@ -67,7 +78,7 @@ export function TopBar() {
               {sector.x} · {sector.y} · {sector.z}
             </span>
           </div>
-          <div className="stat hide-sm">
+          <div className="stat hide-md">
             <span className="stat-label">{t("hud.position")}</span>
             <span className="stat-value mono">
               {fmt(focus.x)}, {fmt(focus.y)}, {fmt(focus.z)} {t("unit.ly")}
@@ -77,7 +88,7 @@ export function TopBar() {
             <span className="stat-label">{t("hud.systems")}</span>
             <span className="stat-value mono">{loaded.toLocaleString()}</span>
           </div>
-          <form className="goto hide-sm" onSubmit={go} title={t("hud.gotoTitle")}>
+          <form className="goto hide-md" onSubmit={go} title={t("hud.gotoTitle")}>
             {(["x", "y", "z"] as const).map((k) => (
               <input
                 key={k}
@@ -106,6 +117,9 @@ export function TopBar() {
           </div>
         )}
         <ServerStatus />
+        <button className="icon-btn" onClick={() => gameStore.getState().setSettingsOpen(true)} aria-label={t("settings.open")} title={t("settings.title")}>
+          ⚙
+        </button>
         <span className="fps mono">
           {fps} {t("hud.fps")}
         </span>

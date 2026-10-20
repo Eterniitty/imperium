@@ -144,6 +144,9 @@ importers:
 
   packages/sim:
     dependencies:
+      '@imperium/procgen':
+        specifier: workspace:*
+        version: link:../procgen
       '@imperium/shared':
         specifier: workspace:*
         version: link:../shared

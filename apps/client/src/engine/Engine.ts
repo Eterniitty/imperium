@@ -1,13 +1,14 @@
 import * as THREE from "three";
-import type { SectorCoord, StarSystemSummary } from "@imperium/shared";
+import type { I18nKey, SectorCoord, StarSystemSummary, WorldPosition } from "@imperium/shared";
 import { generateSystemDetail } from "@imperium/procgen";
 import { UNIVERSE_SEED } from "../config";
-import { positionAt } from "@imperium/sim";
+import { isTravelling, positionAt } from "@imperium/sim";
 import { serverNow, worldStore } from "../net/world";
 import { authStore } from "../state/auth";
 import { findSystemSummary, gameStore } from "../state/store";
 import { GalaxyView } from "./GalaxyView";
 import { Keyboard } from "./input";
+import { isBound, keyLabel, settingsStore } from "../state/settings";
 import { SystemView } from "./SystemView";
 import type { View } from "./View";
 
@@ -29,6 +30,8 @@ export class Engine {
   private fpsFrames = 0;
   private pointerDown: { x: number; y: number; t: number } | null = null;
   private lastHover = 0;
+  /** Salto en curso seguido por la cámara: origen y destino, para entrar al llegar por el lado correcto. */
+  private jumping: { from: WorldPosition; to: WorldPosition } | null = null;
 
   constructor(private container: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -41,9 +44,12 @@ export class Engine {
 
     const dom = this.renderer.domElement;
     dom.tabIndex = 0;
-    this.keyboard = new Keyboard((code) => this.active.onKey(code));
+    this.keyboard = new Keyboard((code) => this.onKey(code));
     this.galaxy = new GalaxyView(dom, this.keyboard, (s) => this.enterSystem(s));
-    this.system = new SystemView(dom, () => this.exitSystem());
+    this.system = new SystemView(dom, this.keyboard, {
+      onExit: () => this.exitSystem(),
+      onLeave: (direction) => this.leaveSystem(direction),
+    });
     this.active = this.galaxy;
     this.active.activate();
 
@@ -57,6 +63,114 @@ export class Engine {
     this.resizeObserver.observe(container);
     this.resize();
     this.loop();
+    // Como en No Man's Sky: se empieza a los mandos de la nave, en el sistema del Emperador.
+    this.pilot(null);
+  }
+
+  // --- Pilotaje ---
+
+  /** Teclas globales (mapa, salto); el resto, a la vista activa. */
+  private onKey(code: string): void {
+    if (isBound("toggleMap", code)) return this.toggleMap();
+    if (isBound("jump", code) && this.active === this.galaxy) return void this.jumpToSelected();
+    this.active.onKey(code);
+  }
+
+  /** Emperador propio con su viaje resuelto, o null si no hay sesión con Emperador. */
+  private emperor() {
+    return authStore.getState().emperor;
+  }
+
+  /**
+   * Entra en el sistema donde está el Emperador y lo pilota. `from` es la
+   * dirección por la que llega (la nave aparece en ese lado del borde).
+   * Si el Emperador está viajando, no hace nada.
+   */
+  pilot(from: THREE.Vector3 | null): boolean {
+    const emperor = this.emperor();
+    const now = serverNow();
+    if (!emperor || isTravelling(emperor, now)) return false;
+    const here = emperor.travel ? emperor.travel.to : emperor.location;
+    const summary = findSystemSummary(here.systemId);
+    if (!summary) return false;
+    this.galaxy.follow(null);
+    this.jumping = null;
+    const store = gameStore.getState();
+    store.select(summary);
+    this.system.build(store.detail ?? generateSystemDetail(UNIVERSE_SEED, summary));
+    this.switchTo(this.system);
+    store.setView("system");
+    this.system.pilot(from);
+    return true;
+  }
+
+  /** Alterna entre el mapa galáctico y los mandos de la nave. */
+  toggleMap(): void {
+    if (this.active === this.system) {
+      this.system.stopPiloting();
+      this.exitSystem();
+    } else if (!this.pilot(null)) {
+      this.notify("pilot.cannotWhileJumping");
+    }
+  }
+
+  get isPiloting(): boolean {
+    return this.active === this.system && this.system.isPiloting;
+  }
+
+  /** La nave cruzó el borde del sistema: espacio interestelar, con la estrella a la espalda. */
+  private leaveSystem(direction: THREE.Vector3): void {
+    const star = gameStore.getState().selected;
+    this.system.stopPiloting();
+    this.switchTo(this.galaxy);
+    gameStore.getState().setView("galaxy");
+    if (star) this.galaxy.placeAround(star.position, direction, 14);
+    gameStore.getState().select(null);
+    const jumpKey = settingsStore.getState().bindings.jump[0];
+    this.notify("pilot.leftSystem", { jump: jumpKey ? keyLabel(jumpKey, gameStore.getState().locale) : "—" });
+  }
+
+  /** Salta con la nave del Emperador a la estrella seleccionada; la cámara la sigue. */
+  async jumpToSelected(): Promise<void> {
+    const target = gameStore.getState().selected;
+    const emperor = this.emperor();
+    if (!target || !emperor) return;
+    const error = await authStore.getState().moveEmperor(target.id);
+    if (error) return this.notify(error);
+    this.followEmperor();
+  }
+
+  private followEmperor(): void {
+    const emperor = this.emperor();
+    if (!emperor?.travel) return;
+    if (this.active === this.system) {
+      this.system.stopPiloting();
+      this.exitSystem();
+    }
+    this.jumping = { from: emperor.location.position, to: emperor.travel.to.position };
+    this.galaxy.goTo(positionAt(emperor, serverNow()), 18);
+    this.galaxy.follow(() => {
+      const e = this.emperor();
+      return e ? positionAt(e, serverNow()) : this.jumping!.to;
+    });
+  }
+
+  private notify(key: I18nKey, params?: Record<string, string | number>): void {
+    gameStore.getState().notify(key, params);
+  }
+
+  /** Cada fotograma: si se está siguiendo un salto y la nave llegó, se entra pilotando en el destino. */
+  private checkArrival(): void {
+    if (!this.jumping || this.active !== this.galaxy) return;
+    if (!this.galaxy.isFollowing) {
+      // El jugador movió la cámara: deja de seguir, pero no se le mete en el sistema.
+      this.jumping = null;
+      return;
+    }
+    const emperor = this.emperor();
+    if (!emperor || isTravelling(emperor, serverNow())) return;
+    const { from, to } = this.jumping;
+    this.pilot(new THREE.Vector3(from.x - to.x, from.y - to.y, from.z - to.z));
   }
 
   // --- Órdenes desde la interfaz ---
@@ -168,6 +282,7 @@ export class Engine {
     this.frameId = requestAnimationFrame(this.loop);
     this.timer.update(time);
     const dt = Math.min(this.timer.getDelta(), 0.1);
+    this.checkArrival();
     this.active.update(dt);
     this.renderer.render(this.active.scene, this.active.camera);
 

@@ -58,17 +58,29 @@ cp .env.example .env        # en Windows (CMD): copy .env.example .env
 
 ## Controles
 
-| Acción | Control |
+Se empieza a los mandos de la nave del Emperador, dentro de su sistema. Todas las teclas se cambian en **Ajustes (⚙)**; estas son las de por defecto.
+
+| Pilotar la nave | |
 |---|---|
-| Girar la cámara | Arrastrar con botón izquierdo o derecho |
-| Desplazar | Arrastrar con botón central, o Mayús + arrastrar |
-| Acercar / alejar | Rueda del ratón |
-| Volar | W A S D (o flechas), Q / E para bajar / subir |
-| Viaje rápido | Mantener Mayús |
-| Seleccionar sistema | Clic |
-| Entrar en el sistema | Doble clic o Intro |
-| Centrar la selección | F |
-| Volver / deseleccionar | Esc |
+| Orientar | Arrastrar con el ratón |
+| Avanzar / frenar · lateral | W / S · A / D |
+| Subir / bajar · alabeo | Espacio / C · Q / E |
+| Girar | Flechas |
+| Impulso | Mayús |
+| Cámara primera / tercera persona | T |
+| Salir del sistema | Volar más allá del borde |
+
+| Mapa galáctico | |
+|---|---|
+| Girar · desplazar · acercar | Arrastrar · botón central o Mayús + arrastrar · rueda |
+| Mover la cámara | W A S D, E / Q subir y bajar |
+| Seleccionar · entrar a mirar un sistema | Clic · doble clic o Intro |
+| Saltar a la estrella seleccionada | J |
+| Centrar · deseleccionar | F · Esc |
+
+| General | |
+|---|---|
+| Mapa / pilotar | M |
 
 ## Comprobaciones
 

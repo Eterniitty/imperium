@@ -2,24 +2,48 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
 import type { StarSystemDetail } from "@imperium/shared";
+import { planetAngle, systemLayout, type PlanetLayout, type SystemLayout } from "@imperium/sim";
+import { serverNow } from "../net/world";
+import { isBound } from "../state/settings";
 import { gameStore } from "../state/store";
 import { Backdrop } from "./Backdrop";
+import { FlightController } from "./FlightController";
+import type { Keyboard } from "./input";
+import { createFlagship, disposeShip } from "./shipModel";
 import { glowTexture, planetTexture, ringTexture } from "./textures";
 import type { View } from "./View";
 
 interface PlanetVisual {
   index: number;
+  layout: PlanetLayout;
   pivot: THREE.Object3D;
   mesh: THREE.Mesh;
-  orbitRadius: number;
-  speed: number;
   orbitLine: THREE.LineLoop;
   moons: Array<{ mesh: THREE.Mesh; radius: number; speed: number; phase: number }>;
 }
 
+/** Avisos de la vista de sistema al motor. */
+export interface SystemViewEvents {
+  /** Esc en modo observar: volver al mapa. */
+  onExit(): void;
+  /** La nave cruzó el borde del sistema: pasar al espacio interestelar. `direction` es hacia dónde salió. */
+  onLeave(direction: THREE.Vector3): void;
+}
+
+/** Velocidades de pilotaje, en unidades de sistema por segundo. */
+const PILOT_SPEED = 18;
+const PILOT_BOOST = 5;
+/** Cámara de persecución (tercera persona): detrás y algo por encima de la nave. */
+const CHASE_OFFSET = new THREE.Vector3(0, 2.4, 10);
+/** Cámara de cabina (primera persona): en el puente, mirando al frente. */
+const COCKPIT_OFFSET = new THREE.Vector3(0, 0.55, -0.4);
+
 /**
- * Vista de un sistema estelar. Las distancias están comprimidas para que todo
- * quepa en pantalla: es una representación, no una simulación física.
+ * Vista de un sistema estelar, con la disposición de `@imperium/sim` (distancias
+ * comprimidas, igual en cliente y servidor). Dos modos:
+ * - observar: cámara orbital, para inspeccionar planetas;
+ * - pilotar: la nave del Emperador, con cámara de persecución. Salir volando
+ *   más allá del borde lleva al espacio interestelar sin pantallas intermedias.
  */
 export class SystemView implements View {
   readonly scene = new THREE.Scene();
@@ -35,8 +59,17 @@ export class SystemView implements View {
   private time = 0;
   private hoveredPlanet: number | null = null;
   private dom: HTMLElement;
+  private layout: SystemLayout | null = null;
+  private ship: THREE.Group | null = null;
+  private flight: FlightController | null = null;
+  private chaseTarget = new THREE.Vector3();
+  private leaving = false;
 
-  constructor(dom: HTMLElement, private onExit: () => void) {
+  constructor(
+    dom: HTMLElement,
+    private keyboard: Keyboard,
+    private events: SystemViewEvents,
+  ) {
     this.dom = dom;
     this.controls = new OrbitControls(this.camera, dom);
     this.controls.enableDamping = true;
@@ -64,9 +97,12 @@ export class SystemView implements View {
     const starColor = new THREE.Color(info.color);
     const rng = new Rng(hashString(summary.id));
 
+    const layout = systemLayout(detail);
+    this.layout = layout;
+
     // Estrella.
     const isBlackHole = summary.starClass === "BH";
-    const starRadius = isBlackHole ? 3.5 : 2.5 + info.mapSize * 2.2;
+    const starRadius = layout.starRadius;
     this.starMaterial = new THREE.ShaderMaterial({
       uniforms: { uColor: { value: starColor }, uTime: { value: 0 }, uDark: { value: isBlackHole ? 1 : 0 } },
       vertexShader: /* glsl */ `
@@ -109,21 +145,13 @@ export class SystemView implements View {
     const light = new THREE.PointLight(starColor, isBlackHole ? 1.5 : 4.5, 0, 0);
     this.content.add(light);
 
-    // Órbitas: planetas y cinturones comparten huecos en orden de distancia.
-    const bodies = [
-      ...detail.planets.map((p) => ({ kind: "planet" as const, orbit: p.orbitAu, planet: p })),
-      ...detail.belts.map((b) => ({ kind: "belt" as const, orbit: b.orbitAu })),
-    ].sort((a, b) => a.orbit - b.orbit);
+    for (const belt of layout.belts) this.content.add(this.makeBelt(belt.orbitRadius, rng));
 
     let radius = starRadius * 3 + 8;
-    for (const body of bodies) {
-      if (body.kind === "belt") {
-        this.content.add(this.makeBelt(radius, rng));
-        radius += 9;
-        continue;
-      }
-      const p = body.planet;
-      const size = Math.min(6, 1 + p.radius * 0.5);
+    for (const pl of layout.planets) {
+      const p = detail.planets.find((x) => x.index === pl.index)!;
+      const size = pl.size;
+      radius = pl.orbitRadius;
       const mesh = new THREE.Mesh(
         new THREE.SphereGeometry(size, 40, 24),
         new THREE.MeshStandardMaterial({ map: planetTexture(p.type, `${summary.id}:${p.index}`), roughness: 0.9, metalness: 0 }),
@@ -132,7 +160,7 @@ export class SystemView implements View {
       mesh.rotation.z = rng.range(-0.4, 0.4);
 
       const pivot = new THREE.Object3D();
-      pivot.rotation.y = p.phase;
+      pivot.rotation.y = planetAngle(pl, serverNow());
       mesh.position.set(radius, 0, 0);
       pivot.add(mesh);
 
@@ -158,16 +186,7 @@ export class SystemView implements View {
 
       const orbitLine = this.makeOrbit(radius);
       this.content.add(orbitLine, pivot);
-      this.planets.push({
-        index: p.index,
-        pivot,
-        mesh,
-        orbitRadius: radius,
-        // Más lentos cuanto más lejos (forma de la tercera ley de Kepler).
-        speed: 4 / Math.sqrt(radius * radius * radius) * 6,
-        orbitLine,
-        moons,
-      });
+      this.planets.push({ index: p.index, layout: pl, pivot, mesh, orbitLine, moons });
       radius += size * 2 + 7;
     }
 
@@ -218,6 +237,7 @@ export class SystemView implements View {
   }
 
   private clear(): void {
+    this.stopPiloting();
     this.content.traverse((o) => {
       if (o instanceof THREE.Mesh || o instanceof THREE.Points || o instanceof THREE.Line) {
         o.geometry.dispose();
@@ -232,21 +252,101 @@ export class SystemView implements View {
     this.hoveredPlanet = null;
   }
 
-  activate(): void {
+  get isPiloting(): boolean {
+    return this.ship !== null;
+  }
+
+  /**
+   * Pone la nave del Emperador en el sistema y pasa a pilotarla. Aparece en el
+   * borde, del lado de `from` (dirección desde la que llega), mirando a la estrella.
+   */
+  pilot(from: THREE.Vector3 | null): void {
+    this.stopPiloting();
+    if (!this.layout) return;
+    const ship = createFlagship(0xc792ff);
+    const dir = from && from.lengthSq() > 0 ? from.clone().normalize() : new THREE.Vector3(0.2, 0.15, 1).normalize();
+    ship.position.copy(dir.multiplyScalar(this.layout.boundary * 0.8));
+    ship.lookAt(0, 0, 0);
+    // lookAt orienta +Z hacia el objetivo; la nave mira hacia -Z.
+    ship.rotateY(Math.PI);
+    this.content.add(ship);
+    this.ship = ship;
+    const flight = new FlightController(ship, this.dom, this.keyboard);
+    flight.baseSpeed = PILOT_SPEED;
+    flight.boostFactor = PILOT_BOOST;
+    flight.enabled = true;
+    this.flight = flight;
+    this.leaving = false;
+    this.controls.enabled = false;
+    this.placeChaseCamera(1);
+    gameStore.getState().setFlight(true, 0);
+  }
+
+  /** Deja de pilotar y vuelve a la cámara orbital. */
+  stopPiloting(): void {
+    if (!this.ship) return;
+    this.flight?.dispose();
+    this.flight = null;
+    this.content.remove(this.ship);
+    disposeShip(this.ship);
+    this.ship = null;
     this.controls.enabled = true;
+    gameStore.getState().setFlight(false, 0);
+  }
+
+  private placeChaseCamera(k: number): void {
+    const ship = this.ship!;
+    const first = gameStore.getState().cameraView === "first";
+    // En primera persona el casco taparía la vista: se oculta la nave.
+    ship.visible = !first;
+    if (first) {
+      this.camera.position.copy(COCKPIT_OFFSET).applyQuaternion(ship.quaternion).add(ship.position);
+      this.camera.quaternion.copy(ship.quaternion);
+      return;
+    }
+    const desired = CHASE_OFFSET.clone().applyQuaternion(ship.quaternion).add(ship.position);
+    this.camera.position.lerp(desired, k);
+    this.camera.up.copy(new THREE.Vector3(0, 1, 0).applyQuaternion(ship.quaternion));
+    this.chaseTarget.copy(new THREE.Vector3(0, 0, -30).applyQuaternion(ship.quaternion).add(ship.position));
+    this.camera.lookAt(this.chaseTarget);
+  }
+
+  /** Evita atravesar la estrella y los planetas: la nave se queda en su superficie. */
+  private collide(): void {
+    const ship = this.ship!;
+    const layout = this.layout!;
+    const pushOut = (center: THREE.Vector3, radius: number) => {
+      const d = ship.position.distanceTo(center);
+      if (d >= radius || d === 0) return;
+      ship.position.sub(center).setLength(radius).add(center);
+      this.flight!.velocity.multiplyScalar(0.3);
+    };
+    pushOut(new THREE.Vector3(), layout.starRadius * 1.6);
+    const tmp = new THREE.Vector3();
+    for (const p of this.planets) pushOut(p.mesh.getWorldPosition(tmp), p.layout.size + 0.8);
+  }
+
+  activate(): void {
+    this.controls.enabled = !this.ship;
+    if (this.flight) this.flight.enabled = true;
   }
 
   deactivate(): void {
     this.controls.enabled = false;
+    if (this.flight) {
+      this.flight.enabled = false;
+      this.flight.stop();
+    }
     this.dom.style.cursor = "";
   }
 
   update(dt: number): void {
     this.time += dt;
     if (this.starMaterial) this.starMaterial.uniforms.uTime!.value = this.time;
+    const now = serverNow();
     const selected = gameStore.getState().selectedPlanet;
     for (const p of this.planets) {
-      p.pivot.rotation.y += p.speed * dt;
+      p.pivot.rotation.y = planetAngle(p.layout, now);
       p.mesh.rotation.y += dt * 0.25;
       for (const m of p.moons) {
         const a = m.phase + this.time * m.speed;
@@ -263,7 +363,19 @@ export class SystemView implements View {
     } else {
       this.selectRing.visible = false;
     }
-    this.controls.update();
+    if (this.ship && this.flight) {
+      this.flight.update(dt);
+      this.collide();
+      this.placeChaseCamera(1 - Math.exp(-dt * 8));
+      gameStore.getState().setFlight(true, this.flight.speed);
+      // Más allá del borde: espacio interestelar.
+      if (!this.leaving && this.layout && this.ship.position.length() > this.layout.boundary) {
+        this.leaving = true;
+        this.events.onLeave(this.ship.position.clone().normalize());
+      }
+    } else {
+      this.controls.update();
+    }
     this.backdrop.follow(this.camera);
   }
 
@@ -298,10 +410,15 @@ export class SystemView implements View {
   }
 
   onKey(code: string): void {
-    if (code === "Escape" || code === "Backspace") this.onExit();
+    if (this.ship) {
+      if (isBound("cameraView", code)) gameStore.getState().toggleCameraView();
+      return;
+    }
+    if (code === "Escape" || code === "Backspace") this.events.onExit();
   }
 
   dispose(): void {
+    this.stopPiloting();
     this.clear();
     this.controls.dispose();
   }

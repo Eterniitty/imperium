@@ -9,6 +9,7 @@ import {
   type WorldPosition,
 } from "@imperium/shared";
 import { REBASE_DISTANCE } from "../config";
+import { isBound } from "../state/settings";
 import { gameStore } from "../state/store";
 import { Backdrop } from "./Backdrop";
 import { EmperorMarkers } from "./EmperorMarkers";
@@ -57,6 +58,8 @@ export class GalaxyView implements View {
   private height = 1;
   private flight: FlightController;
   private flightMode = false;
+  /** Si no es null, la cámara sigue cada fotograma a esa posición (la nave del Emperador en un salto). */
+  private followFn: (() => WorldPosition) | null = null;
 
   constructor(
     dom: HTMLElement,
@@ -175,6 +178,27 @@ export class GalaxyView implements View {
     this.sectors.setOrigin(this.origin);
   }
 
+  /** Sigue con la cámara una posición que cambia (o deja de seguir con null). */
+  follow(fn: (() => WorldPosition) | null): void {
+    this.followFn = fn;
+  }
+
+  get isFollowing(): boolean {
+    return this.followFn !== null;
+  }
+
+  /**
+   * Coloca la cámara junto a una posición absoluta, apartada en `direction` a
+   * `distance` a.l. Es la vista al salir de un sistema: la estrella justo detrás.
+   */
+  placeAround(target: WorldPosition, direction: THREE.Vector3, distance: number): void {
+    this.goTo(target, distance);
+    this.fly = null;
+    const t = this.controls.target;
+    this.camera.position.copy(t).addScaledVector(direction.clone().normalize(), distance);
+    this.camera.lookAt(t);
+  }
+
   /** Vuela suavemente hasta una posición absoluta. */
   flyTo(target: WorldPosition, distance?: number, onDone?: () => void): void {
     const to = this.sectors.toScene(target);
@@ -245,6 +269,12 @@ export class GalaxyView implements View {
     } else {
       this.updateFlight(dt);
       this.updateKeyboardMovement(dt);
+      if (this.followFn && !this.fly) {
+        // Mueve foco y cámara juntos: la vista acompaña a la nave sin girar.
+        const delta = this.sectors.toScene(this.followFn()).sub(this.controls.target);
+        this.controls.target.add(delta);
+        this.camera.position.add(delta);
+      }
       this.controls.update();
     }
     this.rebaseIfNeeded();
@@ -297,16 +327,17 @@ export class GalaxyView implements View {
     this.camera.getWorldDirection(forward);
     const right = new THREE.Vector3().crossVectors(forward, this.camera.up).normalize();
     const move = new THREE.Vector3();
-    if (kb.isDown("KeyW") || kb.isDown("ArrowUp")) move.add(forward);
-    if (kb.isDown("KeyS") || kb.isDown("ArrowDown")) move.sub(forward);
-    if (kb.isDown("KeyD") || kb.isDown("ArrowRight")) move.add(right);
-    if (kb.isDown("KeyA") || kb.isDown("ArrowLeft")) move.sub(right);
-    if (kb.isDown("KeyE")) move.add(this.camera.up);
-    if (kb.isDown("KeyQ")) move.sub(this.camera.up);
+    if (kb.action("mapForward")) move.add(forward);
+    if (kb.action("mapBack")) move.sub(forward);
+    if (kb.action("mapRight")) move.add(right);
+    if (kb.action("mapLeft")) move.sub(right);
+    if (kb.action("mapUp")) move.add(this.camera.up);
+    if (kb.action("mapDown")) move.sub(this.camera.up);
     if (move.lengthSq() === 0) return;
     this.fly = null;
+    this.followFn = null;
     const dist = this.camera.position.distanceTo(this.controls.target);
-    const boost = kb.isDown("ShiftLeft") || kb.isDown("ShiftRight") ? 4 : 1;
+    const boost = kb.action("mapBoost") ? 4 : 1;
     const speed = Math.max(15, dist * 0.9) * boost;
     move.normalize().multiplyScalar(speed * dt);
     this.camera.position.add(move);
@@ -369,10 +400,10 @@ export class GalaxyView implements View {
   }
 
   onKey(code: string): void {
-    if (code === "KeyV") this.setFlightMode(!this.flightMode);
-    else if (code === "KeyF") this.focusSelected();
-    else if (code === "Enter" || code === "NumpadEnter") this.enterSelected();
-    else if (code === "Escape") gameStore.getState().select(null);
+    if (isBound("flightMode", code)) this.setFlightMode(!this.flightMode);
+    else if (isBound("focus", code)) this.focusSelected();
+    else if (isBound("enter", code)) this.enterSelected();
+    else if (isBound("deselect", code)) gameStore.getState().select(null);
   }
 
   dispose(): void {

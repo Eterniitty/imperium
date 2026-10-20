@@ -29,6 +29,9 @@ async function newPlayer(browser: Browser, email: string, name: string): Promise
   await page.getByLabel("Nombre del Emperador").fill(name);
   await page.getByRole("button", { name: "Coronar" }).click();
   await page.getByRole("button", { name: "Despertar" }).click();
+  // Se empieza pilotando: M lleva al mapa.
+  await expect(page.locator(".flight-hud")).toBeVisible();
+  await page.keyboard.press("KeyM");
   await expect(page.getByText(/Servidor:\s*\d+ en línea/)).toBeVisible();
   return page;
 }
@@ -74,7 +77,7 @@ test("dos jugadores se ven en el mismo universo y se ven moverse", async ({ brow
   await select(bruno, brunoSystem);
   await select(ana, brunoSystem);
   if (brunoE.location.systemId === anaE.location.systemId) test.skip(true, "Los dos aparecieron en el mismo sistema");
-  await anaPanel.getByRole("button", { name: "Trasladar al Emperador aquí" }).click();
+  await anaPanel.getByRole("button", { name: /Saltar aquí/ }).click();
 
   const brunoPanel = bruno.locator("aside.side");
   await expect(brunoPanel.getByRole("heading", { name: "En camino hacia aquí" })).toBeVisible();

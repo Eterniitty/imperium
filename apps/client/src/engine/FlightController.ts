@@ -2,11 +2,12 @@ import * as THREE from "three";
 import type { Keyboard } from "./input";
 
 /**
- * Vuelo libre tipo nave en primera persona, con inercia.
+ * Vuelo tipo nave con inercia. Mueve un objeto: la cámara (vuelo libre por el
+ * mapa) o la nave del Emperador (pilotaje dentro de un sistema).
  * - Arrastrar con el ratón orienta la nave (el cursor sigue libre para seleccionar).
- * - W/S acelera hacia delante/atrás, A/D desplazamiento lateral,
- *   Espacio/C sube/baja, Q/E alabeo, flechas giran.
- * - Mayús activa el impulso.
+ * - Teclas configurables (ver state/settings.ts); por defecto W/S avanzar y
+ *   frenar, A/D lateral, Espacio/C subir y bajar, Q/E alabeo, flechas girar y
+ *   Mayús impulso.
  * La velocidad no cambia de golpe: se aproxima a la deseada, lo que da
  * sensación de masa.
  */
@@ -14,7 +15,7 @@ export class FlightController {
   enabled = false;
   readonly velocity = new THREE.Vector3();
 
-  /** Velocidad de crucero en años luz por segundo (representación, no simulación). */
+  /** Velocidad de crucero en unidades de la escena por segundo. */
   baseSpeed = 25;
   boostFactor = 6;
   lookSensitivity = 0.0022;
@@ -30,7 +31,7 @@ export class FlightController {
   private desired = new THREE.Vector3();
 
   constructor(
-    private camera: THREE.PerspectiveCamera,
+    private camera: THREE.Object3D,
     private dom: HTMLElement,
     private keyboard: Keyboard,
   ) {
@@ -73,24 +74,24 @@ export class FlightController {
   /** Devuelve el desplazamiento aplicado este fotograma. */
   update(dt: number): THREE.Vector3 {
     const kb = this.keyboard;
-    if (kb.isDown("KeyQ")) this.camera.rotateZ(this.rollSpeed * dt);
-    if (kb.isDown("KeyE")) this.camera.rotateZ(-this.rollSpeed * dt);
-    if (kb.isDown("ArrowLeft")) this.camera.rotateY(this.turnSpeed * dt);
-    if (kb.isDown("ArrowRight")) this.camera.rotateY(-this.turnSpeed * dt);
-    if (kb.isDown("ArrowUp")) this.camera.rotateX(this.turnSpeed * dt);
-    if (kb.isDown("ArrowDown")) this.camera.rotateX(-this.turnSpeed * dt);
+    if (kb.action("rollLeft")) this.camera.rotateZ(this.rollSpeed * dt);
+    if (kb.action("rollRight")) this.camera.rotateZ(-this.rollSpeed * dt);
+    if (kb.action("turnLeft")) this.camera.rotateY(this.turnSpeed * dt);
+    if (kb.action("turnRight")) this.camera.rotateY(-this.turnSpeed * dt);
+    if (kb.action("pitchUp")) this.camera.rotateX(this.turnSpeed * dt);
+    if (kb.action("pitchDown")) this.camera.rotateX(-this.turnSpeed * dt);
 
     // Entrada en ejes locales: -Z es "delante" en Three.js.
     const input = this.tmp.set(0, 0, 0);
-    if (kb.isDown("KeyW")) input.z -= 1;
-    if (kb.isDown("KeyS")) input.z += 1;
-    if (kb.isDown("KeyA")) input.x -= 1;
-    if (kb.isDown("KeyD")) input.x += 1;
-    if (kb.isDown("Space")) input.y += 1;
-    if (kb.isDown("KeyC")) input.y -= 1;
+    if (kb.action("forward")) input.z -= 1;
+    if (kb.action("back")) input.z += 1;
+    if (kb.action("strafeLeft")) input.x -= 1;
+    if (kb.action("strafeRight")) input.x += 1;
+    if (kb.action("up")) input.y += 1;
+    if (kb.action("down")) input.y -= 1;
     if (input.lengthSq() > 0) input.normalize();
 
-    const boost = kb.isDown("ShiftLeft") || kb.isDown("ShiftRight") ? this.boostFactor : 1;
+    const boost = kb.action("boost") ? this.boostFactor : 1;
     this.desired.copy(input).applyQuaternion(this.camera.quaternion).multiplyScalar(this.baseSpeed * boost);
     const k = 1 - Math.exp(-dt * this.responsiveness);
     this.velocity.lerp(this.desired, k);

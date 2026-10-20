@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { distance, type Fleet, type I18nKey } from "@imperium/shared";
 import { engineRef } from "../engineRef";
 import { connection, useWorld } from "../net/world";
-import { authStore, useAuth } from "../state/auth";
+import { useAuth } from "../state/auth";
+import { useKeyLabels } from "./keys";
 import { gameStore, useGame, useT } from "../state/store";
 import { DepositChips, Meter, RESOURCE_COLORS, starColorCss } from "./common";
 import { formatDuration, useServerNow } from "./useNow";
@@ -14,6 +15,7 @@ export function SystemPanel() {
   const focus = useGame((s) => s.focusWorld);
   const hovered = useGame((s) => s.hovered);
   const emperor = useAuth((s) => s.emperor);
+  const keys = useKeyLabels();
   const world = useWorld((s) => s.emperors);
   const fleets = useWorld((s) => s.fleets);
   const myId = useWorld((s) => s.myEmperorId);
@@ -24,9 +26,10 @@ export function SystemPanel() {
   // El error de un traslado solo tiene sentido para el sistema en que se intentó.
   useEffect(() => setMoveError(null), [selected?.id]);
 
-  const moveHere = async (systemId: string) => {
+  // El salto lo da el motor: así la cámara sigue a la nave y, al llegar, se entra pilotando.
+  const jumpHere = async () => {
     setMoving(true);
-    setMoveError(await authStore.getState().moveEmperor(systemId));
+    await engineRef.current?.jumpToSelected();
     setMoving(false);
   };
 
@@ -168,8 +171,8 @@ export function SystemPanel() {
           {t("system.enter")} <kbd>↵</kbd>
         </button>
         {emperor && !emperorHere && (
-          <button className="btn" onClick={() => void moveHere(selected.id)} disabled={moving || travelling !== null}>
-            {t(moving ? "emperor.moving" : "emperor.move")}
+          <button className="btn" onClick={() => void jumpHere()} disabled={moving || travelling !== null}>
+            {t(moving ? "emperor.moving" : "pilot.jump")} <kbd>{keys.jump}</kbd>
           </button>
         )}
       </div>
