@@ -11,6 +11,7 @@ import { FlightHud } from "./FlightHud";
 import { CombatHud } from "./CombatHud";
 import { ColoniesPanel } from "./ColoniesPanel";
 import { FleetsPanel } from "./FleetsPanel";
+import { WarPanel } from "./WarPanel";
 import { Notice } from "./Notice";
 import { SettingsPanel } from "./SettingsPanel";
 import { Legend } from "./Legend";
@@ -77,6 +78,7 @@ export function App() {
             <FlightHud />
             <div className="left-col">
               <FleetsPanel />
+              <WarPanel />
               <ColoniesPanel />
             </div>
             <SystemPanel />

@@ -97,6 +97,7 @@ export function validateContent(
       ["crystal", sh.cost.crystal],
       ["hull", sh.hull],
       ["attack", sh.attack],
+      ["battleShield", sh.battleShield],
       ["cargo", sh.cargo],
       ["upkeepVolatilesPerHour", sh.upkeepVolatilesPerHour],
     ];

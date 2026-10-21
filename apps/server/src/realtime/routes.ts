@@ -19,6 +19,7 @@ import type { Database } from "../db/client";
 import type { EmperorService } from "../emperor/service";
 import type { FleetService } from "../fleet/service";
 import type { SpaceService } from "../space/service";
+import type { WarService } from "../war/service";
 import type { Client, Hub } from "./hub";
 import { TicketStore } from "./tickets";
 
@@ -29,6 +30,7 @@ export interface RealtimeDeps {
   fleets: FleetService;
   colonies: ColonyService;
   logistics: LogisticsService;
+  wars: WarService;
   space: SpaceService;
   hub: Hub;
 }
@@ -39,7 +41,7 @@ const HEARTBEAT_MS = 30_000;
 const MAX_CONNECTIONS_PER_ACCOUNT = 5;
 const MAX_CONNECTIONS = 1_000;
 
-export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, colonies, logistics, space, hub }: RealtimeDeps) {
+export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, colonies, logistics, wars, space, hub }: RealtimeDeps) {
   const cookieName = sessionCookieName(config);
   const tickets = new TicketStore();
   const ticketsPerAccount = new RateLimiter(30, MINUTE);
@@ -157,9 +159,20 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                   case "fleet.move": {
                     const res = await fleets.move(owner.emperorId, msg.args.fleetId, msg.args.systemId);
                     if (res.ok) {
-                      // Una orden de viaje a mano saca a la flota de su ruta automática.
+                      // Una orden de viaje a mano saca a la flota de su ruta automática (y de su batalla: huye).
                       await logistics.clearRoute(owner.emperorId, res.fleet.id);
                       await hub.publishFleet(res.emperorId, res.fleet.id);
+                      if (res.fledBattleId) await hub.publishBattle(res.fledBattleId);
+                    }
+                    return res;
+                  }
+                  // Fase 9a: interceptar una flota enemiga en tránsito (ver war/service.ts).
+                  case "fleet.intercept": {
+                    const res = await wars.intercept(owner.emperorId, msg.args.fleetId, msg.args.targetFleetId);
+                    if (res.ok) {
+                      await logistics.clearRoute(owner.emperorId, res.fleet.id);
+                      await hub.publishFleet(res.emperorId, res.fleet.id);
+                      if (res.fledBattleId) await hub.publishBattle(res.fledBattleId);
                     }
                     return res;
                   }

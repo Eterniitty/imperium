@@ -5,6 +5,7 @@ import type { DiscoveryService } from "../discovery/service";
 import type { EmperorService } from "../emperor/service";
 import type { FleetService } from "../fleet/service";
 import { canSee, type SocialService } from "../social/service";
+import type { WarEffects, WarService } from "../war/service";
 
 /** Un jugador conectado por WebSocket. */
 export interface Client {
@@ -28,8 +29,8 @@ const PROCESSED_PER_ACCOUNT = 100;
  * Centro de difusión. Temas:
  * - "emperors": los Emperadores que cada jugador puede ver (según su
  *   visibilidad y sus compañeros); a cada cliente le llega solo lo suyo.
- * - "me": privado de cada Emperador (sus flotas, descubrimientos, colonias y
- *   humanos); su `seq` es propio de cada uno.
+ * - "me": privado de cada Emperador (sus flotas, descubrimientos, colonias,
+ *   humanos y batallas); su `seq` es propio de cada uno.
  *
  * Todo lo que lee la base de datos y envía pasa por una cola, en orden: así
  * ninguna instantánea se cruza con un cambio y `seq` no tiene huecos.
@@ -50,6 +51,7 @@ export class Hub {
     private readonly social: SocialService,
     private readonly discoveries: DiscoveryService,
     private readonly colonies: ColonyService,
+    private readonly wars: WarService,
     private readonly log: FastifyBaseLogger,
     private readonly timeScale: number,
     private readonly now: () => number = Date.now,
@@ -115,14 +117,21 @@ export class Hub {
         client.known = new Set(visible.map((e) => e.id));
         client.send({ t: "snap", topic, seq: this.emperorsSeq, serverTime: this.now(), data: { emperors: visible.map((e) => this.view(e)) } });
       } else {
-        const [fleets, discovered, colonies, humans] = await Promise.all([
+        const [fleets, discovered, colonies, humans, battles] = await Promise.all([
           this.fleets.byEmperor(client.emperorId),
           this.discoveries.list(client.emperorId),
           this.colonies.list(client.emperorId),
           this.colonies.humans(client.emperorId),
+          this.wars.list(client.emperorId),
         ]);
         if (!this.clients.has(client) || !humans) return;
-        client.send({ t: "snap", topic, seq: this.meSeq.get(client.emperorId) ?? 0, serverTime: this.now(), data: { fleets, discovered, colonies, humans } });
+        client.send({
+          t: "snap",
+          topic,
+          seq: this.meSeq.get(client.emperorId) ?? 0,
+          serverTime: this.now(),
+          data: { fleets, discovered, colonies, humans, battles },
+        });
       }
       client.subscribed.add(topic);
     });
@@ -203,6 +212,23 @@ export class Hub {
     const seq = (this.meSeq.get(emperorId) ?? 0) + 1;
     this.meSeq.set(emperorId, seq);
     return seq;
+  }
+
+  /** Envía a cada bando el estado de una batalla (rondas, pérdidas, resultado), visto desde su lado. */
+  publishBattle(battleId: string): Promise<void> {
+    return this.enqueue(async () => {
+      for (const emperorId of await this.wars.participants(battleId)) {
+        const battle = await this.wars.view(emperorId, battleId);
+        this.send("me", this.nextMeSeq(emperorId), [{ path: `battles.${battleId}`, v: battle }], (c) => c.emperorId === emperorId);
+      }
+    });
+  }
+
+  /** Difunde lo que ha cambiado por una batalla: flotas (también las destruidas), colonias y la propia batalla. */
+  publishWar(fx: WarEffects): void {
+    for (const [fleetId, emperorId] of fx.fleets) void this.publishFleet(emperorId, fleetId);
+    for (const [colonyId, emperorId] of fx.colonies) void this.publishColony(emperorId, colonyId);
+    for (const battleId of fx.battles) void this.publishBattle(battleId);
   }
 
   /** Avisa a su dueño de los sistemas que acaba de descubrir (niebla de guerra). */

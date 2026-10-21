@@ -6,6 +6,7 @@ import {
   type ClientMessage,
   type CommandArgs,
   type CommandOp,
+  type Battle,
   type Colony,
   type EmperorHumans,
   type EmperorView,
@@ -37,6 +38,8 @@ export interface WorldState {
   colonies: Record<string, Colony>;
   /** Humanos de la nave del Emperador propio. */
   humans: EmperorHumans | null;
+  /** Batallas propias (en curso y acabadas hace poco), por id (Fase 9a). */
+  battles: Record<string, Battle>;
   /** Escala del tiempo de juego del servidor (para estimar duraciones de viaje). */
   timeScale: number;
   myEmperorId: string | null;
@@ -51,6 +54,7 @@ export const worldStore = createStore<WorldState>()(() => ({
   discovered: {},
   colonies: {},
   humans: null,
+  battles: {},
   timeScale: 1,
   myEmperorId: null,
   clockOffset: 0,
@@ -96,7 +100,7 @@ class Connection {
     this.ws?.close(1000, "bye");
     this.ws = null;
     this.failPending();
-    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, myEmperorId: null });
+    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, battles: {}, myEmperorId: null });
     resetSpace();
   }
 
@@ -190,7 +194,9 @@ class Connection {
           for (const id of msg.data.discovered) discovered[id] = true;
           const colonies: Record<string, Colony> = {};
           for (const c of msg.data.colonies) colonies[c.id] = c;
-          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans });
+          const battles: Record<string, Battle> = {};
+          for (const b of msg.data.battles) battles[b.id] = b;
+          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans, battles });
         }
         return;
       }
@@ -207,14 +213,19 @@ class Connection {
         let discovered = state.discovered;
         let colonies = state.colonies;
         let humans = state.humans;
+        let battles = state.battles;
         for (const op of msg.ops) {
           const dot = op.path.indexOf(".");
-          const kind = op.path.slice(0, dot) as "emperors" | "fleets" | "discovered" | "colonies" | "humans";
+          const kind = op.path.slice(0, dot) as "emperors" | "fleets" | "discovered" | "colonies" | "humans" | "battles";
           const id = op.path.slice(dot + 1);
           if (kind === "colonies") {
             colonies = { ...colonies };
             if (op.v) colonies[id] = op.v as Colony;
             else delete colonies[id];
+          } else if (kind === "battles") {
+            battles = { ...battles };
+            if (op.v) battles[id] = op.v as Battle;
+            else delete battles[id];
           } else if (kind === "humans") {
             humans = op.v as EmperorHumans;
           } else if (kind === "discovered") {
@@ -227,7 +238,7 @@ class Connection {
             else delete fleets[id];
           }
         }
-        worldStore.setState({ emperors, fleets, discovered, colonies, humans });
+        worldStore.setState({ emperors, fleets, discovered, colonies, humans, battles });
         this.syncOwn();
         return;
       }

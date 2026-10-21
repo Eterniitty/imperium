@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { bigserial, boolean, check, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { bigserial, boolean, check, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 /**
  * Esquema de la base de datos. Tras cambiarlo: `pnpm --filter @imperium/server db:generate`
@@ -114,10 +114,14 @@ export const fleets = pgTable(
     destSystemId: text("dest_system_id"),
     departAt: timestamp("depart_at", { withTimezone: true }),
     arriveAt: timestamp("arrive_at", { withTimezone: true }),
+    /** Batalla en la que combate (Fase 9a); null si no está en ninguna. */
+    battleId: uuid("battle_id").references((): AnyPgColumn => battles.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     unique("fleets_emperor_number_unique").on(t.emperorId, t.number),
+    index("fleets_battle_id_idx").on(t.battleId),
+    index("fleets_system_id_idx").on(t.systemId),
     check("fleets_travel_complete", sql`(${t.destSystemId} IS NULL) = (${t.departAt} IS NULL) AND (${t.departAt} IS NULL) = (${t.arriveAt} IS NULL)`),
   ],
 );
@@ -334,3 +338,66 @@ export const fleetRoutes = pgTable("fleet_routes", {
   humans: boolean("humans").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// --- Fase 9a: combate de flotas ---
+
+/**
+ * Batallas de flotas en un sistema, resueltas por rondas (evento
+ * `battle.round`). Las flotas que combaten llevan `fleets.battle_id`; una
+ * orden de viaje la saca (huye). Se conservan al terminar, como historial.
+ */
+export const battles = pgTable(
+  "battles",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    systemId: text("system_id").notNull(),
+    /** Semilla de las rondas (cada una deriva la suya con `battleRoundSeed`). */
+    seed: integer("seed").notNull(),
+    /** Rondas resueltas. */
+    round: integer("round").notNull().default(0),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Hora de la siguiente ronda (null al terminar). */
+    nextRoundAt: timestamp("next_round_at", { withTimezone: true }),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+  },
+  (t) => [index("battles_system_id_idx").on(t.systemId)],
+);
+
+/** Bandos de una batalla: un Emperador por bando (0 o 1) y su resultado al terminar. */
+export const battleSides = pgTable(
+  "battle_sides",
+  {
+    battleId: uuid("battle_id")
+      .notNull()
+      .references(() => battles.id, { onDelete: "cascade" }),
+    side: integer("side").notNull(),
+    emperorId: uuid("emperor_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    /** won | lost | fled | draw; null mientras dura. */
+    outcome: text("outcome"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.battleId, t.side] }),
+    index("battle_sides_emperor_id_idx").on(t.emperorId),
+    check("battle_sides_side", sql`${t.side} IN (0, 1)`),
+    check("battle_sides_outcome", sql`${t.outcome} IS NULL OR ${t.outcome} IN ('won', 'lost', 'fled', 'draw')`),
+  ],
+);
+
+/**
+ * Informe de cada ronda: daño y pérdidas por bando (`{ dealt, absorbed, lost }`,
+ * índices 0 y 1). Solo cifras y clases de nave, sin datos de los jugadores.
+ */
+export const battleRounds = pgTable(
+  "battle_rounds",
+  {
+    battleId: uuid("battle_id")
+      .notNull()
+      .references(() => battles.id, { onDelete: "cascade" }),
+    round: integer("round").notNull(),
+    report: jsonb("report").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.battleId, t.round] })],
+);

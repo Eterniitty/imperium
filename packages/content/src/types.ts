@@ -210,8 +210,13 @@ export interface ShipClassDefinition {
   buildTimeHours: number;
   /** Puntos de casco. */
   hull: number;
-  /** Poder de ataque por ronda de combate. */
+  /** Poder de ataque por ronda de combate de flotas (daño de un disparo, ±20 %). */
   attack: number;
+  /**
+   * Escudo en el combate de flotas por rondas: absorbe hasta este daño en cada
+   * ronda y se recarga entero al empezar la siguiente.
+   */
+  battleShield: number;
   /** Velocidad de crucero en años luz por hora. */
   speedLyPerHour: number;
   /** Capacidad de carga en unidades de recurso. */

@@ -189,7 +189,7 @@ export class ColonyService {
    * la capital se resuelve hasta `at` con el mantenimiento de antes. Devuelve
    * su id si la resolvió (para avisar a su dueño), o null.
    */
-  private async settleCapital(tx: Tx, emperorId: string, at: number, skipColonyId?: string): Promise<string | null> {
+  async settleCapital(tx: Tx, emperorId: string, at: number, skipColonyId?: string): Promise<string | null> {
     const id = await this.capitalId(tx, emperorId);
     if (!id || id === skipColonyId) return null;
     const [row] = await tx.select().from(colonies).where(eq(colonies.id, id)).for("update").limit(1);
@@ -340,7 +340,7 @@ export class ColonyService {
 
       if (args.fleetId) {
         const [fleet] = await tx
-          .select({ id: fleets.id, systemId: fleets.systemId, destSystemId: fleets.destSystemId, departAt: fleets.departAt, arriveAt: fleets.arriveAt })
+          .select({ id: fleets.id, systemId: fleets.systemId, destSystemId: fleets.destSystemId, departAt: fleets.departAt, arriveAt: fleets.arriveAt, battleId: fleets.battleId })
           .from(fleets)
           .where(and(eq(fleets.id, args.fleetId), eq(fleets.emperorId, emperorId)))
           .for("update")
@@ -349,6 +349,7 @@ export class ColonyService {
         const place = placeFromRow(this.seed, fleet, now);
         if (isTravelling(place, now)) return { ok: false, error: "in_transit" };
         if (place.location.systemId !== system.id) return { ok: false, error: "not_present" };
+        if (fleet.battleId) return { ok: false, error: "in_battle" };
         // El colonizador con más colonos.
         const [ship] = await tx
           .select({ id: ships.id, humans: ships.humans })

@@ -83,6 +83,8 @@ export class LogisticsService {
     if (!colony) return { ok: false, error: "no_colony" };
     if (fleet.at === null) return { ok: false, error: "in_transit" };
     if (fleet.at !== colony.row.systemId) return { ok: false, error: "not_present" };
+    // En plena batalla no se carga ni se descarga.
+    if (fleet.row.battleId) return { ok: false, error: "in_battle" };
 
     const cargo = { ...fleet.cargo };
     const stock = { ...colony.state.stock };
@@ -149,7 +151,8 @@ export class LogisticsService {
   private async routeStep(tx: Tx, emperorId: string, fleetId: string, route: FleetRoute): Promise<string[] | null> {
     const now = this.now();
     const fleet = await this.lockFleet(tx, emperorId, fleetId, now);
-    if (!fleet || fleet.at === null) return null;
+    // En batalla, la ruta espera a que termine (la reanuda el combate al acabar).
+    if (!fleet || fleet.at === null || fleet.row.battleId) return null;
     const from = await this.colonies.lockResolved(tx, emperorId, route.fromColonyId, now);
     const to = await this.colonies.lockResolved(tx, emperorId, route.toColonyId, now);
     if (!from || !to) {
@@ -185,6 +188,7 @@ export class LogisticsService {
       const fleet = await this.lockFleet(tx, emperorId, fleetId, now);
       if (!fleet) return { ok: false, error: "no_fleet" };
       if (fleet.at === null) return { ok: false, error: "in_transit" };
+      if (fleet.row.battleId) return { ok: false, error: "in_battle" };
       if (fleet.capacity.resources <= 0 && fleet.capacity.humans <= 0) return { ok: false, error: "cargo_full" };
       const from = await this.colonies.lockResolved(tx, emperorId, route.fromColonyId, now);
       const to = await this.colonies.lockResolved(tx, emperorId, route.toColonyId, now);

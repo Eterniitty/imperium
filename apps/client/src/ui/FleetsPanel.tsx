@@ -47,6 +47,7 @@ export function FleetsPanel() {
                     </span>
                   )}
                   {f.route && <span className="small route-tag">{t("logistics.onRoute")}</span>}
+                  {f.battleId && <span className="small battle-tag">{t("fleet.inBattle")}</span>}
                 </button>
               </li>
             );

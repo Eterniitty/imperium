@@ -22,6 +22,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = [
     buildTimeHours: 2,
     hull: 60,
     attack: 2,
+    battleShield: 0,
     speedLyPerHour: 240,
     cargo: 20,
     scannerRangeLy: 25,
@@ -38,6 +39,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = [
     buildTimeHours: 3,
     hull: 50,
     attack: 0,
+    battleShield: 5,
     speedLyPerHour: 90,
     cargo: 1000,
     scannerRangeLy: 5,
@@ -54,6 +56,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = [
     buildTimeHours: 12,
     hull: 120,
     attack: 0,
+    battleShield: 10,
     speedLyPerHour: 60,
     cargo: 300,
     scannerRangeLy: 8,
@@ -70,6 +73,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = [
     buildTimeHours: 6,
     hull: 300,
     attack: 40,
+    battleShield: 15,
     speedLyPerHour: 150,
     cargo: 40,
     scannerRangeLy: 12,
@@ -99,6 +103,28 @@ export const EMPEROR_FLAGSHIP: {
   hull: 400,
   combat: { shield: 200, shieldRegenPerSec: 20, shieldDelaySec: 4, weapons: [CANNON, MISSILE] },
 };
+
+/**
+ * Combate de flotas por rondas (Fase 9a), resuelto en el servidor. Cada ronda
+ * dura `roundGameSeconds` segundos de juego (en tiempo real, dividido por la
+ * escala de tiempo). Pasadas `maxRounds` rondas sin vencedor, la batalla acaba
+ * en tablas.
+ */
+export const FLEET_BATTLE = {
+  roundGameSeconds: 30,
+  maxRounds: 40,
+  /** Variación del daño de cada disparo, en tanto por ciento (±). */
+  damageSpreadPct: 20,
+} as const;
+
+/**
+ * Sensores para detectar flotas en tránsito (contactos que se pueden
+ * interceptar): las flotas paradas usan el escáner de su mejor nave, la nave
+ * del Emperador el suyo y cada colonia este alcance.
+ */
+export const CONTACT_SENSORS = {
+  colonyRangeLy: 10,
+} as const;
 
 /** Naves con las que empieza cada Emperador nuevo, como su primera flota. */
 export const STARTING_FLEET: readonly ShipClassId[] = ["explorer"];

@@ -8,6 +8,8 @@ import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
 import {
   accounts,
+  battles,
+  battleSides,
   colonies,
   colonyBuilds,
   discoveries,
@@ -84,6 +86,12 @@ export async function accountRoutes(app: FastifyInstance, { config, db, hub, spa
         colonyBuilds: byColony ? await db.select().from(colonyBuilds).where(inArray(colonyBuilds.colonyId, colonyIds)) : [],
         discoveries: await db.select().from(discoveries).where(eq(discoveries.emperorId, emperor.id)),
         resourceLedger: await db.select().from(resourceLedger).where(eq(resourceLedger.emperorId, emperor.id)),
+        // Batallas en las que ha combatido (bando, resultado y la batalla).
+        battles: await db
+          .select({ side: battleSides.side, outcome: battleSides.outcome, battle: battles })
+          .from(battleSides)
+          .innerJoin(battles, eq(battles.id, battleSides.battleId))
+          .where(eq(battleSides.emperorId, emperor.id)),
       };
     }
     const data = { exportedAt: new Date().toISOString(), account: acc, sessions: sessionRows, game };

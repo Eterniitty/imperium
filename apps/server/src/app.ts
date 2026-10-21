@@ -19,6 +19,8 @@ import { socialRoutes } from "./social/routes";
 import { SocialService } from "./social/service";
 import { LogisticsService } from "./logistics/service";
 import { SpaceService } from "./space/service";
+import { warRoutes } from "./war/routes";
+import { WarService } from "./war/service";
 import { createMailer, type Mailer } from "./mail";
 import { ipRateKey, RateLimiter } from "./auth/rateLimit";
 
@@ -91,7 +93,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   const discoveries = new DiscoveryService(deps.db, config);
   const colonies = new ColonyService(deps.db, config, (summary) => discoveries.detail(summary));
   const logistics = new LogisticsService(deps.db, config, colonies, fleets);
-  const hub = new Hub(emperors, fleets, social, discoveries, colonies, app.log, config.TIME_SCALE);
+  const wars = new WarService(deps.db, config, fleets, colonies, logistics);
+  const hub = new Hub(emperors, fleets, social, discoveries, colonies, wars, app.log, config.TIME_SCALE);
   const space = new SpaceService(
     config,
     emperors,
@@ -110,7 +113,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   });
   app.decorate("space", space);
   await app.register(emperorRoutes, { config, db: deps.db, emperors, hub });
-  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, colonies, logistics, space, hub });
+  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, colonies, logistics, wars, space, hub });
+  await app.register(warRoutes, { config, db: deps.db, emperors, wars });
   await app.register(socialRoutes, { config, db: deps.db, emperors, social, hub });
   await app.register(discoveryRoutes, { config, db: deps.db, emperors, discoveries });
   await app.register(accountRoutes, { config, db: deps.db, hub, space });
@@ -122,13 +126,21 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   worker.on("fleet.arrive", async (tx, { fleetId }) => {
     const owner = await fleets.arrive(tx, fleetId);
     const found = await discoveries.fleetArrived(tx, fleetId);
+    // Fase 9a: si coincide con flotas hostiles, combate (y la ruta espera a que acabe).
+    const war = owner ? await wars.onArrive(tx, fleetId) : null;
     // Ruta automática: descarga, carga y sale hacia la otra colonia.
-    const step = owner ? await logistics.onArrive(tx, fleetId) : null;
+    const step = owner && !war?.inBattle ? await logistics.onArrive(tx, fleetId) : null;
     return () => {
       if (owner) void hub.publishFleet(owner, fleetId);
       if (found) void hub.publishDiscovered(found.emperorId, found.systemIds);
       if (step) for (const id of step.colonyIds) void hub.publishColony(step.emperorId, id);
+      if (war) hub.publishWar(war.fx);
     };
+  });
+  // Una ronda de una batalla de flotas: daños, naves destruidas y, quizá, el final.
+  worker.on("battle.round", async (tx, { battleId }) => {
+    const fx = await wars.round(tx, battleId);
+    if (fx) return () => hub.publishWar(fx);
   });
   worker.on("emperor.arrive", async (tx, { emperorId, systemId }) => {
     const found = await discoveries.emperorArrived(tx, emperorId, systemId);

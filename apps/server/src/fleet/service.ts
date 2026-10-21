@@ -17,10 +17,21 @@ const columns = {
   destSystemId: fleets.destSystemId,
   departAt: fleets.departAt,
   arriveAt: fleets.arriveAt,
+  battleId: fleets.battleId,
 };
-type Row = { id: string; emperorId: string; number: number; systemId: string; destSystemId: string | null; departAt: Date | null; arriveAt: Date | null };
+type Row = {
+  id: string;
+  emperorId: string;
+  number: number;
+  systemId: string;
+  destSystemId: string | null;
+  departAt: Date | null;
+  arriveAt: Date | null;
+  battleId: string | null;
+};
 
-export type FleetMoveResult = { ok: true; fleet: Fleet; emperorId: string } | { ok: false; error: CommandError };
+/** Resultado de una orden de viaje. `fledBattleId`: la batalla de la que huye la flota al salir, si estaba en una. */
+export type FleetMoveResult = { ok: true; fleet: Fleet; emperorId: string; fledBattleId: string | null } | { ok: false; error: CommandError };
 
 export const EMPTY_CARGO: Cargo = { metal: 0, volatiles: 0, crystal: 0, alloys: 0, humans: 0 };
 
@@ -78,6 +89,7 @@ export class FleetService {
         route: route
           ? { fromColonyId: route.fromColonyId, toColonyId: route.toColonyId, carry: route.carry as FleetRoute["carry"], humans: route.humans }
           : null,
+        battleId: r.battleId,
       };
     });
   }
@@ -120,14 +132,15 @@ export class FleetService {
 
       const speed = fleetSpeedLyPerHour(current.ships.map((s) => s.classId)) * this.config.TIME_SCALE;
       const arriveAt = now + travelDurationMs(current.location.position, dest.position, speed);
+      // Salir de un sistema donde combate es huir: deja la batalla.
       const updated = await tx
         .update(fleets)
-        .set({ systemId: current.location.systemId, destSystemId: dest.id, departAt: new Date(now), arriveAt: new Date(arriveAt) })
+        .set({ systemId: current.location.systemId, destSystemId: dest.id, departAt: new Date(now), arriveAt: new Date(arriveAt), battleId: null })
         .where(eq(fleets.id, fleetId))
         .returning(columns);
       await schedule(tx, "fleet.arrive", new Date(arriveAt), { fleetId });
       const [fleet] = await this.toFleets(tx, updated);
-      return { ok: true, fleet: fleet!, emperorId };
+      return { ok: true, fleet: fleet!, emperorId, fledBattleId: current.battleId };
     }
   }
 

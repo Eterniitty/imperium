@@ -45,11 +45,11 @@ Orden de construcción de lo que pide [diseno.md](diseno.md). Cada fase se divid
 
 - ✔ **Transporte**: cada flota tiene bodega (suma de la carga de sus naves; todos los recursos juntos) y plazas de pasajeros (carguero: 200). Orden `fleet.transfer` para cargar y descargar a mano en una colonia propia del sistema; la colonia conserva siempre sus colonos mínimos. Todo pasa por el libro de recursos.
 - ✔ **Rutas automáticas** (`fleet.route` / `fleet.routeStop`): en el origen carga lo indicado hasta llenar, en el destino lo descarga todo y vuelve, sola, en cada llegada (evento `fleet.arrive`). Se acaba si una colonia deja de ser tuya.
-- Pendiente: interceptar convoyes en ruta (con el combate de flotas, Fase 9) y red de suministro (instalaciones aisladas que se debilitan).
+- ✔ Interceptar convoyes en ruta (Fase 9a). Pendiente: red de suministro (instalaciones aisladas que se debilitan).
 
 ## Fase 9 — Guerra
 
-- **9a. Combate de flotas** resuelto en el servidor por rondas y mostrado en 3D; interceptar flotas en tránsito.
+- **9a. Combate de flotas** ✔ resuelto en el servidor por rondas (evento `battle.round`, reglas en `packages/sim/src/battle.ts`); huir con una orden de viaje; los convoyes esperan al combate; contactos (`GET /api/contacts`) e interceptar flotas en tránsito (`fleet.intercept`). Panel «Batallas» en el cliente. Pendiente: mostrar la batalla en 3D.
 - **9b. Conquista de planetas ajenos.** Asedio con progreso y presencia sostenida; desembarco de tropas (humanos) para tomar el planeta o la instalación; captura en vez de destrucción.
 - **9c. Combate a gran escala**: por encima de ~5 naves por bando, el combate en tiempo real (6c) pasa a rondas.
 

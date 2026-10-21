@@ -116,6 +116,8 @@ export interface Fleet {
   capacity: { resources: number; humans: number };
   /** Ruta de transporte automática, si la tiene. */
   route: FleetRoute | null;
+  /** Batalla en la que combate (Fase 9a), o null. No puede cargar ni descargar mientras tanto. */
+  battleId: string | null;
 }
 
 /** Contenido de una bodega. */
@@ -267,6 +269,70 @@ export interface PlanetClaim {
 /** Respuesta de `GET /api/systems/:systemId/claims`: planetas con dueño de un sistema descubierto. */
 export interface SystemClaimsResponse {
   claims: PlanetClaim[];
+}
+
+// --- Fase 9a: combate de flotas ---
+
+/** Resultado de una batalla para un bando: en curso, ganada, perdida, huida o en tablas. */
+export type BattleOutcome = "ongoing" | "won" | "lost" | "fled" | "draw";
+
+/** Naves por clase: { frigate: 2, explorer: 1 }. */
+export type ShipCounts = Record<string, number>;
+
+/** Informe de una ronda, visto por uno de los bandos. */
+export interface BattleRoundReport {
+  round: number;
+  /** Hora del servidor en que se resolvió. */
+  at: number;
+  /** Daño al casco hecho y recibido. */
+  dealt: number;
+  taken: number;
+  /** Naves propias perdidas y enemigas destruidas, por clase. */
+  lost: ShipCounts;
+  killed: ShipCounts;
+}
+
+/**
+ * Batalla de flotas (privada: la recibe cada bando, desde su punto de vista).
+ * Se resuelve en el servidor por rondas; huye quien da una orden de viaje.
+ */
+export interface Battle {
+  id: string;
+  systemId: string;
+  systemName: string;
+  startedAt: number;
+  endedAt: number | null;
+  /** Rondas resueltas. */
+  round: number;
+  /** Hora del servidor de la siguiente ronda (null si ha terminado). */
+  nextRoundAt: number | null;
+  outcome: BattleOutcome;
+  /** Nombre del Emperador enemigo. */
+  enemyName: string;
+  /** Naves de cada bando que siguen en la batalla. */
+  own: ShipCounts;
+  foe: ShipCounts;
+  /** Últimas rondas, de la más antigua a la más reciente. */
+  rounds: BattleRoundReport[];
+}
+
+/**
+ * Flota enemiga en tránsito detectada por tus sensores (flotas paradas y
+ * colonias): se puede interceptar en su destino.
+ */
+export interface FleetContact {
+  fleetId: string;
+  emperorName: string;
+  ships: number;
+  from: SystemLocation;
+  to: SystemLocation;
+  departAt: number;
+  arriveAt: number;
+}
+
+/** Respuesta de `GET /api/contacts`. */
+export interface ContactsResponse {
+  contacts: FleetContact[];
 }
 
 /** Respuesta de `POST /api/ws/ticket`: ticket de un solo uso para abrir el WebSocket. */

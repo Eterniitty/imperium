@@ -1,0 +1,141 @@
+import { useCallback, useEffect, useState } from "react";
+import type { Battle, ContactsResponse, Fleet, FleetContact, I18nKey, ShipCounts } from "@imperium/shared";
+import { connection, useWorld } from "../net/world";
+import { api } from "../state/auth";
+import { useGame, useT } from "../state/store";
+import { contentText } from "./fleets";
+import { formatDuration, useServerNow } from "./useNow";
+
+/** Cada cuánto se piden los contactos mientras el panel está abierto. */
+const CONTACTS_REFRESH_MS = 30_000;
+
+/**
+ * Guerra (Fase 9a): batallas de flotas propias (en curso y recientes, por
+ * rondas en el servidor) y contactos (flotas enemigas en tránsito que detectan
+ * tus sensores) con la orden de interceptarlas.
+ */
+export function WarPanel() {
+  const t = useT();
+  const locale = useGame((s) => s.locale);
+  const battles = useWorld((s) => s.battles);
+  const fleets = useWorld((s) => s.fleets);
+  const now = useServerNow();
+  const [open, setOpen] = useState(true);
+  const [contacts, setContacts] = useState<FleetContact[]>([]);
+  const [error, setError] = useState<I18nKey | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [chosen, setChosen] = useState<Record<string, string>>({});
+
+  const refresh = useCallback(async () => {
+    const res = await api<ContactsResponse>("GET", "/api/contacts");
+    if (res.ok) setContacts(res.data.contacts);
+  }, []);
+  useEffect(() => {
+    if (!open) return;
+    void refresh();
+    const id = setInterval(() => void refresh(), CONTACTS_REFRESH_MS);
+    return () => clearInterval(id);
+  }, [open, refresh]);
+
+  const list = (Object.values(battles) as Battle[]).sort((a, b) => b.startedAt - a.startedAt);
+  const visible = contacts.filter((c) => c.arriveAt > now);
+  // Flotas que pueden salir a interceptar: paradas (también las que combaten: huirían).
+  const idle = (Object.values(fleets) as Fleet[])
+    .filter((f) => !(f.travel && f.travel.arriveAt > now))
+    .sort((a, b) => a.number - b.number);
+  if (list.length === 0 && visible.length === 0) return null;
+
+  const counts = (c: ShipCounts) =>
+    Object.entries(c)
+      .map(([id, n]) => t("ship.count", { count: n, name: contentText(locale, `ship.${id}.name`) }))
+      .join(" · ") || t("war.noShips");
+
+  const intercept = async (contact: FleetContact) => {
+    const fleetId = chosen[contact.fleetId] ?? idle[0]?.id;
+    if (!fleetId) return;
+    setBusy(true);
+    setError(await connection.command("fleet.intercept", { fleetId, targetFleetId: contact.fleetId }));
+    setBusy(false);
+  };
+
+  return (
+    <div className="fleets war panel hide-sm">
+      <button className="help-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
+        {t("war.title")} {open ? "▾" : "▸"}
+      </button>
+      {open && (
+        <>
+          {list.length > 0 && (
+            <ul className="fleet-list">
+              {list.map((b) => {
+                const last = b.rounds.at(-1);
+                return (
+                  <li key={b.id} className={`battle battle-${b.outcome}`}>
+                    <strong>{t("war.vs", { enemy: b.enemyName, system: b.systemName })}</strong>
+                    <span className="small">
+                      {b.outcome === "ongoing" ? t("war.outcome.ongoing", { n: b.round }) : t(`war.outcome.${b.outcome}`)}
+                      {b.nextRoundAt !== null && <> · {t("war.nextRound", { time: formatDuration(b.nextRoundAt - now) })}</>}
+                    </span>
+                    {b.outcome === "ongoing" && (
+                      <>
+                        <span className="small">{t("war.own", { ships: counts(b.own) })}</span>
+                        <span className="small">{t("war.foe", { ships: counts(b.foe) })}</span>
+                      </>
+                    )}
+                    {last && <span className="muted small">{t("war.lastRound", { dealt: last.dealt, taken: last.taken })}</span>}
+                    {b.outcome === "ongoing" && <span className="muted small">{t("war.fleeHint")}</span>}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <div className="war-contacts">
+            <span className="small">
+              {t("war.contacts")}{" "}
+              <button className="link-btn" onClick={() => void refresh()}>
+                {t("war.refresh")}
+              </button>
+            </span>
+            {visible.length === 0 ? (
+              <span className="muted small">{t("war.noContacts")}</span>
+            ) : (
+              <ul className="fleet-list">
+                {visible.map((c) => (
+                  <li key={c.fleetId} className="contact">
+                    <span className="small">
+                      {t("war.contact", { emperor: c.emperorName, n: c.ships, from: c.from.systemName, to: c.to.systemName })}
+                    </span>
+                    <span className="muted small">{t("war.contactEta", { time: formatDuration(c.arriveAt - now) })}</span>
+                    {idle.length > 0 && (
+                      <span className="small">
+                        <select
+                          aria-label={t("war.interceptWith")}
+                          value={chosen[c.fleetId] ?? idle[0]!.id}
+                          onChange={(e) => setChosen({ ...chosen, [c.fleetId]: e.target.value })}
+                        >
+                          {idle.map((f) => (
+                            <option key={f.id} value={f.id}>
+                              {t("fleet.name", { n: f.number })}
+                            </option>
+                          ))}
+                        </select>{" "}
+                        <button className="link-btn" disabled={busy} onClick={() => void intercept(c)}>
+                          {t("war.intercept")}
+                        </button>
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {error && (
+              <p className="auth-error" role="alert">
+                {t(error)}
+              </p>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

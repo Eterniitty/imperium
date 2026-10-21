@@ -146,6 +146,16 @@ Mensajes JSON con campo `t` (tipo). Ejemplos:
 - **Quién ve qué**: el tema privado `me` lleva `colonies` (población, existencias, tasas por hora real, energía, instalaciones y cola) y `humans`; cambios `colonies.<id>` (null si se pierde) y `humans.<emperorId>`. Dueño y nombre de los planetas (territorio) se piden a `GET /api/systems/:id/claims`, solo para sistemas descubiertos. `PROTOCOL_VERSION` = 4.
 - **Evento** `colony.build { buildId }`: resuelve la colonia hasta la hora de fin con lo que tenía, añade la instalación o crea una flota nueva con la nave (el colonizador embarca colonos de la colonia, dejando 50) y pone en marcha la siguiente.
 
+### Implementado (Fase 9a): combate de flotas por rondas e intercepción
+
+- **Datos** en `packages/content/src/ships.ts`: `attack` y `battleShield` por clase de nave, `FLEET_BATTLE` (30 s de juego por ronda, máximo 40 rondas, dispersión del daño ±20 %) y `CONTACT_SENSORS`. **Reglas puras** en `packages/sim/src/battle.ts` (`resolveBattleRound`: fuego simultáneo, objetivo al azar entre los enemigos en pie, el escudo absorbe primero; determinista con la semilla de la ronda, generador entero mulberry32).
+- **Modelo de datos** (migración `0009`): `battles (id, system_id, seed, round, started_at, next_round_at, ended_at)`, `battle_sides (battle_id, side 0|1, emperor_id, outcome won|lost|fled|draw)` y `battle_rounds (battle_id, round, report jsonb)`; `fleets.battle_id` marca las flotas que combaten. Las batallas se conservan como historial.
+- **Comienzo**: al procesar `fleet.arrive` (`WarService.onArrive`), si en el sistema hay flotas paradas de dos Emperadores que no son compañeros mutuos y alguno puede atacar, empieza una batalla con todas sus flotas (como mucho una en curso por sistema; las flotas del mismo Emperador que llegan después se unen a su bando, las de terceros esperan). Cada ronda es un evento `battle.round { battleId }`. Termina cuando un bando se queda sin naves (`lost`/`won`), huye (`fled`), tras 40 rondas o si nadie puede hacer daño (`draw`); al terminar se mira si quedan otros hostiles en el sistema.
+- **Pérdidas**: las naves destruidas se borran; la carga que ya no cabe y los pasajeros sin plaza se pierden y se asientan en `resource_ledger` como `battle_loss`; la capital se resuelve antes (paga menos mantenimiento). Una flota sin naves desaparece.
+- **Huir**: cualquier orden de viaje (`fleet.move`) saca a la flota de la batalla. En combate no se carga, descarga ni coloniza (error `in_battle`); los convoyes en ruta automática esperan y la reanudan si sobreviven.
+- **Interceptar**: `GET /api/contacts` lista las flotas enemigas en tránsito que salen de o van a un sistema al alcance de los sensores del jugador (flotas paradas, su nave, colonias). Orden `fleet.intercept { fleetId, targetFleetId }`: la flota viaja al destino del contacto (error `no_target` si ya no se ve) y combaten allí al coincidir.
+- **Quién ve qué**: el tema `me` lleva `battles` (en curso y acabadas en la última hora, vistas desde el bando del jugador: naves de cada lado, últimas rondas y resultado) y cambios `battles.<id>`. `PROTOCOL_VERSION` = 5. En el cliente, panel «Batallas» (`WarPanel`) con las batallas y los contactos; la representación en 3D de la batalla queda para más adelante.
+
 ## 9. Autenticación por enlace mágico
 
 - El usuario introduce su correo; se genera un **token aleatorio de 32 bytes**.
@@ -167,7 +177,7 @@ Mensajes JSON con campo `t` (tipo). Ejemplos:
 - `resource_ledger`
 - `scheduled_events`
 - `processed_commands`
-- `sieges`, `battles`, `battle_rounds`
+- `battles`, `battle_sides`, `battle_rounds` (hechas en la Fase 9a); `sieges` (9b)
 - `discoveries`, `discovery_shares`
 - `ai_actors` (gobernadores, facciones, Emperadores IA)
 - `translations`, `translation_votes`

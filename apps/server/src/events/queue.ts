@@ -14,6 +14,8 @@ export interface EventPayloads {
   "emperor.arrive": { emperorId: string; systemId: string };
   /** Termina una construcción de una colonia (instalación o nave). */
   "colony.build": { buildId: string };
+  /** Siguiente ronda de una batalla de flotas (Fase 9a). */
+  "battle.round": { battleId: string };
 }
 export type EventKind = keyof EventPayloads;
 

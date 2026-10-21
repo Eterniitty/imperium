@@ -3,10 +3,10 @@
  * docs/arquitectura.md §8. Los esquemas Zod de lo que envía el cliente están en
  * `schemas.ts`.
  */
-import type { Cargo, Colony, Emperor, EmperorHumans, Fleet, FleetRoute } from "./api";
+import type { Battle, Cargo, Colony, Emperor, EmperorHumans, Fleet, FleetRoute } from "./api";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
-export const PROTOCOL_VERSION = 4;
+export const PROTOCOL_VERSION = 5;
 
 /** Tamaño máximo de un mensaje del cliente, en bytes. */
 export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;
@@ -14,7 +14,7 @@ export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;
 /**
  * Temas de suscripción:
  * - emperors: todos los Emperadores (público).
- * - me: lo privado del jugador (sus flotas, los sistemas que ha descubierto, sus colonias y sus humanos).
+ * - me: lo privado del jugador (sus flotas, los sistemas que ha descubierto, sus colonias, sus humanos y sus batallas).
  */
 export type Topic = "emperors" | "me";
 
@@ -22,7 +22,8 @@ export type Topic = "emperors" | "me";
 export interface TopicData {
   emperors: { emperors: EmperorView[] };
   /** `discovered`: ids de los sistemas descubiertos (niebla de guerra); solo de ellos se puede pedir el detalle. */
-  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans };
+  /** `battles`: las batallas en curso y las acabadas hace poco. */
+  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans; battles: Battle[] };
 }
 
 /** Emperador visto por los demás jugadores: añade si está conectado. */
@@ -55,6 +56,11 @@ export interface CommandArgs {
   "fleet.route": FleetRoute & { fleetId: string };
   /** Quita la ruta automática de una flota (se queda donde esté). */
   "fleet.routeStop": { fleetId: string };
+  /**
+   * Intercepta una flota enemiga visible en tránsito: la flota propia viaja al
+   * destino de la otra y combaten allí al coincidir.
+   */
+  "fleet.intercept": { fleetId: string; targetFleetId: string };
 }
 export type CommandOp = keyof CommandArgs;
 
@@ -131,6 +137,8 @@ export type CommandError =
   | "storage_full"
   | "nothing_to_transfer"
   | "invalid_route"
+  | "in_battle"
+  | "no_target"
   | "rate_limited"
   | "internal";
 
@@ -143,7 +151,9 @@ export type DeltaOp =
   /** Colonia propia: nueva, cambiada o perdida (null). */
   | { path: `colonies.${string}`; v: Colony | null }
   /** Humanos de la nave del Emperador (el id es el del Emperador propio). */
-  | { path: `humans.${string}`; v: EmperorHumans };
+  | { path: `humans.${string}`; v: EmperorHumans }
+  /** Batalla propia: empieza, avanza una ronda o termina (null si deja de mostrarse). */
+  | { path: `battles.${string}`; v: Battle | null };
 
 export type ServerMessage =
   /**
