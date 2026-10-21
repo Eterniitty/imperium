@@ -178,6 +178,8 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                       // Al saltar, la nave deja el sistema en el que volaba.
                       space.leave(res.emperor.id, "left");
                       await hub.publish(res.emperor.id);
+                      // Dónde aparecerá al llegar (borde del destino).
+                      await hub.publishFlagship(res.emperor.id);
                     }
                     return res;
                   }

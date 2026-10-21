@@ -44,6 +44,14 @@ export function planetRadiusM(type: PlanetType, radius: number): number {
   return Math.max(1500, base * Math.pow(Math.max(radius, 0.2), 0.8));
 }
 
+/**
+ * Periodo orbital (segundos) a `radius` metros de la estrella: una ley de Kepler
+ * comprimida (T ∝ r^1,5) que comparten planetas y naves aparcadas.
+ */
+export function orbitalPeriodS(radius: number): number {
+  return PERIOD_AT_1000_KM * Math.pow(Math.max(radius, KM) / (1000 * KM), 1.5);
+}
+
 export function systemLayout(detail: StarSystemDetail): SystemLayout {
   const { summary } = detail;
   const info = STAR_CLASSES[summary.starClass];
@@ -67,7 +75,7 @@ export function systemLayout(detail: StarSystemDetail): SystemLayout {
     if (body.kind === "belt") {
       belts.push({ orbitRadius: radius });
     } else {
-      const period = PERIOD_AT_1000_KM * Math.pow(radius / (1000 * KM), 1.5);
+      const period = orbitalPeriodS(radius);
       planets.push({ index: body.planet.index, orbitRadius: radius, size, angularSpeed: (2 * Math.PI) / period, phase: body.planet.phase });
     }
     prev = radius;

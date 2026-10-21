@@ -5,6 +5,7 @@ import type { DiscoveryService } from "../discovery/service";
 import type { EmperorService } from "../emperor/service";
 import type { FleetService } from "../fleet/service";
 import type { HumanityService } from "../humanity/service";
+import type { FlagshipService } from "../space/flagship";
 import { canSee, type SocialService } from "../social/service";
 import type { WarEffects, WarService } from "../war/service";
 
@@ -45,6 +46,9 @@ export class Hub {
   private queue: Promise<unknown> = Promise.resolve();
   /** Apagando el servidor: ya no se difunde nada (la base de datos se va a cerrar). */
   private closing = false;
+
+  /** Nave del Emperador (aparcamiento y recursos) para el tema `me`; la pone `buildApp`. */
+  flagships: FlagshipService | null = null;
 
   constructor(
     private readonly emperors: EmperorService,
@@ -120,13 +124,14 @@ export class Hub {
         client.known = new Set(visible.map((e) => e.id));
         client.send({ t: "snap", topic, seq: this.emperorsSeq, serverTime: this.now(), data: { emperors: visible.map((e) => this.view(e)) } });
       } else {
-        const [fleets, discovered, colonies, humans, battles, wallet] = await Promise.all([
+        const [fleets, discovered, colonies, humans, battles, wallet, flagship] = await Promise.all([
           this.fleets.byEmperor(client.emperorId),
           this.discoveries.list(client.emperorId),
           this.colonies.list(client.emperorId),
           this.colonies.humans(client.emperorId),
           this.wars.list(client.emperorId),
           this.humanity.wallet(client.emperorId),
+          this.flagships?.status(client.emperorId) ?? null,
         ]);
         if (!this.clients.has(client) || !humans || !wallet) return;
         client.send({
@@ -134,7 +139,7 @@ export class Hub {
           topic,
           seq: this.meSeq.get(client.emperorId) ?? 0,
           serverTime: this.now(),
-          data: { fleets, discovered, colonies, humans, battles, wallet },
+          data: { fleets, discovered, colonies, humans, battles, wallet, flagship },
         });
       }
       client.subscribed.add(topic);
@@ -219,6 +224,15 @@ export class Hub {
       const wallet = await this.humanity.wallet(emperorId);
       if (!wallet) return;
       this.send("me", this.nextMeSeq(emperorId), [{ path: `wallet.${emperorId}`, v: wallet }], (c) => c.emperorId === emperorId);
+    });
+  }
+
+  /** Envía a su dueño el estado de su nave (dónde está aparcada, sus recursos). */
+  publishFlagship(emperorId: string): Promise<void> {
+    return this.enqueue(async () => {
+      const status = await this.flagships?.status(emperorId);
+      if (!status) return;
+      this.send("me", this.nextMeSeq(emperorId), [{ path: `flagship.${emperorId}`, v: status }], (c) => c.emperorId === emperorId);
     });
   }
 

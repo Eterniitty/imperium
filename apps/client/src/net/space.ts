@@ -6,6 +6,8 @@ export interface PoseSample {
   t: number;
   p: Vec3;
   q: Quat;
+  /** Velocidad (m/s): para seguir moviendo la nave entre muestras espaciadas (naves aparcadas). */
+  v?: Vec3;
 }
 
 export interface RemoteShip {

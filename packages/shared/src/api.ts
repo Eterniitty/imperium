@@ -208,6 +208,16 @@ export interface EmperorHumans {
   at: number;
 }
 
+/**
+ * La nave del Emperador vista por su dueño (tema `me`): dónde está aparcada en
+ * su sistema. Desde `park.p` (metros) a la hora `park.at` orbita la estrella
+ * (`parkedPosition` de `@imperium/sim`); al pilotar se sale de ahí.
+ */
+export interface FlagshipStatus {
+  systemId: string;
+  park: { p: [number, number, number]; at: number };
+}
+
 /** Construcción en la cola de una colonia: una instalación o una nave (del astillero). */
 export interface ColonyBuild {
   id: string;

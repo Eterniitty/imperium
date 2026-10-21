@@ -1,13 +1,14 @@
 import { EMPEROR_FLAGSHIP, getShipClass, HUMANS, STARTING_FLEET } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import type { CommandError, Emperor } from "@imperium/shared";
-import { isTravelling, travelDurationMs } from "@imperium/sim";
+import { arrivalPark, isTravelling, travelDurationMs, type SystemLayout } from "@imperium/sim";
 import { eq, ne, sql } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
 import { emperors, fleets, ships } from "../db/schema";
 import { discoverAround, fleetScannerRangeLy } from "../discovery/service";
 import { schedule } from "../events/queue";
+import { parkColumns } from "../space/flagship";
 import { findSystem, nameKey, pickSpawnSystem, placeFromRow, type PlaceRow } from "./world";
 
 const columns = {
@@ -32,6 +33,12 @@ export class EmperorService {
   private readonly seed: number;
   /** Velocidad de la nave del Emperador, ya multiplicada por la escala de tiempo. */
   private readonly speed: number;
+  /**
+   * Disposición de un sistema (depende de su detalle secreto). Con ella, al saltar
+   * se calcula dónde aparece la nave en el borde del destino; sin ella, aparca
+   * en el sitio por defecto. La pone `buildApp`.
+   */
+  layoutOf: ((systemId: string) => SystemLayout | null) | null = null;
 
   constructor(
     private readonly db: Database,
@@ -102,7 +109,8 @@ export class EmperorService {
     const spawn = pickSpawnSystem(this.seed);
     const [row] = await this.db
       .update(emperors)
-      .set({ systemId: spawn.id, destSystemId: null, departAt: null, arriveAt: null, updatedAt: sql`now()` })
+      // Renace con la nave en el sitio de aparcamiento por defecto del sistema.
+      .set({ systemId: spawn.id, destSystemId: null, departAt: null, arriveAt: null, ...parkColumns(null), updatedAt: sql`now()` })
       .where(eq(emperors.id, emperorId))
       .returning(columns);
     return row ? this.toEmperor(row) : null;
@@ -125,6 +133,10 @@ export class EmperorService {
       if (current.location.systemId === dest.id) return { ok: false, error: "already_there" };
 
       const arriveAt = now + travelDurationMs(current.location.position, dest.position, this.speed);
+      // Aparece en el borde del destino, del lado por el que llega, y desde ahí orbita.
+      const from = current.location.position;
+      const layout = this.layoutOf?.(dest.id) ?? null;
+      const park = layout ? arrivalPark(layout, [from.x - dest.position.x, from.y - dest.position.y, from.z - dest.position.z], arriveAt) : null;
       const [updated] = await tx
         .update(emperors)
         .set({
@@ -132,6 +144,7 @@ export class EmperorService {
           destSystemId: dest.id,
           departAt: new Date(now),
           arriveAt: new Date(arriveAt),
+          ...parkColumns(park),
           updatedAt: sql`now()`,
         })
         .where(eq(emperors.id, row.id))

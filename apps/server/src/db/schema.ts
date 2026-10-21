@@ -97,6 +97,15 @@ export const emperors = pgTable("emperors", {
    */
   humans: doublePrecision("humans").notNull().default(200),
   humansAt: timestamp("humans_at", { withTimezone: true }).notNull().defaultNow(),
+  /**
+   * Nave aparcada (nadie la pilota): dónde estaba, en metros dentro de su sistema,
+   * a la hora `parkAt`. Desde ahí orbita la estrella (`@imperium/sim` park.ts).
+   * Las cuatro o ninguna: sin ellas, aparca en el sitio por defecto del sistema.
+   */
+  parkX: doublePrecision("park_x"),
+  parkY: doublePrecision("park_y"),
+  parkZ: doublePrecision("park_z"),
+  parkAt: timestamp("park_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
@@ -104,6 +113,10 @@ export const emperors = pgTable("emperors", {
   check("emperors_humans_nonnegative", sql`${t.humans} >= 0`),
   check("emperors_visibility", sql`${t.visibility} IN ('public', 'allies', 'hidden')`),
   check("emperors_travel_complete", sql`(${t.destSystemId} IS NULL) = (${t.departAt} IS NULL) AND (${t.departAt} IS NULL) = (${t.arriveAt} IS NULL)`),
+  check(
+    "emperors_park_complete",
+    sql`(${t.parkX} IS NULL) = (${t.parkAt} IS NULL) AND (${t.parkY} IS NULL) = (${t.parkAt} IS NULL) AND (${t.parkZ} IS NULL) = (${t.parkAt} IS NULL)`,
+  ),
 ]);
 
 /**

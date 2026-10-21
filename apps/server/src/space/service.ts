@@ -1,13 +1,11 @@
 import { EMPEROR_FLAGSHIP, PIRATE_RAIDER } from "@imperium/content";
-import { universeSeedFromString } from "@imperium/procgen";
-import type { ServerMessage, ShipPose, ShipState, StarSystemDetail, StarSystemSummary, Vec3, WeaponKind } from "@imperium/shared";
-import { bodiesAt, isTravelling, PILOT_BOOST, PILOT_SPEED, plausibleMove, pulseLimitAt, systemLayout, type SystemLayout } from "@imperium/sim";
+import type { ServerMessage, ShipPose, ShipState, Vec3, WeaponKind } from "@imperium/shared";
+import { bodiesAt, isTravelling, parkedPosition, parkedVelocity, PILOT_BOOST, PILOT_SPEED, plausibleMove, pulseLimitAt, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
-import type { ServerConfig } from "../config";
 import type { EmperorService } from "../emperor/service";
-import { findSystem } from "../emperor/world";
 import type { Client } from "../realtime/hub";
 import type { SocialService } from "../social/service";
+import type { FlagshipService } from "./flagship";
 import { Combatant, distance, forwardOf, MISSILE_LOCK_COS, normalize, rayHit, rotate } from "./combat";
 import { pirateCount, pirateHome, stepPirate } from "./pirates";
 
@@ -33,6 +31,12 @@ interface Member {
   combat: Combatant;
   /** Escudo enviado por última vez a los demás (para difundir la recarga solo si cambia). */
   sentShield: number;
+  /**
+   * Solo naves de Emperadores: si nadie la pilota, está aparcada y orbita la
+   * estrella desde esta posición y hora (la ven todos los presentes y se le
+   * puede disparar). Null mientras alguien la pilota.
+   */
+  park: ParkedOrbit | null;
 }
 
 const TICK_MS = 100;
@@ -43,6 +47,12 @@ const BOUNDARY_SLACK = 50_000;
 /** Hasta cuánto atrás se buscan posiciones del objetivo para los impactos (latencia del tirador). */
 const LAG_COMPENSATION_MS = 300;
 const HISTORY_SIZE = 12;
+/** Distancia máxima entre la nave aparcada y la primera posición al tomar los mandos. */
+const BOARD_TOLERANCE = 5_000;
+/** Cada cuánto se envía la posición de una nave aparcada (se mueve muy despacio). */
+const PARKED_POSE_MS = 1_000;
+/** Cada cuánto se repasa qué Emperadores están aparcados en cada sistema activo (llegadas, salidas). */
+const PARKED_REFRESH_MS = 5_000;
 
 /**
  * Espacio local: quién vuela en cada sistema, sus posiciones y el combate. Vive
@@ -55,8 +65,11 @@ export class SpaceService {
   private readonly rooms = new Map<string, Set<Member>>();
   /** Estado de combate por Emperador; dura aunque salga del sistema. */
   private readonly combatants = new Map<string, Combatant>();
-  private readonly layouts = new Map<string, SystemLayout | null>();
-  private readonly seed: number;
+  /** Sistemas cuyo aparcamiento se está repasando (para no solapar consultas) y cuándo se repasó cada uno. */
+  private readonly refreshing = new Set<string>();
+  private readonly refreshedAt = new Map<string, number>();
+  /** Se llama cuando cambia la nave de un Emperador para su dueño (aparcada en otro sitio); la pone `buildApp`. */
+  onFlagship: (emperorId: string) => void = () => {};
   private readonly timer: ReturnType<typeof setInterval>;
   private readonly timeouts = new Set<ReturnType<typeof setTimeout>>();
   private lastShieldBroadcast = 0;
@@ -66,17 +79,14 @@ export class SpaceService {
   private readonly joining = new Map<string, Promise<Member | null>>();
 
   constructor(
-    config: Pick<ServerConfig, "UNIVERSE_SEED">,
+    private readonly flagships: FlagshipService,
     private readonly emperors: EmperorService,
     private readonly social: SocialService,
     private readonly log: FastifyBaseLogger,
     /** Se llama cuando un Emperador renace en otro sistema (para difundirlo). */
     private readonly onRespawn: (emperorId: string) => void = () => {},
-    /** Detalle de un sistema (con la semilla secreta del servidor), para conocer su borde. */
-    private readonly detailOf: (summary: StarSystemSummary) => StarSystemDetail,
     private readonly now: () => number = Date.now,
   ) {
-    this.seed = universeSeedFromString(config.UNIVERSE_SEED);
     this.timer = setInterval(() => this.tick(), TICK_MS);
   }
 
@@ -94,14 +104,9 @@ export class SpaceService {
     this.timeouts.add(t);
   }
 
+  /** Disposición del sistema (depende de su detalle secreto; la guarda FlagshipService). */
   private layout(systemId: string): SystemLayout | null {
-    let l = this.layouts.get(systemId);
-    if (l === undefined) {
-      const summary = findSystem(this.seed, systemId);
-      l = summary ? systemLayout(this.detailOf(summary)) : null;
-      this.layouts.set(systemId, l);
-    }
-    return l;
+    return this.flagships.layout(systemId);
   }
 
   private boundary(systemId: string): number {
@@ -161,6 +166,12 @@ export class SpaceService {
       m = await this.join(client, systemId, pose);
       if (!m) return;
     }
+    if (m.park) {
+      // Al tomar los mandos se cargan sus compañeros (una nave aparcada no los necesitaba).
+      m.allies = await this.social.mutualAllies(m.emperorId);
+      if (m.park) this.board(m, client, pose);
+      return;
+    }
     m.clients.add(client);
     const t = this.now();
     const outside = Math.hypot(...pose.p) > this.boundary(systemId) + BOUNDARY_SLACK;
@@ -194,37 +205,156 @@ export class SpaceService {
     const emperor = await this.emperors.byId(client.emperorId);
     if (!emperor || isTravelling(emperor, this.now()) || emperor.location.systemId !== systemId) return null;
     if (Math.hypot(...pose.p) > this.boundary(systemId) + BOUNDARY_SLACK) return null;
-    const allies = await this.social.mutualAllies(emperor.id);
+    const [allies, status] = await Promise.all([this.social.mutualAllies(emperor.id), this.flagships.status(emperor.id)]);
+    if (!status || status.systemId !== systemId) return null;
+    // Mientras se consultaba, pudo entrar ya (otra pestaña, o el repaso de aparcadas).
+    const already = this.members.get(emperor.id);
+    if (already?.systemId === systemId) {
+      already.allies = allies;
+      return already;
+    }
 
     // Si estaba en otro sistema, sale de él.
     this.leave(emperor.id, "left");
-    const m: Member = {
-      emperorId: emperor.id,
-      kind: "emperor",
-      name: emperor.name,
-      systemId,
-      clients: new Set([client]),
-      pose,
-      poseAt: this.now(),
-      history: [{ t: this.now(), p: pose.p }],
-      dirty: false,
-      allies,
-      combat: this.combatantOf(emperor.id),
-      sentShield: -1,
-    };
-    let room = this.rooms.get(systemId);
-    if (!room) this.rooms.set(systemId, (room = new Set()));
-    this.spawnPirates(systemId, room);
-
-    client.send({ t: "space", systemId, serverTime: this.now(), ships: [...room].map((o) => this.stateFor(o, m)) });
-    for (const o of room) this.sendTo(o, { t: "ship", ship: this.stateFor(m, o) });
-    room.add(m);
-    this.members.set(emperor.id, m);
-    // La nave propia: casco, escudo y armas.
-    client.send({ t: "ship", ship: this.stateFor(m, m) });
-    this.sendWeapons(m);
+    const room = await this.ensureRoom(systemId);
+    // Mientras se repasaban las aparcadas, pudo entrar (las incluye a todas las del sistema).
+    const parked = this.members.get(emperor.id);
+    if (parked?.systemId === systemId) {
+      parked.allies = allies;
+      return parked;
+    }
+    // Entra aparcada donde la dejó; `board` le da los mandos si la posición cuadra.
+    const m = this.addParked(systemId, room, emperor.id, emperor.name, status.park);
+    m.allies = allies;
     this.log.debug({ emperorId: emperor.id, systemId }, "Nave entra en el sistema");
     return m;
+  }
+
+  /** Sala de un sistema: la crea con sus piratas y las naves aparcadas allí si no estaba activa. */
+  private async ensureRoom(systemId: string): Promise<Set<Member>> {
+    let room = this.rooms.get(systemId);
+    if (!room) {
+      this.rooms.set(systemId, (room = new Set()));
+      this.spawnPirates(systemId, room);
+      await this.refreshParked(systemId);
+    }
+    return this.rooms.get(systemId) ?? room;
+  }
+
+  /** Añade a la sala una nave de Emperador aparcada (sin piloto) y avisa a los presentes. */
+  private addParked(systemId: string, room: Set<Member>, emperorId: string, name: string, park: ParkedOrbit): Member {
+    const now = this.now();
+    const p = parkedPosition(park, now);
+    const m: Member = {
+      emperorId,
+      kind: "emperor",
+      name,
+      systemId,
+      clients: new Set(),
+      pose: { p, q: [0, 0, 0, 1], v: parkedVelocity(park, now) },
+      poseAt: now,
+      history: [{ t: now, p }],
+      dirty: false,
+      allies: new Set(),
+      combat: this.combatantOf(emperorId),
+      sentShield: -1,
+      park,
+    };
+    for (const o of room) this.sendTo(o, { t: "ship", ship: this.stateFor(m, o) });
+    room.add(m);
+    this.members.set(emperorId, m);
+    return m;
+  }
+
+  /**
+   * Toma los mandos de una nave aparcada: la primera posición tiene que estar
+   * junto a donde orbita ahora (si no, se le indica dónde está). El piloto recibe
+   * las demás naves del sistema, su casco, escudo y armas.
+   */
+  private board(m: Member, client: Client, pose: ShipPose): void {
+    const now = this.now();
+    const at = parkedPosition(m.park!, now);
+    if (distance(at, pose.p) > BOARD_TOLERANCE) {
+      client.send({ t: "poseRejected", p: at, q: pose.q, v: [0, 0, 0] });
+      return;
+    }
+    m.park = null;
+    m.clients.add(client);
+    m.pose = pose;
+    m.poseAt = now;
+    m.history = [{ t: now, p: pose.p }];
+    m.dirty = true;
+    const room = this.rooms.get(m.systemId) ?? new Set<Member>();
+    client.send({ t: "space", systemId: m.systemId, serverTime: now, ships: [...room].filter((o) => o !== m).map((o) => this.stateFor(o, m)) });
+    client.send({ t: "ship", ship: this.stateFor(m, m) });
+    this.sendWeapons(m);
+  }
+
+  /**
+   * Repasa qué Emperadores están en un sistema activo: añade los que han llegado
+   * (aparcados) y quita los aparcados que ya no están (saltaron, renacieron).
+   */
+  private async refreshParked(systemId: string): Promise<void> {
+    if (this.refreshing.has(systemId)) return;
+    this.refreshing.add(systemId);
+    this.refreshedAt.set(systemId, this.now());
+    try {
+      const present = await this.flagships.parkedIn(systemId);
+      const room = this.rooms.get(systemId);
+      if (!room) return;
+      const ids = new Set(present.map((p) => p.emperorId));
+      for (const o of [...room]) if (o.kind === "emperor" && o.park && !ids.has(o.emperorId)) this.leave(o.emperorId, "left");
+      for (const p of present) {
+        if (!this.members.has(p.emperorId) && this.rooms.get(systemId) === room) this.addParked(systemId, room, p.emperorId, p.name, p.park);
+      }
+    } catch (err) {
+      this.log.error(err, "Error al repasar las naves aparcadas");
+    } finally {
+      this.refreshing.delete(systemId);
+    }
+  }
+
+  /**
+   * La nave se queda sin piloto: aparca donde está (con lo que se haya movido
+   * desde la última posición) y empieza a orbitar. Se guarda para que siga ahí
+   * tras reiniciar el servidor, y se avisa a su dueño.
+   */
+  private park(m: Member): void {
+    const now = this.now();
+    const ahead = Math.min(0.5, Math.max(0, (now - m.poseAt) / 1000));
+    const p: Vec3 = [m.pose.p[0] + m.pose.v[0] * ahead, m.pose.p[1] + m.pose.v[1] * ahead, m.pose.p[2] + m.pose.v[2] * ahead];
+    m.park = { p, at: now };
+    m.pose = { p, q: m.pose.q, v: parkedVelocity(m.park, now) };
+    m.poseAt = now;
+    m.dirty = true;
+    const id = m.emperorId;
+    void this.flagships
+      .savePark(id, m.park)
+      .then(() => this.onFlagship(id))
+      .catch((err: unknown) => this.log.error(err, "Error al guardar la nave aparcada"));
+  }
+
+  /** Guarda dónde están las naves pilotadas, como si se aparcasen (al apagar el servidor). */
+  async flushParks(): Promise<void> {
+    const now = this.now();
+    await Promise.all(
+      [...this.members.values()]
+        .filter((m) => m.kind === "emperor" && !m.park)
+        .map((m) => this.flagships.savePark(m.emperorId, { p: m.pose.p, at: now }).catch((err: unknown) => this.log.error(err, "Error al guardar la nave aparcada"))),
+    );
+  }
+
+  /** Sin pilotos, el sistema se "duerme": se dejan de simular piratas y naves aparcadas. */
+  private sleepIfEmpty(systemId: string): void {
+    const room = this.rooms.get(systemId);
+    if (!room || [...room].some((o) => o.clients.size > 0)) return;
+    for (const o of room) {
+      this.members.delete(o.emperorId);
+      // El estado de combate de los Emperadores dura (no se cura saliendo y entrando); el de los piratas, no.
+      if (o.kind === "pirate") this.combatants.delete(o.emperorId);
+    }
+    this.rooms.delete(systemId);
+    this.refreshedAt.delete(systemId);
   }
 
   /** La nave deja su sistema (vuelve al mapa, salta, se desconecta, cae…). */
@@ -235,14 +365,7 @@ export class SpaceService {
     const room = this.rooms.get(m.systemId);
     room?.delete(m);
     for (const o of room ?? []) this.sendTo(o, { t: "shipGone", id: emperorId, reason });
-    // Sin jugadores, el sistema se "duerme": los piratas dejan de simularse.
-    if (room && ![...room].some((o) => o.kind === "emperor")) {
-      for (const o of room) {
-        this.members.delete(o.emperorId);
-        this.combatants.delete(o.emperorId);
-      }
-      this.rooms.delete(m.systemId);
-    }
+    this.sleepIfEmpty(m.systemId);
   }
 
   /** Crea los piratas que viven en el sistema (los que no estén muertos esperando reaparecer). */
@@ -272,6 +395,7 @@ export class SpaceService {
         allies: new Set(),
         combat,
         sentShield: -1,
+        park: null,
       };
       for (const o of room) this.sendTo(o, { t: "ship", ship: this.stateFor(m, o) });
       room.add(m);
@@ -279,11 +403,13 @@ export class SpaceService {
     }
   }
 
-  /** Una conexión se cierra o deja de pilotar: si era la última de su nave, la nave sale. */
+  /** Una conexión se cierra o deja de pilotar: si era la última de su nave, la nave se queda aparcada. */
   leaveClient(client: Client): void {
     const m = this.members.get(client.emperorId);
     if (!m || !m.clients.delete(client)) return;
-    if (m.clients.size === 0) this.leave(m.emperorId, "left");
+    if (m.clients.size > 0) return;
+    this.park(m);
+    this.sleepIfEmpty(m.systemId);
   }
 
   /** Estado de combate de un Emperador (para tests y diagnóstico). */
@@ -424,7 +550,8 @@ export class SpaceService {
         let target: Member | null = null;
         let best = PIRATE_RAIDER.aggroRangeU;
         for (const o of room) {
-          if (o.kind !== "emperor") continue;
+          // Solo naves pilotadas: una nave aparcada, sin nadie a bordo, no les llama la atención.
+          if (o.kind !== "emperor" || o.clients.size === 0) continue;
           const d = distance(m.pose.p, o.pose.p);
           if (d < best) {
             best = d;
@@ -451,9 +578,29 @@ export class SpaceService {
     }
   }
 
+  /** Naves aparcadas: avanzan por su órbita; y, de vez en cuando, se repasa quién está en cada sistema. */
+  private stepParked(now: number): void {
+    for (const [systemId, room] of this.rooms) {
+      for (const m of room) {
+        if (!m.park || now - m.poseAt < PARKED_POSE_MS) continue;
+        const p = parkedPosition(m.park, now);
+        m.pose = { p, q: m.pose.q, v: parkedVelocity(m.park, now) };
+        m.poseAt = now;
+        m.history.push({ t: now, p });
+        if (m.history.length > HISTORY_SIZE) m.history.shift();
+        m.dirty = true;
+      }
+      if (now - (this.refreshedAt.get(systemId) ?? 0) < PARKED_REFRESH_MS) continue;
+      // Una sala sin pilotos (alguien entró y no llegó a tomar los mandos) se duerme.
+      if (![...room].some((o) => o.clients.size > 0)) this.sleepIfEmpty(systemId);
+      else void this.refreshParked(systemId);
+    }
+  }
+
   private tick(): void {
     const now = this.now();
     this.stepPirates(now);
+    this.stepParked(now);
     for (const room of this.rooms.values()) {
       const changed = [...room].filter((m) => m.dirty);
       if (changed.length > 0) {

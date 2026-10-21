@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
 import type { I18nKey, StarSystemDetail, WeaponKind } from "@imperium/shared";
-import { PILOT_BOOST, PILOT_SPEED, planetAngle, pulseLimitAt, systemLayout, type PlanetLayout, type SystemLayout } from "@imperium/sim";
+import { ARRIVAL_EDGE, defaultPark, parkedPosition, PILOT_BOOST, PILOT_SPEED, planetAngle, pulseLimitAt, systemLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
 import { resetSpace, shipName, spaceStore } from "../net/space";
 import { telemetry, type FlightTelemetry } from "./telemetry";
 import { connection, serverNow } from "../net/world";
@@ -90,6 +90,8 @@ export class SystemView implements View {
   private leaving = false;
   private systemId: string | null = null;
   private starName = "";
+  /** Radio a partir del cual se sale al espacio interestelar (ver `pilot`). */
+  private boundary = 0;
   private poseTimer = 0;
   private remote = new RemoteShips();
   private effects = new Effects(
@@ -336,18 +338,29 @@ export class SystemView implements View {
   }
 
   /**
-   * Pone la nave del Emperador en el sistema y pasa a pilotarla. Aparece en el
-   * borde, del lado de `from` (dirección desde la que llega), mirando a la estrella.
+   * Órbita de aparcamiento de la nave propia en este sistema: la que dice el
+   * servidor (tema `me`) o, si aún no ha llegado, la de por defecto.
    */
-  pilot(from: THREE.Vector3 | null): void {
+  private parkHere(): ParkedOrbit {
+    const flagship = worldStore.getState().flagship;
+    if (flagship && flagship.systemId === this.systemId) return flagship.park;
+    return defaultPark(this.layout!);
+  }
+
+  /**
+   * Pone la nave del Emperador en el sistema y pasa a pilotarla. Sale de donde
+   * está aparcada (orbitando la estrella; tras un salto, en el borde del sistema),
+   * mirando a la estrella.
+   */
+  pilot(_from?: THREE.Vector3 | null): void {
     this.stopPiloting();
     if (!this.layout) return;
     const ship = createFlagship(0xc792ff);
     ship.scale.setScalar(SHIP_SCALE);
-    const dir = from && from.lengthSq() > 0 ? from.clone().normalize() : new THREE.Vector3(0.2, 0.15, 1).normalize();
-    // Se llega cerca de la órbita del primer planeta (o de la estrella), no al borde lejano.
-    const first = this.layout.planets[0]?.orbitRadius ?? this.layout.starRadius * 5;
-    ship.position.copy(dir.multiplyScalar(first * 1.15));
+    ship.position.set(...parkedPosition(this.parkHere(), serverNow()));
+    // Sin explorar, el sistema se dibuja sin planetas y su borde parece más cercano que el real:
+    // la nave que llega de un salto (en el borde real) no debe salir nada más aparecer.
+    this.boundary = Math.max(this.layout.boundary, ship.position.length() / ARRIVAL_EDGE + 1000);
     ship.lookAt(0, 0, 0);
     // lookAt orienta +Z hacia el objetivo; la nave mira hacia -Z.
     ship.rotateY(Math.PI);
@@ -367,8 +380,13 @@ export class SystemView implements View {
   /** Deja de pilotar y vuelve a la cámara orbital. */
   stopPiloting(): void {
     if (!this.ship) return;
-    // Deja de volar en el sistema compartido: los demás dejan de ver la nave.
+    // Deja de pilotar: la nave se queda aparcada aquí, orbitando (el servidor lo confirma por el tema `me`).
     connection.send({ t: "leave" });
+    const flagship = worldStore.getState().flagship;
+    if (flagship && flagship.systemId === this.systemId) {
+      const p = this.ship.position;
+      worldStore.setState({ flagship: { ...flagship, park: { p: [p.x, p.y, p.z], at: serverNow() } } });
+    }
     resetSpace();
     this.remote.clear();
     this.effects.clear();
@@ -584,6 +602,26 @@ export class SystemView implements View {
     this.ship.position.set(...c.p);
     this.ship.quaternion.set(...c.q);
     this.flight?.stop();
+    // La cámara salta con la nave (si no, tardaría en alcanzarla y la nave se vería diminuta).
+    this.placeChaseCamera(1);
+  }
+
+  /**
+   * Hasta que el servidor acepta la nave en el sistema, se sigue la posición de
+   * aparcamiento que diga (puede llegar después de empezar a pilotar).
+   */
+  private followParkUntilBoarded(): void {
+    if (!this.ship || spaceStore.getState().systemId === this.systemId) return;
+    const flagship = worldStore.getState().flagship;
+    if (!flagship || flagship.systemId !== this.systemId) return;
+    const at = new THREE.Vector3(...parkedPosition(flagship.park, serverNow()));
+    if (at.distanceTo(this.ship.position) < 2000) return;
+    this.ship.position.copy(at);
+    this.ship.lookAt(0, 0, 0);
+    this.ship.rotateY(Math.PI);
+    this.flight?.stop();
+    this.boundary = Math.max(this.layout?.boundary ?? 0, at.length() / ARRIVAL_EDGE + 1000);
+    this.placeChaseCamera(1);
   }
 
   /** Envía la posición propia unas 8 veces por segundo. */
@@ -657,6 +695,7 @@ export class SystemView implements View {
       this.flight.update(dt);
       this.collide();
       this.applyCorrection();
+      this.followParkUntilBoarded();
       this.sendPose(dt);
       this.remote.update(dt, this.time);
       const rig = shipRig(this.ship);
@@ -667,7 +706,7 @@ export class SystemView implements View {
       this.placeChaseCamera(1 - Math.exp(-dt * 8));
       gameStore.getState().setFlight(true, this.flight.speed, this.flight.pulse);
       // Más allá del borde: espacio interestelar.
-      if (!this.leaving && this.layout && this.ship.position.length() > this.layout.boundary) {
+      if (!this.leaving && this.layout && this.ship.position.length() > this.boundary) {
         this.leaving = true;
         this.events.onLeave(this.ship.position.clone().normalize());
       }

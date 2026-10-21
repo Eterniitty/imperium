@@ -424,6 +424,8 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
   describe("espacio local (vuelo compartido)", () => {
     const pose = (p: [number, number, number]) => ({ p, q: [0, 0, 0, 1] as [number, number, number, number], v: [0, 0, 0] as [number, number, number] });
     const settle = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+    /** Deja aparcada la nave de un Emperador en `p` ahora (para empezar a pilotar desde ahí). */
+    const parkAt = (emperorId: string, p: [number, number, number]) => app.flagships.savePark(emperorId, { p, at: Date.now() });
 
     /** Dos jugadores en el mismo sistema (B salta al de A), conectados. */
     async function twoInOneSystem(visibility: Visibility = "hidden") {
@@ -442,15 +444,16 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
 
     it("dos naves en el mismo sistema se ven y se mueven, aunque estén ocultas en el mapa", async () => {
       const { a, b, sa, sb, systemId } = await twoInOneSystem("hidden");
+      await parkAt(a.emperor.id, [100, 0, 0]);
+      await parkAt(b.emperor.id, [110, 0, 0]);
       sa.send({ t: "pose", systemId, ...pose([100, 0, 0]) });
       const first = await sa.next(is("space"));
-      expect(first).toMatchObject({ systemId, ships: [] });
+      // B aún no pilota, pero su nave está aparcada en el sistema y se ve.
+      expect(first).toMatchObject({ systemId, ships: [{ id: b.emperor.id, name: "Brennus", kind: "emperor" }] });
 
       sb.send({ t: "pose", systemId, ...pose([110, 0, 0]) });
       const seenB = await sb.next(is("space"));
       expect(seenB.ships).toMatchObject([{ id: a.emperor.id, name: "Aurelia", ally: false, p: [100, 0, 0], hull: 400, shield: 200 }]);
-      const other = (m: ServerMessage): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id;
-      expect((await sa.next(other)).ship).toMatchObject({ id: b.emperor.id, name: "Brennus" });
 
       // B se mueve: A recibe su posición (y no la suya propia).
       const from = sa.messages.length;
@@ -458,15 +461,43 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       const poses = await sa.next(is("poses"), from);
       expect(poses.ships).toEqual([{ id: b.emperor.id, ...pose([112, 0, 0]) }]);
 
-      // B deja de pilotar: A deja de verlo.
+      // B deja de pilotar: su nave se queda aparcada donde estaba y A la sigue viendo.
       sb.send({ t: "leave" });
-      expect(await sa.next(is("shipGone"))).toEqual({ t: "shipGone", id: b.emperor.id, reason: "left" });
+      await settle(1300);
+      expect(sa.messages.filter(is("shipGone"))).toEqual([]);
+      expect(app.space.shipsIn(systemId)).toContain(b.emperor.id);
+      const status = await app.flagships.status(b.emperor.id);
+      expect(Math.hypot(status!.park.p[0] - 112, status!.park.p[1], status!.park.p[2])).toBeLessThan(1);
+    });
+
+    it("una nave aparcada orbita la estrella; para pilotarla hay que salir de donde está", async () => {
+      const { a, b, sa, sb, systemId } = await twoInOneSystem("hidden");
+      await parkAt(a.emperor.id, [1_000_000, 0, 0]);
+      // B, a 2000 km de la estrella, sin piloto: orbita despacio (unos 17 m/s).
+      await parkAt(b.emperor.id, [2_000_000, 0, 0]);
+      sa.send({ t: "pose", systemId, ...pose([1_000_000, 0, 0]) });
+      const space = await sa.next(is("space"));
+      expect(space.ships).toMatchObject([{ id: b.emperor.id }]);
+      await settle(1300);
+      const moved = sa.messages.filter(is("poses")).flatMap((m) => m.ships).filter((s) => s.id === b.emperor.id).at(-1)!;
+      expect(moved.p[0]).toBeLessThan(2_000_000);
+      expect(moved.p[2]).toBeLessThan(0);
+      expect(Math.hypot(moved.p[0], moved.p[2])).toBeCloseTo(2_000_000, 0);
+      // B intenta tomar los mandos lejos de su nave: el servidor le dice dónde está.
+      sb.send({ t: "pose", systemId, ...pose([0, 0, 1_500_000]) });
+      const rejected = await sb.next(is("poseRejected"));
+      expect(Math.hypot(rejected.p[0] - 2_000_000, rejected.p[2])).toBeLessThan(500);
+      sb.send({ t: "pose", systemId, ...pose(rejected.p) });
+      await sb.next(is("space"));
+      // El dueño conoce siempre dónde está aparcada su nave (tema `me`).
+      expect((await app.flagships.status(a.emperor.id))!.park.p).toEqual([1_000_000, 0, 0]);
     });
 
     it("rechaza posiciones imposibles: demasiado rápido o fuera del sistema", async () => {
       const a = await player("a@ejemplo.com", "Aurelia");
       const sa = await connect(a.cookies);
       const systemId = a.emperor.location.systemId;
+      await parkAt(a.emperor.id, [50, 0, 0]);
       sa.send({ t: "pose", systemId, ...pose([50, 0, 0]) });
       await sa.next(is("space"));
       // 1000 km de golpe: imposible incluso con el motor de pulso.
@@ -484,14 +515,21 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
     });
 
     it("al saltar o desconectarse, la nave deja el sistema", async () => {
-      const { b, sa, sb, systemId } = await twoInOneSystem("public");
+      const { a, b, sa, sb, systemId } = await twoInOneSystem("public");
+      await parkAt(a.emperor.id, [100, 0, 0]);
+      await parkAt(b.emperor.id, [120, 0, 0]);
       sa.send({ t: "pose", systemId, ...pose([100, 0, 0]) });
       await sa.next(is("space"));
       sb.send({ t: "pose", systemId, ...pose([120, 0, 0]) });
-      await sa.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id);
+      await sb.next(is("space"));
       const dest = coreSystems.find((s) => s.id !== systemId)!;
       sb.send({ t: "cmd", cmdId: "salto-0001", op: "emperor.move", args: { systemId: dest.id } });
       expect(await sa.next(is("shipGone"))).toEqual({ t: "shipGone", id: b.emperor.id, reason: "left" });
+      // Aparecerá en el borde del destino, del lado por el que llega.
+      const status = (await app.flagships.status(b.emperor.id))!;
+      expect(status.systemId).toBe(dest.id);
+      expect(Math.hypot(...status.park.p)).toBeCloseTo(app.flagships.layout(dest.id)!.boundary * 0.97, 0);
+      void a;
     });
   });
 
@@ -515,10 +553,12 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
         await sb.next(is("ack"));
         await settle(1100);
       }
+      await app.flagships.savePark(a.emperor.id, { p: [0, 0, 100], at: Date.now() });
+      await app.flagships.savePark(b.emperor.id, { p: [0, 0, -200], at: Date.now() });
       sa.send({ t: "pose", systemId, ...pose([0, 0, 100]) });
       await sa.next(is("space"));
       sb.send({ t: "pose", systemId, ...pose([0, 0, -200]) });
-      await sa.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id);
+      await sb.next(is("space"));
       await settle(100);
       return { a, b, sa, sb, systemId };
     }
@@ -530,7 +570,7 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       const shot = await sb.next(is("shot"), from);
       expect(shot).toMatchObject({ weapon: "cannon", target: null, speed: 1500 });
       expect(shot.hitAt).not.toBeNull();
-      const hurt = await sb.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id, from);
+      const hurt = await sb.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id && m.ship.shield < 200, from);
       expect(hurt.ship).toMatchObject({ shield: 186, hull: 400 });
       expect((await sa.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id && m.ship.shield === 186)).ship.hull).toBe(400);
     });

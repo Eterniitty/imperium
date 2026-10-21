@@ -3,7 +3,7 @@
  * docs/arquitectura.md §8. Los esquemas Zod de lo que envía el cliente están en
  * `schemas.ts`.
  */
-import type { Battle, Cargo, Colony, Emperor, EmperorHumans, Fleet, FleetRoute, OrderSide, Stock, StockId, Wallet } from "./api";
+import type { Battle, Cargo, Colony, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, OrderSide, Stock, StockId, Wallet } from "./api";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
 export const PROTOCOL_VERSION = 8;
@@ -24,7 +24,7 @@ export interface TopicData {
   /** `discovered`: ids de los sistemas descubiertos (niebla de guerra); solo de ellos se puede pedir el detalle. */
   /** `battles`: las batallas en curso y las acabadas hace poco. */
   /** `wallet`: la cartera de créditos (economía de la humanidad). */
-  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans; battles: Battle[]; wallet: Wallet };
+  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans; battles: Battle[]; wallet: Wallet; flagship: FlagshipStatus | null };
 }
 
 /** Emperador visto por los demás jugadores: añade si está conectado. */
@@ -180,7 +180,9 @@ export type DeltaOp =
   /** Cartera de créditos del Emperador propio (el id es el suyo). */
   | { path: `wallet.${string}`; v: Wallet }
   /** Batalla propia: empieza, avanza una ronda o termina (null si deja de mostrarse). */
-  | { path: `battles.${string}`; v: Battle | null };
+  | { path: `battles.${string}`; v: Battle | null }
+  /** La nave del Emperador propio: dónde está aparcada (y, más adelante, sus recursos). */
+  | { path: `flagship.${string}`; v: FlagshipStatus };
 
 export type ServerMessage =
   /**

@@ -5,3 +5,4 @@ export * from "./economy";
 export * from "./battle";
 export * from "./humanity";
 export * from "./market";
+export * from "./park";

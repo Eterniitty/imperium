@@ -22,6 +22,7 @@ import { humanityRoutes } from "./humanity/routes";
 import { HumanityService } from "./humanity/service";
 import { MarketService } from "./market/service";
 import { inHumanCore } from "./emperor/world";
+import { FlagshipService } from "./space/flagship";
 import { SpaceService } from "./space/service";
 import { alienRoutes } from "./ai/routes";
 import { AiEmperorService } from "./ai/emperors";
@@ -119,23 +120,27 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     (tx, emperorId, factionId) => aliens.onIntercept(tx, emperorId, factionId),
   );
   const hub = new Hub(emperors, fleets, social, discoveries, colonies, wars, humanity, app.log, config.TIME_SCALE);
-  const space = new SpaceService(
-    config,
-    emperors,
-    social,
-    app.log,
-    (emperorId) => void hub.publish(emperorId),
-    // El borde del sistema depende de su detalle, que se genera con la semilla secreta.
-    (summary) => discoveries.detail(summary),
-  );
+  // Nave del Emperador fuera del pilotaje (aparcada) y disposición de los sistemas, que
+  // depende de su detalle secreto.
+  const flagships = new FlagshipService(deps.db, config, (summary) => discoveries.detail(summary));
+  hub.flagships = flagships;
+  emperors.layoutOf = (systemId) => flagships.layout(systemId);
+  const space = new SpaceService(flagships, emperors, social, app.log, (emperorId) => {
+    void hub.publish(emperorId);
+    void hub.publishFlagship(emperorId);
+  });
+  space.onFlagship = (emperorId) => void hub.publishFlagship(emperorId);
   app.addHook("onClose", async () => space.stop());
   // Antes de cerrar conexiones: dejar de difundir y parar la cola de eventos, para que
   // nada use la base de datos mientras se apaga.
   app.addHook("preClose", async () => {
+    // Las naves que se pilotaban quedan aparcadas donde estaban.
+    await space.flushParks();
     await worker.stop();
     await hub.close();
   });
   app.decorate("space", space);
+  app.decorate("flagships", flagships);
   await app.register(emperorRoutes, { config, db: deps.db, emperors, hub });
   aliens.onMarket = (res) => {
     for (const id of res.wallets) void hub.publishWallet(id);
@@ -245,5 +250,6 @@ declare module "fastify" {
     market: MarketService;
     aliens: AlienService;
     aiEmperors: AiEmperorService;
+    flagships: FlagshipService;
   }
 }

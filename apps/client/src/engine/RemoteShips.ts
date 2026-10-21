@@ -36,6 +36,9 @@ function sampleAt(samples: PoseSample[], t: number, outPos: THREE.Vector3, outQu
   if (!a || b.t <= a.t || t >= b.t) {
     outPos.set(...b.p);
     outQuat.set(...b.q);
+    // Más allá de la última muestra se sigue con su velocidad un rato (las aparcadas envían una por segundo).
+    const ahead = Math.min(1.5, Math.max(0, (t - b.t) / 1000));
+    if (b.v && ahead > 0) outPos.set(b.p[0] + b.v[0] * ahead, b.p[1] + b.v[1] * ahead, b.p[2] + b.v[2] * ahead);
     return true;
   }
   const k = Math.min(1, Math.max(0, (t - a.t) / (b.t - a.t)));

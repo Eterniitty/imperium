@@ -10,6 +10,7 @@ import {
   type Colony,
   type EmperorHumans,
   type EmperorView,
+  type FlagshipStatus,
   type Fleet,
   type I18nKey,
   type ServerMessage,
@@ -43,6 +44,8 @@ export interface WorldState {
   battles: Record<string, Battle>;
   /** Cartera de créditos propia (economía de la humanidad). */
   wallet: Wallet | null;
+  /** Nave del Emperador propio: dónde está aparcada (y sus recursos). */
+  flagship: FlagshipStatus | null;
   /** Escala del tiempo de juego del servidor (para estimar duraciones de viaje). */
   timeScale: number;
   myEmperorId: string | null;
@@ -59,6 +62,7 @@ export const worldStore = createStore<WorldState>()(() => ({
   humans: null,
   battles: {},
   wallet: null,
+  flagship: null,
   timeScale: 1,
   myEmperorId: null,
   clockOffset: 0,
@@ -104,7 +108,7 @@ class Connection {
     this.ws?.close(1000, "bye");
     this.ws = null;
     this.failPending();
-    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, battles: {}, wallet: null, myEmperorId: null });
+    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, battles: {}, wallet: null, flagship: null, myEmperorId: null });
     resetSpace();
   }
 
@@ -200,7 +204,7 @@ class Connection {
           for (const c of msg.data.colonies) colonies[c.id] = c;
           const battles: Record<string, Battle> = {};
           for (const b of msg.data.battles) battles[b.id] = b;
-          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans, battles, wallet: msg.data.wallet });
+          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans, battles, wallet: msg.data.wallet, flagship: msg.data.flagship });
         }
         return;
       }
@@ -219,9 +223,10 @@ class Connection {
         let humans = state.humans;
         let battles = state.battles;
         let wallet = state.wallet;
+        let flagship = state.flagship;
         for (const op of msg.ops) {
           const dot = op.path.indexOf(".");
-          const kind = op.path.slice(0, dot) as "emperors" | "fleets" | "discovered" | "colonies" | "humans" | "battles" | "wallet";
+          const kind = op.path.slice(0, dot) as "emperors" | "fleets" | "discovered" | "colonies" | "humans" | "battles" | "wallet" | "flagship";
           const id = op.path.slice(dot + 1);
           if (kind === "colonies") {
             colonies = { ...colonies };
@@ -235,6 +240,8 @@ class Connection {
             wallet = op.v as Wallet;
           } else if (kind === "humans") {
             humans = op.v as EmperorHumans;
+          } else if (kind === "flagship") {
+            flagship = op.v as FlagshipStatus;
           } else if (kind === "discovered") {
             discovered = { ...discovered, [id]: true };
           } else if (kind === "emperors") {
@@ -245,13 +252,13 @@ class Connection {
             else delete fleets[id];
           }
         }
-        worldStore.setState({ emperors, fleets, discovered, colonies, humans, battles, wallet });
+        worldStore.setState({ emperors, fleets, discovered, colonies, humans, battles, wallet, flagship });
         this.syncOwn();
         return;
       }
       case "space": {
         const ships: Record<string, RemoteShip> = {};
-        for (const s of msg.ships) ships[s.id] = { state: s, samples: [{ t: msg.serverTime, p: s.p, q: s.q }] };
+        for (const s of msg.ships) ships[s.id] = { state: s, samples: [{ t: msg.serverTime, p: s.p, q: s.q, v: s.v }] };
         spaceStore.setState({ systemId: msg.systemId, ships });
         return;
       }
@@ -260,7 +267,7 @@ class Connection {
         const ships = { ...spaceStore.getState().ships };
         const prev = ships[msg.ship.id];
         const ship: RemoteShip = { state: msg.ship, samples: prev?.samples ?? [] };
-        if (!prev) addSample(ship, { t: msg.ship.p ? Date.now() + worldStore.getState().clockOffset : 0, p: msg.ship.p, q: msg.ship.q });
+        if (!prev) addSample(ship, { t: msg.ship.p ? Date.now() + worldStore.getState().clockOffset : 0, p: msg.ship.p, q: msg.ship.q, v: msg.ship.v });
         ships[msg.ship.id] = ship;
         spaceStore.setState({ ships });
         return;
@@ -269,7 +276,7 @@ class Connection {
         const ships = spaceStore.getState().ships;
         for (const s of msg.ships) {
           const ship = ships[s.id];
-          if (ship) addSample(ship, { t: msg.serverTime, p: s.p, q: s.q });
+          if (ship) addSample(ship, { t: msg.serverTime, p: s.p, q: s.q, v: s.v });
         }
         return;
       }

@@ -92,6 +92,13 @@
       "when": 1792564338189,
       "tag": "0012_right_nicolaos",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792565381438,
+      "tag": "0013_chief_captain_stacy",
+      "breakpoints": true
     }
   ]
 }
