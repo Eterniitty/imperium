@@ -926,7 +926,10 @@ export const es = {
   "quantum.charging": "Cargando el motor cuántico",
   "quantum.cancelHint": "{key} o Esc: cancelar",
   "quantum.travelling": "Viaje cuántico",
-  "quantum.tunnelHint": "{map}: ver el mapa · al llegar apareces en el borde del sistema",
+  "quantum.tunnelHint": "{map}: ver el mapa · al llegar apareces donde estuviste la última vez en el sistema (o en su borde, si es la primera)",
+  "quantum.nearHere": "↳ Junto a {name} (está allí)",
+  "quantum.nearWas": "↳ Junto a {name} (estuvo allí)",
+  "quantum.nearTitle": "Llegar junto a la nave de {name}: donde está ahora o, si ya se fue, donde estuvo la última vez en ese sistema",
   "settings.sfx": "Efectos de sonido",
   "settings.sfxHint": "Disparos, explosiones y motor cuántico (independiente de la música).",
   // Fase 9b: conquista de planetas.

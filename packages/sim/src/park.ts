@@ -6,7 +6,7 @@
  * servidor (combate, visibilidad) y todos los clientes la ven en el mismo sitio.
  */
 import { WORLD_SCALE } from "@imperium/content";
-import { orbitalPeriodS, type SystemLayout } from "./systemLayout";
+import { bodiesAt, orbitalPeriodS, type SystemLayout } from "./systemLayout";
 
 export type Vec3Like = readonly [number, number, number];
 
@@ -85,4 +85,49 @@ export function arrivalPark(layout: SystemLayout, fromDir: Vec3Like, arriveAt: n
   const d: Vec3Like = l > 0 ? [fromDir[0] / l, fromDir[1] / l, fromDir[2] / l] : [0, 0, 1];
   const r = layout.boundary * ARRIVAL_EDGE;
   return { p: [d[0] * r, d[1] * r, d[2] * r], at: arriveAt };
+}
+
+/**
+ * Memoria de posición: una nave que vuelve a un sistema donde ya estuvo (o que
+ * llega junto a un compañero) aparece en el punto `p` (metros) y orbita desde
+ * la hora de llegada. El punto se lleva fuera de la esfera de la estrella y
+ * dentro del borde de llegada si hiciese falta.
+ */
+export function arrivalParkAt(layout: SystemLayout, p: Vec3Like, arriveAt: number): ParkedOrbit {
+  let [x, y, z] = p;
+  // Los planetas y lunas se han movido desde que se guardó el punto: si ahora cae
+  // dentro de uno (o rozándolo), se aparta desde su centro.
+  for (const b of bodiesAt(layout, arriveAt).slice(1)) {
+    const [cx = 0, cy = 0, cz = 0] = b.center;
+    const dx = x - cx;
+    const dy = y - cy;
+    const dz = z - cz;
+    const l = Math.hypot(dx, dy, dz);
+    const clear = b.radius * ARRIVAL_BODY_CLEARANCE + ARRIVAL_BODY_MARGIN_M;
+    if (l >= clear) continue;
+    const k = l > 1 ? clear / l : 0;
+    [x, y, z] = l > 1 ? [cx + dx * k, cy + dy * k, cz + dz * k] : [cx, cy + clear, cz];
+  }
+  const park = sanitizePark(layout, { p: [x, y, z], at: arriveAt });
+  const d = Math.hypot(...park.p);
+  const max = layout.boundary * ARRIVAL_EDGE;
+  if (d <= max) return park;
+  const k = max / d;
+  return { p: [park.p[0] * k, park.p[1] * k, park.p[2] * k], at: arriveAt };
+}
+
+/** Distancia mínima a un planeta o luna al llegar a un punto recordado: radios del cuerpo más un margen. */
+const ARRIVAL_BODY_CLEARANCE = 1.5;
+const ARRIVAL_BODY_MARGIN_M = 5_000;
+
+/**
+ * Punto junto a otra nave (en `p`) para llegar a su lado sin chocar: a `offset`
+ * metros de lado, en el sentido de la órbita alrededor de la estrella.
+ */
+export function besidePoint(p: Vec3Like, offset: number): [number, number, number] {
+  const [x, y, z] = p;
+  // Tangente a la órbita (eje vertical): (-z, 0, x).
+  const l = Math.hypot(x, z);
+  const d: Vec3Like = l > 1 ? [-z / l, 0, x / l] : [1, 0, 0];
+  return [x + d[0] * offset, y + d[1] * offset, z + d[2] * offset];
 }

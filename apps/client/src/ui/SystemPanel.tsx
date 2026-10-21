@@ -13,6 +13,7 @@ import { factionName } from "./aliens";
 import { FleetLogistics } from "./FleetLogistics";
 import { PlanetColony } from "./PlanetColony";
 import { formatDuration, useServerNow } from "./useNow";
+import { companionsIn, useCompanionTrail } from "./companionTrail";
 
 export function SystemPanel() {
   const t = useT();
@@ -38,11 +39,13 @@ export function SystemPanel() {
   useEffect(() => setMoveError(null), [selected?.id]);
 
   // El salto lo da el motor: así la cámara sigue a la nave y, al llegar, se entra pilotando.
-  const jumpHere = async () => {
+  const jumpHere = async (near: string | null = null) => {
     setMoving(true);
-    await engineRef.current?.jumpToSelected();
+    await engineRef.current?.jumpToSelected(near);
     setMoving(false);
   };
+  // Memoria de posición: compañeros que están o estuvieron en el sistema elegido (se puede llegar a su lado).
+  const trail = useCompanionTrail(!!emperor && !!selected, selected?.id);
 
   const sendFleet = async (fleetId: string, systemId: string) => {
     setMoving(true);
@@ -240,6 +243,13 @@ export function SystemPanel() {
             {t(moving ? "emperor.moving" : "pilot.jump")} <kbd>{keys.jump}</kbd>
           </button>
         )}
+        {emperor &&
+          !emperorHere &&
+          companionsIn(trail, selected.id).map((c) => (
+            <button key={c.id} className="btn" title={t("quantum.nearTitle", { name: c.name })} onClick={() => void jumpHere(c.id)} disabled={moving || travelling !== null}>
+              {t(c.present ? "quantum.nearHere" : "quantum.nearWas", { name: c.name })}
+            </button>
+          ))}
       </div>
       {sendable.length > 0 && (
         <div className="actions">

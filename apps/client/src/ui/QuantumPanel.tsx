@@ -12,6 +12,7 @@ import { useAuth } from "../state/auth";
 import { gameStore, useGame, useT } from "../state/store";
 import { useKeyLabels } from "./keys";
 import { formatDuration } from "./useNow";
+import { companionsIn, useCompanionTrail } from "./companionTrail";
 
 /** Cuántos destinos se listan (los más cercanos al alcance). */
 const MAX_DESTINATIONS = 40;
@@ -57,6 +58,8 @@ export function QuantumPanel() {
   const rangeKey = Math.floor(range);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const list = useMemo(() => (open && here ? reachable(here, rangeKey) : []), [open, here?.id, rangeKey]);
+  // Memoria de posición: compañeros que están o estuvieron en cada destino (se puede llegar a su lado).
+  const trail = useCompanionTrail(open);
   if (!open || !here) return null;
   const speed = EMPEROR_FLAGSHIP.speedLyPerHour * timeScale;
 
@@ -87,6 +90,16 @@ export function QuantumPanel() {
                   {ly.toFixed(1)} {t("unit.ly")} · {formatDuration(travelDurationMs(here.position, system.position, speed))} · {t("quantum.fuelCost", { n: quantumFuelCost(ly) })}
                 </span>
               </button>
+              {companionsIn(trail, system.id).map((c) => (
+                <button
+                  key={c.id}
+                  className="quantum-near small"
+                  title={t("quantum.nearTitle", { name: c.name })}
+                  onClick={() => engineRef.current?.startQuantum(system, c.id)}
+                >
+                  {t(c.present ? "quantum.nearHere" : "quantum.nearWas", { name: c.name })}
+                </button>
+              ))}
             </li>
           ))}
         </ul>

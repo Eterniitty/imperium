@@ -9,7 +9,8 @@ import type { DeepRegionView } from "./deepspace";
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
 // 13: espacio profundo y minería (rama `espacio-profundo`; `emperor.drop`, `flagship.*`, `mine`, `field`, `hold`…).
 // 14: fusión con `vuelo-y-salto` (`rift`, `shipGone.reason: "jump"`).
-export const PROTOCOL_VERSION = 14;
+// 15: salto junto a un compañero (`emperor.move.near`; rama `salto-autonomo`).
+export const PROTOCOL_VERSION = 15;
 
 /** Tamaño máximo de un mensaje del cliente, en bytes. */
 export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;
@@ -52,7 +53,8 @@ export interface CommandArgs {
    * `colonyId` hacia el Núcleo y/o créditos de la cartera al tesoro.
    */
   "humanity.contribute": { projectId: string; colonyId?: string; amounts?: Partial<Stock>; credits?: number };
-  "emperor.move": { systemId: string };
+  /** `near`: Emperador compañero junto al que se quiere llegar (su posición actual o la última conocida en el destino). */
+  "emperor.move": { systemId: string; near?: string };
   /**
    * Sale del túnel cuántico a mitad de viaje: la nave queda en la región de
    * espacio profundo de su posición (se gasta solo el combustible recorrido).

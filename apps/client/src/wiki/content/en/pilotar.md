@@ -91,11 +91,14 @@ Fly to the **edge of the system** (a few thousand kilometres beyond the outermos
 
 1. At the controls, press [[J]]: you see the systems **within range of your fuel**, with distance, duration and the fuel the jump uses. You can also **select a star on the map** and press [[J]] or **Jump here**.
 2. The ship **aligns** with the destination by itself and **charges the quantum drive** (a few seconds). [[J]] or Esc cancel. While it charges, a **rift in space** opens ahead of the nose: a seam of light that grows, cracks and bends the background around it. When you jump it opens fully and the ship, accelerating to nearly the speed of light, **stretches towards it** into a thread of light and vanishes inside in half a second; on arrival another one opens at the destination, **a beam of light shoots out of it** and collapses into your ship with a flash. The camera follows: it widens a little and shakes slightly. The rift is in space, not on your screen: **other pilots in the system see it** (charging, entering and leaving). If flashes bother you, turn on **Reduce visual effects** in Settings: flashes and the beam are dimmer and the camera does not shake.
-3. During the trip you see the **quantum tunnel** with the time left; [[M]] switches between the tunnel and the map. On arrival you appear **at the edge of the destination system**, at the controls.
+3. During the trip you see the **quantum tunnel** with the time left; [[M]] switches between the tunnel and the map. On arrival you appear at the controls **where you last were in that system**; the first time, **at its edge**, on the side you come from.
 
 - Jump speed is in the table above: a few minutes to nearby stars and up to about **40 minutes** for the longest jump. **Range** is set by your fuel: to go further, jump in stages and refuel at your colonies.
 - On arrival, your scanner [discovers](/wiki/niebla) the system and those within range.
 - You can jump to any star within range, discovered or not.
+- **Jumping does not need you to watch the screen.** You can pick the destination and switch to another tab or window: the jump still happens (without the animation), and the server handles the trip and the arrival. When you come back, you see the tunnel if you are still travelling, or your ship already at the destination.
+- **Position memory:** the game remembers where your ship was in each system (when you jump away, when you park it and every minute while you fly). When you return to a system, you arrive there and the rift opens there.
+- **Next to a companion:** if a [companion](/wiki/companeros) is or was in a system, the jump selector ([[J]]) and the system panel on the map show **"Next to …"**: you arrive beside them, where they are now or where they last were.
 
 ### Dropping out halfway
 

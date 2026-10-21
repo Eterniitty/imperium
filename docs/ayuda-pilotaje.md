@@ -87,7 +87,7 @@ Cuando dejas de pilotar (mapa, cerrar el juego), la nave **se queda donde estaba
 2. La nave se **alinea** sola con el destino y **carga el motor** cuántico (5 s, con su sonido). J o Esc cancelan. Delante del morro se abre una **grieta en el espacio** (un objeto del mundo: la ven los demás pilotos del sistema); al saltar, la nave se estira hacia ella (espaguetización, ~0,5 s) y desaparece dentro; al llegar, un rayo de luz sale de otra grieta en el destino y se contrae en la nave.
 3. Al saltar, ves el **túnel cuántico** con el destino, el **tiempo restante** y el progreso. Con **M** miras el mapa (la cámara sigue a tu nave) y vuelves al túnel.
 4. Con **K** (o el botón del túnel) puedes **salir a mitad de viaje**: quedas en una región de espacio profundo, pagas solo el combustible recorrido y desde allí vuelves a saltar con J. Puede haber asteroides que minar con **L** (bodega, refinería de a bordo y descarga en tus colonias; ver la Wiki «Espacio profundo y minería»).
-5. Al llegar apareces en el **borde del sistema de destino**, del lado por el que llegas, a los mandos. El sistema queda descubierto (lo que cubre tu escáner).
+5. Al llegar apareces a los mandos donde estuviste la última vez en ese sistema o, si es la primera vez, en el **borde del sistema de destino**, del lado por el que llegas (o junto a un compañero, si lo elegiste con «Junto a …»). El sistema queda descubierto (lo que cubre tu escáner). El salto sigue aunque cambies de pestaña o de ventana.
 
 Duración: unos **200 años luz por hora** — un vecino a 10 a.l. son 3 minutos; el salto más largo con el depósito lleno (unos **133 a.l.**) dura unos **40 minutos**. El alcance lo marca el combustible: para ir más lejos, salta por etapas y reposta en tus colonias.
 
