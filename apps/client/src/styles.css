@@ -413,6 +413,9 @@ a.btn-link { color: inherit; text-decoration: none; }
 .left-col > * { pointer-events: auto; }
 .left-col .fleets { position: static; width: auto; max-height: none; min-height: 0; flex: 0 1 auto; }
 .fleets.colonies .fleet-row strong { color: #7ee08a; }
+.bridge-title { cursor: default; color: var(--gold); }
+.bridge-stats, .bridge-alerts { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.bridge-alerts { flex-direction: row; flex-wrap: wrap; gap: 6px; }
 
 /* Colonias (Fase 7): dueño, reclamar, existencias y construcción. */
 .owner-own { color: #7ee08a; font-weight: 600; }

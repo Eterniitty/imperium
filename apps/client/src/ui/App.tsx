@@ -11,6 +11,7 @@ import { FlightHud } from "./FlightHud";
 import { CombatHud } from "./CombatHud";
 import { MiningHud } from "./MiningHud";
 import { ColoniesPanel } from "./ColoniesPanel";
+import { BridgePanel } from "./BridgePanel";
 import { FleetsPanel } from "./FleetsPanel";
 import { WarPanel } from "./WarPanel";
 import { Notice } from "./Notice";
@@ -86,7 +87,16 @@ export function App() {
       <div className="hud" style={{ zoom: uiScale }}>
         <TopBar />
         {view === "tunnel" ? (
-          <QuantumHud />
+          <>
+            <QuantumHud />
+            {/* Puente de mando: se gobierna el imperio mientras dura el viaje. */}
+            <div className="left-col">
+              <BridgePanel />
+              <FleetsPanel />
+              <WarPanel />
+              <ColoniesPanel />
+            </div>
+          </>
         ) : view === "galaxy" ? (
           <>
             <FlightHud />

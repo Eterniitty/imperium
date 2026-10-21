@@ -422,6 +422,8 @@ export class Engine {
   // --- Órdenes desde la interfaz ---
 
   focusSelected(): void {
+    // Desde el puente de mando (túnel), el mapa.
+    if (this.active === this.tunnel) this.exitSystem();
     this.galaxy.focusSelected();
   }
 
