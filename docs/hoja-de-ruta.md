@@ -86,7 +86,7 @@ El usuario delegó el orden: se sigue esta cola sin pedir permiso, un solo agent
 
 1. [x] **Choques contra cuerpos con daño**: planetas, lunas y asteroides dañan según la velocidad de impacto (umbral para aterrizar o rozar despacio sin daño), autoritativo en el servidor como `SHIP_COLLISION`.
 2. [x] **Calor de las estrellas**: zona de calor según la clase (escudos y luego casco, cada vez más rápido), aviso en el HUD, el pulso se apaga antes de la zona mortal, agujero negro = destrucción al cruzar el horizonte; cálculo en el servidor (muerte y linaje de la Fase 10).
-3. [ ] **Limitador de destellos** (fotosensibilidad): tope global de destellos por segundo, sin rojo saturado parpadeante, saltos de brillo suavizados en explosiones, impactos, grieta y túnel.
+3. [x] **Limitador de destellos** (fotosensibilidad): tope global de destellos por segundo, sin rojo saturado parpadeante, saltos de brillo suavizados en explosiones, impactos, grieta y túnel.
 4. [ ] **Qué hacer mientras viajas**, en orden: puente de mando en el túnel; órdenes tácticas en batallas a distancia; pilotar otras naves de tus flotas a distancia; gestión más profunda de colonias; sondas de exploración a distancia.
 5. [ ] **Nave nodriza**: clase capital portanaves; la nave del Emperador se acopla en su hangar (aproximación y anclaje en 3D, tecla de acoplar) y recarga combustible, munición y energía desde la bodega de la flota.
 6. [ ] **9d. IA de naves** (`docs/ia-naves.md`): pilotaje 3D de piratas y alienígenas, tácticas de grupo, emboscadas; combate pilotado contra naves alienígenas.

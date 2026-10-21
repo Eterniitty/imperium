@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { ServerMessage, Vec3, WeaponKind } from "@imperium/shared";
 import { glowTexture, ringTexture } from "./textures";
+import { flashEnvelope, flashGain } from "./fx/flashLimiter";
 
 type Shot = Extract<ServerMessage, { t: "shot" }>;
 
@@ -46,6 +47,8 @@ interface Flash {
   size: number;
   /** Anillo de onda expansiva: crece sin frenar. */
   ring?: boolean;
+  /** Intensidad máxima que le dio el limitador de destellos. */
+  gain: number;
 }
 
 /** Devuelve dónde se dibuja ahora una nave (propia o ajena), o null si no está. */
@@ -304,7 +307,7 @@ export class Effects {
     if (Array.isArray(at)) sprite.position.set(...at);
     else sprite.position.copy(at);
     this.group.add(sprite);
-    this.flashes.push({ sprite, age: 0, life, size, ring });
+    this.flashes.push({ sprite, age: 0, life, size, ring, gain: flashGain(size) });
   }
 
   /** Impacto: destello, chispas y un pequeño anillo. */
@@ -404,7 +407,7 @@ export class Effects {
         return false;
       }
       f.sprite.scale.setScalar(f.ring ? f.size * (0.1 + 0.9 * k) : f.size * (0.3 + 0.7 * Math.sqrt(k)));
-      f.sprite.material.opacity = f.ring ? (1 - k) * 0.8 : 1 - k;
+      f.sprite.material.opacity = f.gain * flashEnvelope(f.age, f.life, f.ring ? (1 - k) * 0.8 : 1 - k);
       return true;
     });
   }

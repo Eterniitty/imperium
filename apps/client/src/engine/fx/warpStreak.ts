@@ -17,6 +17,7 @@
 import * as THREE from "three";
 import { FLAGSHIP_LENGTH_M, QUANTUM_RIFT } from "@imperium/content";
 import { glowTexture, streakTexture } from "../textures";
+import { flashGain } from "./flashLimiter";
 
 /** Color de la luz del salto (el de la grieta). */
 const LIGHT = new THREE.Color(0xbfd4ff);
@@ -159,7 +160,7 @@ export class WarpStreaks {
     sprite.position.copy(at);
     sprite.renderOrder = 8;
     this.group.add(sprite);
-    this.flashes.push({ sprite, age: 0, life: reduce ? life * 1.6 : life, size: reduce ? size * 0.45 : size, peak: reduce ? 0.22 : 1 });
+    this.flashes.push({ sprite, age: 0, life: reduce ? life * 1.6 : life, size: reduce ? size * 0.45 : size, peak: (reduce ? 0.22 : 1) * flashGain(size) });
   }
 
   update(dt: number): void {

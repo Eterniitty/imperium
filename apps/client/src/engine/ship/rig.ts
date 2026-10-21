@@ -373,7 +373,7 @@ export function assembleShip(t: Template, opts: AssembleOptions): THREE.Group {
       }
       // Destellos blancos breves; balizas rojas lentas.
       // Luces de estado: se encienden durante el arranque (las fijas primero, los destellos al final).
-      if (lightPoints.steady) lightPoints.steady.visible = power >= 0.25 || (power > 0.1 && Math.sin(time * 40) > 0);
+      if (lightPoints.steady) lightPoints.steady.visible = power >= 0.25 || (power > 0.1 && Math.sin(time * 15) > 0);
       if (lightPoints.strobe) lightPoints.strobe.visible = power >= 0.85 && ((time + phase) % 1.6 < 0.07 || ((time + phase) % 1.6 > 0.2 && (time + phase) % 1.6 < 0.26));
       if (lightPoints.beacon) lightPoints.beacon.visible = (time + phase * 0.5) % 2.0 < 1.0;
       body.position.set(Math.sin(time * 0.31 + phase) * (L / unit) * 0.0012 * idle, Math.sin(time * 0.47 + phase) * (L / unit) * 0.004 * idle, 0);

@@ -6,7 +6,7 @@
 2. You receive an email with a single-use link that **expires after 15 minutes**. Open it in the same browser and press **Sign in**. There are no passwords.
 3. The first time, **name your Emperor** (3 to 24 characters: letters, digits, spaces, hyphens and apostrophes). Other players will see this name and it **cannot be changed**. Press **Crown**.
    - To start next to a friend, also enter their Emperor's name under **Start near a companion** and press **Send request**. Once they accept, you start near their empire (see [Companions](/wiki/companeros)).
-4. Before you play, just once, the **photosensitivity warning** appears (the game has flashes): you can turn on **Reduce visual effects** or continue. You can see it again and change it in Settings → General.
+4. Before you play, just once, the **photosensitivity warning** appears (the game has flashes): you can turn on **Reduce visual effects** or continue. You can see it again and change it in Settings → General. Even without it, the game always **limits flashes**: at most three strong flashes per second (the rest are heavily dimmed), none goes from dark to full at once, and HUD warnings pulse gently instead of blinking.
 5. Press **Awaken**: you start at the controls of your ship, inside your home system.
 
 More about sessions and your data in [Account and data](/wiki/cuenta).

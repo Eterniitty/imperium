@@ -6,7 +6,7 @@
 2. Te llega un correo con un enlace de un solo uso que **caduca a los 15 minutos**. Ábrelo en el mismo navegador y pulsa **Entrar**. No hay contraseñas.
 3. Si es tu primera vez, **nombra a tu Emperador** (de 3 a 24 caracteres: letras, cifras, espacios, guiones y apóstrofos). Es el nombre que verán los demás y **no se puede cambiar**. Pulsa **Coronar**.
    - Si quieres empezar junto a un amigo, escribe también el nombre de su Emperador en **Aparecer cerca de un compañero** y pulsa **Enviar solicitud**. Cuando la acepte, apareces cerca de su imperio (ver [Compañeros](/wiki/companeros)).
-4. Antes de jugar, una sola vez, sale el **aviso de fotosensibilidad** (el juego tiene destellos): puedes activar **Reducir efectos visuales** o continuar. Puedes volver a verlo y cambiarlo en Ajustes → General.
+4. Antes de jugar, una sola vez, sale el **aviso de fotosensibilidad** (el juego tiene destellos): puedes activar **Reducir efectos visuales** o continuar. Puedes volver a verlo y cambiarlo en Ajustes → General. Aunque no lo actives, el juego **limita los destellos** siempre: como mucho tres destellos fuertes por segundo (los siguientes salen muy atenuados), ninguno pasa de apagado a lleno de golpe y los avisos del HUD laten suavemente en vez de parpadear.
 5. Pulsa **Despertar**: empiezas a los mandos de tu nave, dentro de tu sistema de origen.
 
 Más sobre la sesión y tus datos en [Cuenta y datos](/wiki/cuenta).
