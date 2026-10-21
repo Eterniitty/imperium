@@ -2,8 +2,6 @@
 
 Your Emperor always travels in their ship, and you fly it yourself in real time, with no loading screens between space and the systems. When you press **Awaken** you start at the controls inside the system where your ship is.
 
-> [!dev] Flying is being reworked: a supercruise-style pulse drive, a more detailed ship, a cockpit showing ammunition, energy, fuel, shields and hull, orbiting while parked and quantum travel between systems. This page will grow when they arrive.
-
 ## Controls
 
 Every key can be changed in **Settings → Controls** (up to two per action). These are the defaults:
@@ -32,11 +30,25 @@ Also, **dragging with the mouse** aims the ship (the cursor stays free to select
 
 ## Pulse drive
 
-The pulse drive ([[P]], on and off) is for crossing the system from one planet to another.
+The pulse drive ([[P]], on and off) is a **supercruise** to cross the system from one planet to another (one or two minutes).
 
 - It pushes **forward only**; while it is on you **cannot fire**.
-- **It does not engage near a planet or the star**: inside their safety zone you will see the warning "Too close to a celestial body".
-- **It cuts out by itself** when you enter the safety zone of a planet or the star, and the ship arrives slowed to boost speed, so you do not crash.
+- It can **always** be engaged, even next to a planet. Its top speed depends on the distance to the **nearest body**: heading straight at a planet it goes slowly (hundreds of m/s) and brakes by itself as you approach; **moving away**, the limit is several times higher; in open space it reaches the maximum speed in the table.
+- It speeds up and slows down **smoothly**. The bottom panel shows the current limit and the **estimated time** to the selected planet, the locked ship or the body ahead.
+- It uses **fuel** and some **energy**: without fuel it does not work.
+
+## Instruments and ship resources
+
+In the cockpit you see the **artificial horizon** (relative to the orbital plane) and, always, the **heading** (0° = towards the star), the **speed** and the **altitude** (distance to the surface of the nearest body). Bottom left: **shield**, **hull**, **energy** and **fuel**; bottom right: cannon **rounds**, **missiles** and the target with its distance.
+
+- **Energy**: the reactor recharges it; the cannon (each shot), shield recharge and pulse drive use it. Sustained fire drains it and the cannon falls silent.
+- **Fuel**: used by the pulse drive and quantum jumps. Below the emergency reserve it regenerates **very slowly** on board, so nobody gets stranded.
+- **Rounds and missiles**: limited. Only a small reserve is made on board.
+- **Resupply**: within 150 km of a planet with **one of your colonies**, the ship refills by itself from the colony's stock (volatiles for fuel, metal for rounds, alloys for missiles).
+
+## Parked ship
+
+When you leave the controls, your ship stays where it was and **orbits the star** like the planets. Others see it and can attack it; pirates only chase piloted ships. When you come back, you start from where it is.
 
 ## Cameras
 
@@ -46,15 +58,15 @@ The pulse drive ([[P]], on and off) is for crossing the system from one planet t
 
 Fly to the **edge of the system** (a few hundred kilometres beyond the outermost planet) to reach **interstellar space**: you switch to the galaxy map with the star behind you.
 
-## Jumping to another star
+## Quantum travel to another star
 
-1. On the galaxy map, **select a star** with a click.
-2. Press [[J]] or the **Move my Emperor here** button in the panel.
-3. Your ship jumps through hyperspace at the jump speed in the table above (a few minutes for nearby stars). The camera follows it and, on arrival, **you enter the new system at the controls**.
+1. At the controls, press [[J]]: you see the systems **within range of your fuel**, with distance, duration and the fuel the jump uses. You can also **select a star on the map** and press [[J]] or **Jump here**.
+2. The ship **aligns** with the destination by itself and **charges the quantum drive** (a few seconds). [[J]] or Esc cancel.
+3. During the trip you see the **quantum tunnel** with the time left; [[M]] switches between the tunnel and the map. On arrival you appear **at the edge of the destination system**, at the controls.
 
-- While jumping you cannot fly or order another jump. If you move the camera during the trip, it stops following the ship (you can get back with your Emperor's button in the top bar).
+- Jump speed is in the table above: a few minutes to nearby stars and up to about **40 minutes** for the longest jump. **Range** is set by your fuel: to go further, jump in stages and refuel at your colonies.
 - On arrival, your scanner [discovers](/wiki/niebla) the system and those within range.
-- You can jump to any star, discovered or not.
+- You can jump to any star within range, discovered or not.
 
 ## Shared flight
 

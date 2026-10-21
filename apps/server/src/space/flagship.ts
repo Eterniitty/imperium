@@ -6,7 +6,7 @@ import { and, eq, isNull, lte, or } from "drizzle-orm";
 import type { ColonyService } from "../colony/service";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { colonies, emperors, resourceLedger } from "../db/schema";
+import { colonies, emperors } from "../db/schema";
 import { findSystem, placeFromRow } from "../emperor/world";
 import type { StoredSupplies } from "./combat";
 
@@ -193,20 +193,10 @@ export class FlagshipService {
       const cannon = Math.max(0, Math.floor(Math.min(want.cannon, stock.metal / S.metalPerRound)));
       const missiles = Math.max(0, Math.floor(Math.min(want.missiles, stock.alloys / S.alloysPerMissile)));
       if (fuel <= 0 && cannon <= 0 && missiles <= 0) return none;
-      const spent = { volatiles: fuel * S.volatilesPerFuel, metal: cannon * S.metalPerRound, alloys: missiles * S.alloysPerMissile };
-      stock.volatiles -= spent.volatiles;
-      stock.metal -= spent.metal;
-      stock.alloys -= spent.alloys;
-      await service.writeState(tx, colonyId, { population: colony.state.population, stock }, now);
-      await tx.insert(resourceLedger).values({
-        emperorId,
-        colonyId,
-        reason: "flagship_resupply",
-        ref: `emperor:${emperorId}`,
-        metal: -spent.metal,
-        volatiles: -spent.volatiles,
-        alloys: -spent.alloys,
-      });
+      const spent = { volatiles: -fuel * S.volatilesPerFuel, metal: -cannon * S.metalPerRound, alloys: -missiles * S.alloysPerMissile };
+      // El punto de enganche de la economía: resuelve la colonia, descuenta y lo asienta en el libro.
+      const res = await service.adjustStock(tx, emperorId, colonyId, spent, "flagship_resupply", `emperor:${emperorId}`, now);
+      if (!res.ok) return none;
       return { fuel, cannon, missiles };
     });
   }

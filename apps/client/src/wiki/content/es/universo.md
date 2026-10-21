@@ -37,11 +37,11 @@ Pulsa [[M]] (o el botón **Mapa**) para pasar del pilotaje al mapa. Allí ves la
 - **Vuelo libre de cámara** ([[V]]): mueve la cámara como una nave con [[W]] [[A]] [[S]] [[D]], [[Q]]/[[E]] para bajar y subir y [[Mayús]] para ir más rápido.
 - El campo **Ir** de la barra superior lleva la cámara al sector con esas coordenadas.
 
-Desde el panel del sistema puedes **trasladar a tu Emperador** allí (o pulsar [[J]]) y **enviar tus flotas**. Ver [Pilotar](/wiki/pilotar#saltar-a-otra-estrella) y [Flotas](/wiki/flotas).
+Desde el panel del sistema puedes **trasladar a tu Emperador** allí (o pulsar [[J]]) y **enviar tus flotas**. Ver [Pilotar](/wiki/pilotar#viaje-cuantico-a-otra-estrella) y [Flotas](/wiki/flotas).
 
 ## Dentro de un sistema
 
-Los sistemas están a escala de las naves: tu nave mide unos **45 m**, un planeta rocoso de 1,5 a 8 km de radio, un gigante gaseoso hasta unos 30 km y una estrella de 120 a 225 km (un agujero negro, 60 km). Las órbitas están a cientos o miles de kilómetros, comprimidas para cruzarlas con el motor de pulso en menos de un minuto. Los planetas **giran alrededor de su estrella según la hora del servidor**, así que todos los jugadores los ven en el mismo sitio. Los planetas reclamados llevan un rótulo con su nombre (dorado si son tuyos).
+Los sistemas están a escala de las naves: tu nave mide unos **45 m**, un planeta rocoso de 1,5 a 8 km de radio, un gigante gaseoso hasta unos 30 km y una estrella de 120 a 225 km (un agujero negro, 60 km). Las órbitas están a cientos o miles de kilómetros, comprimidas para cruzarlas con el motor de pulso en uno o dos minutos. Los planetas **giran alrededor de su estrella según la hora del servidor**, así que todos los jugadores los ven en el mismo sitio. Los planetas reclamados llevan un rótulo con su nombre (dorado si son tuyos).
 
 ## Tiempo
 

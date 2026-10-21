@@ -37,11 +37,11 @@ Press [[M]] (or the **Map** button) to switch from flying to the map. You see ne
 - **Free camera flight** ([[V]]): move the camera like a ship with [[W]] [[A]] [[S]] [[D]], [[Q]]/[[E]] to go down and up and [[Shift]] to go faster.
 - The **Go** field in the top bar takes the camera to the sector with those coordinates.
 
-From the system panel you can **move your Emperor** there (or press [[J]]) and **send your fleets**. See [Flying](/wiki/pilotar#jumping-to-another-star) and [Fleets](/wiki/flotas).
+From the system panel you can **move your Emperor** there (or press [[J]]) and **send your fleets**. See [Flying](/wiki/pilotar#quantum-travel-to-another-star) and [Fleets](/wiki/flotas).
 
 ## Inside a system
 
-Systems are at ship scale: your ship is about **45 m** long, a rocky planet has a radius of 1.5 to 8 km, a gas giant up to about 30 km and a star 120 to 225 km (a black hole, 60 km). Orbits are hundreds or thousands of kilometres apart, compressed so the pulse drive crosses them in under a minute. Planets **orbit their star according to the server clock**, so every player sees them in the same place. Claimed planets carry a label with their name (gold if they are yours).
+Systems are at ship scale: your ship is about **45 m** long, a rocky planet has a radius of 1.5 to 8 km, a gas giant up to about 30 km and a star 120 to 225 km (a black hole, 60 km). Orbits are hundreds or thousands of kilometres apart, compressed so the pulse drive crosses them in one or two minutes. Planets **orbit their star according to the server clock**, so every player sees them in the same place. Claimed planets carry a label with their name (gold if they are yours).
 
 ## Time
 
