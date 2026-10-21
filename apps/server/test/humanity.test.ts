@@ -218,7 +218,7 @@ describe.skipIf(!TEST_DATABASE_URL)("economía de la humanidad y mercado", () =>
     // Recursos del proyecto: se dan a la colonia de sobra para poder aportarlo todo.
     await db
       .update(colonies)
-      .set({ metal: ECONOMY.storage.metal, volatiles: ECONOMY.storage.volatiles, crystal: ECONOMY.storage.crystal, alloys: ECONOMY.storage.alloys })
+      .set({ metal: ECONOMY.storage.metal, volatiles: ECONOMY.storage.volatiles, crystal: ECONOMY.storage.crystal, alloys: ECONOMY.storage.alloys, rare_metals: 0, exotic: 0 })
       .where(eq(colonies.id, p.colony.id));
     const chunks = [
       { metal: Math.min(cost.metal, 3000), volatiles: Math.min(cost.volatiles, 1500), crystal: cost.crystal, alloys: cost.alloys },
@@ -249,7 +249,7 @@ describe.skipIf(!TEST_DATABASE_URL)("economía de la humanidad y mercado", () =>
     const p = await player("e@ejemplo.com", "Paciente", sysA, 0);
     const def = getHumanityProject("trade_network")!;
     const cost = projectCost(def, 0);
-    await db.update(humanityProjects).set({ metal: cost.metal, volatiles: cost.volatiles, crystal: cost.crystal, alloys: cost.alloys }).where(eq(humanityProjects.projectId, def.id));
+    await db.update(humanityProjects).set({ metal: cost.metal, volatiles: cost.volatiles, crystal: cost.crystal, alloys: cost.alloys, rare_metals: 0, exotic: 0 }).where(eq(humanityProjects.projectId, def.id));
     // Un aporte en créditos que no llega: se programa la comprobación para cuando el tesoro lo tenga.
     expect(await p.cmd("humanity.contribute", { projectId: def.id, credits: 100 })).toMatchObject({ ok: true });
     const [ev] = await db.select().from(scheduledEvents).where(eq(scheduledEvents.kind, "humanity.fund"));

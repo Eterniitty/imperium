@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { ECONOMY, INSTALLATIONS, SHIP_CLASSES, STOCK_IDS, type StockAmounts } from "@imperium/content";
+import { ECONOMY, INSTALLATIONS, SHIP_CLASSES, STOCK_IDS, type StockAmounts, type StockId } from "@imperium/content";
 import { PLANET_NAME_MAX, PLANET_NAME_MIN, type Colony, type Fleet, type I18nKey, type Planet, type StarSystemDetail } from "@imperium/shared";
 import { minColonists, missingInstallations } from "@imperium/sim";
 import { connection, useWorld } from "../net/world";
@@ -7,14 +7,15 @@ import { useAuth } from "../state/auth";
 import { useClaims } from "../state/claims";
 import { useGame, useT } from "../state/store";
 import { fmtInt, fmtRate, liveHumans, livePopulation, liveStock, ownColonyAt, planetLabel } from "./colonies";
-import { RESOURCE_COLORS } from "./common";
+import { STOCK_COLORS } from "./common";
 import { contentText } from "./fleets";
 import { ShipThumb } from "./ShipThumb";
 import { formatDuration, useServerNow } from "./useNow";
 import { factionName } from "./aliens";
 import { PlanetSiege } from "./SiegePanel";
 
-const STOCK_COLORS: Record<string, string> = { ...RESOURCE_COLORS, alloys: "#ff9f5a" };
+/** Abreviatura de los recursos cuya inicial coincide con otro (metal / metales raros). */
+const SHORT: Partial<Record<StockId, string>> = { rare_metals: "R", exotic: "X" };
 
 /** Coste compacto: «M150 V20». */
 function Cost({ cost, stock }: { cost: StockAmounts; stock: StockAmounts | null }) {
@@ -23,7 +24,7 @@ function Cost({ cost, stock }: { cost: StockAmounts; stock: StockAmounts | null 
     <span className="cost mono small">
       {STOCK_IDS.filter((r) => cost[r] > 0).map((r) => (
         <span key={r} style={{ color: STOCK_COLORS[r], opacity: stock && stock[r] < cost[r] ? 0.45 : 1 }} title={t(`resource.${r}`)}>
-          {t(`resource.${r}`).charAt(0)}
+          {SHORT[r] ?? t(`resource.${r}`).charAt(0)}
           {cost[r]}
         </span>
       ))}
@@ -44,6 +45,7 @@ export function PlanetColony({ detail, planet }: { detail: StarSystemDetail; pla
   const colonies = useWorld((s) => s.colonies);
   const fleets = useWorld((s) => s.fleets);
   const humans = useWorld((s) => s.humans);
+  const flagship = useWorld((s) => s.flagship);
   const myId = useWorld((s) => s.myEmperorId);
   const emperor = useAuth((s) => s.emperor);
   const { claims, systemId: claimsFor } = useClaims();
@@ -172,6 +174,7 @@ export function PlanetColony({ detail, planet }: { detail: StarSystemDetail; pla
               </button>
             </div>
           )}
+          {emperorHere && flagship && <UnloadHold hold={flagship.hold} busy={busy} onUnload={() => void run(connection.command("flagship.unload", { colonyId: own.id }))} />}
           {emperorHere && <Disembark colony={own} aboard={aboard} now={now} busy={busy} onLand={(n) => void run(connection.command("colony.disembark", { colonyId: own.id, humans: n }))} />}
           <ColonyDetail
             colony={own}
@@ -189,6 +192,29 @@ export function PlanetColony({ detail, planet }: { detail: StarSystemDetail; pla
           {errorText}
         </p>
       )}
+    </div>
+  );
+}
+
+/** Descargar la bodega de la nave del Emperador (lo minado en el espacio profundo) en la colonia. */
+function UnloadHold({ hold, busy, onUnload }: { hold: Partial<Record<StockId, number>>; busy: boolean; onUnload: () => void }) {
+  const t = useT();
+  const items = STOCK_IDS.filter((r) => (hold[r] ?? 0) >= 0.1);
+  if (items.length === 0) return null;
+  return (
+    <div className="claim-form">
+      <span className="muted small">
+        {t("hold.label")}:{" "}
+        {items.map((r, i) => (
+          <span key={r}>
+            {i > 0 && " · "}
+            <span style={{ color: STOCK_COLORS[r] }}>{t(`resource.${r}`)}</span> {fmtInt(hold[r] ?? 0)}
+          </span>
+        ))}
+      </span>
+      <button className="btn" type="button" disabled={busy} onClick={onUnload}>
+        {t("hold.unload")}
+      </button>
     </div>
   );
 }
@@ -261,6 +287,9 @@ function ColonyDetail({
       {colony.shortage && (
         <p className="auth-warning" role="alert">
           {t("colony.shortage")}
+          {(colony.installations.refinery ?? 0) > 0 && <> {t("colony.shortageRefinery")}</>}
+          <br />
+          <span className="small">{t("colony.shortageHint")}</span>
         </p>
       )}
       {colony.capital && <p className="muted small">{t("colony.capitalHint")}</p>}
@@ -339,7 +368,7 @@ function ColonyDetail({
           <h3>{t("colony.buildShips")}</h3>
           <ul className="build-list">
             {SHIP_CLASSES.map((cls) => {
-              const cost = { ...cls.cost };
+              const cost = { rare_metals: 0, exotic: 0, ...cls.cost };
               const missing = missingInstallations(cls.requires, colony.installations);
               return (
                 <li key={cls.id}>

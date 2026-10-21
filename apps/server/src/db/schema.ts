@@ -82,7 +82,10 @@ export const emperors = pgTable("emperors", {
   kind: text("kind").notNull().default("player"),
   /** Facción alienígena del actor (solo con kind "alien"; id de `FACTIONS`). */
   factionId: text("faction_id").unique(),
-  /** Sistema donde está, o del que salió si está viajando: "sx:sy:sz:indice". */
+  /**
+   * Sistema donde está, o del que salió si está viajando: "sx:sy:sz:indice"; o
+   * una región de espacio profundo, "deep:x:y:z", si salió del túnel a mitad de viaje.
+   */
   systemId: text("system_id").notNull(),
   /**
    * Viaje: destino y horas de salida y llegada (las tres o ninguna). Si la
@@ -122,6 +125,11 @@ export const emperors = pgTable("emperors", {
    * por rondas). El espacio local lo lleva en memoria y lo guarda con los recursos.
    */
   flagshipHull: doublePrecision("flagship_hull").notNull().default(EMPEROR_FLAGSHIP.hull),
+  /**
+   * Bodega de la nave: lo minado en el espacio profundo, { recurso: unidades }
+   * (capacidad en `FLAGSHIP_HOLD`). Se descarga en colonias propias.
+   */
+  hold: jsonb("hold").notNull().default({}),
   /**
    * Fase 10: muerto y gestándose (las dos o ninguna). Mientras, la nave no está
    * en ningún sitio y el Emperador no puede moverse ni pilotar; el evento
@@ -282,6 +290,9 @@ export const colonies = pgTable(
     volatiles: doublePrecision("volatiles").notNull().default(0),
     crystal: doublePrecision("crystal").notNull().default(0),
     alloys: doublePrecision("alloys").notNull().default(0),
+    /** Minados en el espacio profundo (nunca los produce la colonia). */
+    rare_metals: doublePrecision("rare_metals").notNull().default(0),
+    exotic: doublePrecision("exotic").notNull().default(0),
     resolvedAt: timestamp("resolved_at", { withTimezone: true }).notNull(),
     foundedAt: timestamp("founded_at", { withTimezone: true }).notNull().defaultNow(),
     /**
@@ -301,7 +312,7 @@ export const colonies = pgTable(
     index("colonies_emperor_id_idx").on(t.emperorId),
     check(
       "colonies_stock_nonnegative",
-      sql`${t.population} >= 0 AND ${t.metal} >= 0 AND ${t.volatiles} >= 0 AND ${t.crystal} >= 0 AND ${t.alloys} >= 0`,
+      sql`${t.population} >= 0 AND ${t.metal} >= 0 AND ${t.volatiles} >= 0 AND ${t.crystal} >= 0 AND ${t.alloys} >= 0 AND ${t.rare_metals} >= 0 AND ${t.exotic} >= 0`,
     ),
   ],
 );
@@ -365,6 +376,8 @@ export const resourceLedger = pgTable(
     volatiles: doublePrecision("volatiles").notNull().default(0),
     crystal: doublePrecision("crystal").notNull().default(0),
     alloys: doublePrecision("alloys").notNull().default(0),
+    rare_metals: doublePrecision("rare_metals").notNull().default(0),
+    exotic: doublePrecision("exotic").notNull().default(0),
     /** Humanos que entran (+) o salen (−) de la colonia. */
     humans: doublePrecision("humans").notNull().default(0),
     /** Créditos que entran (+) o salen (−) de la cartera del Emperador (o del tesoro, sin Emperador ni colonia). */
@@ -480,12 +493,14 @@ export const battleRounds = pgTable(
 
 // --- Economía de la humanidad y mercado global ---
 
-/** Cuatro cantidades de recursos almacenables (progreso, envíos…). */
+/** Cantidades de los recursos almacenables (progreso, envíos…). */
 const stockColumns = () => ({
   metal: doublePrecision("metal").notNull().default(0),
   volatiles: doublePrecision("volatiles").notNull().default(0),
   crystal: doublePrecision("crystal").notNull().default(0),
   alloys: doublePrecision("alloys").notNull().default(0),
+  rare_metals: doublePrecision("rare_metals").notNull().default(0),
+  exotic: doublePrecision("exotic").notNull().default(0),
 });
 
 /**
@@ -583,7 +598,7 @@ export const marketOrders = pgTable(
     index("market_orders_book_idx").on(t.resource, t.side, t.price),
     index("market_orders_emperor_idx").on(t.emperorId),
     check("market_orders_side", sql`${t.side} IN ('buy', 'sell')`),
-    check("market_orders_resource", sql`${t.resource} IN ('metal', 'volatiles', 'crystal', 'alloys')`),
+    check("market_orders_resource", sql`${t.resource} IN ('metal', 'volatiles', 'crystal', 'alloys', 'rare_metals', 'exotic')`),
     check("market_orders_amounts", sql`${t.price} > 0 AND ${t.remaining} > 0 AND ${t.remaining} <= ${t.quantity} AND ${t.escrowCredits} >= 0`),
   ],
 );
@@ -887,4 +902,23 @@ export const wikiLog = pgTable(
     index("wiki_log_author_idx").on(t.authorId),
     check("wiki_log_action", sql`${t.action} IN ('save', 'restore', 'create', 'hide', 'show', 'group')`),
   ],
+);
+
+// --- Espacio profundo y minería ---
+
+/**
+ * Asteroides minados de las regiones de espacio profundo: lo extraído de cada
+ * uno (`mined`) a la hora `at`; desde ahí se regenera solo (`asteroidLeft` de
+ * `@imperium/sim`). Solo hay fila para los que alguien ha minado; el contenido
+ * de la región es determinista (semilla secreta) y no se guarda.
+ */
+export const asteroidDepletion = pgTable(
+  "asteroid_depletion",
+  {
+    regionId: text("region_id").notNull(),
+    asteroid: integer("asteroid").notNull(),
+    mined: doublePrecision("mined").notNull(),
+    at: timestamp("at", { withTimezone: true }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.regionId, t.asteroid] }), check("asteroid_depletion_mined", sql`${t.mined} >= 0`)],
 );

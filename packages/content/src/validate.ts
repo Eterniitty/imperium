@@ -140,7 +140,7 @@ export function validateContent(
       if (!inst) errors.push(`${where}: requisito desconocido ${req}`);
       else if (!(n! >= 1 && n! <= inst.maxPerColony)) errors.push(`${where}: requisito ${req} imposible (${n})`);
     }
-    for (const r of STOCK_IDS) if (sh.cost[r] > ECONOMY.storage[r]) errors.push(`${where}: cuesta más ${r} del que cabe en el almacén`);
+    for (const r of STOCK_IDS) if ((sh.cost[r] ?? 0) > ECONOMY.storage[r]) errors.push(`${where}: cuesta más ${r} del que cabe en el almacén`);
     errors.push(...validateBattle(where, sh));
     if (!(sh.model.lengthM > 0) || !(sh.model.engines >= 0)) errors.push(`${where}: modelo inválido`);
     errors.push(...validateCombat(where, sh.combat));

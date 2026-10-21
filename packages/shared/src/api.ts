@@ -197,7 +197,8 @@ export const PLANET_NAME_MIN = 2;
 export const PLANET_NAME_MAX = 32;
 
 /** Recursos almacenables de una colonia (la energía no se almacena ni se transporta). */
-export type StockId = "metal" | "volatiles" | "crystal" | "alloys";
+/** Los dos últimos solo se minan en el espacio profundo (o se compran en el mercado). */
+export type StockId = "metal" | "volatiles" | "crystal" | "alloys" | "rare_metals" | "exotic";
 export type Stock = Record<StockId, number>;
 
 /**
@@ -228,6 +229,9 @@ export interface FlagshipStatus {
    * reserva de emergencia se regenera solo (`regenFuel` de `@imperium/sim`).
    */
   supplies: { fuel: number; fuelMax: number; fuelAt: number; cannon: number; cannonMax: number; missiles: number; missilesMax: number; hull: number; hullMax: number };
+  /** Bodega (lo minado en el espacio profundo) y su capacidad (todos los recursos juntos). */
+  hold: Partial<Record<StockId, number>>;
+  holdCapacity: number;
 }
 
 /** Construcción en la cola de una colonia: una instalación o una nave (del astillero). */

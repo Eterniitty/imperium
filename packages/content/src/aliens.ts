@@ -418,11 +418,12 @@ export const ALIEN_AI = {
   trade: {
     /** Recursos que venden y compran. */
     sells: ["volatiles", "metal"] as const,
-    buys: ["crystal"] as const,
+    /** También compran metales raros minados por los Emperadores (siempre hay a quién vendérselos). */
+    buys: ["crystal", "rare_metals"] as const,
     /** Cantidad de cada orden [mín, máx]. */
     quantity: [100, 400] as const,
     /** Precio de referencia por unidad (si el mercado aún no tiene precio). */
-    referencePrice: { metal: 1, volatiles: 1.5, crystal: 6, alloys: 4 } as const,
+    referencePrice: { metal: 1, volatiles: 1.5, crystal: 6, alloys: 4, rare_metals: 14, exotic: 90 } as const,
     /** Margen sobre el precio de referencia: venden más caro y compran más barato. */
     spread: 0.08,
     /** Órdenes abiertas como mucho. */

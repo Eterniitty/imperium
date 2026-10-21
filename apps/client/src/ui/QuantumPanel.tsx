@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useStore } from "zustand";
 import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, QUANTUM_MAX_LY } from "@imperium/content";
 import { generateSector } from "@imperium/procgen";
-import { distance, worldToSector, type StarSystemSummary } from "@imperium/shared";
+import { distance, isDeepId, worldToSector, type StarSystemSummary, type WorldPosition } from "@imperium/shared";
 import { quantumFuelCost, quantumRangeLy, regenFuel, travelDurationMs } from "@imperium/sim";
 import { UNIVERSE_SEED } from "../config";
 import { engineRef } from "../engineRef";
@@ -17,7 +17,7 @@ import { formatDuration } from "./useNow";
 const MAX_DESTINATIONS = 40;
 
 /** Sistemas a `rangeLy` o menos de `center`, del más cercano al más lejano (sin el propio). */
-function reachable(center: StarSystemSummary, rangeLy: number): Array<{ system: StarSystemSummary; ly: number }> {
+function reachable(center: { id: string; position: WorldPosition }, rangeLy: number): Array<{ system: StarSystemSummary; ly: number }> {
   const p = center.position;
   const min = worldToSector({ x: p.x - rangeLy, y: p.y - rangeLy, z: p.z - rangeLy });
   const max = worldToSector({ x: p.x + rangeLy, y: p.y + rangeLy, z: p.z + rangeLy });
@@ -50,10 +50,13 @@ export function QuantumPanel() {
   const live = useStore(spaceStore, (s) => s.supplies);
   const fuel = live?.fuel ?? (flagship ? regenFuel(flagship.supplies.fuel, (serverNow() - flagship.supplies.fuelAt) / 1000) : FLAGSHIP_SUPPLIES.fuelMax);
   const range = Math.min(QUANTUM_MAX_LY, quantumRangeLy(fuel));
-  const here = emperor && !emperor.travel && selected?.id === emperor.location.systemId ? selected : null;
+  // Desde un sistema (el seleccionado) o desde el espacio profundo (la región donde está la nave).
+  const loc = emperor && !emperor.travel ? emperor.location : null;
+  const here = loc && isDeepId(loc.systemId) ? { id: loc.systemId, position: loc.position } : loc && selected?.id === loc.systemId ? selected : null;
   // Se recalcula solo al cambiar de sistema o de alcance (redondeado), no a cada aviso de combustible.
   const rangeKey = Math.floor(range);
-  const list = useMemo(() => (open && here ? reachable(here, rangeKey) : []), [open, here, rangeKey]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const list = useMemo(() => (open && here ? reachable(here, rangeKey) : []), [open, here?.id, rangeKey]);
   if (!open || !here) return null;
   const speed = EMPEROR_FLAGSHIP.speedLyPerHour * timeScale;
 

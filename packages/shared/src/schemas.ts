@@ -75,6 +75,11 @@ export type EmperorCreateBody = z.input<typeof EmperorCreateBodySchema>;
 /** Identificador de sistema. Coordenadas de sector acotadas para no generar sectores absurdos. */
 export const SystemIdSchema = z.string().regex(/^-?\d{1,7}:-?\d{1,7}:-?\d{1,7}:\d{1,3}$/);
 
+/** Región de espacio profundo («deep:x:y:z»). */
+export const DeepIdSchema = z.string().regex(/^deep:-?\d{1,7}:-?\d{1,7}:-?\d{1,7}$/);
+/** Donde se puede pilotar: un sistema estelar o una región de espacio profundo. */
+const PlaceIdSchema = z.union([SystemIdSchema, DeepIdSchema]);
+
 const CmdIdSchema = z.string().regex(/^[A-Za-z0-9_-]{8,64}$/);
 /** Cantidad a transportar: positiva y acotada. */
 const Amount = z.number().finite().min(0).max(1e7);
@@ -84,7 +89,7 @@ const Vec3Schema = z.tuple([Coord, Coord, Coord]);
 const QuatSchema = z.tuple([z.number().min(-1.01).max(1.01), z.number().min(-1.01).max(1.01), z.number().min(-1.01).max(1.01), z.number().min(-1.01).max(1.01)]);
 
 /** Mensajes del cliente por el WebSocket (ver `protocol.ts`). */
-const Stock4 = z.enum(["metal", "volatiles", "crystal", "alloys"]);
+const Stock4 = z.enum(["metal", "volatiles", "crystal", "alloys", "rare_metals", "exotic"]);
 /** Doctrina de un Heredero (Fase 10). */
 const Doctrine = z.enum(["prosperity", "bastion", "balanced"]);
 
@@ -110,7 +115,7 @@ export const ClientMessageSchema = z.union([
     args: z.object({
       projectId: z.string().regex(/^[a-z_]{1,32}$/),
       colonyId: z.uuid().optional(),
-      amounts: z.object({ metal: Amount, volatiles: Amount, crystal: Amount, alloys: Amount }).partial().optional(),
+      amounts: z.object({ metal: Amount, volatiles: Amount, crystal: Amount, alloys: Amount, rare_metals: Amount, exotic: Amount }).partial().optional(),
       credits: z.number().finite().min(0).max(1e9).optional(),
     }),
   }),
@@ -120,6 +125,10 @@ export const ClientMessageSchema = z.union([
     op: z.literal("emperor.move"),
     args: z.object({ systemId: SystemIdSchema }),
   }),
+  // Espacio profundo y minería: salir del túnel, descargar la bodega, refinería de a bordo.
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("emperor.drop"), args: z.object({}).strict() }),
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("flagship.unload"), args: z.object({ colonyId: z.uuid() }) }),
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("flagship.refine"), args: z.object({ on: z.boolean() }) }),
   z.object({
     t: z.literal("cmd"),
     cmdId: CmdIdSchema,
@@ -200,10 +209,11 @@ export const ClientMessageSchema = z.union([
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("heir.incarnate"), args: z.object({ heirId: z.uuid() }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("colony.disembark"), args: z.object({ colonyId: z.uuid(), humans: z.number().int().min(1).max(100_000) }) }),
   z.object({ t: z.literal("sub"), topic: z.enum(["emperors", "me"]) }),
-  z.object({ t: z.literal("pose"), systemId: SystemIdSchema, p: Vec3Schema, q: QuatSchema, v: Vec3Schema }),
+  z.object({ t: z.literal("pose"), systemId: PlaceIdSchema, p: Vec3Schema, q: QuatSchema, v: Vec3Schema }),
   z.object({ t: z.literal("leave") }),
   z.object({ t: z.literal("fire"), weapon: z.enum(["cannon", "missile"]), dir: Vec3Schema, target: z.string().max(64).optional() }),
   z.object({ t: z.literal("rift"), phase: z.enum(["charge", "cancel", "arrive"]), at: Vec3Schema, q: QuatSchema }),
+  z.object({ t: z.literal("mine"), asteroid: z.number().int().min(0).max(999).nullable() }),
 ]);
 
 // --- Wiki: panel de edición (solo administradores) ---

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { translate, type I18nKey, type SectorCoord, type StarSystemSummary, type WorldPosition } from "@imperium/shared";
+import { isDeepId, translate, type I18nKey, type SectorCoord, type StarSystemSummary, type WorldPosition } from "@imperium/shared";
 import { isTravelling, positionAt } from "@imperium/sim";
 import { STAR_CLASSES } from "@imperium/procgen";
 import { spaceStore } from "../net/space";
@@ -114,6 +114,7 @@ export class Engine {
    */
   private onKey(code: string): void {
     if (isBound("toggleMap", code)) return this.toggleMap();
+    if (isBound("dropOut", code) && this.jumping) return void this.dropOut();
     if (isBound("jump", code) && this.active === this.galaxy) return void this.jumpToSelected();
     if (isBound("jump", code) && this.active === this.system && this.system.isPiloting && !this.system.quantumActive) {
       const store = gameStore.getState();
@@ -139,11 +140,24 @@ export class Engine {
     // Fase 10: caído y gestándose, no hay nave que pilotar.
     if (!emperor || emperor.gestating || isTravelling(emperor, now)) return false;
     const here = emperor.travel ? emperor.travel.to : emperor.location;
+    const store = gameStore.getState();
+    // Espacio profundo: salió del túnel a mitad de viaje (no hay sistema; los asteroides los manda el servidor).
+    if (isDeepId(here.systemId)) {
+      this.galaxy.follow(null);
+      this.jumping = null;
+      store.select(null);
+      this.system.buildDeep(here.systemId);
+      this.shown = { id: here.systemId, explored: true };
+      this.switchTo(this.system);
+      store.setView("system");
+      this.lastPilotFrom = from?.clone() ?? null;
+      this.system.pilot(from);
+      return true;
+    }
     const summary = findSystemSummary(here.systemId);
     if (!summary) return false;
     this.galaxy.follow(null);
     this.jumping = null;
-    const store = gameStore.getState();
     store.select(summary);
     this.buildSystem(summary);
     this.switchTo(this.system);
@@ -241,6 +255,20 @@ export class Engine {
     this.tunnel.setJourney(color(emperor.location.systemId), color(emperor.travel.to.systemId), emperor.travel.departAt, emperor.travel.arriveAt);
     this.switchTo(this.tunnel);
     gameStore.getState().setView("tunnel");
+  }
+
+  /**
+   * Sale del túnel cuántico a mitad de viaje: el servidor deja la nave en la
+   * región de espacio profundo de su posición. Al llegar el Emperador sin
+   * viaje, `checkArrival` entra pilotando allí (como al llegar a un sistema).
+   */
+  async dropOut(): Promise<void> {
+    const emperor = this.emperor();
+    if (!emperor || !isTravelling(emperor, serverNow())) return;
+    const error = await authStore.getState().dropEmperor();
+    if (error) return this.notify(error);
+    playQuantumTear(0.6);
+    if (this.active !== this.tunnel) this.enterTunnel();
   }
 
   /** Durante el viaje, el mapa galáctico siguiendo a la nave (M vuelve al túnel). */

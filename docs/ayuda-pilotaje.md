@@ -24,6 +24,8 @@ Texto para jugadores (lo usará la ventana de ayuda del juego). Las teclas son l
 | T | Cámara: cabina (primera persona) o exterior (tercera) |
 | **J** | **Salto cuántico**: elegir destino (otra vez J o Esc cancela la carga) |
 | M | Mapa galáctico / volver a los mandos (durante un viaje: mapa / túnel) |
+| K | Durante un viaje: **salir del túnel** y quedarse en el espacio profundo |
+| L (mantener) | Láser de minería (espacio profundo, apuntando a un asteroide) |
 
 ## Velocidades
 
@@ -84,7 +86,8 @@ Cuando dejas de pilotar (mapa, cerrar el juego), la nave **se queda donde estaba
 1. Pulsa **J** al pilotar: aparece la lista de sistemas **al alcance de tu combustible**, con la distancia, la duración del viaje y el combustible que gasta. También puedes elegir la estrella en el **mapa** (M) y pulsar J o «Saltar aquí».
 2. La nave se **alinea** sola con el destino y **carga el motor** cuántico (5 s, con su sonido). J o Esc cancelan. Delante del morro se abre una **grieta en el espacio** (un objeto del mundo: la ven los demás pilotos del sistema); al saltar, la nave entra en ella y, al llegar, sale de otra en el destino.
 3. Al saltar, ves el **túnel cuántico** con el destino, el **tiempo restante** y el progreso. Con **M** miras el mapa (la cámara sigue a tu nave) y vuelves al túnel.
-4. Al llegar apareces en el **borde del sistema de destino**, del lado por el que llegas, a los mandos. El sistema queda descubierto (lo que cubre tu escáner).
+4. Con **K** (o el botón del túnel) puedes **salir a mitad de viaje**: quedas en una región de espacio profundo, pagas solo el combustible recorrido y desde allí vuelves a saltar con J. Puede haber asteroides que minar con **L** (bodega, refinería de a bordo y descarga en tus colonias; ver la Wiki «Espacio profundo y minería»).
+5. Al llegar apareces en el **borde del sistema de destino**, del lado por el que llegas, a los mandos. El sistema queda descubierto (lo que cubre tu escáner).
 
 Duración: unos **200 años luz por hora** — un vecino a 10 a.l. son 3 minutos; el salto más largo con el depósito lleno (unos **133 a.l.**) dura unos **40 minutos**. El alcance lo marca el combustible: para ir más lejos, salta por etapas y reposta en tus colonias.
 

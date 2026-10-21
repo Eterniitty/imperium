@@ -10,7 +10,7 @@ import {
   type HeirDoctrine,
 } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
-import { distance, type CommandError, type CradleView, type DeathRecord, type HeirDoctrineId, type HeirView, type LineageStatus, type RebirthPlace, type WorldPosition } from "@imperium/shared";
+import { deepLocation, distance, type CommandError, type CradleView, type DeathRecord, type HeirDoctrineId, type HeirView, type LineageStatus, type RebirthPlace, type WorldPosition } from "@imperium/shared";
 import {
   canAfford,
   decayedStreak,
@@ -239,7 +239,7 @@ export class LineageService {
       return null;
     }
     const [death] = await tx.select().from(emperorDeaths).where(eq(emperorDeaths.emperorId, emperorId)).orderBy(desc(emperorDeaths.diedAt)).limit(1);
-    const from = findSystem(this.seed, e.systemId)?.position ?? null;
+    const from = findSystem(this.seed, e.systemId)?.position ?? deepLocation(e.systemId)?.position ?? null;
     const list = await this.cradles(tx, emperorId);
     const cradle = list.find((c) => c.colonyId === e.rebirthColonyId) ?? (await this.pickCradle(tx, emperorId, e.preferredCradleId, from));
     let systemId: string;

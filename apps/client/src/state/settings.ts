@@ -8,11 +8,11 @@ import { useStore } from "zustand";
  */
 export const ACTIONS = {
   // Pilotar la nave (y el vuelo libre de cámara en el mapa).
-  flight: ["forward", "back", "strafeLeft", "strafeRight", "up", "down", "rollLeft", "rollRight", "turnLeft", "turnRight", "pitchUp", "pitchDown", "boost", "cameraView", "fireCannon", "fireMissile", "lockTarget", "pulse", "flightAssist", "mouseFlight", "cameraReset", "engines"],
+  flight: ["forward", "back", "strafeLeft", "strafeRight", "up", "down", "rollLeft", "rollRight", "turnLeft", "turnRight", "pitchUp", "pitchDown", "boost", "cameraView", "fireCannon", "fireMissile", "lockTarget", "pulse", "flightAssist", "mouseFlight", "cameraReset", "engines", "mine"],
   // Mover la cámara por el mapa galáctico.
   map: ["mapForward", "mapBack", "mapLeft", "mapRight", "mapUp", "mapDown", "mapBoost", "flightMode", "focus", "enter", "deselect"],
   // En cualquier momento.
-  general: ["jump", "toggleMap"],
+  general: ["jump", "toggleMap", "dropOut"],
 } as const;
 
 export type ActionContext = keyof typeof ACTIONS;
@@ -44,6 +44,8 @@ export const DEFAULT_BINDINGS: Bindings = {
   mouseFlight: ["KeyG"],
   cameraReset: ["KeyB"],
   engines: ["KeyI"],
+  // Espacio profundo: láser de minería (mantener) y salir del túnel cuántico.
+  mine: ["KeyL"],
   mapForward: ["KeyW", "ArrowUp"],
   mapBack: ["KeyS", "ArrowDown"],
   mapLeft: ["KeyA", "ArrowLeft"],
@@ -57,6 +59,7 @@ export const DEFAULT_BINDINGS: Bindings = {
   deselect: ["Escape"],
   jump: ["KeyJ"],
   toggleMap: ["KeyM"],
+  dropOut: ["KeyK"],
 };
 
 const STORAGE_KEY = "imperium.keys";
@@ -179,10 +182,12 @@ export interface Preferences {
   sfxVolume: number;
   /** Accesibilidad: efectos visuales suaves, sin destellos fuertes ni sacudidas. */
   reduceEffects: boolean;
+  /** Ya se vio (y se respondió) el aviso de fotosensibilidad; en falso, se vuelve a mostrar. */
+  photosensitivityAck: boolean;
   flight: FlightPrefs;
 }
 
-const DEFAULT_PREFERENCES: Preferences = { quality: "auto", uiScale: "auto", musicVolume: 0.5, sfxVolume: 0.6, reduceEffects: false, flight: DEFAULT_FLIGHT_PREFS };
+const DEFAULT_PREFERENCES: Preferences = { quality: "auto", uiScale: "auto", musicVolume: 0.5, sfxVolume: 0.6, reduceEffects: false, photosensitivityAck: false, flight: DEFAULT_FLIGHT_PREFS };
 const PREFS_KEY = "imperium.prefs";
 
 function loadPrefs(): Preferences {
@@ -197,6 +202,7 @@ function loadPrefs(): Preferences {
       musicVolume: typeof volume === "number" && volume >= 0 && volume <= 1 ? volume : DEFAULT_PREFERENCES.musicVolume,
       sfxVolume: typeof sfx === "number" && sfx >= 0 && sfx <= 1 ? sfx : DEFAULT_PREFERENCES.sfxVolume,
       reduceEffects: saved?.reduceEffects === true,
+      photosensitivityAck: saved?.photosensitivityAck === true,
       flight: loadFlightPrefs(saved?.flight),
     };
   } catch {

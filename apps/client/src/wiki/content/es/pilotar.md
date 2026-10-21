@@ -10,7 +10,7 @@ Todas las teclas se pueden cambiar en **Ajustes → Controles** (hasta dos por a
 
 {{tabla:teclas-vuelo}}
 
-**Arrancar los motores.** Al tomar los mandos, la nave está con los motores apagados: el HUD se ve tenue y en el centro te recuerda la tecla. Pulsa [[I]] y empieza el arranque (unos segundos): se encienden el reactor, las bombas y las luces de estado, suena la turbina, las toberas se encienden y el HUD se activa. Sin motores no hay empuje, giros ni motor de pulso (la nave solo sigue con su inercia y la gravedad). La misma tecla los apaga. Si das la orden de salto cuántico con los motores apagados, arrancan solos antes de alinear la nave; al llegar de un salto ya están en marcha.
+**Arrancar los motores.** Al tomar los mandos, la nave está con los motores apagados: el HUD se ve tenue y en el centro te recuerda la tecla. Pulsa [[I]] y empieza el arranque (unos segundos): se encienden el reactor, las bombas y las luces de estado, suena la turbina, las toberas se encienden y el HUD se activa. Sin motores no hay empuje, giros, motor de pulso, armas ni láser de minería (la nave solo sigue con su inercia y la gravedad). La misma tecla los apaga. Si das la orden de salto cuántico con los motores apagados, arrancan solos antes de alinear la nave; al llegar de un salto ya están en marcha.
 
 **La cámara y la nave van por separado.** El ratón tiene dos modos, que se cambian con [[G]] (el HUD dice en cuál estás):
 
@@ -96,6 +96,10 @@ Vuela hasta el **borde del sistema** (unos miles de kilómetros más allá del �
 - La velocidad de salto está en la tabla de arriba: unos minutos a las estrellas cercanas y hasta unos **40 minutos** el salto más largo. El **alcance** lo marca el combustible: para ir más lejos, salta por etapas y reposta en tus colonias.
 - Al llegar, tu escáner [descubre](/wiki/niebla) el sistema y los que tenga al alcance.
 - Se puede saltar a cualquier estrella al alcance, descubierta o no.
+
+### Salir del túnel a mitad de viaje
+
+En el túnel, [[K]] (o el botón **Salir del túnel aquí**) detiene el viaje: quedas en el **espacio profundo**, entre las dos estrellas, y solo gastas el combustible del tramo recorrido. Allí puede haber asteroides que minar con [[L]]. Ver [Espacio profundo y minería](/wiki/espacio-profundo).
 
 ## Vuelo compartido
 

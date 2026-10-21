@@ -10,7 +10,7 @@ Every key can be changed in **Settings → Controls** (up to two per action). Th
 
 {{tabla:teclas-vuelo}}
 
-**Starting the engines.** When you take the controls, the ship's engines are off: the HUD is dimmed and reminds you of the key in the centre. Press [[I]] to start them (a few seconds): reactor, pumps and status lights come on, the turbine spools up, the nozzles ignite and the HUD powers up. Without engines there is no thrust, no turning and no pulse drive (the ship only keeps its momentum and feels gravity). The same key shuts them down. If you order a quantum jump with the engines off, they start by themselves before the ship aligns; when you arrive from a jump they are already running.
+**Starting the engines.** When you take the controls, the ship's engines are off: the HUD is dimmed and reminds you of the key in the centre. Press [[I]] to start them (a few seconds): reactor, pumps and status lights come on, the turbine spools up, the nozzles ignite and the HUD powers up. Without engines there is no thrust, no turning, no pulse drive, no weapons and no mining laser (the ship only keeps its momentum and feels gravity). The same key shuts them down. If you order a quantum jump with the engines off, they start by themselves before the ship aligns; when you arrive from a jump they are already running.
 
 **The camera and the ship are separate.** The mouse has two modes, switched with [[G]] (the HUD shows which one is active):
 
@@ -96,6 +96,10 @@ Fly to the **edge of the system** (a few thousand kilometres beyond the outermos
 - Jump speed is in the table above: a few minutes to nearby stars and up to about **40 minutes** for the longest jump. **Range** is set by your fuel: to go further, jump in stages and refuel at your colonies.
 - On arrival, your scanner [discovers](/wiki/niebla) the system and those within range.
 - You can jump to any star within range, discovered or not.
+
+### Dropping out halfway
+
+In the tunnel, [[K]] (or the **Drop out here** button) stops the trip: you stay in **deep space**, between the two stars, and only spend the fuel for the distance covered. There may be asteroids there to mine with [[L]]. See [Deep space and mining](/wiki/espacio-profundo).
 
 ## Shared flight
 

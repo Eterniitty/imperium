@@ -42,9 +42,9 @@ describe("economía de la humanidad", () => {
     const l1 = projectCost(def, 1);
     expect(l0.credits).toBe(def.baseCost.credits);
     expect(l1.metal).toBe(Math.round(def.baseCost.metal * def.costGrowth));
-    const progress = { metal: l0.metal, volatiles: 0, crystal: l0.crystal, alloys: l0.alloys };
+    const progress = { metal: l0.metal, volatiles: 0, crystal: l0.crystal, alloys: l0.alloys, rare_metals: 0, exotic: 0 };
     expect(projectResourcesReady(l0, progress)).toBe(false);
-    expect(projectMissing(l0, progress)).toEqual({ metal: 0, volatiles: l0.volatiles, crystal: 0, alloys: 0 });
+    expect(projectMissing(l0, progress)).toEqual({ metal: 0, volatiles: l0.volatiles, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 });
     expect(projectResourcesReady(l0, { ...progress, volatiles: l0.volatiles + 5 })).toBe(true);
   });
 

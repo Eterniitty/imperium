@@ -41,7 +41,7 @@ const EnvSchema = z
     API_REQUESTS_PER_IP_MINUTE: z.coerce.number().int().min(1).max(100_000).default(600),
     // Emperadores humanos de la IA (Fase 11) que se crean al arrancar. Por defecto 3
     // (ninguno con APP_ENV=test, para que las pruebas de navegador no los vean).
-    AI_EMPERORS: z.coerce.number().int().min(0).max(6).optional(),
+    AI_EMPERORS: z.coerce.number().int().min(0).max(12).optional(),
     // Administradores (panel de edición de la Wiki): correos separados por comas. Lo
     // decide solo el servidor, al comparar con el correo de la cuenta de la sesión.
     ADMIN_EMAILS: z

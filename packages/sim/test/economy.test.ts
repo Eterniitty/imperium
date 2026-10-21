@@ -95,9 +95,9 @@ describe("producción", () => {
   });
 
   it("la refinería convierte metal y volátiles en aleaciones y se frena al agotarlos", () => {
-    const flows = { extraction: { metal: 1, volatiles: 1, crystal: 0, alloys: 0 }, refinery: { metal: 6, volatiles: 2, alloys: 3 }, upkeep: 0 };
+    const flows = { extraction: { metal: 1, volatiles: 1, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 }, refinery: { metal: 6, volatiles: 2, alloys: 3 }, upkeep: 0 };
     // Con 10 de metal: 2 horas a pleno rendimiento (pierde 5/h), luego al ritmo de la extracción (1/6).
-    const s = advanceStock({ metal: 10, volatiles: 100, crystal: 0, alloys: 0 }, flows, 4);
+    const s = advanceStock({ metal: 10, volatiles: 100, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 }, flows, 4);
     expect(s.metal).toBeCloseTo(0, 6);
     expect(s.alloys).toBeCloseTo(2 * 3 + 2 * 3 * (1 / 6), 6);
     // Agotado el metal, la tasa neta es cero y las aleaciones siguen al ritmo del metal que llega.
@@ -105,7 +105,7 @@ describe("producción", () => {
     expect(rates.metal).toBe(0);
     expect(rates.alloys).toBeCloseTo(0.5);
     // Con el almacén de aleaciones lleno, la refinería se para.
-    const full = netRates({ metal: 100, volatiles: 100, crystal: 0, alloys: ECONOMY.storage.alloys }, flows);
+    const full = netRates({ metal: 100, volatiles: 100, crystal: 0, alloys: ECONOMY.storage.alloys, rare_metals: 0, exotic: 0 }, flows);
     expect(full.alloys).toBe(0);
     expect(full.metal).toBe(1);
   });
@@ -122,10 +122,10 @@ describe("producción", () => {
   });
 
   it("pagar, permitir y límites de instalaciones", () => {
-    const stock = { metal: 200, volatiles: 50, crystal: 0, alloys: 0 };
-    expect(canAfford(stock, { metal: 150, volatiles: 20, crystal: 0, alloys: 0 })).toBe(true);
-    expect(canAfford(stock, { metal: 250, volatiles: 0, crystal: 0, alloys: 0 })).toBe(false);
-    expect(pay(stock, { metal: 150, volatiles: 20, crystal: 0, alloys: 0 })).toEqual({ metal: 50, volatiles: 30, crystal: 0, alloys: 0 });
+    const stock = { metal: 200, volatiles: 50, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 };
+    expect(canAfford(stock, { metal: 150, volatiles: 20, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 })).toBe(true);
+    expect(canAfford(stock, { metal: 250, volatiles: 0, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 })).toBe(false);
+    expect(pay(stock, { metal: 150, volatiles: 20, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 })).toEqual({ metal: 50, volatiles: 30, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 });
     expect(installationAllowed("shipyard", {}, 0)).toBe(true);
     expect(installationAllowed("shipyard", {}, 1)).toBe(false);
     expect(installationAllowed("shipyard", { shipyard: 1 }, 0)).toBe(false);
@@ -133,17 +133,17 @@ describe("producción", () => {
 });
 
 describe("mantenimiento", () => {
-  const base = { extraction: { metal: 4, volatiles: 3, crystal: 0, alloys: 0 }, refinery: { metal: 6, volatiles: 2, alloys: 3 } };
+  const base = { extraction: { metal: 4, volatiles: 3, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 }, refinery: { metal: 6, volatiles: 2, alloys: 3 } };
 
   it("las instalaciones consumen volátiles de su colonia", () => {
     expect(installationsUpkeep({ mine: 2, refinery: 1, power_plant: 1, shipyard: 1 })).toBeCloseTo(2 * 0.5 + 1 + 0.5 + 1.5);
-    const rates = netRates({ metal: 100, volatiles: 100, crystal: 0, alloys: 0 }, { ...base, upkeep: 5 });
+    const rates = netRates({ metal: 100, volatiles: 100, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 }, { ...base, upkeep: 5 });
     // 3 extraídos − 2 de la refinería − 5 de mantenimiento.
     expect(rates.volatiles).toBeCloseTo(-4);
   });
 
   it("sin volátiles se paga primero el mantenimiento; la refinería usa lo que sobra", () => {
-    const empty = { metal: 100, volatiles: 0, crystal: 0, alloys: 0 };
+    const empty = { metal: 100, volatiles: 0, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 };
     // Sobra 1 de los 3 extraídos tras pagar 2: la refinería va a la mitad (necesita 2).
     const some = netRates(empty, { ...base, upkeep: 2 });
     expect(some.volatiles).toBeCloseTo(0);

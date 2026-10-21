@@ -1,12 +1,12 @@
-import { EMPEROR_FLAGSHIP, getShipClass, HUMANS, STARTING_FLEET } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, getShipClass, HUMANS, STARTING_FLEET } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
-import { distance, type CommandError, type Emperor } from "@imperium/shared";
-import { arrivalPark, isTravelling, quantumFuelCost, regenFuel, travelDurationMs, type SystemLayout } from "@imperium/sim";
+import { deepRegionIdAt, distance, isDeepId, type CommandError, type Emperor, type WorldPosition } from "@imperium/shared";
+import { arrivalPark, isTravelling, positionAt, quantumFuelCost, regenFuel, travelDurationMs, type SystemLayout } from "@imperium/sim";
 import { eq, ne, sql } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
 import { emperors, fleets, ships } from "../db/schema";
-import { discoverAround, fleetScannerRangeLy } from "../discovery/service";
+import { discoverAround, discoverNear, fleetScannerRangeLy } from "../discovery/service";
 import { schedule } from "../events/queue";
 import { parkColumns } from "../space/flagship";
 import { findSystem, nameKey, pickSpawnSystem, placeFromRow, type PlaceRow } from "./world";
@@ -25,6 +25,8 @@ type Row = PlaceRow & { name: string; kind: string; deadAt: Date | null };
 
 export type CreateResult = { ok: true; emperor: Emperor } | { ok: false; error: "emperor_exists" | "name_taken" };
 export type MoveResult = { ok: true; emperor: Emperor } | { ok: false; error: CommandError };
+/** Salida del túnel: el Emperador, la región donde queda y los sistemas que descubre su escáner desde allí. */
+export type DropResult = { ok: true; emperor: Emperor; regionId: string; discovered: string[] } | { ok: false; error: CommandError };
 
 /**
  * Lectura y escritura de Emperadores. Toda la lógica de reglas que no depende
@@ -159,5 +161,60 @@ export class EmperorService {
       await schedule(tx, "emperor.arrive", new Date(arriveAt), { emperorId: row.id, systemId: dest.id });
       return { ok: true, emperor: this.toEmperor(updated!) };
     });
+  }
+
+  /**
+   * Sale del túnel cuántico a mitad de viaje: la nave queda en la región de
+   * espacio profundo que corresponde a su posición en la línea entre los dos
+   * sistemas (según el progreso del viaje), aparcada y quieta en su punto de
+   * llegada. Del combustible del salto, que se pagó al saltar, solo se gasta
+   * la parte recorrida: el resto vuelve al depósito. Desde allí puede volver a
+   * saltar (o reanudar hacia el mismo destino, pagando lo que falta). El
+   * evento de llegada que quedaba programado ya no hace nada (no llega).
+   */
+  async drop(accountId: string): Promise<DropResult> {
+    return this.db.transaction(async (tx): Promise<DropResult> => {
+      const [row] = await tx
+        .select({ ...columns, fuel: emperors.fuel, fuelAt: emperors.fuelAt })
+        .from(emperors)
+        .where(eq(emperors.accountId, accountId))
+        .for("update")
+        .limit(1);
+      if (!row) return { ok: false, error: "no_emperor" };
+      if (row.deadAt) return { ok: false, error: "dead" };
+      const now = this.now();
+      const current = this.toEmperor(row);
+      const travel = current.travel;
+      if (!travel || !isTravelling(current, now)) return { ok: false, error: "not_travelling" };
+      const k = Math.max(0, Math.min(1, (now - travel.departAt) / Math.max(1, travel.arriveAt - travel.departAt)));
+      const at: WorldPosition = positionAt(current, now);
+      const regionId = deepRegionIdAt(at);
+      // Lo que no se ha recorrido del salto vuelve al depósito.
+      const cost = quantumFuelCost(distance(current.location.position, travel.to.position));
+      const fuel = Math.min(FLAGSHIP_SUPPLIES.fuelMax, regenFuel(row.fuel, (now - row.fuelAt.getTime()) / 1000) + cost * (1 - k));
+      const [updated] = await tx
+        .update(emperors)
+        .set({
+          systemId: regionId,
+          destSystemId: null,
+          departAt: null,
+          arriveAt: null,
+          // Quieta en el punto de llegada de la región (allí no hay estrella que orbitar).
+          ...parkColumns({ p: [0, 0, 0], at: now }),
+          fuel,
+          fuelAt: new Date(now),
+          updatedAt: sql`now()`,
+        })
+        .where(eq(emperors.id, row.id))
+        .returning(columns);
+      // El escáner de la nave barre lo que tiene alrededor (niebla de guerra).
+      const discovered = await discoverNear(tx, this.seed, row.id, this.toEmperor(updated!).location.position, EMPEROR_FLAGSHIP.scannerRangeLy);
+      return { ok: true, emperor: this.toEmperor(updated!), regionId, discovered };
+    });
+  }
+
+  /** ¿Está el Emperador (no de viaje) en una región de espacio profundo? */
+  static inDeepSpace(e: Emperor, now: number): boolean {
+    return !isTravelling(e, now) && isDeepId((e.travel?.to ?? e.location).systemId);
   }
 }

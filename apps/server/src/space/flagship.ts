@@ -1,7 +1,7 @@
-import { EMPEROR_FLAGSHIP, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES } from "@imperium/content";
+import { ECONOMY, EMPEROR_FLAGSHIP, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, HOLD_STOCK_IDS, type StockId } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
-import type { FlagshipStatus, StarSystemDetail, StarSystemSummary } from "@imperium/shared";
-import { defaultPark, regenFuel, sanitizePark, systemLayout, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
+import { isDeepId, type CommandError, type FlagshipStatus, type StarSystemDetail, type StarSystemSummary } from "@imperium/shared";
+import { deepLayout, defaultPark, regenFuel, sanitizeHold, sanitizePark, systemLayout, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import { and, eq, isNull, lte, or } from "drizzle-orm";
 import type { ColonyService } from "../colony/service";
 import type { ServerConfig } from "../config";
@@ -9,6 +9,9 @@ import type { Database } from "../db/client";
 import { colonies, emperors } from "../db/schema";
 import { findSystem, placeFromRow } from "../emperor/world";
 import type { StoredSupplies } from "./combat";
+
+/** Disposición común de las regiones de espacio profundo. */
+const DEEP_LAYOUT = deepLayout();
 
 /** Columnas de la nave aparcada de un Emperador. */
 export interface ParkRow {
@@ -95,6 +98,8 @@ export class FlagshipService {
   layout(systemId: string): SystemLayout | null {
     let l = this.layouts.get(systemId);
     if (l === undefined) {
+      // Espacio profundo: sin estrella ni planetas, todas las regiones iguales para el vuelo.
+      if (isDeepId(systemId)) return DEEP_LAYOUT;
       const summary = findSystem(this.seed, systemId);
       l = summary ? systemLayout(this.detailOf(summary)) : null;
       this.layouts.set(systemId, l);
@@ -114,7 +119,7 @@ export class FlagshipService {
   /** Estado de la nave para su dueño (tema `me`), o null si no hay Emperador. */
   async status(emperorId: string): Promise<FlagshipStatus | null> {
     const [row] = await this.db
-      .select({ id: emperors.id, systemId: emperors.systemId, destSystemId: emperors.destSystemId, departAt: emperors.departAt, arriveAt: emperors.arriveAt, ...PARK_COLUMNS, ...SUPPLY_COLUMNS })
+      .select({ id: emperors.id, systemId: emperors.systemId, destSystemId: emperors.destSystemId, departAt: emperors.departAt, arriveAt: emperors.arriveAt, hold: emperors.hold, ...PARK_COLUMNS, ...SUPPLY_COLUMNS })
       .from(emperors)
       .where(eq(emperors.id, emperorId));
     if (!row) return null;
@@ -137,7 +142,77 @@ export class FlagshipService {
         hull: row.flagshipHull,
         hullMax: EMPEROR_FLAGSHIP.hull,
       },
+      hold: sanitizeHold(row.hold),
+      holdCapacity: FLAGSHIP_HOLD.capacity,
     };
+  }
+
+  /** Bodega de la nave (lo minado). */
+  async hold(emperorId: string): Promise<Hold> {
+    const [row] = await this.db.select({ hold: emperors.hold }).from(emperors).where(eq(emperors.id, emperorId));
+    return sanitizeHold(row?.hold);
+  }
+
+  /**
+   * Cambia la bodega dentro de una transacción con la fila bloqueada: `fn`
+   * recibe la actual y devuelve la nueva (o null para no cambiar nada).
+   */
+  async updateHold<T>(emperorId: string, fn: (hold: Hold) => { hold: Hold; result: T } | null): Promise<T | null> {
+    return this.db.transaction(async (tx) => {
+      const [row] = await tx.select({ hold: emperors.hold, deadAt: emperors.deadAt }).from(emperors).where(eq(emperors.id, emperorId)).for("update").limit(1);
+      if (!row || row.deadAt) return null;
+      const out = fn(sanitizeHold(row.hold));
+      if (!out) return null;
+      await tx.update(emperors).set({ hold: sanitizeHold(out.hold) }).where(eq(emperors.id, emperorId));
+      return out.result;
+    });
+  }
+
+  /**
+   * Descarga la bodega en una colonia propia del mismo sistema donde está la
+   * nave (no de viaje): pasa a sus existencias por `ColonyService.adjustStock`
+   * (asentado en el libro como `flagship_unload`). Lo que no cabe en el almacén
+   * se queda en la bodega. Devuelve lo descargado.
+   */
+  async unload(emperorId: string, colonyId: string): Promise<{ ok: true; moved: Hold; systemId: string } | { ok: false; error: CommandError }> {
+    const service = this.colonyService;
+    if (!service) return { ok: false, error: "no_colony" };
+    return this.db.transaction(async (tx) => {
+      const now = this.now();
+      const [row] = await tx
+        .select({ id: emperors.id, systemId: emperors.systemId, destSystemId: emperors.destSystemId, departAt: emperors.departAt, arriveAt: emperors.arriveAt, hold: emperors.hold, deadAt: emperors.deadAt })
+        .from(emperors)
+        .where(eq(emperors.id, emperorId))
+        .for("update")
+        .limit(1);
+      if (!row) return { ok: false, error: "no_emperor" };
+      if (row.deadAt) return { ok: false, error: "dead" };
+      const place = placeFromRow(this.seed, row, now);
+      if (place.travel && place.travel.arriveAt > now) return { ok: false, error: "in_transit" };
+      if (isDeepId(place.location.systemId)) return { ok: false, error: "in_deep_space" };
+      const hold = sanitizeHold(row.hold);
+      if (HOLD_STOCK_IDS.every((r) => (hold[r] ?? 0) < 1e-6)) return { ok: false, error: "hold_empty" };
+      const colony = await service.lockResolved(tx, emperorId, colonyId, now);
+      if (!colony) return { ok: false, error: "no_colony" };
+      if (colony.row.systemId !== place.location.systemId) return { ok: false, error: "not_present" };
+      // Solo lo que quepa en el almacén (lo demás se queda a bordo).
+      const moved: Hold = {};
+      const left: Hold = { ...hold };
+      for (const r of HOLD_STOCK_IDS) {
+        const have = hold[r] ?? 0;
+        const room = Math.max(0, ECONOMY.storage[r] - colony.state.stock[r]);
+        const n = Math.min(have, room);
+        if (n > 1e-9) {
+          moved[r] = n;
+          left[r] = have - n;
+        }
+      }
+      if (Object.keys(moved).length === 0) return { ok: false, error: "storage_full" };
+      const res = await service.adjustStock(tx, emperorId, colonyId, moved as Partial<Record<StockId, number>>, "flagship_unload", `emperor:${emperorId}`, now);
+      if (!res.ok) return res;
+      await tx.update(emperors).set({ hold: sanitizeHold(left) }).where(eq(emperors.id, emperorId));
+      return { ok: true, moved, systemId: res.systemId };
+    });
   }
 
   /** Recursos guardados de la nave (para cargarlos al entrar en un sistema). */

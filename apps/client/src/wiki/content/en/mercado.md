@@ -1,6 +1,6 @@
 # Global market
 
-The **global market** lets you buy and sell resources (metal, volatiles, crystal and alloys) with other Emperors for [credits](/wiki/humanidad#credits). Open it by clicking your credits in the top bar (or **Humanity** → **Market** tab). Energy is not traded: it cannot be transported. Every figure on this page is read from the game's code.
+The **global market** lets you buy and sell resources (metal, volatiles, crystal, alloys and what is mined in [deep space](/wiki/espacio-profundo): rare metals and exotic matter) with other Emperors for [credits](/wiki/humanidad#credits). Open it by clicking your credits in the top bar (or **Humanity** → **Market** tab). Energy is not traded: it cannot be transported. Every figure on this page is read from the game's code.
 
 {{tabla:mercado}}
 

@@ -7,9 +7,21 @@
  */
 import type { ShipClassId } from "./types";
 
-/** Recursos que se almacenan en una colonia (la energía no: se produce y gasta en el sitio). */
-export type StockId = "metal" | "volatiles" | "crystal" | "alloys";
-export const STOCK_IDS: readonly StockId[] = ["metal", "volatiles", "crystal", "alloys"];
+/**
+ * Recursos que se almacenan en una colonia (la energía no: se produce y gasta en el sitio).
+ * Los dos últimos no los produce ninguna colonia: se minan en el espacio
+ * profundo con la nave del Emperador (ver deepspace.ts) o se compran en el mercado.
+ * - `rare_metals`: metales raros (platino, iridio, osmio, neodimio…), de los asteroides metálicos.
+ * - `exotic`: materia exótica, la que dejan los Precursores y las regiones donde
+ *   el espacio aún conserva la huella de los dioses muertos; muy escasa.
+ */
+export type StockId = "metal" | "volatiles" | "crystal" | "alloys" | "rare_metals" | "exotic";
+export const STOCK_IDS: readonly StockId[] = ["metal", "volatiles", "crystal", "alloys", "rare_metals", "exotic"];
+/** Recursos que transportan las flotas (los minados solo los lleva la nave del Emperador y el mercado). */
+export type CargoStockId = "metal" | "volatiles" | "crystal" | "alloys";
+export const CARGO_STOCK_IDS: readonly CargoStockId[] = ["metal", "volatiles", "crystal", "alloys"];
+/** Recursos que solo se obtienen minando en el espacio profundo (o en el mercado). */
+export const MINED_STOCK_IDS: readonly StockId[] = ["rare_metals", "exotic"];
 
 /** Cantidades de cada recurso almacenable (existencias, costes, topes o tasas). */
 export type StockAmounts = Record<StockId, number>;
@@ -91,7 +103,7 @@ export const INSTALLATIONS: readonly InstallationDefinition[] = [
   {
     id: "mine",
     nameKey: "installation.mine",
-    cost: { metal: 150, volatiles: 20, crystal: 0, alloys: 0 },
+    cost: { metal: 150, volatiles: 20, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 },
     buildTimeHours: 2,
     energyUse: 2,
     maxPerColony: 6,
@@ -100,7 +112,7 @@ export const INSTALLATIONS: readonly InstallationDefinition[] = [
   {
     id: "refinery",
     nameKey: "installation.refinery",
-    cost: { metal: 300, volatiles: 100, crystal: 0, alloys: 0 },
+    cost: { metal: 300, volatiles: 100, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 },
     buildTimeHours: 4,
     energyUse: 4,
     maxPerColony: 3,
@@ -109,7 +121,7 @@ export const INSTALLATIONS: readonly InstallationDefinition[] = [
   {
     id: "power_plant",
     nameKey: "installation.power_plant",
-    cost: { metal: 200, volatiles: 50, crystal: 0, alloys: 0 },
+    cost: { metal: 200, volatiles: 50, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 },
     buildTimeHours: 3,
     energyUse: 0,
     maxPerColony: 4,
@@ -118,7 +130,7 @@ export const INSTALLATIONS: readonly InstallationDefinition[] = [
   {
     id: "shipyard",
     nameKey: "installation.shipyard",
-    cost: { metal: 400, volatiles: 150, crystal: 20, alloys: 0 },
+    cost: { metal: 400, volatiles: 150, crystal: 20, alloys: 0, rare_metals: 0, exotic: 0 },
     buildTimeHours: 6,
     energyUse: 3,
     maxPerColony: 1,
@@ -128,7 +140,7 @@ export const INSTALLATIONS: readonly InstallationDefinition[] = [
     // Dique orbital: gradas para las naves capitales (crucero, portanaves). Necesita el astillero.
     id: "drydock",
     nameKey: "installation.drydock",
-    cost: { metal: 1000, volatiles: 300, crystal: 60, alloys: 150 },
+    cost: { metal: 1000, volatiles: 300, crystal: 60, alloys: 150, rare_metals: 0, exotic: 0 },
     buildTimeHours: 10,
     energyUse: 6,
     maxPerColony: 1,
@@ -139,7 +151,7 @@ export const INSTALLATIONS: readonly InstallationDefinition[] = [
     // Fase 9b: defensa de la colonia contra los asedios (valores en conquest.ts, INSTALLATION_DEFENSE).
     id: "defense_platform",
     nameKey: "installation.defense_platform",
-    cost: { metal: 300, volatiles: 80, crystal: 30, alloys: 20 },
+    cost: { metal: 300, volatiles: 80, crystal: 30, alloys: 20, rare_metals: 0, exotic: 0 },
     buildTimeHours: 4,
     energyUse: 3,
     maxPerColony: 4,
@@ -149,7 +161,7 @@ export const INSTALLATIONS: readonly InstallationDefinition[] = [
     // Fase 10: donde renace el Emperador y se gestan sus Herederos (datos en lineage.ts).
     id: "lineage_cradle",
     nameKey: "installation.lineage_cradle",
-    cost: { metal: 600, volatiles: 200, crystal: 120, alloys: 150 },
+    cost: { metal: 600, volatiles: 200, crystal: 120, alloys: 150, rare_metals: 0, exotic: 0 },
     buildTimeHours: 8,
     energyUse: 5,
     maxPerColony: 1,
@@ -184,9 +196,9 @@ export const ECONOMY = {
   /** Una refinería, por hora: consume metal y volátiles y produce aleaciones. */
   refinery: { metal: 6, volatiles: 2, alloys: 3 },
   /** Tope de almacenamiento de cada recurso. */
-  storage: { metal: 3000, volatiles: 1500, crystal: 400, alloys: 800 } satisfies StockAmounts,
+  storage: { metal: 3000, volatiles: 1500, crystal: 400, alloys: 800, rare_metals: 300, exotic: 60 } satisfies StockAmounts,
   /** Existencias con las que nace una colonia (lo que traen los colonos). */
-  foundingStock: { metal: 300, volatiles: 150, crystal: 40, alloys: 0 } satisfies StockAmounts,
+  foundingStock: { metal: 300, volatiles: 150, crystal: 40, alloys: 0, rare_metals: 0, exotic: 0 } satisfies StockAmounts,
   /** Construcciones en cola por colonia (incluida la que está en marcha). */
   maxQueue: 5,
 } as const;

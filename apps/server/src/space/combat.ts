@@ -161,6 +161,15 @@ export class Combatant {
     return true;
   }
 
+  /** Gasta energía del reactor (láser de minería). False si no hay bastante (no gasta nada). */
+  spendEnergy(amount: number, now: number): boolean {
+    const r = this.reactor;
+    if (!r) return true;
+    if (this.energyNow(now) < amount) return false;
+    r.energy -= amount;
+    return true;
+  }
+
   /**
    * Reposición junto a una colonia: añade combustible, proyectiles y misiles
    * (sin pasar del máximo). Devuelve lo que de verdad cabía.

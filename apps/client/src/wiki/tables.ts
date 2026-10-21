@@ -46,6 +46,13 @@ import {
   SHIP_PASSENGERS,
   STARTING_FLEET,
   STOCK_IDS,
+  CARGO_STOCK_IDS,
+  ASTEROID_KINDS,
+  DEEP_REGIONS,
+  DEEP_SPACE,
+  FLAGSHIP_HOLD,
+  MINING,
+  type AsteroidKind,
   contentDictionaries,
   type InstallationId,
   type ShipClassDefinition,
@@ -148,7 +155,7 @@ export const GEN_TABLES: Record<string, Builder> = {
   recursos: (t, locale) => ({
     head: [t("wiki.col.resource"), t("wiki.col.storage"), t("wiki.col.founding"), t("wiki.col.transport")],
     rows: [
-      ...STOCK_IDS.map((r) => [t(`resource.${r}`), num(locale, ECONOMY.storage[r]), num(locale, ECONOMY.foundingStock[r]), t("wiki.yes")]),
+      ...STOCK_IDS.map((r) => [t(`resource.${r}`), num(locale, ECONOMY.storage[r]), num(locale, ECONOMY.foundingStock[r]), t((CARGO_STOCK_IDS as readonly string[]).includes(r) ? "wiki.yes" : "wiki.minedOnly")]),
       [t("resource.energy"), "—", "—", t("wiki.no")],
     ],
     numeric: [1, 2],
@@ -210,7 +217,7 @@ export const GEN_TABLES: Record<string, Builder> = {
     const population = 500;
     const flows = colonyFlows(planet, starEnergy, installations, population);
     const energy = colonyEnergy(starEnergy, installations);
-    const half = { metal: ECONOMY.storage.metal / 2, volatiles: ECONOMY.storage.volatiles / 2, crystal: ECONOMY.storage.crystal / 2, alloys: ECONOMY.storage.alloys / 2 };
+    const half = { metal: ECONOMY.storage.metal / 2, volatiles: ECONOMY.storage.volatiles / 2, crystal: ECONOMY.storage.crystal / 2, alloys: ECONOMY.storage.alloys / 2, rare_metals: 0, exotic: 0 };
     const net = netRates(half, flows);
     const h = (n: number) => t("colony.perHour", { n: num(locale, n, 1) });
     return kv(t, [
@@ -696,6 +703,46 @@ export const GEN_TABLES: Record<string, Builder> = {
     ]),
   }),
 
+  // Espacio profundo y minería (packages/content deepspace.ts).
+  asteroides: (t, locale) => ({
+    head: [t("wiki.col.asteroid"), t("wiki.col.yields"), t("wiki.col.unitsPerRadius")],
+    rows: (Object.keys(ASTEROID_KINDS) as AsteroidKind[]).map((k) => [
+      t(`asteroid.${k}`),
+      Object.entries(ASTEROID_KINDS[k].yields)
+        .map(([r, f]) => `${t(`resource.${r}` as I18nKey)} ${num(locale, (f ?? 0) * 100, 0)} %`)
+        .join(" · "),
+      num(locale, ASTEROID_KINDS[k].unitsPerRadiusM),
+    ]),
+    numeric: [2],
+  }),
+  "regiones-profundas": (t, locale) => {
+    const total = Object.values(DEEP_REGIONS).reduce((n, r) => n + r.weight, 0);
+    return {
+      head: [t("wiki.col.region"), t("wiki.col.frequency"), t("wiki.col.asteroids"), t("wiki.col.mix"), t("wiki.col.fieldRadius")],
+      rows: Object.entries(DEEP_REGIONS).map(([k, r]) => [
+        t(`deep.kind.${k}` as I18nKey),
+        `${num(locale, (r.weight / total) * 100, 0)} %`,
+        r.asteroids[1] > 0 ? range(locale, r.asteroids) : "—",
+        Object.entries(r.mix)
+          .map(([a, f]) => `${t(`asteroid.${a}` as I18nKey)} ${num(locale, (f ?? 0) * 100, 0)} %`)
+          .join(" · ") || "—",
+        r.fieldRadiusM[1] > 0 ? `${num(locale, r.fieldRadiusM[0] / 1000, 0)}–${num(locale, r.fieldRadiusM[1] / 1000, 0)} km` : "—",
+      ]),
+      numeric: [1, 2],
+    };
+  },
+  mineria: (t, locale) =>
+    kv(t, [
+      ["wiki.deep.cell", `${num(locale, DEEP_SPACE.cellLy)} a.l.`],
+      ["wiki.deep.asteroidRadius", `${range(locale, DEEP_SPACE.asteroidRadiusM)} m`],
+      ["wiki.deep.regen", `${num(locale, DEEP_SPACE.regenHours)} h`],
+      ["wiki.deep.range", `${num(locale, MINING.rangeM)} m`],
+      ["wiki.deep.rate", num(locale, MINING.unitsPerSec)],
+      ["wiki.deep.energy", num(locale, MINING.energyPerSec)],
+      ["wiki.deep.hold", num(locale, FLAGSHIP_HOLD.capacity)],
+      ["wiki.deep.refineRatio", num(locale, FLAGSHIP_HOLD.refineVolatilesPerFuel)],
+      ["wiki.deep.refineRate", num(locale, FLAGSHIP_HOLD.refineFuelPerSec)],
+    ]),
   "teclas-vuelo": (t, locale) => keysTable(t, locale, "flight"),
   "teclas-mapa": (t, locale) => keysTable(t, locale, "map"),
   "teclas-general": (t, locale) => keysTable(t, locale, "general"),

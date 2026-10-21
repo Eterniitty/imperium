@@ -46,6 +46,8 @@ export interface AuthState {
   createEmperor(name: string): Promise<void>;
   /** Traslada al Emperador al sistema indicado. Devuelve el error, si lo hay. */
   moveEmperor(systemId: string): Promise<I18nKey | null>;
+  /** Sale del túnel cuántico a mitad de viaje (espacio profundo). */
+  dropEmperor(): Promise<I18nKey | null>;
 }
 
 /** Resultado de una llamada a la API: el cuerpo, o el código de error traducible. */
@@ -187,6 +189,7 @@ export const authStore = createStore<AuthState>()((set, get) => ({
 
   // Importación diferida: la conexión importa este módulo.
   moveEmperor: async (systemId) => (await import("../net/world")).connection.command("emperor.move", { systemId }),
+  dropEmperor: async () => (await import("../net/world")).connection.command("emperor.drop", {}),
 }));
 
 export function useAuth<T>(selector: (s: AuthState) => T): T {
