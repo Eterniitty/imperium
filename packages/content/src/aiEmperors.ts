@@ -70,6 +70,12 @@ export const AI_EMPERORS: ReadonlyArray<{ name: string; personality: AiPersonali
   { name: "Nerea Solace", personality: "expansionist" },
   { name: "Aurek Dane", personality: "merchant" },
   { name: "Mireia Kade", personality: "militarist" },
+  { name: "Orsino Vale", personality: "expansionist" },
+  { name: "Lyra Tessaro", personality: "merchant" },
+  { name: "Damek Hollis", personality: "militarist" },
+  { name: "Sabine Aldric", personality: "expansionist" },
+  { name: "Corvin Esk", personality: "merchant" },
+  { name: "Yara Belmont", personality: "militarist" },
 ];
 
 /** Parámetros comunes de los Emperadores de la IA (horas de juego). */
