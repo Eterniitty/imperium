@@ -56,6 +56,8 @@ El ritmo es **en horas** para construir, producir y asediar. **Viajar entre estr
 - **Inventarios locales**: cada colonia, instalación y nave tiene su propio inventario. No hay almacén global.
 - **Transporte físico**: los recursos viajan en cargueros por rutas reales que pueden ser interceptadas.
 - **Mantenimiento**: las naves e instalaciones consumen recursos de forma continua; un imperio sobredimensionado se desangra.
+- **Economía de la humanidad** (21-10-2026): por encima de las colonias, la de toda la humanidad. La moneda es el **crédito**, que generan las colonias según su población; una parte fija va al **tesoro común del Núcleo Humano**, que nadie gobierna (coherente con el lore: no hay imperio humano único) y que paga **proyectos comunes** con efectos para todos. Los Emperadores aportan los recursos de esos proyectos.
+- **Mercado global**: los Emperadores (y más adelante la IA, p. ej. los Nómadas del Vacío) compran y venden recursos con créditos en un libro de órdenes; los precios salen de la oferta y la demanda. Lo comprado **viaja** de la colonia del vendedor a la del comprador (la logística cuenta).
 
 ## 6. Naves del MVP
 

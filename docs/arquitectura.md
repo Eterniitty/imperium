@@ -51,6 +51,8 @@ docs/
 
 No hay un tick global que recorra todas las colonias. Cada inventario guarda el **último instante resuelto** y sus **tasas** de producción/consumo. Al leerlo o modificarlo se calcula el estado actual como `valor + tasa × Δt` (con topes de almacenamiento y agotamiento). Solo se programa un evento cuando algo cambia de forma discreta (se llena un almacén, se agota un recurso, termina una construcción).
 
+Un nivel por encima, la **economía de la humanidad** sigue la misma idea: cada cartera de créditos guarda su saldo y su renta, y el tesoro del Núcleo la suma de los aportes por hora; ver «Implementado: economía de la humanidad y mercado global» (§8).
+
 ## 5. Cola de eventos programados
 
 - Tabla `scheduled_events` con `due_at`, tipo, carga útil y sector.
@@ -157,6 +159,18 @@ Mensajes JSON con campo `t` (tipo). Ejemplos:
 - **Interceptar**: `GET /api/contacts` lista las flotas enemigas en tránsito que salen de o van a un sistema al alcance de los sensores del jugador (flotas paradas, su nave, colonias). Orden `fleet.intercept { fleetId, targetFleetId }`: la flota viaja al destino del contacto (error `no_target` si ya no se ve) y combaten allí al coincidir.
 - **Quién ve qué**: el tema `me` lleva `battles` (en curso y acabadas en la última hora, vistas desde el bando del jugador: naves de cada lado, últimas rondas y resultado) y cambios `battles.<id>`. `PROTOCOL_VERSION` = 5. En el cliente, panel «Batallas» (`WarPanel`) con las batallas y los contactos; la representación en 3D de la batalla queda para más adelante.
 
+### Implementado: economía de la humanidad y mercado global
+
+- **Datos** en `packages/content/src/humanity.ts` (`CREDITS`, `HUMANITY`, `HUMANITY_PROJECTS`, `MARKET`); **reglas puras** en `packages/sim/src/humanity.ts` (renta, reparto con el tesoro, coste y efecto de los proyectos, `humanityBonuses`, duración de los envíos) y `packages/sim/src/market.ts` (`matchOrder`: prioridad precio-tiempo, precio del que estaba en el libro, sin casarse consigo mismo; validación de precio y cantidad; comisión; profundidad del libro).
+- **Moneda: el crédito (₢)**. Origen: la población de las colonias (`CREDITS.perPopulationPerHour`); cada Emperador empieza con `CREDITS.starting`. Una parte fija (`HUMANITY.taxRate`, 10 %) va al **tesoro del Núcleo Humano**, que también cobra la comisión del mercado (2 %) y las donaciones. Los créditos no son materia (no viajan), pero todo movimiento se asienta en `resource_ledger` (columna nueva `credits`; los asientos del tesoro van sin Emperador ni colonia).
+- **Resolución perezosa** (sin bucles por tick): `emperor_wallets` guarda saldo, renta bruta por hora de juego y `settled_at`; saldo actual = saldo + renta neta × horas. El tesoro (`humanity_treasury`, una fila) guarda su saldo y la **suma de los aportes por hora** de todas las carteras: cuando cambia la renta de un Emperador se resuelve el tesoro y se ajusta esa suma. La renta se recalcula (leyendo sus colonias resueltas) con el evento `economy.settle` (cada hora de juego por Emperador, mínimo 10 s reales) o al usar la cartera; ese recálculo guarda también los agregados del Emperador (`summary`), de los que salen los de toda la humanidad (más las colonias independientes, congeladas).
+- **Proyectos comunes** (`humanity_projects`, `humanity_contributions`): los recursos se aportan desde una colonia propia y viajan al Núcleo (envío); los créditos los paga el tesoro cuando el nivel tiene todos los recursos (si no le llega, evento `humanity.fund` a la hora prevista; además se reintenta en cada `economy.settle`). Bonificaciones (en memoria, `HumanityService.bonuses()`): extracción de todas las colonias (`ColonySite.extractionMultiplier`), existencias de fundación, escudo de batalla en sistemas del Núcleo (`WarService.setShieldFactor`) y velocidad de los envíos. La de extracción se aplica desde el último cálculo de cada colonia (como mucho una hora atrás por `economy.settle`, que no escribe colonias: solo las lee).
+- **Mercado** (`market_orders`, `market_trades`): orden `market.order { resource, side, price, quantity, colonyId }`; al crearla se retiene lo ofrecido (recursos de la colonia o créditos `escrow_credits`) y se casa en la misma transacción, con un candado consultivo único para todo el mercado (`pg_advisory_xact_lock`, sin bloqueos cruzados entre carteras). El vendedor cobra al momento (menos la comisión); el comprador recibe la diferencia si casa más barato; lo vendido viaja como **envío** (`shipments`, evento `shipment.arrive`) de la colonia del vendedor a la del comprador, con un tiempo según la distancia (`HUMANITY.shipmentSpeedLyPerHour`). Si al llegar la colonia ya no es del comprador, se pierde (`shipment_lost`). `market.cancel { orderId }` devuelve lo retenido. Límites: órdenes abiertas por Emperador, cantidad entera y acotada, precio con dos decimales; el resto de órdenes pasan por la tubería normal (Zod, `cmdId`, límite de mensajes). Preparado para la IA: un Emperador de la IA usará las mismas órdenes.
+- **Punto de enganche para la nave** (combustible y munición que se reponen en colonias propias): `ColonyService.adjustStock(tx, emperorId, colonyId, delta, reason, ref, at)` resuelve la colonia, comprueba existencias, escribe y asienta en el libro.
+- **API**: `GET /api/humanity` (agregados, tesoro y proyectos; caché de 10 s), `GET /api/market` (libro, precios e historial por horas; caché de 5 s), `GET /api/market/mine`. Tema `me`: `wallet` en la instantánea y cambios `wallet.<id>`. Orden `humanity.contribute { projectId, colonyId?, amounts?, credits? }`. `PROTOCOL_VERSION` = 6. Migración `0011`.
+- **Borrado de cuenta**: se cancelan sus órdenes (lo retenido vuelve a sus colonias antes de independizarse) y su renta deja de aportar al tesoro; la cartera se borra en cascada; operaciones, aportes y envíos quedan con el Emperador a null. Todo ello va en la exportación de datos.
+- **Pendiente**: que la conquista (9b) cancele las órdenes de venta de la colonia conquistada; recoger compras con flotas propias; la IA (Nómadas del Vacío, Emperadores IA) en el mercado.
+
 ## 9. Autenticación por enlace mágico
 
 - El usuario introduce su correo; se genera un **token aleatorio de 32 bytes**.
@@ -175,7 +189,8 @@ Mensajes JSON con campo `t` (tipo). Ejemplos:
 - `sectors_touched` (solo sectores con cambios), `sector_leases`
 - `colonies`, `installations`, `colony_builds` (hechas en la Fase 7; las existencias van en la propia colonia)
 - `fleets`, `ships`
-- `resource_ledger`
+- `resource_ledger` (con `credits` desde la economía de la humanidad)
+- `emperor_wallets`, `humanity_treasury`, `humanity_projects`, `humanity_contributions`, `market_orders`, `market_trades`, `shipments` (economía de la humanidad y mercado, hechas)
 - `scheduled_events`
 - `processed_commands`
 - `battles`, `battle_sides`, `battle_rounds` (hechas en la Fase 9a); `sieges` (9b)

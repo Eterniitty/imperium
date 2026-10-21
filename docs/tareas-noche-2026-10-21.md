@@ -36,9 +36,12 @@ En orden, siempre de dos en dos agentes, con copia antes de cada cambio grande:
       economía, logística, guerra, especies, IA, lore. Se actualiza con cada sistema nuevo.
       Hecha: `/wiki` y `/wiki/<tema>/` (16 artículos es/en, tablas generadas desde `packages/content`,
       buscador, móvil); regla añadida en CLAUDE.md. El artículo «Pilotar» se ampliará al fusionar el pilotaje nuevo.
-- [ ] **Economía de la humanidad y global**: además de la de cada colonia, una economía de toda la
+- [x] **Economía de la humanidad y global**: además de la de cada colonia, una economía de toda la
       humanidad (agregados, impuestos/aportes al Núcleo Humano, proyectos comunes) y un mercado
       global entre jugadores e IA (precios por oferta y demanda, comercio entre sistemas).
+      Hecha: créditos por población, tesoro del Núcleo (10 %), 4 proyectos comunes, mercado con libro
+      de órdenes y envíos según la distancia, paneles «Humanidad»/«Mercado», Wiki (`humanidad`, `mercado`),
+      migración 0011. La IA en el mercado queda para la Fase 11.
 - [ ] **Otras especies** del lore (`docs/lore.md` §V) como datos en `packages/content`, con naves,
       territorios y comportamiento propios.
 - [ ] **Otras IA**: facciones alienígenas y Emperadores humanos de la IA (Fase 11 + 9d, `docs/ia-naves.md`).

@@ -72,7 +72,7 @@ export function TopBar() {
         </button>
       )}
       {emperor && (
-        <button className="btn" onClick={() => gameStore.getState().setEconomyOpen("humanity")} title={t("eco.humanityTitle")}>
+        <button className="btn hide-sm" onClick={() => gameStore.getState().setEconomyOpen("humanity")} title={t("eco.humanityTitle")}>
           {t("eco.humanity")}
         </button>
       )}

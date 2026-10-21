@@ -47,6 +47,13 @@ Orden de construcción de lo que pide [diseno.md](diseno.md). Cada fase se divid
 - ✔ **Rutas automáticas** (`fleet.route` / `fleet.routeStop`): en el origen carga lo indicado hasta llenar, en el destino lo descarga todo y vuelve, sola, en cada llegada (evento `fleet.arrive`). Se acaba si una colonia deja de ser tuya.
 - ✔ Interceptar convoyes en ruta (Fase 9a). Pendiente: red de suministro (instalaciones aisladas que se debilitan).
 
+## Economía de la humanidad y mercado global ✔ (21-10-2026)
+
+- ✔ Créditos (₢) generados por la población de las colonias; aporte fijo al **tesoro del Núcleo Humano**; agregados de toda la humanidad visibles para todos (panel «Humanidad»).
+- ✔ **Proyectos comunes** (Defensas del Núcleo, Investigación, Subvenciones a colonias, Red de transporte): los Emperadores aportan recursos (que viajan al Núcleo) y el tesoro paga los créditos; efectos globales al completar cada nivel.
+- ✔ **Mercado global** (panel «Mercado»): libro de órdenes por recurso, precios por oferta y demanda, historial, comisión para el tesoro y entrega con envíos según la distancia.
+- Pendiente: la IA en el mercado (Nómadas del Vacío, Emperadores IA; Fase 11), recoger compras con flotas propias, cancelar órdenes de colonias conquistadas (9b), reponer combustible y munición de la nave en colonias propias (punto de enganche: `ColonyService.adjustStock`).
+
 ## Fase 9 — Guerra
 
 - **9a. Combate de flotas** ✔ resuelto en el servidor por rondas (evento `battle.round`, reglas en `packages/sim/src/battle.ts`); huir con una orden de viaje; los convoyes esperan al combate; contactos (`GET /api/contacts`) e interceptar flotas en tránsito (`fleet.intercept`). Panel «Batallas» en el cliente. Pendiente: mostrar la batalla en 3D.
