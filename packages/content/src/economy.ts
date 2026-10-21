@@ -65,7 +65,7 @@ export const POPULATION = {
 } as const;
 
 /** Clases de instalación de una colonia. */
-export type InstallationId = "mine" | "refinery" | "power_plant" | "shipyard";
+export type InstallationId = "mine" | "refinery" | "power_plant" | "shipyard" | "defense_platform";
 
 export interface InstallationDefinition {
   id: InstallationId;
@@ -118,6 +118,16 @@ export const INSTALLATIONS: readonly InstallationDefinition[] = [
     energyUse: 3,
     maxPerColony: 1,
     upkeepVolatilesPerHour: 1.5,
+  },
+  {
+    // Fase 9b: defensa de la colonia contra los asedios (valores en conquest.ts, INSTALLATION_DEFENSE).
+    id: "defense_platform",
+    nameKey: "installation.defense_platform",
+    cost: { metal: 300, volatiles: 80, crystal: 30, alloys: 20 },
+    buildTimeHours: 4,
+    energyUse: 3,
+    maxPerColony: 4,
+    upkeepVolatilesPerHour: 0.5,
   },
 ];
 

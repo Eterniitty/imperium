@@ -34,6 +34,7 @@ import type { MarketService } from "../market/service";
 import type { Hub } from "../realtime/hub";
 import type { SpaceService } from "../space/service";
 import { maskEmail } from "../auth/tokens";
+import type { SiegeService } from "../war/siege";
 
 export interface AccountDeps {
   config: ServerConfig;
@@ -43,6 +44,8 @@ export interface AccountDeps {
   colonies: ColonyService;
   humanity: HumanityService;
   market: MarketService;
+  /** Fase 9b: asedios (como atacante o defensor) en la exportación. */
+  sieges?: SiegeService;
 }
 
 function fail(reply: FastifyReply, status: number, error: ApiError["error"]) {
@@ -53,7 +56,7 @@ function fail(reply: FastifyReply, status: number, error: ApiError["error"]) {
  * Derechos del RGPD que el jugador ejerce solo (ver /legal/privacidad.html):
  * descargar sus datos (art. 15 y 20) y borrar su cuenta (art. 17).
  */
-export async function accountRoutes(app: FastifyInstance, { config, db, hub, space, colonies: colonyService, humanity, market }: AccountDeps) {
+export async function accountRoutes(app: FastifyInstance, { config, db, hub, space, colonies: colonyService, humanity, market, sieges }: AccountDeps) {
   const cookieName = sessionCookieName(config);
   const cookieOptions = { path: "/", httpOnly: true, secure: config.COOKIE_SECURE, sameSite: "lax" } as const;
   // La exportación lee muchas tablas: pocas por cuenta.
@@ -107,6 +110,8 @@ export async function accountRoutes(app: FastifyInstance, { config, db, hub, spa
         // Fase 11: relación (rencor) de cada facción alienígena con este Emperador.
         alienStandings: await db.select().from(alienStandings).where(eq(alienStandings.emperorId, emperor.id)),
         ...(await market.exportFor(emperor.id)),
+        // Fase 9b: asedios en los que ha sido atacante o defensor.
+        sieges: sieges ? await sieges.exportFor(emperor.id) : [],
       };
     }
     const data = { exportedAt: new Date().toISOString(), account: acc, sessions: sessionRows, game };

@@ -38,6 +38,10 @@ Cada facción guarda **rencor** a cada Emperador. Las facciones **hostiles** por
 - El rencor **se olvida** poco a poco.
 - **Tributo** (diplomacia básica): en el panel **Batallas → Facciones conocidas** puedes pagar créditos para borrar el rencor. Las que **nunca pactan** (Erradicadores, Tharaxi) no lo aceptan. Si la facción comercia, los créditos van a su cartera.
 
+## Ataques a colonias
+
+Las facciones que no ignoran a los intrusos **asedian las colonias humanas de su territorio** cuando te son hostiles (por naturaleza o por rencor): en cada decisión de su región, con una probabilidad según su **agresividad**, empiezan un asedio si tienen una flota allí o envían flotas. No desembarcan humanos: al completar el asedio, **ocupan** la colonia (muere parte de la población). Puedes recuperarla asediándola tú (eso les suma rencor). Nunca en el Núcleo Humano ni contra Emperadores en su gracia. Ver [Conquista](/wiki/conquista#alienigenas).
+
 ## Comercio de los Nómadas del Vacío
 
 Los **Nómadas del Vacío** tienen un **hábitat** en su territorio y una cartera de créditos. Cuando su región está despierta, **venden volátiles y metal** y **compran cristal** en el [mercado global](/wiki/mercado), cerca del último precio, con las mismas órdenes que cualquier Emperador. Lo que les compras **viaja** desde su hábitat, lejos del Núcleo: tarda más.
@@ -56,4 +60,6 @@ Para que el universo no esté vacío con pocos jugadores, hay unos pocos **Emper
 
 {{tabla:ia-emperadores}}
 
-> [!dev] Aún no hacen la guerra por su cuenta ni aceptan compañeros, y la IA de pilotaje de las naves en 3D (fase 9d) está diseñada pero no hecha.
+Desde la fase 9b, **todos defienden** sus colonias asediadas (envían sus naves armadas) y los **militaristas conquistan**: con suficientes naves armadas, asedian la colonia ajena más débil a su alcance **fuera del Núcleo** (independientes o de Emperadores que no son compañeros ni están en su gracia; nunca de facciones alienígenas) y desembarcan los colonos de un colonizador. Ver [Conquista](/wiki/conquista).
+
+> [!dev] Aún no aceptan compañeros, y la IA de pilotaje de las naves en 3D (fase 9d) está diseñada pero no hecha.

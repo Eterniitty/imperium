@@ -49,6 +49,11 @@ worldStore.subscribe((st, prev) => {
   const sel = selectedId();
   if (!sel) return;
   if (st.discovered !== prev.discovered && st.discovered[sel] && !prev.discovered[sel]) return void load(sel);
+  // Fase 9b: un asedio de este sistema empieza o termina (planetas asediados, dueños nuevos).
+  if (st.sieges !== prev.sieges) {
+    const sig = (ss: typeof st.sieges) => Object.values(ss).filter((x) => x.systemId === sel).map((x) => `${x.id}:${x.outcome}`).sort().join();
+    if (sig(st.sieges) !== sig(prev.sieges)) return void load(sel);
+  }
   if (st.colonies === prev.colonies) return;
   // Una colonia propia de este sistema ha aparecido, cambiado de nombre o desaparecido.
   const touches = (cs: typeof st.colonies) => Object.values(cs).some((c) => c.systemId === sel);

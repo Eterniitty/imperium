@@ -8,6 +8,7 @@ import { useGame, useT } from "../state/store";
 import { factionName, speciesColor, speciesName } from "./aliens";
 import { contentText } from "./fleets";
 import { formatDuration, useServerNow } from "./useNow";
+import { SiegeList } from "./SiegePanel";
 
 /** Créditos que borran todo el rencor de una facción (como poco, el tributo mínimo). */
 function tributeCost(s: AlienStanding): number {
@@ -26,6 +27,7 @@ export function WarPanel() {
   const t = useT();
   const locale = useGame((s) => s.locale);
   const battles = useWorld((s) => s.battles);
+  const sieges = useWorld((s) => s.sieges);
   const fleets = useWorld((s) => s.fleets);
   const now = useServerNow();
   const [open, setOpen] = useState(true);
@@ -57,7 +59,7 @@ export function WarPanel() {
   const idle = (Object.values(fleets) as Fleet[])
     .filter((f) => !(f.travel && f.travel.arriveAt > now))
     .sort((a, b) => a.number - b.number);
-  if (list.length === 0 && visible.length === 0 && sightings.length === 0 && standings.length === 0) return null;
+  if (list.length === 0 && visible.length === 0 && sightings.length === 0 && standings.length === 0 && Object.keys(sieges).length === 0) return null;
   const enemyLabel = (name: string, factionId: string | null | undefined) => (factionId ? t("aliens.contact", { faction: factionName(locale, factionId) }) : name);
 
   // Fase 11: tributo para borrar el rencor de una facción (diplomacia básica).
@@ -88,6 +90,8 @@ export function WarPanel() {
       </button>
       {open && (
         <>
+          {/* Fase 9b: asedios propios y contra tus colonias. */}
+          <SiegeList />
           {list.length > 0 && (
             <ul className="fleet-list">
               {list.map((b) => {

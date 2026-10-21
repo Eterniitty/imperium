@@ -222,6 +222,26 @@ export class MarketService {
   }
 
   /**
+   * Fase 9b: al conquistar una colonia, se cancelan las órdenes que la usan
+   * (antes de cambiar de dueño). Lo retenido de una venta vuelve a la colonia
+   * (sigue en sus almacenes y pasa al conquistador con la captura); los
+   * créditos de una compra vuelven a la cartera de quien la puso. Los envíos
+   * que ya viajan hacia ella se pierden al llegar (`shipment_lost`), como
+   * cualquier envío a una colonia que ya no es del comprador.
+   */
+  async cancelForColony(tx: Tx, colonyId: string, at: number): Promise<MarketEffects> {
+    await this.lock(tx);
+    const rows = await tx.select().from(marketOrders).where(eq(marketOrders.colonyId, colonyId)).for("update");
+    const fx: MarketEffects = { wallets: [], colonies: [] };
+    for (const o of rows) {
+      await this.refund(tx, o, at, fx);
+      if (o.side === "buy") fx.wallets.push(o.emperorId);
+    }
+    if (rows.length) this.viewCache = null;
+    return fx;
+  }
+
+  /**
    * Manejador del evento `shipment.arrive`: entrega una compra en la colonia
    * del comprador (si sigue siendo suya; si no, se pierde) o un aporte en el
    * Núcleo. Devuelve la colonia que cambió y su dueño, si la hay.

@@ -53,12 +53,12 @@ Orden de construcción de lo que pide [diseno.md](diseno.md). Cada fase se divid
 - ✔ Créditos (₢) generados por la población de las colonias; aporte fijo al **tesoro del Núcleo Humano**; agregados de toda la humanidad visibles para todos (panel «Humanidad»).
 - ✔ **Proyectos comunes** (Defensas del Núcleo, Investigación, Subvenciones a colonias, Red de transporte): los Emperadores aportan recursos (que viajan al Núcleo) y el tesoro paga los créditos; efectos globales al completar cada nivel.
 - ✔ **Mercado global** (panel «Mercado»): libro de órdenes por recurso, precios por oferta y demanda, historial, comisión para el tesoro y entrega con envíos según la distancia.
-- Pendiente: la IA en el mercado (Nómadas del Vacío, Emperadores IA; Fase 11), recoger compras con flotas propias, cancelar órdenes de colonias conquistadas (9b), reponer combustible y munición de la nave en colonias propias (punto de enganche: `ColonyService.adjustStock`).
+- Pendiente: la IA en el mercado (Nómadas del Vacío, Emperadores IA; Fase 11), recoger compras con flotas propias, reponer combustible y munición de la nave en colonias propias (punto de enganche: `ColonyService.adjustStock`).
 
 ## Fase 9 — Guerra
 
 - **9a. Combate de flotas** ✔ resuelto en el servidor por rondas (evento `battle.round`, reglas en `packages/sim/src/battle.ts`); huir con una orden de viaje; los convoyes esperan al combate; contactos (`GET /api/contacts`) e interceptar flotas en tránsito (`fleet.intercept`). Panel «Batallas» en el cliente. Pendiente: mostrar la batalla en 3D.
-- **9b. Conquista de planetas ajenos.** Asedio con progreso y presencia sostenida; desembarco de tropas (humanos) para tomar el planeta o la instalación; captura en vez de destrucción.
+- **9b. Conquista de planetas ajenos** ✔ (21-10-2026). Asedio con progreso y presencia sostenida de naves armadas (`siege.start`, evento `siege.tick`; disputado si hay naves armadas del defensor, roto si el atacante se queda sin ellas), plataformas defensivas que frenan el asedio, dañan a los asediadores y aportan guarnición, desembarco de tropas (humanos de cargueros, colonizadores o la nave del Emperador; `siege.assault`) y captura con pérdidas (población, existencias, instalaciones; obras perdidas, órdenes del mercado y rutas canceladas). Colonias independientes conquistables. IA: facciones alienígenas que asedian y ocupan colonias de su territorio según agresividad y rencor; Emperadores IA que defienden y, los militaristas, conquistan. Protecciones: compañeros, gracia de 24 h y Núcleo Humano para la IA. Pendiente: conquista instalación a instalación, red de suministro y asedios en 3D.
 - **9c. Combate a gran escala**: por encima de ~5 naves por bando, el combate en tiempo real (6c) pasa a rondas.
 
 ## Fase 10 — Muerte y linaje
@@ -70,7 +70,7 @@ Orden de construcción de lo que pide [diseno.md](diseno.md). Cada fase se divid
 - ✔ (21-10-2026) **Especies alienígenas del lore** como datos (territorio, flotas, naves propias, IA) y **territorios** en una capa determinista y secreta (no cambia `GENERATOR_VERSION`), visibles en el mapa respetando la niebla de guerra.
 - ✔ **IA de facciones** con la misma tubería de órdenes que los jugadores (flotas, combate por rondas, mercado), sin bucles por tick: regiones que despiertan con humanos cerca (evento `ai.region`), guarnición, patrullas, expansión lenta, respuesta a intrusos según su agresividad, rencor y tributos, Nómadas del Vacío en el mercado. El Núcleo Humano es seguro y hay gracia para los Emperadores nuevos.
 - ✔ **Emperadores IA humanos** (versión básica, evento `ai.emperor`): colonizan, construyen, exploran y comercian. Pendiente: que guerreen, acepten compañeros y gobiernen colonias de jugadores ausentes.
-- Pendiente: proceso aparte `apps/ai` cuando haga falta escalar (hoy es un servicio dentro del servidor que usa la cola de eventos); ataques alienígenas a colonias y Cunas (con la 9b); pactos de los Grises y Custodios protectores; modelos 3D de las naves alienígenas y combate pilotado contra ellas (tras fusionar el pilotaje).
+- Pendiente: proceso aparte `apps/ai` cuando haga falta escalar (hoy es un servicio dentro del servidor que usa la cola de eventos); ataques alienígenas a Cunas (los ataques a colonias, hechos con la 9b); pactos de los Grises y Custodios protectores; modelos 3D de las naves alienígenas y combate pilotado contra ellas (tras fusionar el pilotaje).
 - Zonas de interés por sector en el WebSocket (cada jugador recibe solo lo cercano) para aguantar cientos de jugadores.
 
 ## Fase 12 — Organizaciones y comunidad

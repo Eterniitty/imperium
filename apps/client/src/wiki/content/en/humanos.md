@@ -28,4 +28,4 @@ Each planet also has a **population cap** that grows with habitability. The mini
 - **Colonizer**: when it is built in a shipyard, colonists from the colony board it (up to its capacity), **always leaving 50** behind. It founds a new colony on another planet and is consumed. See [Colonies](/wiki/colonias).
 - **Freighter**: has **passenger seats** to move humans between your colonies, by hand or on an automatic route. When loading, the colony always keeps 50 inhabitants. See [Fleets and logistics](/wiki/flotas).
 
-> [!dev] **Troops** (humans who land to take other players' planets) will arrive with conquest (phase 9b).
+Humans are also your **troops**: to take a besieged planet you land the passengers of your freighters, the colonists of a colonizer or those aboard your ship. See [Conquest](/wiki/conquista).

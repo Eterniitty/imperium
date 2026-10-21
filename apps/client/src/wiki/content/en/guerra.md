@@ -66,4 +66,6 @@ Alien faction fleets fight **just like an Emperor's**, in rounds. A battle with 
 
 The planets of players who delete their account remain as **independent colonies**, frozen and ownerless. See [Colonies](/wiki/colonias#independent-colonies).
 
-> [!dev] Still to come: seeing battles in **3D**, **conquest** of planets (sieges, troops, capturing installations; phase 9b), **large-scale combat** (phase 9c) and **ship AI** (piloting, group tactics, ambushes; phase 9d).
+To take other players' planets (siege, defenses and troop landings), see [Conquest](/wiki/conquista).
+
+> [!dev] Still to come: seeing battles in **3D**, **large-scale combat** (phase 9c) and **ship AI** (piloting, group tactics, ambushes; phase 9d).

@@ -38,4 +38,4 @@ Your **capital** is your **oldest** colony. Besides its own upkeep, **it pays fo
 
 If a player **deletes their account**, their planets do not vanish: they remain as **independent colonies**, with the names they were given. Whatever had been produced up to then stays, their orders are cancelled (with the usual refund) and from then on they are **frozen**: they neither produce nor consume. The panel shows their owner as **"Independent"**, and they cannot be claimed.
 
-> [!dev] Conquering other players' or independent planets (siege, sustained presence and troop landings; capture rather than destruction) will arrive in phase 9b.
+Independent colonies **can be conquered** like any other: see [Conquest](/wiki/conquista). Once taken they produce again from that moment (they do not collect the time they spent frozen).

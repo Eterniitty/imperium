@@ -10,6 +10,7 @@ import type { DiscoveryService } from "../discovery/service";
 import type { EmperorService } from "../emperor/service";
 import { findSystem } from "../emperor/world";
 import type { ColonyService } from "./service";
+import type { SiegeService } from "../war/siege";
 
 export interface ColonyRoutesDeps {
   config: ServerConfig;
@@ -17,6 +18,8 @@ export interface ColonyRoutesDeps {
   emperors: EmperorService;
   discoveries: DiscoveryService;
   colonies: ColonyService;
+  /** Fase 9b: para marcar los planetas asediados. */
+  sieges?: SiegeService;
 }
 
 const MINUTE = 60_000;
@@ -30,7 +33,7 @@ function fail(reply: FastifyReply, status: number, error: ApiError["error"]) {
  * aparte del detalle (que no cambia y el cliente guarda) porque cambia con
  * cada reclamación o cambio de nombre. Solo para quien ha descubierto el sistema.
  */
-export async function colonyRoutes(app: FastifyInstance, { config, db, emperors, discoveries, colonies }: ColonyRoutesDeps) {
+export async function colonyRoutes(app: FastifyInstance, { config, db, emperors, discoveries, colonies, sieges }: ColonyRoutesDeps) {
   const cookieName = sessionCookieName(config);
   const seed = universeSeedFromString(config.UNIVERSE_SEED);
   const perAccount = new RateLimiter(120, MINUTE);
@@ -47,6 +50,8 @@ export async function colonyRoutes(app: FastifyInstance, { config, db, emperors,
     if (!emperor) return fail(reply, 404, "no_emperor");
     if (!(await discoveries.has(emperor.id, summary.id))) return fail(reply, 403, "not_discovered");
     reply.header("cache-control", "private, no-store");
-    return { claims: await colonies.claims(summary.id) } satisfies SystemClaimsResponse;
+    const claims = await colonies.claims(summary.id);
+    const besieged = sieges ? await sieges.besiegedIn(summary.id) : new Set<string>();
+    return { claims: claims.map((c) => (besieged.has(c.colonyId) ? { ...c, besieged: true } : c)) } satisfies SystemClaimsResponse;
   });
 }

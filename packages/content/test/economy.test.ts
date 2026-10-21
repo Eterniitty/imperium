@@ -6,8 +6,8 @@ describe("datos de economía", () => {
     expect(validateEconomy()).toEqual([]);
   });
 
-  it("hay mina, refinería, central y astillero", () => {
-    expect(INSTALLATIONS.map((i) => i.id).sort()).toEqual(["mine", "power_plant", "refinery", "shipyard"]);
+  it("hay mina, refinería, central, astillero y plataforma defensiva (Fase 9b)", () => {
+    expect(INSTALLATIONS.map((i) => i.id).sort()).toEqual(["defense_platform", "mine", "power_plant", "refinery", "shipyard"]);
     expect(getInstallation("shipyard")?.maxPerColony).toBe(1);
     expect(getInstallation("nada")).toBeUndefined();
   });

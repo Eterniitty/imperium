@@ -1,5 +1,6 @@
 import {
   ALIEN_AI,
+  ALIEN_SIEGE,
   effectiveTraits,
   FACTIONS,
   getAlienShipClass,
@@ -35,6 +36,7 @@ import type { FleetService } from "../fleet/service";
 import type { HumanityService } from "../humanity/service";
 import type { MarketEffects, MarketService } from "../market/service";
 import type { TerritoryService } from "./territory";
+import type { SiegeEffects, SiegeService } from "../war/siege";
 
 const EPS = 1e-6;
 /** Decisiones por región como poco cada tanto tiempo real (con escalas de tiempo altas). */
@@ -91,6 +93,9 @@ export class AlienService {
   /** Mercado (lo enlaza `app.ts`) y aviso a los jugadores afectados por una operación. */
   market: MarketService | null = null;
   onMarket: ((fx: MarketEffects) => void) | null = null;
+  /** Asedios (Fase 9b; lo enlaza `app.ts`) y aviso a los afectados por uno. */
+  sieges: SiegeService | null = null;
+  onSiege: ((fx: SiegeEffects) => void) | null = null;
 
   constructor(
     private readonly db: Database,
@@ -393,11 +398,13 @@ export class AlienService {
   }
 
   /** Envía hasta `max` flotas paradas de la región (las más cercanas) a `target`. */
-  private async respond(tx: Tx, key: string, factionId: string, target: StarSystemSummary, max: number): Promise<string[]> {
+  private async respond(tx: Tx, key: string, factionId: string, target: StarSystemSummary, max: number, keep?: Set<string>): Promise<string[]> {
     const actorId = this.actors.get(factionId);
     if (!actorId || max <= 0) return [];
+    // Las que asedian no se mueven (Fase 9b).
+    const sieging = keep ?? new Set((this.sieges ? await this.sieges.activeBy(tx, actorId) : []).map((s) => s.systemId));
     const candidates = (await this.regionFleets(tx, key))
-      .filter((f) => f.idle && f.place.location.systemId !== target.id)
+      .filter((f) => f.idle && f.place.location.systemId !== target.id && !sieging.has(f.place.location.systemId))
       .map((f) => ({ id: f.id, d: distance(f.place.location.position, target.position) }))
       .filter((f) => f.d <= ALIEN_AI.responseRangeLy)
       .sort((a, b) => a.d - b.d)
@@ -432,6 +439,11 @@ export class AlienService {
     });
   }
 
+  /** Asediar una colonia ocupada por una facción: rencor (lo llama `SiegeService`). */
+  async onSieged(tx: Tx, emperorId: string, factionId: string): Promise<void> {
+    await this.addGrudge(tx, emperorId, factionId, ALIEN_SIEGE.grudge);
+  }
+
   /** Interceptar una flota alienígena: rencor de su facción (lo llama `WarService`). */
   async onIntercept(tx: Tx, emperorId: string, factionId: string): Promise<void> {
     await this.addGrudge(tx, emperorId, factionId, ALIEN_AI.grudge.intercept);
@@ -463,9 +475,13 @@ export class AlienService {
       if (await this.spawnFleet(tx, key, row.factionId, species)) await tx.update(alienRegions).set({ lastSpawnAt: new Date(now) }).where(eq(alienRegions.regionKey, key));
     }
 
+    // Asedios (Fase 9b): las flotas que asedian no patrullan; quizá empieza o prepara otro.
+    const sieging = new Set((this.sieges ? await this.sieges.activeBy(tx, actorId) : []).map((s) => s.systemId));
+    const siegeFx = await this.considerSieges(tx, key, row.factionId, actorId, own, systems, sieging);
+
     // Patrullas: las flotas paradas recorren su territorio.
     for (const f of own) {
-      if (!f.idle || this.random() >= species.ai.patrol) continue;
+      if (!f.idle || sieging.has(f.place.location.systemId) || this.random() >= species.ai.patrol) continue;
       const here = f.place.location;
       const options = systems.filter((s) => s.id !== here.systemId && distance(s.position, here.position) <= ALIEN_AI.patrolRangeLy);
       if (options.length === 0) continue;
@@ -478,7 +494,58 @@ export class AlienService {
     if (this.random() < chance) await this.expand(tx, key, row.factionId, species, systems);
 
     await schedule(tx, "ai.region", new Date(now + this.tickMs()), { regionKey: key });
-    if (species.ai.trades && this.market) return () => void this.trade(row.factionId, key).catch(() => undefined);
+    const trades = species.ai.trades && this.market;
+    if (!trades && siegeFx.length === 0) return;
+    return () => {
+      for (const fx of siegeFx) this.onSiege?.(fx);
+      if (trades) void this.trade(row.factionId, key).catch(() => undefined);
+    };
+  }
+
+  /**
+   * Ataques a colonias humanas de su territorio (Fase 9b), según su agresividad
+   * y su rencor: solo si la facción es hostil a su dueño (o la colonia es
+   * independiente), nunca en el Núcleo Humano ni contra Emperadores en su
+   * gracia. Si tiene una flota parada allí, empieza el asedio; si no, envía
+   * flotas. Una acción por decisión y como mucho `ALIEN_SIEGE.maxPerRegion` a la vez.
+   */
+  private async considerSieges(
+    tx: Tx,
+    key: string,
+    factionId: string,
+    actorId: string,
+    own: Awaited<ReturnType<AlienService["regionFleets"]>>,
+    systems: StarSystemSummary[],
+    sieging: Set<string>,
+  ): Promise<SiegeEffects[]> {
+    const info = this.speciesOf(factionId);
+    if (!this.sieges || !info || info.species.ai.intruders === "ignore" || systems.length === 0) return [];
+    const inRegion = new Set(systems.map((s) => s.id));
+    if ([...sieging].filter((id) => inRegion.has(id)).length >= ALIEN_SIEGE.maxPerRegion) return [];
+    const targets = await tx
+      .select({ id: colonies.id, emperorId: colonies.emperorId, systemId: colonies.systemId, createdAt: emperors.createdAt })
+      .from(colonies)
+      .leftJoin(emperors, eq(emperors.id, colonies.emperorId))
+      .where(inArray(colonies.systemId, [...inRegion]));
+    const chance = effectiveTraits(info.faction).aggression * ALIEN_SIEGE.chancePerTick;
+    for (const t of targets) {
+      if (t.emperorId === actorId || (t.emperorId && this.isActor(t.emperorId)) || sieging.has(t.systemId) || inHumanCore(t.systemId)) continue;
+      if (t.emperorId) {
+        if (!(await this.isHostileTo(tx, factionId, t.emperorId))) continue;
+        if (t.createdAt && gameHours(t.createdAt.getTime(), this.now(), this.timeScale) < ALIEN_AI.noviceGraceHours) continue;
+      }
+      if (this.random() >= chance) continue;
+      const here = own.some((f) => f.idle && f.place.location.systemId === t.systemId);
+      if (here) {
+        const res = await this.sieges.startTx(tx, actorId, t.id);
+        if (res.ok) sieging.add(t.systemId);
+        return res.ok ? [res.fx] : [];
+      }
+      const system = findSystem(this.seed, t.systemId);
+      if (system) await this.respond(tx, key, factionId, system, info.species.ai.responders, sieging);
+      return [];
+    }
+    return [];
   }
 
   /**
