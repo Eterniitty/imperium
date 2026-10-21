@@ -15,7 +15,7 @@ import {
 } from "@imperium/shared";
 import { UNIVERSE_SEED } from "../config";
 
-export type ViewMode = "galaxy" | "system";
+export type ViewMode = "galaxy" | "system" | "tunnel";
 export type EconomyTab = "humanity" | "market";
 
 /**
@@ -55,6 +55,10 @@ export interface GameState {
   economyOpen: EconomyTab | null;
   /** Cámara al pilotar: desde la cabina (primera persona) o desde detrás de la nave (tercera). */
   cameraView: "first" | "third";
+  /** Selector de destinos del salto cuántico abierto (al pilotar). */
+  quantumPanel: boolean;
+  /** Destino del salto cuántico que se está preparando (alinear y cargar), o null. */
+  quantumTarget: StarSystemSummary | null;
 
   /** Entra en el juego; con Emperador, la cámara empieza en su sistema y lo selecciona. */
   start(at?: SystemLocation): void;
@@ -70,6 +74,8 @@ export interface GameState {
   setSettingsOpen(open: boolean): void;
   setEconomyOpen(tab: EconomyTab | null): void;
   toggleCameraView(): void;
+  setQuantumPanel(open: boolean): void;
+  setQuantumTarget(target: StarSystemSummary | null): void;
 }
 
 /**
@@ -117,6 +123,8 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   settingsOpen: false,
   economyOpen: null,
   cameraView: "third",
+  quantumPanel: false,
+  quantumTarget: null,
 
   start: (at) => {
     if (!at) return set({ started: true });
@@ -157,6 +165,8 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   setEconomyOpen: (economyOpen) => set({ economyOpen }),
   toggleCameraView: () => set({ cameraView: get().cameraView === "first" ? "third" : "first" }),
+  setQuantumPanel: (quantumPanel) => set({ quantumPanel }),
+  setQuantumTarget: (quantumTarget) => set({ quantumTarget }),
 
   notify: (key, params) => {
     const id = (get().notice?.id ?? 0) + 1;

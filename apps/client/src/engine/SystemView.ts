@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
-import type { I18nKey, StarSystemDetail, WeaponKind } from "@imperium/shared";
+import type { I18nKey, StarSystemDetail, StarSystemSummary, WeaponKind, WorldPosition } from "@imperium/shared";
 import { ARRIVAL_EDGE, defaultPark, parkedPosition, PILOT_BOOST, PILOT_SPEED, planetAngle, pulseLimitAt, systemLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
 import { resetSpace, shipName, spaceStore } from "../net/space";
 import { telemetry, type FlightTelemetry } from "./telemetry";
@@ -9,7 +9,8 @@ import { connection, serverNow } from "../net/world";
 import { RemoteShips } from "./RemoteShips";
 import { Effects } from "./Effects";
 import { worldStore } from "../net/world";
-import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC } from "@imperium/content";
+import { playQuantumCharge, stopQuantumCharge } from "../audio/quantumSfx";
 import { isBound, settingsStore, type Action } from "../state/settings";
 import { gameStore } from "../state/store";
 import { Backdrop } from "./Backdrop";
@@ -41,6 +42,8 @@ interface PlanetVisual {
 export interface SystemViewEvents {
   /** Esc en modo observar: volver al mapa. */
   onExit(): void;
+  /** El motor cuántico terminó de cargar: hay que dar la orden de salto. */
+  onQuantumJump(target: StarSystemSummary): void;
   /** La nave cruzó el borde del sistema: pasar al espacio interestelar. `direction` es hacia dónde salió. */
   onLeave(direction: THREE.Vector3): void;
   /** Aviso breve; `keyAction` añade como parámetro `key` la tecla de esa acción. */
@@ -102,6 +105,11 @@ export class SystemView implements View {
   /** Siguiente cañón propio (se alternan, igual que en el servidor). */
   private cannonIndex = 0;
   private cockpit = createCockpit();
+  /**
+   * Salto cuántico en preparación: la nave se alinea con el destino (`align`),
+   * carga el motor (`charge`) y espera la confirmación del servidor (`sent`).
+   */
+  private quantum: { target: StarSystemSummary; dir: THREE.Vector3; phase: "align" | "charge" | "sent"; t: number; glow: THREE.Sprite } | null = null;
   private targetRing: THREE.Sprite;
   /** Cadencia local del cañón: no se envían disparos que el servidor rechazaría. */
   private cannonReadyAt = 0;
@@ -383,13 +391,86 @@ export class SystemView implements View {
     gameStore.getState().setFlight(true, 0);
   }
 
+  /**
+   * Empieza la secuencia de salto cuántico hacia `target` desde la estrella en
+   * `from` (coordenadas de la galaxia, que en la vista de sistema se usan como
+   * direcciones): alinear la nave, cargar el motor y saltar.
+   */
+  startQuantum(target: StarSystemSummary, from: WorldPosition): void {
+    if (!this.ship || !this.flight) return;
+    this.cancelQuantum();
+    const dir = new THREE.Vector3(target.position.x - from.x, target.position.y - from.y, target.position.z - from.z).normalize();
+    this.flight.pulse = false;
+    const glow = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: glowTexture(), color: 0x9fb8ff, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 }),
+    );
+    this.content.add(glow);
+    this.quantum = { target, dir, phase: "align", t: 0, glow };
+    gameStore.getState().setQuantumTarget(target);
+  }
+
+  /** Interrumpe la secuencia de salto (o la limpia tras saltar). */
+  cancelQuantum(): void {
+    const q = this.quantum;
+    if (!q) return;
+    this.quantum = null;
+    stopQuantumCharge();
+    this.content.remove(q.glow);
+    q.glow.material.dispose();
+    telemetry.quantumCharge = null;
+    telemetry.quantumAlign = null;
+    gameStore.getState().setQuantumTarget(null);
+  }
+
+  get quantumActive(): boolean {
+    return this.quantum !== null;
+  }
+
+  /** Paso de la secuencia de salto: gira la nave hacia el destino, carga y avisa al motor. */
+  private updateQuantum(dt: number): void {
+    const q = this.quantum;
+    const ship = this.ship;
+    if (!q || !ship || !this.flight) return;
+    // Mientras tanto la nave se detiene y no responde a los mandos.
+    this.flight.stop();
+    const fwd = this.forward();
+    if (q.phase === "align") {
+      const target = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), q.dir);
+      ship.quaternion.rotateTowards(target, QUANTUM_ALIGN_RAD_PER_SEC * dt);
+      const cos = fwd.dot(q.dir);
+      telemetry.quantumAlign = (cos + 1) / 2;
+      if (cos > Math.cos((1.5 * Math.PI) / 180)) {
+        q.phase = "charge";
+        q.t = 0;
+        telemetry.quantumAlign = null;
+        playQuantumCharge(QUANTUM_CHARGE_SEC);
+      }
+    } else if (q.phase === "charge") {
+      q.t += dt;
+      const k = Math.min(1, q.t / QUANTUM_CHARGE_SEC);
+      telemetry.quantumCharge = k;
+      // Un resplandor que crece delante del morro.
+      q.glow.position.copy(ship.position).addScaledVector(fwd, 90 + 40 * k);
+      q.glow.scale.setScalar(20 + 260 * k * k);
+      q.glow.material.opacity = 0.25 + 0.75 * k;
+      shipRig(ship).setThrust(1, k > 0.5);
+      if (k >= 1) {
+        q.phase = "sent";
+        this.effects.flash(q.glow.position.clone(), 900, 0.8, 0xbfd0ff);
+        this.events.onQuantumJump(q.target);
+      }
+    }
+  }
+
   /** Deja de pilotar y vuelve a la cámara orbital. */
   stopPiloting(): void {
     if (!this.ship) return;
+    this.cancelQuantum();
     // Deja de pilotar: la nave se queda aparcada aquí, orbitando (el servidor lo confirma por el tema `me`).
     connection.send({ t: "leave" });
     const flagship = worldStore.getState().flagship;
-    if (flagship && flagship.systemId === this.systemId) {
+    // Solo si el servidor la tenía a los mandos (si no, su aparcamiento no ha cambiado).
+    if (flagship && flagship.systemId === this.systemId && spaceStore.getState().systemId === this.systemId) {
       const p = this.ship.position;
       worldStore.setState({ flagship: { ...flagship, park: { p: [p.x, p.y, p.z], at: serverNow() } } });
     }
@@ -621,6 +702,11 @@ export class SystemView implements View {
     this.ship.position.set(...c.p);
     this.ship.quaternion.set(...c.q);
     this.flight?.stop();
+    // Aún sin subir a bordo: el servidor dice dónde está aparcada la nave (manda sobre lo que se creía).
+    const flagship = worldStore.getState().flagship;
+    if (flagship && flagship.systemId === this.systemId && spaceStore.getState().systemId !== this.systemId) {
+      worldStore.setState({ flagship: { ...flagship, park: { p: [...c.p], at: serverNow() } } });
+    }
     // La cámara salta con la nave (si no, tardaría en alcanzarla y la nave se vería diminuta).
     this.placeChaseCamera(1);
   }
@@ -715,7 +801,8 @@ export class SystemView implements View {
         this.events.notify("pilot.noFuel");
       }
       this.updateNavigation();
-      this.flight.update(dt);
+      if (this.quantum) this.updateQuantum(dt);
+      else this.flight.update(dt);
       this.collide();
       this.applyCorrection();
       this.followParkUntilBoarded();
@@ -773,6 +860,8 @@ export class SystemView implements View {
   onKey(code: string): void {
     if (this.ship) {
       if (isBound("cameraView", code)) gameStore.getState().toggleCameraView();
+      else if (this.quantum && (code === "Escape" || isBound("jump", code))) this.cancelQuantum();
+      else if (this.quantum) return;
       else if (isBound("pulse", code)) this.togglePulse();
       else if (isBound("lockTarget", code)) this.cycleTarget();
       else if (isBound("fireMissile", code)) this.fireMissile();

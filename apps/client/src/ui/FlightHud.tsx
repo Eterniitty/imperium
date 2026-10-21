@@ -6,7 +6,7 @@ import { useKeyLabels } from "./keys";
 import { formatDuration } from "./useNow";
 
 /** Velocidad máxima en cada vista: escala de la barra de velocidad (en un sistema, con impulso; con pulso, la del pulso). */
-const MAX_SPEED = { galaxy: 150, system: PILOT_SPEED * PILOT_BOOST } as const;
+const MAX_SPEED = { galaxy: 150, system: PILOT_SPEED * PILOT_BOOST, tunnel: 1 } as const;
 
 /** Distancia en m o km, con pocas cifras. */
 export function formatDistance(m: number): string {

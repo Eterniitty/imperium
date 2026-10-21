@@ -10,6 +10,8 @@ import { GalaxyView } from "./GalaxyView";
 import { Keyboard } from "./input";
 import { isBound, keyLabel, pixelRatioFor, settingsStore } from "../state/settings";
 import { SystemView } from "./SystemView";
+import { TunnelView } from "./TunnelView";
+import { playQuantumJump } from "../audio/quantumSfx";
 import type { View } from "./View";
 
 /**
@@ -22,6 +24,8 @@ export class Engine {
   private keyboard: Keyboard;
   private galaxy: GalaxyView;
   private system: SystemView;
+  /** Viaje cuántico: el túnel por el que va la nave mientras viaja. */
+  private tunnel = new TunnelView();
   private active: View;
   private timer = new THREE.Timer();
   private frameId = 0;
@@ -65,6 +69,7 @@ export class Engine {
     this.system = new SystemView(dom, this.keyboard, {
       onExit: () => this.exitSystem(),
       onLeave: (direction) => this.leaveSystem(direction),
+      onQuantumJump: (target) => void this.quantumJump(target),
       notify: (key, action) => {
         const code = action ? settingsStore.getState().bindings[action][0] : undefined;
         this.notify(key, action ? { key: code ? keyLabel(code, gameStore.getState().locale) : "—" } : undefined);
@@ -83,8 +88,9 @@ export class Engine {
     this.resizeObserver.observe(container);
     this.resize();
     this.loop();
-    // Como en No Man's Sky: se empieza a los mandos de la nave, en el sistema del Emperador.
-    this.pilot(null);
+    // Como en No Man's Sky: se empieza a los mandos de la nave, en el sistema del Emperador
+    // (o en el túnel cuántico, si está de viaje).
+    if (!this.pilot(null) && this.emperor()?.travel) this.enterTunnel();
   }
 
   private applyQuality(): void {
@@ -94,10 +100,19 @@ export class Engine {
 
   // --- Pilotaje ---
 
-  /** Teclas globales (mapa, salto); el resto, a la vista activa. */
+  /**
+   * Teclas globales (mapa, salto); el resto, a la vista activa. J en el mapa
+   * salta a la estrella elegida; al pilotar abre el selector de destinos (o, si
+   * el motor ya se está cargando, lo interrumpe).
+   */
   private onKey(code: string): void {
     if (isBound("toggleMap", code)) return this.toggleMap();
     if (isBound("jump", code) && this.active === this.galaxy) return void this.jumpToSelected();
+    if (isBound("jump", code) && this.active === this.system && this.system.isPiloting && !this.system.quantumActive) {
+      const store = gameStore.getState();
+      return store.setQuantumPanel(!store.quantumPanel);
+    }
+    if (code === "Escape" && gameStore.getState().quantumPanel) return gameStore.getState().setQuantumPanel(false);
     this.active.onKey(code);
   }
 
@@ -130,14 +145,25 @@ export class Engine {
     return true;
   }
 
-  /** Alterna entre el mapa galáctico y los mandos de la nave. */
+  /**
+   * Alterna entre el mapa galáctico y los mandos de la nave. Durante un viaje
+   * cuántico, entre el túnel y el mapa (que sigue a la nave).
+   */
   toggleMap(): void {
-    if (this.active === this.system) {
+    gameStore.getState().setQuantumPanel(false);
+    if (this.active === this.tunnel) {
+      this.showTravelOnMap();
+    } else if (this.active === this.system) {
       this.system.stopPiloting();
       this.exitSystem();
     } else if (!this.pilot(null)) {
-      this.notify("pilot.cannotWhileJumping");
+      if (this.emperor()?.travel && isTravelling(this.emperor()!, serverNow())) this.enterTunnel();
+      else this.notify("pilot.cannotWhileJumping");
     }
+  }
+
+  get isTravelling(): boolean {
+    return this.active === this.tunnel;
   }
 
   get isPiloting(): boolean {
@@ -156,24 +182,57 @@ export class Engine {
     this.notify("pilot.leftSystem", { jump: jumpKey ? keyLabel(jumpKey, gameStore.getState().locale) : "—" });
   }
 
-  /** Salta con la nave del Emperador a la estrella seleccionada; la cámara la sigue. */
+  /** Salto cuántico a la estrella seleccionada en el mapa: se vuelve a los mandos y empieza la secuencia. */
   async jumpToSelected(): Promise<void> {
     const target = gameStore.getState().selected;
-    const emperor = this.emperor();
-    if (!target || !emperor) return;
-    const error = await authStore.getState().moveEmperor(target.id);
-    if (error) return this.notify(error);
-    this.followEmperor();
+    if (target) this.startQuantum(target);
   }
 
-  private followEmperor(): void {
+  /**
+   * Prepara el salto cuántico a `target`: a los mandos de la nave (si no lo
+   * estaba), la nave se alinea con el destino y carga el motor; al terminar,
+   * `quantumJump` da la orden al servidor (que comprueba combustible y alcance).
+   */
+  startQuantum(target: StarSystemSummary): void {
+    const emperor = this.emperor();
+    if (!emperor) return;
+    gameStore.getState().setQuantumPanel(false);
+    if (isTravelling(emperor, serverNow())) return this.notify("pilot.cannotWhileJumping");
+    const here = emperor.travel ? emperor.travel.to : emperor.location;
+    if (target.id === here.systemId) return this.notify("error.already_there");
+    if (!(this.active === this.system && this.system.isPiloting) && !this.pilot(null)) return;
+    this.system.startQuantum(target, here.position);
+  }
+
+  /** El motor cuántico está cargado: orden de salto; si el servidor la acepta, al túnel. */
+  private async quantumJump(target: StarSystemSummary): Promise<void> {
+    const error = await authStore.getState().moveEmperor(target.id);
+    if (error) {
+      this.system.cancelQuantum();
+      return this.notify(error);
+    }
+    playQuantumJump();
+    this.enterTunnel();
+  }
+
+  /** Viaje en curso: la nave deja el sistema y se ve el túnel cuántico hasta llegar. */
+  private enterTunnel(): void {
     const emperor = this.emperor();
     if (!emperor?.travel) return;
-    if (this.active === this.system) {
-      this.system.stopPiloting();
-      this.exitSystem();
-    }
+    if (this.active === this.system) this.system.stopPiloting();
+    this.galaxy.follow(null);
     this.jumping = { from: emperor.location.position, to: emperor.travel.to.position };
+    this.switchTo(this.tunnel);
+    gameStore.getState().setView("tunnel");
+  }
+
+  /** Durante el viaje, el mapa galáctico siguiendo a la nave (M vuelve al túnel). */
+  private showTravelOnMap(): void {
+    const emperor = this.emperor();
+    if (!emperor?.travel) return;
+    this.switchTo(this.galaxy);
+    gameStore.getState().setView("galaxy");
+    gameStore.getState().select(findSystemSummary(emperor.travel.to.systemId));
     this.galaxy.goTo(positionAt(emperor, serverNow()), 18);
     this.galaxy.follow(() => {
       const e = this.emperor();
@@ -205,18 +264,20 @@ export class Engine {
     this.pilot(null);
   }
 
-  /** Cada fotograma: si se está siguiendo un salto y la nave llegó, se entra pilotando en el destino. */
+  /**
+   * Cada fotograma: si la nave llegó de un salto y se estaba viendo el túnel (o
+   * el mapa siguiéndola), se entra pilotando en el destino, en su borde.
+   */
   private checkArrival(): void {
-    if (!this.jumping || this.active !== this.galaxy) return;
-    if (!this.galaxy.isFollowing) {
+    if (!this.jumping || (this.active !== this.galaxy && this.active !== this.tunnel)) return;
+    if (this.active === this.galaxy && !this.galaxy.isFollowing) {
       // El jugador movió la cámara: deja de seguir, pero no se le mete en el sistema.
       this.jumping = null;
       return;
     }
     const emperor = this.emperor();
     if (!emperor || isTravelling(emperor, serverNow())) return;
-    const { from, to } = this.jumping;
-    this.pilot(new THREE.Vector3(from.x - to.x, from.y - to.y, from.z - to.z));
+    this.pilot(null);
   }
 
   // --- Órdenes desde la interfaz ---
@@ -234,7 +295,7 @@ export class Engine {
   }
 
   goToSector(c: SectorCoord): void {
-    if (this.active === this.system) this.exitSystem();
+    if (this.active !== this.galaxy) this.exitSystem();
     this.galaxy.goToSector(c);
   }
 
@@ -242,7 +303,7 @@ export class Engine {
   goToEmperor(): void {
     const emperor = authStore.getState().emperor;
     if (!emperor) return;
-    if (this.active === this.system) this.exitSystem();
+    if (this.active !== this.galaxy) this.exitSystem();
     // Si viaja, a donde está ahora; el sistema seleccionado es el de destino.
     this.galaxy.goTo(positionAt(emperor, serverNow()), 30);
     gameStore.getState().select(findSystemSummary((emperor.travel?.to ?? emperor.location).systemId));
@@ -252,7 +313,7 @@ export class Engine {
   goToFleet(fleetId: string): void {
     const fleet = worldStore.getState().fleets[fleetId];
     if (!fleet) return;
-    if (this.active === this.system) this.exitSystem();
+    if (this.active !== this.galaxy) this.exitSystem();
     this.galaxy.goTo(positionAt(fleet, serverNow()), 30);
     gameStore.getState().select(findSystemSummary((fleet.travel?.to ?? fleet.location).systemId));
   }
@@ -338,6 +399,7 @@ export class Engine {
     this.renderer.setSize(w, h, false);
     this.galaxy.resize(w, h);
     this.system.resize(w, h);
+    this.tunnel.resize(w, h);
   }
 
   private loop = (time?: number) => {
@@ -370,6 +432,7 @@ export class Engine {
     this.keyboard.dispose();
     this.galaxy.dispose();
     this.system.dispose();
+    this.tunnel.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }

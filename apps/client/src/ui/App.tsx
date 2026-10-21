@@ -17,6 +17,8 @@ import { SettingsPanel } from "./SettingsPanel";
 import { EconomyPanel } from "./EconomyPanel";
 import { Legend } from "./Legend";
 import { PlanetPanel } from "./PlanetPanel";
+import { QuantumHud } from "./QuantumHud";
+import { QuantumPanel } from "./QuantumPanel";
 import { StartScreen } from "./StartScreen";
 import { SystemPanel } from "./SystemPanel";
 import { TopBar } from "./TopBar";
@@ -38,6 +40,7 @@ export function App() {
   const view = useGame((s) => s.view);
   // Con un sistema seleccionado, su panel ya dice la clase de la estrella y necesita el sitio de la leyenda.
   const hasSelection = useGame((s) => s.selected !== null);
+  const quantumPanel = useGame((s) => s.quantumPanel);
   const containerRef = useRef<HTMLDivElement>(null);
   const uiScale = useUiScale();
 
@@ -74,7 +77,9 @@ export function App() {
       <div className="viewport" ref={containerRef} />
       <div className="hud" style={{ zoom: uiScale }}>
         <TopBar />
-        {view === "galaxy" ? (
+        {view === "tunnel" ? (
+          <QuantumHud />
+        ) : view === "galaxy" ? (
           <>
             <FlightHud />
             <div className="left-col">
@@ -89,7 +94,8 @@ export function App() {
           <>
             <FlightHud />
             <CombatHud />
-            <PlanetPanel />
+            <QuantumHud />
+            {quantumPanel ? <QuantumPanel /> : <PlanetPanel />}
           </>
         )}
         <Notice />

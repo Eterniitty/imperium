@@ -79,7 +79,7 @@ export function TopBar() {
 
       {emperor && (
         <button className="btn" onClick={() => engineRef.current?.toggleMap()} title={t("action.toggleMap")}>
-          {t(view === "system" && flight ? "pilot.map" : "pilot.pilot")} <kbd>{keys.toggleMap}</kbd>
+          {t((view === "system" && flight) || view === "tunnel" ? "pilot.map" : "pilot.pilot")} <kbd>{keys.toggleMap}</kbd>
         </button>
       )}
 

@@ -788,6 +788,17 @@ export const es = {
   "hud.targetDistance": "Distancia",
   "hud.emergencyReserve": "reserva de emergencia",
   "pilot.noFuel": "Sin combustible: el pulso no funciona. Repón junto a una colonia propia; la reserva de emergencia se regenera muy despacio.",
+  "quantum.title": "Salto cuántico",
+  "quantum.subtitle": "Alcance {range} a.l. · combustible {fuel}",
+  "quantum.hint": "Elige un destino: la nave se alinea, carga el motor y salta. También puedes elegirlo en el mapa ({map}) y pulsar {jump}.",
+  "quantum.close": "Cerrar el salto cuántico",
+  "quantum.noneInRange": "Ningún sistema al alcance con el combustible que queda. Repón junto a una colonia propia.",
+  "quantum.fuelCost": "combustible {n}",
+  "quantum.aligning": "Alineando con el destino",
+  "quantum.charging": "Cargando el motor cuántico",
+  "quantum.cancelHint": "{key} o Esc: cancelar",
+  "quantum.travelling": "Viaje cuántico",
+  "quantum.tunnelHint": "{map}: ver el mapa · al llegar apareces en el borde del sistema",
 } as const;
 
 export type I18nKey = keyof typeof es;

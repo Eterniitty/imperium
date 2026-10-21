@@ -177,6 +177,11 @@ export const EMPEROR_FLAGSHIP: {
   combat: { shield: 200, shieldRegenPerSec: 20, shieldDelaySec: 4, weapons: [FLAGSHIP_CANNON, FLAGSHIP_MISSILE], hardpoints: FLAGSHIP_HARDPOINTS },
 };
 
+/** Segundos que tarda en cargar el motor cuántico (con la nave ya alineada con el destino). */
+export const QUANTUM_CHARGE_SEC = 5;
+/** Velocidad con la que la nave se alinea sola con el destino del salto (radianes por segundo). */
+export const QUANTUM_ALIGN_RAD_PER_SEC = 1.4;
+
 /** Alcance máximo del salto cuántico con el depósito lleno (años luz). */
 export const QUANTUM_MAX_LY = FLAGSHIP_SUPPLIES.fuelMax / FLAGSHIP_SUPPLIES.quantumFuelPerLy;
 

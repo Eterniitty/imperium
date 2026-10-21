@@ -543,8 +543,8 @@ a.btn-link { color: inherit; text-decoration: none; }
 .social-add-row .auth-input { flex: 1; }
 
 /* Combate. */
-.combat-self { position: absolute; left: 12px; bottom: 12px; padding: 10px 14px; width: 260px; font-size: 12px; }
-.combat-row { display: grid; grid-template-columns: 56px 1fr 34px; align-items: center; gap: 8px; margin: 3px 0; }
+.combat-self { position: absolute; left: 12px; bottom: 12px; padding: 10px 14px; width: 280px; font-size: 12px; }
+.combat-row { display: grid; grid-template-columns: 84px 1fr 34px; align-items: center; gap: 8px; margin: 3px 0; }
 .combat-row.weapons { display: flex; gap: 10px; margin-top: 8px; }
 .combat-bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
 .combat-bar span { display: block; height: 100%; transition: width 0.2s; }
@@ -649,3 +649,16 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
   .projects { grid-template-columns: 1fr; }
   .order-book { grid-template-columns: 1fr; }
 }
+
+/* Salto cuántico. */
+.quantum-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 52vh; overflow-y: auto; }
+.quantum-dest { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 6px 10px; border-radius: 4px; border: 1px solid var(--panel-border); background: rgba(20, 30, 50, 0.55); color: inherit; cursor: pointer; text-align: left; }
+.quantum-dest:hover { border-color: rgba(143, 184, 255, 0.7); background: rgba(40, 60, 110, 0.55); }
+.quantum-name { display: flex; gap: 8px; align-items: center; }
+.warn-text { color: #ff8a6a; }
+.quantum-hud { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; padding: 12px 22px; min-width: 300px; }
+.quantum-hud.charge { top: 22%; }
+.quantum-hud.tunnel { bottom: 40px; min-width: 360px; }
+.quantum-dest-name { display: block; font-family: var(--font-display); font-size: 22px; letter-spacing: 0.06em; color: #bfd0ff; margin: 2px 0; }
+.quantum-time { font-size: 28px; color: var(--gold); margin: 4px 0; }
+.quantum-bar span { background: linear-gradient(90deg, #6f7dff, #bfd0ff); }

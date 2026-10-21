@@ -58,6 +58,17 @@ export class Music {
     else if (this.ctx) this.start();
   }
 
+  /**
+   * Efecto de sonido generativo (motor cuántico…) por la misma mezcla que la
+   * música: su volumen, eco y reverberación. Con el volumen a 0 no suena.
+   */
+  effect(play: (ctx: AudioContext, out: AudioNode) => void): void {
+    if (this.volume <= 0) return;
+    if (!this.ctx) this.build();
+    void this.ctx!.resume();
+    play(this.ctx!, this.bus!);
+  }
+
   private build(): void {
     const ctx = new AudioContext();
     this.ctx = ctx;

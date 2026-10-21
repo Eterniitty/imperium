@@ -22,7 +22,7 @@ async function signIn(page: Page, email: string) {
 
 test("nombrar al Emperador, entrar en su sistema, trasladarlo y que lo recuerde", async ({ page }) => {
   // Recorre muchas cosas (pilotar, saltar, ajustes, volver a entrar): necesita más de 60 s.
-  test.setTimeout(150_000);
+  test.setTimeout(200_000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
 
@@ -86,7 +86,7 @@ test("nombrar al Emperador, entrar en su sistema, trasladarlo y que lo recuerde"
   await panel.getByRole("button", { name: /Saltar aquí/ }).click();
   // Viaja: la barra superior muestra el destino y la cuenta atrás; la cámara sigue a la nave.
   // Antes del salto, la nave se alinea con el destino y carga el motor cuántico (unos segundos).
-  await expect(page.getByText(`Viajando a ${target.name}`)).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(`Viajando a ${target.name}`)).toBeVisible({ timeout: 60_000 });
   await page.screenshot({ path: `${SHOTS}/4-viajando.png` });
   // Al llegar, entra pilotando en el sistema de destino.
   await expect(page.getByText(`Viajando a ${target.name}`)).toBeHidden({ timeout: 30_000 });

@@ -108,7 +108,7 @@ test("dos jugadores se ven en el mismo universo y se ven moverse", { tag: "@lent
   await anaPanel.getByRole("button", { name: /Saltar aquí/ }).click();
 
   const brunoPanel = bruno.locator("aside.side");
-  await expect(brunoPanel.getByRole("heading", { name: "En camino hacia aquí" })).toBeVisible({ timeout: 30_000 });
+  await expect(brunoPanel.getByRole("heading", { name: "En camino hacia aquí" })).toBeVisible({ timeout: 60_000 });
   await expect(brunoPanel.locator(".emperor-list li", { hasText: "Ana Prima" })).toBeVisible();
   await bruno.waitForTimeout(800);
   await bruno.screenshot({ path: `${SHOTS}/6-bruno-ve-venir-a-ana.png` });
