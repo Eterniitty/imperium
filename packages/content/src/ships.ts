@@ -2,20 +2,37 @@ import { withHardpoints } from "./shipModels";
 import type { ShipClassDefinition, ShipClassId, ShipCombat, ShipHardpoints, WeaponDefinition } from "./types";
 
 /**
+ * Eslora de la nave insignia del Emperador (m). Lleva hasta 500 humanos
+ * (`HUMANS.flagshipCapacity`, Ley II): tripulación, colonos y tropas, con
+ * hábitats, hangar, reactor, motor cuántico y bodega. Un portaaviones actual
+ * (~333 m) aloja a unas 5000 personas apretadas; una nave que debe sostener a
+ * 500 durante meses, con gravedad de giro y blindaje, y que además es nave de
+ * mando con hangar, ronda los 300 m. Decidido el 21-10-2026: 320 m. El modelo
+ * 3D, las cámaras, la grieta del salto, el túnel y el radio de impacto se
+ * miden con ella.
+ */
+export const FLAGSHIP_LENGTH_M = 320;
+
+/** Radio de impacto de la nave insignia en el combate en tiempo real (m): casco largo y estrecho, algo de margen por la latencia. */
+export const FLAGSHIP_HIT_RADIUS_M = Math.round(FLAGSHIP_LENGTH_M * 0.3);
+
+/** Boca de fuego en fracciones de la eslora de la insignia → metros. */
+const fl = (x: number, y: number, z: number): [number, number, number] => [
+  Math.round(x * FLAGSHIP_LENGTH_M * 100) / 100,
+  Math.round(y * FLAGSHIP_LENGTH_M * 100) / 100,
+  Math.round(z * FLAGSHIP_LENGTH_M * 100) / 100,
+];
+
+/**
  * Bocas de fuego de la nave insignia (la misma forma para todos los Emperadores):
- * dos cañones en barquillas a los lados de la proa y dos lanzadores en la cara
- * delantera de las barquillas laterales. En metros;
- * el modelo 3D del cliente pone los cañones y los lanzadores justo ahí.
+ * dos cañones en barquillas a los lados de la proa y dos lanzadores de misiles
+ * en la proa de los módulos de hábitat, a los costados. En metros (fracciones
+ * de la eslora); el modelo 3D del cliente (receta `flagship`) pone los cañones
+ * y la cara de los lanzadores justo ahí, y el servidor dispara desde ahí.
  */
 export const FLAGSHIP_HARDPOINTS: ShipHardpoints = {
-  cannon: [
-    [3.8, -1.2, -20.5],
-    [-3.8, -1.2, -20.5],
-  ],
-  missile: [
-    [6.2, -0.5, -9.4],
-    [-6.2, -0.5, -9.4],
-  ],
+  cannon: [fl(0.078, -0.012, -0.43), fl(-0.078, -0.012, -0.43)],
+  missile: [fl(0.118, 0.004, -0.112), fl(-0.118, 0.004, -0.112)],
 };
 
 /** Cañón estándar: ráfagas rápidas, sin límite de munición. */
@@ -52,6 +69,11 @@ const DRYDOCK = { shipyard: 1, drydock: 1, refinery: 1 } as const;
  * - las naves grandes atraen el fuego (`battleProfile`) y protegen a las
  *   pequeñas; las capitales (crucero, portanaves) piden dique orbital y aleaciones;
  * - el interceptor paga su velocidad (alcanza convoyes y huye de lo que no puede vencer).
+ *
+ * Esloras (21-10-2026, a escala de la insignia de 320 m): cazas de 20–32 m
+ * (uno o dos tripulantes), corbetas y fragatas de 80–140 m, destructores de
+ * 230 m y capitales de 480–620 m; transportes según su carga. Los planetas
+ * siguen siendo cientos o miles de veces mayores (20–350 km de radio).
  */
 export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipClassDefinition>([
   {
@@ -71,7 +93,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 1,
     consumedOnUse: false,
     combat: { shield: 40, shieldRegenPerSec: 8, shieldDelaySec: 4, weapons: [CANNON_LIGHT] },
-    model: { archetype: "scout", lengthM: 32, hullShape: "needle", engines: 2, dish: true },
+    model: { archetype: "scout", lengthM: 60, hullShape: "needle", engines: 2, dish: true },
   },
   {
     id: "fighter",
@@ -90,7 +112,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 0.8,
     consumedOnUse: false,
     combat: { shield: 50, shieldRegenPerSec: 10, shieldDelaySec: 3, weapons: [CANNON_RAPID] },
-    model: { archetype: "fighter", lengthM: 18, hullShape: "needle", engines: 1, wings: true },
+    model: { archetype: "fighter", lengthM: 20, hullShape: "needle", engines: 1, wings: true },
   },
   {
     id: "interceptor",
@@ -110,7 +132,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 1.5,
     consumedOnUse: false,
     combat: { shield: 80, shieldRegenPerSec: 12, shieldDelaySec: 3, weapons: [CANNON, { ...MISSILE, ammo: 2, damage: 70 }] },
-    model: { archetype: "fighter", lengthM: 26, hullShape: "needle", engines: 2, wings: true },
+    model: { archetype: "fighter", lengthM: 32, hullShape: "needle", engines: 2, wings: true },
   },
   {
     id: "corvette",
@@ -131,7 +153,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 1.8,
     consumedOnUse: false,
     combat: { shield: 120, shieldRegenPerSec: 14, shieldDelaySec: 3, weapons: [FLAK] },
-    model: { archetype: "frigate", lengthM: 38, hullShape: "wedge", engines: 2 },
+    model: { archetype: "frigate", lengthM: 80, hullShape: "wedge", engines: 2 },
   },
   {
     id: "frigate",
@@ -151,7 +173,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 3,
     consumedOnUse: false,
     combat: { shield: 150, shieldRegenPerSec: 12, shieldDelaySec: 4, weapons: [CANNON, MISSILE] },
-    model: { archetype: "frigate", lengthM: 55, hullShape: "spindle", engines: 2 },
+    model: { archetype: "frigate", lengthM: 140, hullShape: "spindle", engines: 2 },
   },
   {
     id: "destroyer",
@@ -172,7 +194,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 4.5,
     consumedOnUse: false,
     combat: { shield: 260, shieldRegenPerSec: 18, shieldDelaySec: 4, weapons: [CANNON_HEAVY, TORPEDO] },
-    model: { archetype: "frigate", lengthM: 95, hullShape: "wedge", engines: 3, turrets: 2 },
+    model: { archetype: "frigate", lengthM: 230, hullShape: "wedge", engines: 3, turrets: 2 },
   },
   {
     id: "cruiser",
@@ -193,7 +215,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 7,
     consumedOnUse: false,
     combat: { shield: 600, shieldRegenPerSec: 30, shieldDelaySec: 4, weapons: [CANNON_HEAVY, { ...TORPEDO, ammo: 8 }] },
-    model: { archetype: "capital", lengthM: 180, hullShape: "monolith", engines: 4, turrets: 4 },
+    model: { archetype: "capital", lengthM: 480, hullShape: "monolith", engines: 4, turrets: 4 },
   },
   {
     id: "carrier",
@@ -214,7 +236,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 9,
     consumedOnUse: false,
     combat: { shield: 700, shieldRegenPerSec: 25, shieldDelaySec: 5, weapons: [FLAK, { ...MISSILE, ammo: 12 }] },
-    model: { archetype: "capital", lengthM: 240, hullShape: "brick", engines: 4, hangar: true, turrets: 2 },
+    model: { archetype: "capital", lengthM: 620, hullShape: "brick", engines: 4, hangar: true, turrets: 2 },
   },
   {
     id: "freighter",
@@ -234,7 +256,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 2,
     consumedOnUse: false,
     combat: { shield: 60, shieldRegenPerSec: 6, shieldDelaySec: 5, weapons: [] },
-    model: { archetype: "transport", lengthM: 70, hullShape: "pod", engines: 2, pods: 4 },
+    model: { archetype: "transport", lengthM: 160, hullShape: "pod", engines: 2, pods: 4 },
   },
   {
     id: "hauler",
@@ -254,7 +276,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 4,
     consumedOnUse: false,
     combat: { shield: 160, shieldRegenPerSec: 8, shieldDelaySec: 5, weapons: [CANNON_LIGHT] },
-    model: { archetype: "transport", lengthM: 160, hullShape: "pod", engines: 3, pods: 10 },
+    model: { archetype: "transport", lengthM: 400, hullShape: "pod", engines: 3, pods: 10 },
   },
   {
     id: "troopship",
@@ -274,7 +296,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 3,
     consumedOnUse: false,
     combat: { shield: 180, shieldRegenPerSec: 10, shieldDelaySec: 4, weapons: [CANNON_LIGHT] },
-    model: { archetype: "transport", lengthM: 85, hullShape: "brick", engines: 2, hangar: true },
+    model: { archetype: "transport", lengthM: 210, hullShape: "brick", engines: 2, hangar: true },
   },
   {
     id: "colonizer",
@@ -294,7 +316,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 4,
     consumedOnUse: true,
     combat: { shield: 80, shieldRegenPerSec: 6, shieldDelaySec: 5, weapons: [] },
-    model: { archetype: "transport", lengthM: 110, hullShape: "spindle", engines: 3, habitat: true },
+    model: { archetype: "transport", lengthM: 280, hullShape: "spindle", engines: 3, habitat: true },
   },
 ]);
 
@@ -369,8 +391,6 @@ export const EMPEROR_FLAGSHIP: {
 
 /** Segundos que tarda en cargar el motor cuántico (con la nave ya alineada con el destino). */
 export const QUANTUM_CHARGE_SEC = 5;
-/** Eslora de la nave insignia del Emperador (m): el modelo 3D, las cámaras y la grieta del salto se miden con ella. */
-export const FLAGSHIP_LENGTH_M = 46;
 
 /**
  * Grieta del salto cuántico (solo visual, la ven todos los del sistema), en

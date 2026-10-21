@@ -4,7 +4,7 @@
  * configuración centralizada `WORLD_SCALE` (`@imperium/content` bodies.ts) y de
  * lo que generó el universo; nada se fija aquí a mano.
  *
- * Jerarquía: nave (~45 m) ≪ luna (4–35 km) < planeta (20–350 km) ≪
+ * Jerarquía: nave (20–620 m; la insignia, 320 m) ≪ luna (4–35 km) < planeta (20–350 km) ≪
  * estrella (1600–14 000 km; enanas blancas y de neutrones, menos). Las órbitas se comprimen con la raíz de la
  * distancia real y nunca solapan las esferas de influencia de dos cuerpos.
  *

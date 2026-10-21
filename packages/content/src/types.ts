@@ -304,7 +304,7 @@ export type HullShape = "needle" | "wedge" | "disc" | "spindle" | "shard" | "pod
 export type ShipArchetype = "scout" | "fighter" | "transport" | "miner" | "frigate" | "capital";
 
 export interface ShipModelHints {
-  /** Eslora en metros (la nave del Emperador mide ~45 m). */
+  /** Eslora en metros (la nave del Emperador mide 320 m, `FLAGSHIP_LENGTH_M`). */
   lengthM: number;
   hullShape: HullShape;
   /** Receta del modelo; si falta, se deduce de la forma y el tamaño. */

@@ -6,6 +6,8 @@ Twelve ship classes, all **built in your colonies** (see [Economy](/wiki/economi
 
 {{tabla:naves}}
 
+Lengths are to the scale of the Emperor's ship, which is **320 m** long (it carries up to 500 people): fighters of 20–32 m, corvettes and frigates of 80–140 m, destroyers of 230 m and capital ships of half a kilometre or more. Planets are still hundreds or thousands of times larger.
+
 \* The Colonizer is consumed when it founds a colony. In the *Humans* column: colonists (Colonizer) or passenger berths (Freighter, Heavy freighter, Troopship).
 
 | Role | Ships | What for |

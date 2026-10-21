@@ -1,8 +1,9 @@
 import * as THREE from "three";
+import { FLAGSHIP_LENGTH_M } from "@imperium/content";
 import { settingsStore } from "../state/settings";
 
-/** Distancia de la vista de seguimiento (m): la nave mide unos 45. */
-const DEFAULT_DIST = 102;
+/** Distancia de la vista de seguimiento (m), en esloras de la nave insignia. */
+const DEFAULT_DIST = FLAGSHIP_LENGTH_M * 2.2;
 
 /**
  * Cámara del piloto, separada de la nave: mover la cámara nunca gira la nave.
@@ -33,10 +34,10 @@ export class ChaseCamera {
   static readonly DEFAULT_DIST = DEFAULT_DIST;
   /** Altura de la cámara sobre la línea de mira (m): la nave queda en el tercio inferior. */
   static readonly HEIGHT = 0.235;
-  static readonly MIN_DIST = 45;
-  static readonly MAX_DIST = 3000;
-  /** Cabina: posición en el puente (m, ejes de la nave). */
-  static readonly COCKPIT = new THREE.Vector3(0, 5.5, -4);
+  static readonly MIN_DIST = FLAGSHIP_LENGTH_M * 0.9;
+  static readonly MAX_DIST = FLAGSHIP_LENGTH_M * 60;
+  /** Cabina: posición en el puente (m, ejes de la nave; ver la receta `flagship`). */
+  static readonly COCKPIT = new THREE.Vector3(0, FLAGSHIP_LENGTH_M * 0.062, -FLAGSHIP_LENGTH_M * 0.17);
 
   constructor(
     private camera: THREE.PerspectiveCamera,

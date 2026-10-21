@@ -923,7 +923,7 @@ export class SystemView implements View {
     const ship = this.ship!;
     const normal = new THREE.Vector3();
     for (const b of this.bodies()) {
-      const radius = b.body.kind === "star" ? b.radius * 1.05 : b.radius + 40;
+      const radius = b.body.kind === "star" ? b.radius * 1.05 : b.radius + FLAGSHIP_LENGTH_M * 0.6;
       const d = ship.position.distanceTo(b.center);
       if (d >= radius || d === 0) continue;
       normal.copy(ship.position).sub(b.center).divideScalar(d);
@@ -1000,7 +1000,7 @@ export class SystemView implements View {
       rig.setThrust(this.flight.thrust, this.flight.pulse);
       // Propulsores de maniobra del modelo, si los tiene (lo expone el generador de naves).
       (rig as { setManeuver?: (m: Maneuver) => void }).setManeuver?.(this.flight.maneuver);
-      rig.tick(this.time, dt, this.quantum || this.arrival ? 0 : Math.max(0, 1 - this.flight.speed / 40));
+      rig.tick(this.time, dt, this.quantum || this.arrival ? 0 : Math.max(0, 1 - this.flight.speed / 20));
       if (!this.quantum && !this.arrival) this.fireCannon();
       this.updateCombatVisuals(dt);
       // Al entrar en la grieta, la cámara exterior se queda quieta y la ve alejarse; en cabina, entra con ella.

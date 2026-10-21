@@ -7,7 +7,7 @@ import { FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, type ShipCombat, type WeaponDefinit
 import type { Quat, Vec3, WeaponKind } from "@imperium/shared";
 import { regenFuel } from "@imperium/sim";
 
-/** Radio de impacto de una nave (metros): la nave mide unos 45 m; algo de margen por la latencia. */
+/** Radio de impacto mínimo de una nave (metros); la insignia usa `FLAGSHIP_HIT_RADIUS_M` y las de clase, según su eslora. */
 export const HIT_RADIUS = 30;
 /** Cono de fijación de misiles: el objetivo tiene que estar a menos de este ángulo del morro. */
 export const MISSILE_LOCK_COS = Math.cos((60 * Math.PI) / 180);

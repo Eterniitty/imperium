@@ -1,4 +1,4 @@
-import { EMPEROR_FLAGSHIP, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, getAlienShipClass, PIRATE_AI } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, getAlienShipClass, PIRATE_AI } from "@imperium/content";
 import type { ServerMessage, ShipPose, ShipState, Vec3, WeaponKind } from "@imperium/shared";
 import { bodiesAt, gravitySpeedBound, isTravelling, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_SPEED, plausibleMove, pulseLimitAt, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
@@ -361,7 +361,7 @@ export class SpaceService {
       combat: this.combatantOf(emperorId, supplies),
       sentShield: -1,
       park,
-      radius: HIT_RADIUS,
+      radius: FLAGSHIP_HIT_RADIUS_M,
     };
     for (const o of room) this.sendTo(o, { t: "ship", ship: this.stateFor(m, o) });
     room.add(m);

@@ -1,15 +1,18 @@
 import * as THREE from "three";
-import { FLAGSHIP_HARDPOINTS } from "@imperium/content";
+import { FLAGSHIP_HARDPOINTS, FLAGSHIP_LENGTH_M } from "@imperium/content";
 import type { ShipLook } from "./ship/look";
 import { assembleShip, templateFor, type ShipRig } from "./ship/rig";
 
 export type { Maneuver, ShipRig } from "./ship/rig";
 
-/** El modelo mide ~4,6 unidades de largo: a escala ×10, la nave mide unos 46 m (las distancias de los sistemas van en metros). */
+/**
+ * Metros por unidad del grupo de la insignia: el modelo mide
+ * `FLAGSHIP_LENGTH_M / SHIP_SCALE` unidades y se escala ×`SHIP_SCALE` (las
+ * distancias de los sistemas van en metros). La eslora está en `@imperium/content`.
+ */
 export const SHIP_SCALE = 10;
 
-/** Eslora de la nave insignia, en metros. */
-export const FLAGSHIP_LENGTH_M = 46;
+export { FLAGSHIP_LENGTH_M };
 
 const FLAGSHIP_LOOK: ShipLook = {
   classId: "__flagship",
@@ -23,10 +26,11 @@ const FLAGSHIP_LOOK: ShipLook = {
 
 /**
  * Nave insignia del Emperador, generada por código con el kit de módulos
- * (`./ship/`): corbeta de mando con proa acorazada, puente en rendija,
- * barquillas laterales con lanzadores y motores auxiliares, tres toberas
- * principales, radiadores, propulsores de maniobra, antenas, plato y luces de
- * navegación. Mira hacia -Z y mide 4,6 unidades (×`SHIP_SCALE` = 46 m).
+ * (`./ship/`): nave de mando y colonia de 320 m con proa acorazada, puente,
+ * dos módulos de hábitat con cubiertas iluminadas y lanzadores de misiles en
+ * su proa, hangar ventral, cañones en barquillas, tres toberas principales y
+ * dos auxiliares, radiadores, propulsores de maniobra, antenas, plato y luces
+ * de navegación. Mira hacia -Z (×`SHIP_SCALE` = `FLAGSHIP_LENGTH_M` metros).
  * `accent`: morado la propia, otros colores las ajenas.
  */
 export function createFlagship(accent: THREE.ColorRepresentation): THREE.Group {

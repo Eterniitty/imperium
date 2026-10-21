@@ -24,10 +24,11 @@ export const FLIGHT_MODEL = {
    */
   assistGain: 2.2,
   /** Velocidades de giro máximas (rad/s) y aceleración angular de los propulsores de maniobra (rad/s²). */
-  pitchRate: 0.95,
-  yawRate: 0.8,
-  rollRate: 1.6,
-  angularAccel: 3.2,
+  // Nave de 320 m: gira con más peso que un caza.
+  pitchRate: 0.6,
+  yawRate: 0.5,
+  rollRate: 1.0,
+  angularAccel: 1.8,
   /** Pilotaje con ratón: píxeles desde el punto pulsado para el giro máximo. */
   mouseStickPx: 160,
   /** Paso fijo de la integración (s): la física se calcula en subpasos de este tamaño. */

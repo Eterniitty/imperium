@@ -6,6 +6,8 @@ Doce clases de nave, todas **construidas en tus colonias** (ver [Economía](/wik
 
 {{tabla:naves}}
 
+Las esloras van a escala de la nave del Emperador, que mide **320 m** (lleva hasta 500 personas): cazas de 20–32 m, corbetas y fragatas de 80–140 m, destructores de 230 m y capitales de casi medio kilómetro o más. Los planetas siguen siendo cientos o miles de veces mayores.
+
 \* El Colonizador se consume al fundar una colonia. En la columna *Humanos*: colonos (Colonizador) o plazas de pasajeros (Carguero, Carguero pesado, Transporte de tropas).
 
 | Papel | Naves | Para qué |

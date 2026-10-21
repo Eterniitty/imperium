@@ -13,7 +13,7 @@ Objetivo futuro (estilo No Man's Sky): acercarse a un planeta, entrar en la atm�
 | Visual (render) | `apps/client` SystemView | Cada cuerpo se dibuja con su radio físico; no hay radio «visual» aparte. De lejos ayudan los rótulos y las líneas de órbita. |
 | Interacción | `CelestialBody.approachAltitude`, `surfaceAltitude`; `flight.ts` (pulso) | Distancias de aproximación, proximidad a la superficie, límite del pulso. |
 
-Cifras actuales: nave ~45 m; Tierra 62 km de radio (radios ^0,7: rocosos 20–95 km, gigantes 220–350 km); lunas 4–35 km; Sol 2500 km (raíz del radio solar); órbitas = esfera de la estrella + 18 000 km·√UA, sin solapar esferas de influencia; pulso hasta 2000 km/s.
+Cifras actuales: nave 320 m (21-10-2026; antes ~45 m); Tierra 62 km de radio (radios ^0,7: rocosos 20–95 km, gigantes 220–350 km); lunas 4–35 km; Sol 2500 km (raíz del radio solar); órbitas = esfera de la estrella + 18 000 km·√UA, sin solapar esferas de influencia; pulso hasta 2000 km/s.
 
 ### Cada cuerpo (`CelestialBody`, `packages/sim/src/bodies.ts`)
 

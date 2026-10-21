@@ -17,6 +17,8 @@ const SCROLL_SPEED = L * 70;
 /** El desplazamiento da la vuelta en un múltiplo exacto de la separación de los anillos (no se nota el salto). */
 const SCROLL_WRAP = RING_SPACING * 400;
 const STREAKS = 420;
+/** Las frecuencias del ruido y de la curva se pensaron para una nave de 46 m: se escalan con la eslora. */
+const ZS = 46 / L;
 
 /**
  * Curva del túnel: a lo lejos se tuerce despacio (se nota que avanza y gira).
@@ -26,13 +28,13 @@ const BEND_GLSL = /* glsl */ `
 vec2 bend(float z, float t) {
   float d = clamp(-z / ${LENGTH.toFixed(1)}, 0.0, 1.0);
   float k = d * d;
-  return vec2(sin(t * 0.21 + z * 0.0009) * ${(L * 9).toFixed(1)}, cos(t * 0.17 + z * 0.0007) * ${(L * 6).toFixed(1)}) * k;
+  return vec2(sin(t * 0.21 + z * ${(0.0009 * ZS).toExponential(4)}) * ${(L * 9).toFixed(1)}, cos(t * 0.17 + z * ${(0.0007 * ZS).toExponential(4)}) * ${(L * 6).toFixed(1)}) * k;
 }
 `;
 function bend(z: number, t: number, out: THREE.Vector2): THREE.Vector2 {
   const d = Math.min(1, Math.max(0, -z / LENGTH));
   const k = d * d;
-  return out.set(Math.sin(t * 0.21 + z * 0.0009) * L * 9 * k, Math.cos(t * 0.17 + z * 0.0007) * L * 6 * k);
+  return out.set(Math.sin(t * 0.21 + z * 0.0009 * ZS) * L * 9 * k, Math.cos(t * 0.17 + z * 0.0007 * ZS) * L * 6 * k);
 }
 
 const WALL_VERTEX = /* glsl */ `
@@ -78,7 +80,7 @@ void main() {
   const float TAU = 6.28318;
   float a = atan(vPos.y, vPos.x) / TAU + 0.5;
   float z = vPos.z;
-  float zz = z - uScroll;
+  float zz = (z - uScroll) * ${ZS.toExponential(4)};
   // Torsión: las estructuras giran en espiral a lo largo del túnel.
   float tw = a + zz * 0.00012 + uTime * 0.015;
   // Nubes de energía que fluyen (el ruido se repite alrededor sin costura).
@@ -91,7 +93,7 @@ void main() {
   // Costillas: la estructura del túnel.
   float ribs = smoothstep(0.86, 1.0, abs(sin(tw * 3.14159 * 32.0))) * 0.18;
   // Anillos de energía que pasan (algunos más brillantes).
-  float rp = zz / ${RING_SPACING.toFixed(1)};
+  float rp = (z - uScroll) / ${RING_SPACING.toFixed(1)};
   float ri = floor(rp);
   float rd = (fract(rp) - 0.5) * ${RING_SPACING.toFixed(1)};
   float ring = exp(-rd * rd / ${(L * L * 0.35).toFixed(1)}) * (0.5 + 0.8 * step(0.7, hash2(vec2(ri, 3.0))));

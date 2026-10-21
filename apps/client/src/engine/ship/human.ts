@@ -184,7 +184,7 @@ class Builder {
   }
 
   /** Cañones (torretas o barquillas fijas) y lanzadores en las bocas de fuego de los datos. */
-  weapons(gunLen: number, deckTop?: (z: number) => number): void {
+  weapons(gunLen: number, deckTop?: (z: number) => number, sizes: { gun?: number; launcher?: number } = {}): void {
     const turrets = (this.look.model.turrets ?? 0) > 0;
     for (const o of this.look.hardpoints.cannon) {
       const tip = this.hp(o);
@@ -193,12 +193,12 @@ class Builder {
         const size = Math.min(TURRET_BARREL * 0.45, Math.max(this.m(1.6), 0.016));
         turret(this.parts, tip, deckTop ? deckTop(cz) : this.top(cz), size, TURRET_BARREL);
       } else {
-        gunPod(this.parts, tip, this.half(tip.z + gunLen * 0.78), gunLen, Math.max(this.m(0.7), 0.012));
+        gunPod(this.parts, tip, this.half(tip.z + gunLen * 0.78), gunLen, sizes.gun ?? Math.max(this.m(0.7), 0.012));
       }
     }
     for (const o of this.look.hardpoints.missile) {
       const at = this.hp(o);
-      launcher(this.parts, at, this.half(at.z + 0.03), Math.max(this.m(1.1), 0.014));
+      launcher(this.parts, at, this.half(at.z + 0.03), sizes.launcher ?? Math.max(this.m(1.1), 0.014));
     }
   }
 
@@ -294,76 +294,121 @@ class Builder {
 
 // --- Recetas ---
 
-/** Insignia del Emperador: corbeta de mando de ~46 m. */
+/**
+ * Insignia del Emperador: nave de mando y colonia de 320 m (`FLAGSHIP_LENGTH_M`)
+ * para 500 personas. Proa acorazada con cañones en barquillas, puente elevado,
+ * dos módulos de hábitat a los costados con cubiertas de ventanas iluminadas y
+ * un lanzador de misiles en la proa de cada uno (las bocas de
+ * `FLAGSHIP_HARDPOINTS`), hangar ventral con la boca iluminada, sección de
+ * ingeniería con radiadores, tres toberas principales y dos auxiliares.
+ */
 function flagship(b: Builder): void {
   const { parts } = b;
   b.hull([
-    { z: -0.5, w: 0.04, h: 0.018, y: -0.012, c: 0.3 },
-    { z: -0.45, w: 0.1, h: 0.045, y: -0.01, t: 0.85 },
-    { z: -0.36, w: 0.15, h: 0.085, y: -0.004, t: 0.8 },
-    { z: -0.24, w: 0.18, h: 0.115, y: 0.004, t: 0.82 },
-    { z: -0.1, w: 0.19, h: 0.125, y: 0.008, t: 0.85 },
-    { z: 0.0, w: 0.16, h: 0.11, y: 0.006, t: 0.9 },
-    { z: 0.1, w: 0.16, h: 0.11, y: 0.006, t: 0.9 },
-    { z: 0.18, w: 0.19, h: 0.13, y: 0.004, t: 0.85 },
-    { z: 0.38, w: 0.19, h: 0.13, y: 0, t: 0.85 },
-    { z: 0.4, w: 0.17, h: 0.115, y: 0, t: 0.85 },
+    { z: -0.5, w: 0.03, h: 0.014, y: -0.01, c: 0.3 },
+    { z: -0.46, w: 0.07, h: 0.034, y: -0.008, t: 0.85 },
+    { z: -0.38, w: 0.11, h: 0.06, y: -0.004, t: 0.8 },
+    { z: -0.28, w: 0.13, h: 0.085, y: 0, t: 0.82 },
+    { z: -0.14, w: 0.13, h: 0.09, y: 0.002, t: 0.85 },
+    { z: -0.08, w: 0.11, h: 0.08, y: 0.002, t: 0.9 },
+    { z: 0.1, w: 0.11, h: 0.08, y: 0.002, t: 0.9 },
+    { z: 0.16, w: 0.15, h: 0.1, y: 0, t: 0.85 },
+    { z: 0.38, w: 0.15, h: 0.1, y: 0, t: 0.85 },
+    { z: 0.4, w: 0.13, h: 0.09, y: 0, t: 0.85 },
   ]);
   // Coraza de proa (placa superpuesta con su labio).
   b.section(
     [
-      { z: -0.47, w: 0.06, h: 0.012, y: 0.0, t: 0.8 },
-      { z: -0.36, w: 0.155, h: 0.03, y: 0.03, t: 0.75 },
-      { z: -0.22, w: 0.185, h: 0.03, y: 0.06, t: 0.75 },
-      { z: -0.17, w: 0.17, h: 0.02, y: 0.064, t: 0.75 },
+      { z: -0.47, w: 0.05, h: 0.01, y: 0.004, t: 0.8 },
+      { z: -0.38, w: 0.105, h: 0.025, y: 0.026, t: 0.75 },
+      { z: -0.26, w: 0.125, h: 0.025, y: 0.042, t: 0.75 },
+      { z: -0.2, w: 0.11, h: 0.018, y: 0.046, t: 0.75 },
     ],
     "plate",
   );
-  b.bridge(-0.2, -0.04, 0.085, 0.03);
-  // Barquillas laterales (misiles y motores auxiliares).
+  b.bridge(-0.19, -0.09, 0.06, 0.028);
+  // Cubiertas de la proa: dos filas de ventanas por costado (tramos con mamparos).
+  const deckRow = (x: (z: number) => number, y: number, z0: number, z1: number, seg = 0.024) => {
+    for (let z = z0; z + seg * 0.75 <= z1; z += seg) {
+      const zc = z + seg * 0.375;
+      b.sym((side) => windows(parts, v(side * (x(zc) + 0.0006), y, zc), 0.0025, 0.0032, seg * 0.75));
+    }
+  };
+  deckRow((z) => b.half(z) * 0.99, -0.02, -0.34, -0.15);
+  deckRow((z) => b.half(z) * 0.97, -0.006, -0.32, -0.15);
+  deckRow(() => 0.075, -0.024, 0.18, 0.36, 0.03);
+  deckRow(() => 0.0745, -0.01, 0.18, 0.36, 0.03);
+
+  // Módulos de hábitat a los costados, con cuatro cubiertas iluminadas cada uno.
+  const HX = 0.118;
+  const HY = 0.004;
   b.sym((side) => {
     b.section(
       [
-        { z: -0.21, w: 0.035, h: 0.03, y: -0.012 },
-        { z: -0.17, w: 0.07, h: 0.06, y: -0.01, t: 0.8 },
-        { z: 0.1, w: 0.07, h: 0.06, y: -0.01, t: 0.8 },
-        { z: 0.15, w: 0.055, h: 0.048, y: -0.01, t: 0.8 },
+        { z: -0.09, w: 0.05, h: 0.05, y: HY, t: 0.9 },
+        { z: -0.07, w: 0.075, h: 0.075, y: HY },
+        { z: 0.1, w: 0.075, h: 0.075, y: HY },
+        { z: 0.13, w: 0.055, h: 0.055, y: HY },
       ],
       "hull",
-      side * 0.135,
+      side * HX,
     );
-    parts.add("trim", new THREE.BoxGeometry(0.004, 0.008, 0.18), { p: [side * 0.171, 0.0, -0.04] });
-    mainEngine(parts, side * 0.135, -0.01, 0.15, 0.018, 0.04);
-    // Pilones que unen la barquilla al casco.
-    for (const z of [-0.1, 0.05]) parts.add("dark", block(0.06, 0.022, 0.035, 0.3), { p: [side * 0.1, -0.006, z] });
-    windows(parts, v(side * 0.093, 0.025, -0.16), 0.003, 0.008, 0.07);
+    for (const y of [-0.012, -0.004, 0.004, 0.012]) {
+      for (let z = -0.06; z < 0.09; z += 0.03) windows(parts, v(side * (HX + 0.0378), HY + y, z + 0.012), 0.0025, 0.003, 0.022);
+    }
+    parts.add("trim", new THREE.BoxGeometry(0.003, 0.005, 0.16), { p: [side * (HX + 0.0378), HY + 0.022, 0.015] });
+    parts.add("plate", block(0.05, 0.006, 0.15, 0.3), { p: [side * HX, HY + 0.0395, 0.015] });
+    // Pilones que unen el módulo al casco.
+    for (const z of [-0.04, 0.07]) parts.add("dark", block(0.06, 0.022, 0.032, 0.3), { p: [side * 0.08, HY, z] }, true);
+    // Motor auxiliar en la popa del módulo.
+    mainEngine(parts, side * HX, HY, 0.13, 0.02, 0.045);
+    rcsBlock(parts, v(side * (HX + 0.045), HY, 0.0), [UP, DOWN, v(side, 0, 0)], 0.016);
   });
+
+  // Hangar ventral: bloque bajo la sección de ingeniería con la boca iluminada hacia proa.
+  b.section(
+    [
+      { z: 0.14, w: 0.11, h: 0.05, y: -0.07, c: 0.2 },
+      { z: 0.34, w: 0.11, h: 0.05, y: -0.07, c: 0.2 },
+      { z: 0.37, w: 0.08, h: 0.035, y: -0.064 },
+    ],
+    "dark",
+  );
+  parts.add("glass", new THREE.BoxGeometry(0.085, 0.03, 0.002), { p: [0, -0.072, 0.1395] });
+  parts.add("plate", new THREE.BoxGeometry(0.095, 0.004, 0.008), { p: [0, -0.0545, 0.142] });
+  parts.add("plate", new THREE.BoxGeometry(0.095, 0.004, 0.008), { p: [0, -0.0895, 0.142] });
+  for (const x of [-0.045, -0.015, 0.015, 0.045]) parts.light(v(x, -0.0925, 0.138), AMBER, "steady");
+  b.sym((side) => parts.light(v(side * 0.053, -0.072, 0.138), side > 0 ? GREEN : RED, "steady"));
+
   // Motores principales: dos abajo y uno arriba.
-  parts.add("dark", block(0.17, 0.11, 0.02, 0.25), { p: [0, 0.005, 0.395] }, true);
+  parts.add("dark", block(0.15, 0.1, 0.02, 0.25), { p: [0, 0.002, 0.395] }, true);
   for (const [x, y, r, len] of [
-    [-0.05, -0.02, 0.036, 0.085],
-    [0.05, -0.02, 0.036, 0.085],
-    [0, 0.038, 0.03, 0.075],
+    [-0.042, -0.022, 0.034, 0.08],
+    [0.042, -0.022, 0.034, 0.08],
+    [0, 0.028, 0.03, 0.07],
   ] as const) mainEngine(parts, x, y, 0.4, r, len);
   // Radiadores en ángulo en la sección de ingeniería.
-  b.sym((side) => radiator(parts, v(side * 0.093, 0.035, 0.28), 0.17, 0.14, 0.32, side));
-  // Lomo: conducto, mástil, plato y cúpula de sensores bajo el morro.
-  parts.add("dark", block(0.04, 0.018, 0.34, 0.3), { p: [0, b.top(0.15) + 0.004, 0.18] });
-  pipe(parts, v(0.026, b.top(0.1) + 0.004, -0.02), v(0.026, b.top(0.35) + 0.004, 0.36), 0.004);
-  pipe(parts, v(-0.026, b.top(0.1) + 0.004, -0.02), v(-0.026, b.top(0.35) + 0.004, 0.36), 0.004);
-  antenna(parts, v(0.02, b.top(0.06) + 0.008, 0.06), 0.07, 0.02);
-  antenna(parts, v(-0.03, b.top(0.22) + 0.01, 0.22), 0.04);
-  dish(parts, v(-0.02, b.top(0.12) + 0.03, 0.12), 0.022, v(0.3, 1, -0.8));
-  parts.beam("dark", v(-0.02, b.top(0.12), 0.12), v(-0.02, b.top(0.12) + 0.03, 0.12), 0.006);
-  sensorDome(parts, v(0, b.bottom(-0.3) + 0.002, -0.3), 0.022, true);
-  // Quilla ventral con escotilla de carga.
-  b.section([{ z: -0.15, w: 0.05, h: 0.02, y: b.bottom(-0.1) - 0.004 }, { z: 0.3, w: 0.08, h: 0.024, y: b.bottom(0.2) - 0.006 }], "dark");
-  b.band(-0.06, 0.012);
-  b.band(-0.03, 0.006);
-  b.weapons(0.17);
-  b.rcs(-0.33, 0.35, 0.026);
-  b.navLights(v(-(0.093 + 0.17 * Math.cos(0.32)), 0.035 + 0.17 * Math.sin(0.32), 0.28 - 0.07), 0.33);
-  b.greebles(-0.02, 0.36, 18);
+  let portTip = v(-0.2, 0.06, 0.27);
+  b.sym((side) => {
+    const tip = radiator(parts, v(side * 0.075, 0.03, 0.27), 0.13, 0.12, 0.3, side);
+    if (side < 0) portTip = tip;
+  });
+  // Lomo: conducto, tuberías, mástiles, plato y cúpula de sensores bajo el morro.
+  parts.add("dark", block(0.035, 0.015, 0.3, 0.3), { p: [0, b.top(0.25) + 0.004, 0.25] });
+  pipe(parts, v(0.024, b.top(-0.06) + 0.003, -0.06), v(0.024, b.top(0.35) + 0.004, 0.36), 0.004);
+  pipe(parts, v(-0.024, b.top(-0.06) + 0.003, -0.06), v(-0.024, b.top(0.35) + 0.004, 0.36), 0.004);
+  antenna(parts, v(0.018, b.top(-0.05) + 0.004, -0.05), 0.06, 0.02);
+  antenna(parts, v(-0.025, b.top(0.2) + 0.006, 0.2), 0.04);
+  dish(parts, v(-0.02, b.top(0.06) + 0.025, 0.06), 0.02, v(0.3, 1, -0.8));
+  parts.beam("dark", v(-0.02, b.top(0.06), 0.06), v(-0.02, b.top(0.06) + 0.025, 0.06), 0.005);
+  sensorDome(parts, v(0, b.bottom(-0.3) + 0.002, -0.3), 0.018, true);
+  b.band(-0.07, 0.01);
+  b.band(-0.045, 0.005);
+  b.band(0.2, 0.01);
+  b.weapons(0.12, undefined, { gun: 0.011, launcher: 0.028 });
+  b.rcs(-0.34, 0.35, 0.02);
+  b.navLights(portTip, 0.33);
+  b.greebles(-0.3, 0.38, 48);
 }
 
 /** Exploradores: módulo de sensores, celosía central, hábitat y bloque de motores; gran plato. */

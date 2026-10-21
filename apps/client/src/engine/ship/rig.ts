@@ -250,7 +250,7 @@ export function assembleShip(t: Template, opts: AssembleOptions): THREE.Group {
     full.add(f);
   }
   // Puntos de luz (tamaño en metros del mundo; no heredan la escala).
-  const lightSize = Math.max(0.8, L * 0.03) * Math.max(1, Math.sqrt(L / 45));
+  const lightSize = Math.max(0.8, Math.min(L * 0.03, 2 + L * 0.012)) * Math.max(1, Math.sqrt(L / 45) * 0.6);
   const lightPoints: Partial<Record<LightMode, THREE.Points>> = {};
   for (const mode of ["steady", "strobe", "beacon"] as const) {
     const g = t.lights[mode];
