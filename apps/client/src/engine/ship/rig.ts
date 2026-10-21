@@ -250,7 +250,7 @@ export function assembleShip(t: Template, opts: AssembleOptions): THREE.Group {
     full.add(f);
   }
   // Puntos de luz (tamaño en metros del mundo; no heredan la escala).
-  const lightSize = Math.max(0.6, L * 0.022) * Math.max(1, Math.sqrt(L / 45));
+  const lightSize = Math.max(0.8, L * 0.03) * Math.max(1, Math.sqrt(L / 45));
   const lightPoints: Partial<Record<LightMode, THREE.Points>> = {};
   for (const mode of ["steady", "strobe", "beacon"] as const) {
     const g = t.lights[mode];
@@ -269,7 +269,7 @@ export function assembleShip(t: Template, opts: AssembleOptions): THREE.Group {
     rcsColor = new THREE.Float32BufferAttribute(new Float32Array(t.thrusters.length * 3), 3);
     rcsGeo.setAttribute("color", rcsColor);
     rcsGeo.computeBoundingSphere();
-    const pts = new THREE.Points(rcsGeo, pointMaterial(lightSize * 1.8));
+    const pts = new THREE.Points(rcsGeo, pointMaterial(lightSize * 3.5));
     pts.renderOrder = 3;
     full.add(pts);
   }
