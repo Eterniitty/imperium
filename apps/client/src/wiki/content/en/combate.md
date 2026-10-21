@@ -14,7 +14,7 @@ Inside a system you fight in real time, at the controls. The **server is the aut
 Enemy ships are a few metres long and look like a dot: your ship helps you aim.
 
 - **Markers**: every ship in the system has a marker even if you cannot see it, with its distance. Shape and colour tell who it is: **red diamond** = hostile (pirates), **amber square** = another Emperor, **cyan circle** = companion. The **locked target** gets a larger box with its name, shield and hull; if it is off screen, an **arrow** at the edge points to it.
-- **Locking**: [[X]] locks the ship closest to the reticle (the cursor in mouse flight; otherwise the line of the nose). [[Y]] and [[U]]: next and previous (hostiles first, nearest to farthest; then other Emperors). [[V]]: the nearest. **Middle click** on a marker: lock that ship. Cycling **never locks companions**; middle click does (with a warning: friendly fire is on).
+- **Locking**: [[X]] locks the ship closest to the reticle (the cursor in mouse flight; otherwise the line of the nose). [[Y]] and [[U]]: next and previous (hostiles first, nearest to farthest; then other Emperors). [[V]]: the nearest. **Middle click** on a marker: lock that ship. Cycling **never locks companions**; middle click does (with a warning if your friendly fire is on).
 - **Lead point**: a circle where you must shoot given the target's speed, yours and the projectile's. It turns **green** when the target is in range and inside the mounts' arc.
 - **Automatic aiming**: with a locked target, the cannons aim at that point by themselves; you decide when to fire. Missiles already chase the target by themselves.
 - **Auto-fire** ([[O]], also in Settings → Controls): the cannon fires by itself while the locked target is in range and in arc. It never fires by itself at a companion.
@@ -42,7 +42,7 @@ The hull **does not heal by leaving the system**: the crew repairs it slowly and
 
 ## Against other Emperors and friendly fire
 
-**PvP is open** across the whole universe, with no protection for offline players: you can attack any Emperor flying in your system. There is **friendly fire**: your shots damage any ship they touch, your **companions** too (see [Companions](/wiki/companeros)), who are marked as "companion" with a cyan circle. Mind your fire with a companion ahead.
+**PvP is open** across the whole universe, with no protection for offline players: you can attack any Emperor flying in your system. **Friendly fire** is chosen in **Settings → Companions** and is **off by default**: your shots pass through your **companions** (see [Companions](/wiki/companeros)) and their escorts without harming them, and collisions between you do no damage (it is enough for one of you to have it off). If you turn it on, your shots damage any ship they touch, them too. Companions are marked as "companion" with a cyan circle. Your own ships (your ship and your escorts) never damage each other.
 
 ### Core Militia
 

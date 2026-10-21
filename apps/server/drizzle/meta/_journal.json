@@ -176,6 +176,13 @@
       "when": 1792602756937,
       "tag": "0025_autogestion",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792603459312,
+      "tag": "0026_fuego_amigo",
+      "breakpoints": true
     }
   ]
 }

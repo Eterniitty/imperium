@@ -6,6 +6,7 @@ import { ARRIVAL_EDGE, deepLayout, starHeatDps, defaultPark, moonOffset, parkedP
 import { resetSpace, shipName, spaceStore, type SelectedWeapon } from "../net/space";
 import { TargetAssist, relationOf, type CannonAim } from "./TargetAssist";
 import { telemetry, type FlightTelemetry } from "./telemetry";
+import { authStore } from "../state/auth";
 import { connection, serverNow } from "../net/world";
 import { RemoteShips } from "./RemoteShips";
 import { FleetScene } from "./FleetScene";
@@ -1241,7 +1242,7 @@ export class SystemView implements View {
   private onLocked(id: string | null): void {
     if (!id) return this.events.notify("combat.noTargets");
     const s = spaceStore.getState().ships[id];
-    if (s && relationOf(s.state) === "ally") this.events.notify("combat.allyLocked");
+    if (s && relationOf(s.state) === "ally") this.events.notify(authStore.getState().emperor?.friendlyFire ? "combat.allyLocked" : "combat.allyLockedSafe");
   }
 
   /** Fija el blanco más cercano a la retícula: el cursor en vuelo con ratón; si no, la línea del morro. */

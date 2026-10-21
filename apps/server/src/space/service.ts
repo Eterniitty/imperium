@@ -713,6 +713,7 @@ export class SpaceService {
 
   private async doJoin(client: Client, systemId: string, pose: ShipPose): Promise<Member | null> {
     const emperor = await this.emperors.byId(client.emperorId);
+    if (emperor) this.friendlyFire.set(emperor.id, !!emperor.friendlyFire);
     // Fase 10: un Emperador caído (gestándose) no tiene nave que pilotar.
     if (!emperor || emperor.gestating || isTravelling(emperor, this.now()) || emperor.location.systemId !== systemId) return null;
     if (Math.hypot(...pose.p) > this.boundary(systemId) + BOUNDARY_SLACK) return null;
@@ -1142,7 +1143,20 @@ export class SpaceService {
    * que roza a un compañero o a otro pirata también le hace daño.
    */
   private canHit(a: Member, b: Member): boolean {
-    return a !== b;
+    if (a === b) return false;
+    const oa = a.owner ?? a.emperorId;
+    const ob = b.owner ?? b.emperorId;
+    // Las naves propias (la insignia y sus escoltas) no se dañan entre sí.
+    if (oa === ob) return false;
+    // Compañeros: solo si quien dispara tiene el fuego amigo activado.
+    return !(a.allies.has(ob) && !this.friendlyFire.get(oa));
+  }
+
+  /** Fuego amigo de cada Emperador (lo carga al entrar y lo cambia la orden `emperor.friendlyFire`). */
+  private friendlyFire = new Map<string, boolean>();
+
+  setFriendlyFire(emperorId: string, on: boolean): void {
+    this.friendlyFire.set(emperorId, on);
   }
 
   /** Posiciones de un objetivo a tener en cuenta: la actual y las recientes (latencia del tirador). */
@@ -1760,6 +1774,10 @@ export class SpaceService {
             m.dirty = true;
           }
           if (closing < SHIP_COLLISION.minClosingMps) continue;
+          // Sin daño entre naves propias, ni entre compañeros si alguno tiene el fuego amigo desactivado.
+          const oa = a.owner ?? a.emperorId;
+          const ob = b.owner ?? b.emperorId;
+          if (oa === ob || (a.allies.has(ob) && (!this.friendlyFire.get(oa) || !this.friendlyFire.get(ob)))) continue;
           const key = a.emperorId < b.emperorId ? `${a.emperorId}|${b.emperorId}` : `${b.emperorId}|${a.emperorId}`;
           if (now < (this.bumps.get(key) ?? 0)) continue;
           this.bumps.set(key, now + SHIP_COLLISION.cooldownSec * 1000);

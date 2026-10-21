@@ -108,6 +108,8 @@ export interface CommandArgs {
   "flagship.dock": { fleetId: string };
   /** Desacopla la nave del Emperador de su nave nodriza. */
   "flagship.undock": Record<string, never>;
+  /** Activa o desactiva el fuego amigo propio: desactivado (por defecto), tus disparos y choques no dañan a tus compañeros. */
+  "emperor.friendlyFire": { on: boolean };
   /** Activa o desactiva la autogestión de las colonias propias por la IA (instalaciones, nunca naves; no en las que gobierna un Heredero). */
   "colony.autoGovern": { on: boolean };
   /** Lanza una sonda de exploración a un sistema sin descubrir (`PROBE`: cuesta créditos y tiene alcance). */

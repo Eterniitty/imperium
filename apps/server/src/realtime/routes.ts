@@ -351,6 +351,12 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     space.undock(client);
                     return { ok: true } as const;
                   }
+                  case "emperor.friendlyFire": {
+                    await emperors.setFriendlyFire(owner.emperorId, msg.args.on);
+                    space.setFriendlyFire(owner.emperorId, msg.args.on);
+                    await hub.publish(owner.emperorId);
+                    return { ok: true } as const;
+                  }
                   case "colony.autoGovern": {
                     await emperors.setAutoGovern(owner.emperorId, msg.args.on);
                     await hub.publish(owner.emperorId);

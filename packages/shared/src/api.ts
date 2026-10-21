@@ -94,6 +94,8 @@ export interface Emperor {
   gestating?: true;
   /** La IA gestiona sus colonias (orden `colony.autoGovern`). */
   autoGovern?: true;
+  /** Fuego amigo activado: sus disparos también dañan a sus compañeros (orden `emperor.friendlyFire`). */
+  friendlyFire?: true;
 }
 
 /** Una nave de una flota. `classId` es una clase de `@imperium/content` (SHIP_CLASSES). */

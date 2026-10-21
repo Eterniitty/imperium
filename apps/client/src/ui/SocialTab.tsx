@@ -1,11 +1,13 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { VISIBILITIES, type AllyEntry, type I18nKey, type SocialResponse, type Visibility } from "@imperium/shared";
-import { api } from "../state/auth";
+import { connection } from "../net/world";
+import { api, useAuth } from "../state/auth";
 import { useT } from "../state/store";
 
 /** Pestaña Compañeros: quién te ve y con quién os veis. */
 export function SocialTab() {
   const t = useT();
+  const emperor = useAuth((s) => s.emperor);
   const [social, setSocial] = useState<SocialResponse | null>(null);
   const [name, setName] = useState("");
   const [error, setError] = useState<I18nKey | null>(null);
@@ -100,6 +102,22 @@ export function SocialTab() {
           {list(social.pending, remove)}
         </>
       )}
+
+      <label className="small auto-govern" title={t("social.friendlyFireHint")}>
+        <input
+          type="checkbox"
+          checked={!!emperor?.friendlyFire}
+          disabled={busy}
+          onChange={(e) => {
+            setBusy(true);
+            void connection.command("emperor.friendlyFire", { on: e.target.checked }).then((err) => {
+              setBusy(false);
+              if (err) setError(err);
+            });
+          }}
+        />{" "}
+        {t("social.friendlyFire")}
+      </label>
 
       <form className="social-add" onSubmit={add}>
         <label className="auth-label" htmlFor="ally-name">

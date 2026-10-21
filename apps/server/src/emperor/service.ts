@@ -22,9 +22,10 @@ const columns = {
   arriveAt: emperors.arriveAt,
   deadAt: emperors.deadAt,
   autoGovern: emperors.autoGovern,
+  friendlyFire: emperors.friendlyFire,
 };
 const PARK_SELECT = { parkX: emperors.parkX, parkY: emperors.parkY, parkZ: emperors.parkZ, parkAt: emperors.parkAt };
-type Row = PlaceRow & { name: string; kind: string; deadAt: Date | null; autoGovern: boolean };
+type Row = PlaceRow & { name: string; kind: string; deadAt: Date | null; autoGovern: boolean; friendlyFire: boolean };
 
 /** `companionId`: el compañero cerca del que apareció (alta con compañero aceptada). */
 export type CreateResult = { ok: true; emperor: Emperor; companionId: string | null } | { ok: false; error: "emperor_exists" | "name_taken" };
@@ -76,7 +77,12 @@ export class EmperorService {
       // Fase 10: caído y gestándose.
       ...(row.deadAt ? { gestating: true as const } : {}),
       ...(row.autoGovern ? { autoGovern: true as const } : {}),
+      ...(row.friendlyFire ? { friendlyFire: true as const } : {}),
     };
+  }
+
+  async setFriendlyFire(emperorId: string, on: boolean): Promise<void> {
+    await this.db.update(emperors).set({ friendlyFire: on }).where(eq(emperors.id, emperorId));
   }
 
   /** Orden `colony.autoGovern`: activa o desactiva la autogestión; al activarla, programa la primera decisión. */

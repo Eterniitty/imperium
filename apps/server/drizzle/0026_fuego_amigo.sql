@@ -1,0 +1,1 @@
+ALTER TABLE "emperors" ADD COLUMN "friendly_fire" boolean DEFAULT false NOT NULL;
