@@ -33,6 +33,10 @@ export class Music {
   private bellTimer: ReturnType<typeof setTimeout> | null = null;
   private chordIndex = 0;
   private volume = 0.5;
+  private sfxVolume = 0.6;
+  /** Salida de los efectos: va directa al altavoz y un poco a la reverberación. */
+  private sfx: GainNode | null = null;
+  private sfxOut: GainNode | null = null;
 
   /** Arranca (o reanuda) la música. Debe llamarse desde un gesto del jugador. */
   start(): void {
@@ -59,14 +63,21 @@ export class Music {
   }
 
   /**
-   * Efecto de sonido generativo (motor cuántico…) por la misma mezcla que la
-   * música: su volumen, eco y reverberación. Con el volumen a 0 no suena.
+   * Efecto de sonido generativo (motor cuántico, disparos, explosiones) con su
+   * propio volumen, separado del de la música (comparten el contexto de audio y
+   * un poco de reverberación). Con el volumen de efectos a 0 no suena.
    */
   effect(play: (ctx: AudioContext, out: AudioNode) => void): void {
-    if (this.volume <= 0) return;
+    if (this.sfxVolume <= 0) return;
     if (!this.ctx) this.build();
     void this.ctx!.resume();
-    play(this.ctx!, this.bus!);
+    play(this.ctx!, this.sfx!);
+  }
+
+  /** Volumen de los efectos, 0–1 (0 = sin efectos). */
+  setSfxVolume(v: number): void {
+    this.sfxVolume = v;
+    if (this.sfxOut && this.ctx) this.sfxOut.gain.setTargetAtTime(v, this.ctx.currentTime, 0.1);
   }
 
   private build(): void {
@@ -104,6 +115,20 @@ export class Music {
     bus.connect(reverb);
     bus.connect(delay);
     this.bus = bus;
+
+    // Efectos: entrada → (seco + algo de reverberación propia) → volumen de efectos → altavoz.
+    const sfxOut = ctx.createGain();
+    sfxOut.gain.value = this.sfxVolume;
+    sfxOut.connect(ctx.destination);
+    this.sfxOut = sfxOut;
+    const sfx = ctx.createGain();
+    sfx.connect(sfxOut);
+    const sfxReverb = ctx.createConvolver();
+    sfxReverb.buffer = ir;
+    const sfxWet = ctx.createGain();
+    sfxWet.gain.value = 0.3;
+    sfx.connect(sfxWet).connect(sfxReverb).connect(sfxOut);
+    this.sfx = sfx;
   }
 
   private nextChord = () => {

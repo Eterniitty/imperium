@@ -23,6 +23,7 @@ function AuthPanel() {
       onClick={() => {
         // El clic es el gesto que el navegador exige para poder sonar.
         music.setVolume(settingsStore.getState().prefs.musicVolume);
+        music.setSfxVolume(settingsStore.getState().prefs.sfxVolume);
         music.start();
         gameStore.getState().start(emperor?.location);
       }}

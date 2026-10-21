@@ -112,9 +112,11 @@ export interface Preferences {
   uiScale: UiScale;
   /** Volumen de la música, 0 a 1 (0 = apagada). */
   musicVolume: number;
+  /** Volumen de los efectos de sonido (combate, motor cuántico), 0 a 1. */
+  sfxVolume: number;
 }
 
-const DEFAULT_PREFERENCES: Preferences = { quality: "auto", uiScale: "auto", musicVolume: 0.5 };
+const DEFAULT_PREFERENCES: Preferences = { quality: "auto", uiScale: "auto", musicVolume: 0.5, sfxVolume: 0.6 };
 const PREFS_KEY = "imperium.prefs";
 
 function loadPrefs(): Preferences {
@@ -122,10 +124,12 @@ function loadPrefs(): Preferences {
     const saved = JSON.parse(localStorage.getItem(PREFS_KEY) ?? "null") as Partial<Preferences> | null;
     const quality = saved?.quality;
     const volume = saved?.musicVolume;
+    const sfx = saved?.sfxVolume;
     return {
       quality: quality === "auto" || quality === "high" || quality === "medium" || quality === "low" ? quality : DEFAULT_PREFERENCES.quality,
       uiScale: UI_SCALES.includes(saved?.uiScale as UiScale) ? (saved!.uiScale as UiScale) : DEFAULT_PREFERENCES.uiScale,
       musicVolume: typeof volume === "number" && volume >= 0 && volume <= 1 ? volume : DEFAULT_PREFERENCES.musicVolume,
+      sfxVolume: typeof sfx === "number" && sfx >= 0 && sfx <= 1 ? sfx : DEFAULT_PREFERENCES.sfxVolume,
     };
   } catch {
     return { ...DEFAULT_PREFERENCES };

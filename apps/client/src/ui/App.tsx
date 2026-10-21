@@ -49,6 +49,7 @@ export function App() {
     () =>
       settingsStore.subscribe((s, prev) => {
         if (s.prefs.musicVolume !== prev.prefs.musicVolume) music.setVolume(s.prefs.musicVolume);
+        if (s.prefs.sfxVolume !== prev.prefs.sfxVolume) music.setSfxVolume(s.prefs.sfxVolume);
       }),
     [],
   );

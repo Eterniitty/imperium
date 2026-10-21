@@ -77,3 +77,7 @@ Cuando dejas de pilotar (mapa, cerrar el juego), la nave **se queda donde estaba
 4. Al llegar apareces en el **borde del sistema de destino**, del lado por el que llegas, a los mandos. El sistema queda descubierto (lo que cubre tu escáner).
 
 Duración: unos **200 años luz por hora** — un vecino a 10 a.l. son 3 minutos; el salto más largo con el depósito lleno (unos **133 a.l.**) dura unos **40 minutos**. El alcance lo marca el combustible: para ir más lejos, salta por etapas y reposta en tus colonias.
+
+## Sonido
+
+Los disparos, impactos, explosiones y el motor cuántico tienen sonido generado por código (sin archivos). Su volumen se ajusta en **Ajustes → Efectos de sonido**, aparte del de la música; los de otras naves suenan más bajo cuanto más lejos están.

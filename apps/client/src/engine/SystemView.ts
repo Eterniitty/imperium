@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
-import type { I18nKey, StarSystemDetail, StarSystemSummary, WeaponKind, WorldPosition } from "@imperium/shared";
+import type { I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, WeaponKind, WorldPosition } from "@imperium/shared";
 import { ARRIVAL_EDGE, defaultPark, parkedPosition, PILOT_BOOST, PILOT_SPEED, planetAngle, pulseLimitAt, systemLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
 import { resetSpace, shipName, spaceStore } from "../net/space";
 import { telemetry, type FlightTelemetry } from "./telemetry";
@@ -11,6 +11,7 @@ import { Effects } from "./Effects";
 import { worldStore } from "../net/world";
 import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC } from "@imperium/content";
 import { playQuantumCharge, stopQuantumCharge } from "../audio/quantumSfx";
+import { distanceGain, playCannon, playExplosion, playHit, playMissile } from "../audio/combatSfx";
 import { isBound, settingsStore, type Action } from "../state/settings";
 import { gameStore } from "../state/store";
 import { Backdrop } from "./Backdrop";
@@ -612,6 +613,22 @@ export class SystemView implements View {
     const muzzle = this.ownMuzzle("cannon", this.cannonIndex++);
     const speed = cannon.speedU + Math.max(0, this.flight!.velocity.dot(f));
     if (muzzle) this.effects.fireLocal(muzzle, f, speed, cannon.rangeU, serverNow());
+    playCannon(1, true);
+  }
+
+  /** Sonido de un disparo según quién dispara y a qué distancia (el cañón propio ya sonó al pulsar). */
+  private playShot(s: Extract<ServerMessage, { t: "shot" }>): void {
+    if (!this.ship) return;
+    const own = s.id === worldStore.getState().myEmperorId;
+    const gain = own ? 1 : distanceGain(this.ship.position.distanceTo(new THREE.Vector3(...s.from)));
+    if (s.weapon === "missile") playMissile(gain);
+    else if (!own) playCannon(gain, false);
+    if (s.hitAt !== null) {
+      // El impacto, cuando llega, donde tenga sentido oírlo: cerca de la nave propia o del tirador.
+      const myId = worldStore.getState().myEmperorId;
+      const hitGain = s.target === myId ? 1 : gain;
+      setTimeout(() => playHit(hitGain), Math.max(0, s.hitAt - serverNow()));
+    }
   }
 
   /** Boca de un arma de la nave propia, en el mundo. */
@@ -644,8 +661,14 @@ export class SystemView implements View {
   private updateCombatVisuals(dt: number): void {
     const state = spaceStore.getState();
     if (state.shots.length || state.explosions.length) {
-      for (const s of state.shots) this.effects.add(s, serverNow());
-      for (const e of state.explosions) this.effects.explode(e);
+      for (const s of state.shots) {
+        this.effects.add(s, serverNow());
+        this.playShot(s);
+      }
+      for (const e of state.explosions) {
+        this.effects.explode(e);
+        if (this.ship) playExplosion(distanceGain(this.ship.position.distanceTo(new THREE.Vector3(...e))));
+      }
       spaceStore.setState({ shots: [], explosions: [] });
     }
     const myId = worldStore.getState().myEmperorId;

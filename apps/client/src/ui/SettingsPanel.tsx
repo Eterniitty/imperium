@@ -78,6 +78,21 @@ function GeneralTab() {
         />{" "}
         <span className="mono small">{prefs.musicVolume > 0 ? `${Math.round(prefs.musicVolume * 100)} %` : t("settings.off")}</span>
       </dd>
+      <dt>
+        <label htmlFor="pref-sfx">{t("settings.sfx")}</label>
+      </dt>
+      <dd>
+        <input
+          id="pref-sfx"
+          type="range"
+          min={0}
+          max={100}
+          value={Math.round(prefs.sfxVolume * 100)}
+          onChange={(e) => set({ sfxVolume: Number(e.target.value) / 100 })}
+        />{" "}
+        <span className="mono small">{prefs.sfxVolume > 0 ? `${Math.round(prefs.sfxVolume * 100)} %` : t("settings.off")}</span>
+        <div className="muted small">{t("settings.sfxHint")}</div>
+      </dd>
     </dl>
   );
 }

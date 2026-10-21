@@ -799,6 +799,8 @@ export const es = {
   "quantum.cancelHint": "{key} o Esc: cancelar",
   "quantum.travelling": "Viaje cuántico",
   "quantum.tunnelHint": "{map}: ver el mapa · al llegar apareces en el borde del sistema",
+  "settings.sfx": "Efectos de sonido",
+  "settings.sfxHint": "Disparos, explosiones y motor cuántico (independiente de la música).",
 } as const;
 
 export type I18nKey = keyof typeof es;

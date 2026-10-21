@@ -797,4 +797,6 @@ export const en: Record<I18nKey, string> = {
   "quantum.cancelHint": "{key} or Esc: cancel",
   "quantum.travelling": "Quantum travel",
   "quantum.tunnelHint": "{map}: view the map · you arrive at the edge of the system",
+  "settings.sfx": "Sound effects",
+  "settings.sfxHint": "Shots, explosions and quantum drive (separate from the music).",
 };
