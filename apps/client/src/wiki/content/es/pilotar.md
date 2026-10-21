@@ -61,7 +61,7 @@ Vuela hasta el **borde del sistema** (unos cientos de kilómetros más allá del
 ## Viaje cuántico a otra estrella
 
 1. A los mandos, pulsa [[J]]: verás los sistemas **al alcance de tu combustible**, con la distancia, la duración y el combustible del salto. También puedes **seleccionar una estrella en el mapa** y pulsar [[J]] o **Saltar aquí**.
-2. La nave se **alinea** sola con el destino y **carga el motor cuántico** (unos segundos). [[J]] o Esc cancelan.
+2. La nave se **alinea** sola con el destino y **carga el motor cuántico** (unos segundos). [[J]] o Esc cancelan. Mientras carga, el espacio empieza a fallar delante de la nave (se curva, se agrieta con luz y la imagen se corta) y, al saltar, se rompe como un cristal; al llegar, la grieta se abre en el destino y se cierra tras la nave. Si te molestan los destellos o las sacudidas, activa **Reducir efectos visuales** en Ajustes.
 3. Durante el viaje ves el **túnel cuántico** con el tiempo restante; [[M]] alterna entre el túnel y el mapa. Al llegar apareces **en el borde del sistema de destino**, a los mandos.
 
 - La velocidad de salto está en la tabla de arriba: unos minutos a las estrellas cercanas y hasta unos **40 minutos** el salto más largo. El **alcance** lo marca el combustible: para ir más lejos, salta por etapas y reposta en tus colonias.

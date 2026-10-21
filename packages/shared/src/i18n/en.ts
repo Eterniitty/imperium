@@ -250,6 +250,8 @@ export const en: Record<I18nKey, string> = {
   "settings.qualityHint": "Your window: {width} × {height} px, density {dpr}×. If it stutters, lower the quality.",
   "settings.music": "Music",
   "settings.off": "Off",
+  "settings.reduceEffects": "Reduce visual effects",
+  "settings.reduceEffectsHint": "No strong flashes, camera shake or fast image glitches (for example, during the quantum jump).",
   "settings.uiScale": "Interface size",
   "settings.uiScale.auto": "Automatic for your window ({percent} %)",
   "error.unknown_emperor": "There is no Emperor with that name.",

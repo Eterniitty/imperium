@@ -93,6 +93,13 @@ function GeneralTab() {
         <span className="mono small">{prefs.sfxVolume > 0 ? `${Math.round(prefs.sfxVolume * 100)} %` : t("settings.off")}</span>
         <div className="muted small">{t("settings.sfxHint")}</div>
       </dd>
+      <dt>
+        <label htmlFor="pref-reduce-fx">{t("settings.reduceEffects")}</label>
+      </dt>
+      <dd>
+        <input id="pref-reduce-fx" type="checkbox" checked={prefs.reduceEffects} onChange={(e) => set({ reduceEffects: e.target.checked })} />
+        <div className="muted small">{t("settings.reduceEffectsHint")}</div>
+      </dd>
     </dl>
   );
 }

@@ -61,7 +61,7 @@ Fly to the **edge of the system** (a few hundred kilometres beyond the outermost
 ## Quantum travel to another star
 
 1. At the controls, press [[J]]: you see the systems **within range of your fuel**, with distance, duration and the fuel the jump uses. You can also **select a star on the map** and press [[J]] or **Jump here**.
-2. The ship **aligns** with the destination by itself and **charges the quantum drive** (a few seconds). [[J]] or Esc cancel.
+2. The ship **aligns** with the destination by itself and **charges the quantum drive** (a few seconds). [[J]] or Esc cancel. While it charges, space starts to glitch in front of the ship (it bends, cracks open with light and the image tears) and, when you jump, it shatters like glass; on arrival the rift opens at the destination and closes behind the ship. If flashes or shaking bother you, turn on **Reduce visual effects** in Settings.
 3. During the trip you see the **quantum tunnel** with the time left; [[M]] switches between the tunnel and the map. On arrival you appear **at the edge of the destination system**, at the controls.
 
 - Jump speed is in the table above: a few minutes to nearby stars and up to about **40 minutes** for the longest jump. **Range** is set by your fuel: to go further, jump in stages and refuel at your colonies.
