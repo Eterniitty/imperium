@@ -463,6 +463,24 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       return { a, b, sa, sb, systemId };
     }
 
+    it("pedir ayuda: avisa a los compañeros, acude la milicia y no se puede repetir enseguida", async () => {
+      const { a, b, sa, sb, systemId } = await twoInOneSystem("hidden");
+      await social(a.cookies, "/api/social/allies", { name: "Brennus" });
+      await social(b.cookies, "/api/social/allies", { name: "Aurelia" });
+      await parkAt(a.emperor.id, near(systemId, [100, 0, 0]));
+      sa.send({ t: "pose", systemId, ...pose(near(systemId, [100, 0, 0])) });
+      await sa.next(is("space"));
+      const ack = (id: string) => (m: ServerMessage): m is Extract<ServerMessage, { t: "ack" }> => m.t === "ack" && m.cmdId === id;
+      sa.send({ t: "cmd", cmdId: "ayuda-0001", op: "help.call", args: {} });
+      expect(await sa.next(ack("ayuda-0001"))).toMatchObject({ ok: true });
+      expect(await sb.next(is("helpCall"))).toMatchObject({ from: a.emperor.id, name: "Aurelia", systemId });
+      // En el Núcleo acude la milicia: sus naves aparecen junto a la que pidió ayuda.
+      const helper = await sa.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id.includes(":help:"));
+      expect(helper.ship.kind).toBe("fleet");
+      sa.send({ t: "cmd", cmdId: "ayuda-0002", op: "help.call", args: {} });
+      expect(await sa.next(ack("ayuda-0002"))).toMatchObject({ ok: false, error: "rate_limited" });
+    });
+
     it("dos naves en el mismo sistema se ven y se mueven, aunque estén ocultas en el mapa", async () => {
       const { a, b, sa, sb, systemId } = await twoInOneSystem("hidden");
       await parkAt(a.emperor.id, near(systemId, [100, 0, 0]));

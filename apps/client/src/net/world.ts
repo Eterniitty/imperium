@@ -1,4 +1,5 @@
 import { createStore } from "zustand/vanilla";
+import { addHelpCall } from "../state/help";
 import { useStore } from "zustand";
 import {
   PROTOCOL_VERSION,
@@ -356,6 +357,9 @@ class Connection {
         return;
       case "undocked":
         spaceStore.setState({ undocked: true });
+        return;
+      case "helpCall":
+        addHelpCall({ from: msg.from, name: msg.name, systemId: msg.systemId });
         return;
       case "docked": {
         const fleet = worldStore.getState().fleets[msg.fleetId];

@@ -1,4 +1,4 @@
-import { AIM_ASSIST, ALIEN_LOCAL, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, getAlienShipClass, getShipClass, MINING, PIRATE_AI, PIRATE_AMBUSH, SCAVENGER_LAIR, type ShipClassId } from "@imperium/content";
+import { AIM_ASSIST, ALIEN_LOCAL, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, getAlienShipClass, getShipClass, HELP_CALL, MINING, PIRATE_AI, PIRATE_AMBUSH, SCAVENGER_LAIR, type ShipClassId } from "@imperium/content";
 import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, MOTHERSHIP_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
 import { addToHold, arriveVelocity, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
@@ -9,7 +9,7 @@ import type { SocialService } from "../social/service";
 import type { FlagshipService } from "./flagship";
 import type { DeepSpaceService } from "./deep";
 import { Combatant, type StoredSupplies, distance, forwardOf, HIT_RADIUS, MISSILE_LOCK_COS, normalize, rotate } from "./combat";
-import { hasLair, pirateFlight, pirateHome, piratesOf, stepPirate } from "./pirates";
+import { hasLair, pirateFlight, pirateHome, piratesOf, stepPirate, systemRing } from "./pirates";
 import { PendingArrivals, RIFT_ARRIVE_WINDOW_MS, riftNear, type RiftNotice } from "./rift";
 
 /** Una nave presente en un sistema: de un Emperador o un pirata de la IA. */
@@ -20,7 +20,7 @@ interface Member {
   /** Solo naves de flota (pilotadas a distancia o escoltas): su Emperador, su clase, su flota y su nave (en la base de datos). */
   owner?: string;
   /** Solo la milicia del Núcleo (Fase 9d): su índice en el sistema (para reaparecer). */
-  militia?: { index: number };
+  militia?: { index: number; help?: { caller: string; until: number } };
   /** Solo naves alienígenas (Fase 9d): su facción y los Emperadores que les han disparado (a esos los atacan siempre). */
   alien?: { factionId: string; provoked: Set<string> };
   /** Solo escoltas de la IA (Fase 9d): a quién escoltan, su sitio en la formación y su modo. */
@@ -141,6 +141,8 @@ export class SpaceService {
   /** Milicia del Núcleo: agresores (Emperador → hasta cuándo) por sistema, y patrullas caídas esperando reaparecer. */
   private readonly aggressors = new Map<string, Map<string, number>>();
   private readonly deadMilitia = new Map<string, number>();
+  /** Última petición de ayuda de cada Emperador (para el tiempo de espera). */
+  private readonly helpCalledAt = new Map<string, number>();
   /** Espacio profundo: contenido de las regiones y minería (lo pone `buildApp`). */
   deep: DeepSpaceService | null = null;
   /** Facciones alienígenas: ¿es hostil a un Emperador? y un Emperador les disparó (rencor). Los pone el servidor. */
@@ -1542,8 +1544,63 @@ export class SpaceService {
     });
   }
 
+  /**
+   * Orden `help.call` (`HELP_CALL`): el Emperador que pilota su nave pide ayuda.
+   * Cerca del Núcleo, la milicia manda refuerzos junto a él. Devuelve a quién
+   * avisar (sus compañeros) o el error.
+   */
+  callHelp(client: Client): { ok: true; systemId: string; name: string; allies: Set<string>; militia: number } | { ok: false; error: CommandError } {
+    if (client.piloting) return { ok: false, error: "invalid_order" };
+    const m = this.members.get(client.emperorId);
+    if (!m || m.park || !m.clients.has(client) || isDeepId(m.systemId)) return { ok: false, error: "too_far" };
+    const now = this.now();
+    if (now - (this.helpCalledAt.get(m.emperorId) ?? -Infinity) < HELP_CALL.cooldownSec * 1000) return { ok: false, error: "rate_limited" };
+    this.helpCalledAt.set(m.emperorId, now);
+    let militia = 0;
+    const room = this.rooms.get(m.systemId);
+    const layout = this.layout(m.systemId);
+    if (room && layout && systemRing(m.systemId) <= HELP_CALL.militiaMaxRing) {
+      HELP_CALL.militiaShips.forEach((classId, i) => {
+        const id = `militia:${m.systemId}:help:${m.emperorId}:${i}`;
+        const cls = getShipClass(classId as ShipClassId);
+        if (this.members.has(id) || !cls) return;
+        const a = (i / HELP_CALL.militiaShips.length) * Math.PI * 2;
+        const p: Vec3 = [m.pose.p[0] + Math.cos(a) * HELP_CALL.militiaArriveM, m.pose.p[1] + 300, m.pose.p[2] + Math.sin(a) * HELP_CALL.militiaArriveM];
+        const combat = new Combatant(cls.hull, cls.combat, now);
+        this.combatants.set(id, combat);
+        const helper: Member = {
+          emperorId: id,
+          kind: "fleet",
+          classId: cls.id,
+          militia: { index: 100 + i, help: { caller: m.emperorId, until: now + HELP_CALL.militiaStaySec * 1000 } },
+          // Su «casa» es la nave que pidió ayuda: sin enemigos, se quedan a su lado.
+          ai: { home: m.pose.p, phase: (i * 0.53) % 1, classId: cls.id, aimJitter: CORE_MILITIA.aimJitter, mode: "hunt" },
+          radius: Math.max(HIT_RADIUS, cls.model.lengthM * 0.45),
+          name: "#militia",
+          systemId: m.systemId,
+          clients: new Set(),
+          pose: { p, q: [0, 0, 0, 1], v: [0, 0, 0] },
+          poseAt: now,
+          history: [{ t: now, p }],
+          dirty: true,
+          allies: new Set(),
+          combat,
+          sentShield: -1,
+          park: null,
+        };
+        for (const o of room) this.sendTo(o, { t: "ship", ship: this.stateFor(helper, o) });
+        room.add(helper);
+        this.members.set(id, helper);
+        militia++;
+      });
+    }
+    return { ok: true, systemId: m.systemId, name: m.name, allies: m.allies, militia };
+  }
+
   /** La milicia patrulla y persigue a los agresores del sistema (y a los piratas que se colasen). */
   private stepMilitia(systemId: string, room: Set<Member>, dt: number, now: number): void {
+    // Los refuerzos de una petición de ayuda se vuelven a su patrulla al acabar su tiempo.
+    for (const m of room) if (m.militia?.help && m.militia.help.until < now) this.leave(m.emperorId, "left");
     const pack = [...room].filter((m) => m.militia && m.ai);
     if (pack.length === 0) {
       this.spawnMilitia(systemId, room);
@@ -1551,7 +1608,12 @@ export class SpaceService {
     }
     const list = this.aggressors.get(systemId);
     if (list) for (const [id, until] of list) if (until < now) list.delete(id);
-    const enemies = [...room].filter((o) => o.combat.hull > 0 && !o.militia && (o.kind === "pirate" || (!!list && list.has(o.owner ?? o.emperorId) && (o.clients.size > 0 || !!o.escort))));
+    // Quien acude a una llamada de ayuda también se enfrenta a los alienígenas hostiles a quien la pidió.
+    const callers = new Set(pack.flatMap((m) => (m.militia?.help ? [m.militia.help.caller] : [])));
+    const hostileToCaller = (o: Member) => !!o.alien && [...callers].some((c) => this.alienHostileTo(o.alien!.factionId, c, now));
+    const enemies = [...room].filter(
+      (o) => o.combat.hull > 0 && !o.militia && (o.kind === "pirate" || hostileToCaller(o) || (!!list && list.has(o.owner ?? o.emperorId) && (o.clients.size > 0 || !!o.escort))),
+    );
     const preyId = packTarget(
       pack.map((m) => m.pose.p),
       enemies.map((o) => ({ id: o.emperorId, p: o.pose.p, hull: o.combat.hull, shield: o.combat.shield })),

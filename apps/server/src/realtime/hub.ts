@@ -136,6 +136,11 @@ export class Hub {
     void this.publish(client.emperorId);
   }
 
+  /** Envía un mensaje a todas las conexiones de estos Emperadores. */
+  sendToEmperors(ids: ReadonlySet<string>, msg: ServerMessage): void {
+    for (const c of this.clients) if (ids.has(c.emperorId)) c.send(msg);
+  }
+
   /** Cierra todas las conexiones de una cuenta (p. ej. al borrarla). */
   disconnectAccount(accountId: string, code: number, reason: string): void {
     for (const c of [...this.clients]) if (c.accountId === accountId) c.close(code, reason);

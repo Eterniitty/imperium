@@ -423,6 +423,24 @@ export const ALIEN_LOCAL = {
  * (agresor durante `aggressorSec`) y nunca salen del Núcleo. Naves humanas de
  * `SHIP_CLASSES`, con buena puntería y disciplina (el piloto de la 9d).
  */
+/**
+ * Pedir ayuda (fase 3 del plan, «Aliados de verdad»): mientras pilota, el
+ * Emperador avisa a sus compañeros conectados (pueden saltar junto a él) y,
+ * cerca del Núcleo Humano, la milicia envía refuerzos que se quedan un rato.
+ */
+export const HELP_CALL = {
+  /** Segundos entre dos peticiones de ayuda. */
+  cooldownSec: 300,
+  /** Anillo máximo hasta el que acude la milicia (el Núcleo son los anillos 0–1). */
+  militiaMaxRing: 2,
+  /** Naves de refuerzo de la milicia. */
+  militiaShips: ["frigate", "frigate", "corvette"] as readonly string[],
+  /** Distancia a la que aparecen (m): llegan volando en unos segundos. */
+  militiaArriveM: 5000,
+  /** Segundos que se quedan antes de volver a su patrulla. */
+  militiaStaySec: 240,
+} as const;
+
 export const CORE_MILITIA = {
   ships: ["frigate", "corvette"] as readonly string[],
   aimJitter: 0.02,

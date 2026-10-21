@@ -54,3 +54,9 @@ Para que el juego aguante muchos jugadores, en el mapa solo ves a los Emperadore
 - Para volar junto a un compañero dentro del sistema, el **piloto automático** sigue su nave en formación ([[H]]; ver [Pilotar la nave](/wiki/pilotar)).
 
 > [!dev] Un futuro escáner podrá detectar a quien esté cerca. Las **organizaciones** (con descubrimientos compartidos) llegarán en la fase 12.
+
+## Pedir ayuda
+
+Mientras pilotas tu nave, el botón **«Pedir ayuda»** avisa a tus **compañeros conectados**: les aparece arriba «… pide ayuda en …» con un botón para **saltar a tu lado** (el salto normal, con su carga y su combustible). Si estás **cerca del Núcleo Humano**, además la **milicia** manda refuerzos que llegan volando en unos segundos, pelean contra los Carroñeros y los alienígenas hostiles a ti y, pasado un rato, vuelven a su patrulla. Después hay que esperar para volver a pedir ayuda.
+
+{{tabla:ayuda}}

@@ -783,3 +783,8 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .tgt-lead.ready { border-color: #7ef0b0; color: #7ef0b0; box-shadow: 0 0 6px #7ef0b0; }
 .weapon-slot.selected { outline: 1px solid rgba(232, 182, 76, 0.8); outline-offset: 3px; border-radius: 3px; }
 .combat-assist { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+
+/* Pedir ayuda (HELP_CALL): botón al pilotar y peticiones de los compañeros. */
+.help-hud { position: absolute; right: 244px; bottom: 92px; padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.help-calls { position: fixed; top: 76px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 6px; z-index: 30; }
+.help-call { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; border-color: rgba(255, 138, 106, 0.6); }

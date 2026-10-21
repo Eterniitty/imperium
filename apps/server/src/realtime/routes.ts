@@ -369,6 +369,12 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     const error = space.dock(client, msg.args.fleetId, info.slot, info.colonyPlanet, FLAGSHIP_DOCK.rangeM + info.lengthM);
                     return error ? ({ ok: false, error } as const) : ({ ok: true } as const);
                   }
+                  case "help.call": {
+                    const res = space.callHelp(client);
+                    if (!res.ok) return res;
+                    hub.sendToEmperors(res.allies, { t: "helpCall", from: owner.emperorId, name: res.name, systemId: res.systemId, serverTime: Date.now() });
+                    return { ok: true } as const;
+                  }
                   case "flagship.undock": {
                     space.undock(client);
                     return { ok: true } as const;

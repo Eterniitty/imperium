@@ -54,3 +54,9 @@ So that the game can hold many players, on the map you only see the Emperors **n
 - To fly alongside a companion inside a system, the **autopilot** follows their ship in formation ([[H]]; see [Flying the ship](/wiki/pilotar)).
 
 > [!dev] A future scanner will be able to detect anyone nearby. **Organisations** (with shared discoveries) will arrive in phase 12.
+
+## Calling for help
+
+While you pilot your ship, the **"Call for help"** button alerts your **online companions**: they see "… calls for help in …" at the top with a button to **jump to your side** (the normal jump, with its charge and fuel). If you are **near the Human Core**, the **militia** also sends reinforcements that fly in within seconds, fight the Scavengers and the aliens hostile to you and, after a while, return to their patrol. Then you have to wait before calling again.
+
+{{tabla:ayuda}}

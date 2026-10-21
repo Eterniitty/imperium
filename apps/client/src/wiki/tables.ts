@@ -16,6 +16,7 @@ import {
   ROUTE_RAID,
   SCAVENGER_LAIR,
   MERCENARIES,
+  HELP_CALL,
   getAlienShipClass,
   ALIEN_SHIP_CLASSES,
   ALIEN_SIEGE,
@@ -716,6 +717,12 @@ export const GEN_TABLES: Record<string, Builder> = {
     };
   },
 
+  ayuda: (t, locale) => kv(t, [
+    ["wiki.k.helpCooldown", t("wiki.v.seconds", { n: num(locale, HELP_CALL.cooldownSec) })],
+    ["wiki.k.helpMaxRing", num(locale, HELP_CALL.militiaMaxRing)],
+    ["wiki.k.helpShips", HELP_CALL.militiaShips.map((id) => shipName(locale, id)).join(", ")],
+    ["wiki.k.helpStay", t("wiki.v.seconds", { n: num(locale, HELP_CALL.militiaStaySec) })],
+  ]),
   mercenarios: (t, locale) => ({
     head: [t("wiki.col.offer"), t("wiki.col.ships"), t("wiki.col.cost"), t("wiki.col.time")],
     rows: MERCENARIES.offers.map((o) => [
