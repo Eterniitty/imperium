@@ -30,7 +30,7 @@ import type { Keyboard } from "./input";
 import { createFlagship, disposeShip, SHIP_SCALE, shipRig } from "./shipModel";
 import { createCockpit } from "./cockpit";
 import { glowTexture, labelTexture, ringTexture } from "./textures";
-import { CORONA_SCALE, createAtmosphereMaterial, createBodyUniforms, createCoronaMaterial, createPlanetMaterial, createRingMaterial, createStarSurfaceMaterial } from "./bodyMaterials";
+import { CORONA_SCALE, STAR_SPIN_PERIOD_SEC, createAtmosphereMaterial, createBodyUniforms, createCoronaMaterial, createPlanetMaterial, createRingMaterial, createStarSurfaceMaterial } from "./bodyMaterials";
 import { bodyDetailFor, bodySegments, planetLook } from "./planetLook";
 import { claimsStore } from "../state/claims";
 import { ownColonyAt, planetLabel } from "../ui/colonies";
@@ -118,6 +118,8 @@ export class SystemView implements View {
   private leaving = false;
   private systemId: string | null = null;
   private starName = "";
+  /** La estrella del sistema: su superficie (giro), su corona y el resplandor que crece al acercarse. */
+  private starFx: { surface: THREE.ShaderMaterial; corona: THREE.ShaderMaterial; glare: THREE.Sprite; radius: number } | null = null;
   /** Radio a partir del cual se sale al espacio interestelar (ver `pilot`). */
   private boundary = 0;
   private poseTimer = 0;
@@ -268,15 +270,22 @@ export class SystemView implements View {
     const starRng = new Rng(hashString(`star:${summary.id}`));
     const starSeed = new THREE.Vector3(starRng.range(-50, 50), starRng.range(-50, 50), starRng.range(-50, 50));
     this.bodyUniforms.uSunColor.value.copy(starColor).lerp(new THREE.Color(1, 1, 1), 0.5).multiplyScalar(isBlackHole ? 0.35 : 1);
-    const star = new THREE.Mesh(this.sphereLevel(starRadius, 64), createStarSurfaceMaterial(starColor, starSeed, isBlackHole, this.bodyUniforms));
+    const surface = createStarSurfaceMaterial(starColor, starSeed, isBlackHole, this.bodyUniforms);
+    const star = new THREE.Mesh(this.sphereLevel(starRadius, 64), surface);
     this.content.add(star);
     this.trackLod(star, starRadius);
-    const corona = new THREE.Mesh(
-      new THREE.SphereGeometry(starRadius * CORONA_SCALE, 64, 32),
-      createCoronaMaterial(isBlackHole ? new THREE.Color(0xb98cff) : starColor, starRadius, starSeed, isBlackHole, this.bodyUniforms),
-    );
+    const coronaMat = createCoronaMaterial(isBlackHole ? new THREE.Color(0xb98cff) : starColor, starRadius, starSeed, isBlackHole, this.bodyUniforms);
+    const corona = new THREE.Mesh(new THREE.SphereGeometry(starRadius * CORONA_SCALE, 64, 32), coronaMat);
     corona.renderOrder = 1;
     this.content.add(corona);
+    // Resplandor: un brillo delante del disco que crece al acercarse (lo tapan los planetas que se interpongan).
+    const glare = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: glowTexture(), color: starColor.clone().lerp(new THREE.Color(1, 1, 1), 0.6), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
+    );
+    glare.renderOrder = 2;
+    glare.visible = !isBlackHole;
+    this.content.add(glare);
+    this.starFx = { surface, corona: coronaMat, glare, radius: starRadius };
 
     if (isBlackHole) {
       const disk = new THREE.Mesh(
@@ -547,6 +556,8 @@ export class SystemView implements View {
     // Niveles de detalle que no estaban en uso (el actual ya se liberó arriba).
     for (const body of this.lodBodies) for (const g of body.levels.values()) g.dispose();
     this.lodBodies = [];
+    this.starFx?.glare.material.dispose();
+    this.starFx = null;
     this.content.clear();
     this.planets = [];
     this.anomaly = null;
@@ -1372,6 +1383,26 @@ export class SystemView implements View {
   }
 
   /**
+   * La estrella gira (rotación diferencial en el sombreador) y, cuanto más cerca
+   * está la cámara, más brilla su corona y mayor es el resplandor delante del
+   * disco. Crece con la distancia, sin saltos; con «reducir efectos», la mitad.
+   */
+  private updateStarFx(): void {
+    const fx = this.starFx;
+    if (!fx) return;
+    fx.surface.uniforms.uSpin!.value = ((serverNow() / 1000) * Math.PI * 2) / STAR_SPIN_PERIOD_SEC % (Math.PI * 2000);
+    const d = this.camera.position.length();
+    const r = fx.radius;
+    const t = Math.min(1, Math.max(0, (d - r * 1.3) / (r * 20 - r * 1.3)));
+    const near = (1 - t * t * (3 - 2 * t)) * (settingsStore.getState().prefs.reduceEffects ? 0.5 : 1);
+    fx.corona.uniforms.uNear!.value = near;
+    const toCam = this.camera.position.clone().normalize();
+    fx.glare.position.copy(toCam).multiplyScalar(r * 1.02);
+    fx.glare.scale.setScalar(r * (3 + 12 * near));
+    fx.glare.material.opacity = 0.12 + 0.55 * near;
+  }
+
+  /**
    * Cúpula del escudo propio: se enciende cuando el escudo pierde carga (por el
    * lado de la estrella si es calor; si no, hacia el blanco fijado o el
    * enemigo más cercano) y brilla mientras el calor de la estrella lo gasta.
@@ -1716,6 +1747,7 @@ export class SystemView implements View {
     this.time += dt;
     // El tiempo de los shaders da la vuelta para no perder precisión en sesiones largas.
     this.bodyUniforms.uTime.value = this.time % 100_000;
+    this.updateStarFx();
     const now = serverNow();
     const selected = gameStore.getState().selectedPlanet;
     const center = new THREE.Vector3();

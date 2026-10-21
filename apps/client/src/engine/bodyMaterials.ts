@@ -412,6 +412,7 @@ const STAR_FRAGMENT = /* glsl */ `
   uniform float uDark;
   uniform vec3 uSeed;
   uniform float uMaxOctaves;
+  uniform float uSpin;
   varying vec3 vObjPos;
   varying vec3 vViewPos;
   varying vec3 vNormalView;
@@ -425,7 +426,12 @@ const STAR_FRAGMENT = /* glsl */ `
       gl_FragColor = vec4(uColor * pow(1.0 - mu, 3.0) * 1.5, 1.0);
       return;
     }
-    vec3 dir = normalize(vObjPos);
+    // Rotación diferencial, como el Sol: el ecuador gira más deprisa que los polos.
+    vec3 d0 = normalize(vObjPos);
+    float spin = uSpin * (1.0 - 0.35 * d0.y * d0.y);
+    float cs = cos(spin);
+    float sn = sin(spin);
+    vec3 dir = vec3(cs * d0.x + sn * d0.z, d0.y, -sn * d0.x + cs * d0.z);
     float t = uTime;
     float gf = 80.0;
     float footprint = max(length(fwidth(dir)), 1e-7);
@@ -453,16 +459,21 @@ const STAR_FRAGMENT = /* glsl */ `
     float penumbra = smoothstep(0.46, 0.6, s);
     float umbra = smoothstep(0.64, 0.74, s);
     float mottle = fbm(dir * 6.0 + uSeed.yzx + vec3(t * 0.01), 3.0);
+    // Supergranulación: una red de celdas grandes con bordes algo más brillantes.
+    vec2 sg = worley(dir * 11.0 + uSeed.zxy, t * 0.05, 1.0);
+    float network = 1.0 - smoothstep(0.0, 0.22, sg.y - sg.x);
     // Celdas casi blancas y canales del color de la estrella: brilla, no parece barro.
     vec3 hot = mix(uColor, vec3(1.0, 0.97, 0.9), 0.7);
     vec3 lane = uColor * 0.88;
-    vec3 col = mix(lane, hot, gran) * (1.05 + 0.25 * mottle);
+    vec3 col = mix(lane, hot, gran) * (1.05 + 0.25 * mottle + 0.12 * network);
     col = mix(col, uColor * 0.5, penumbra * 0.6);
     col = mix(col, uColor * uColor * 0.22, umbra * 0.8);
     // Fáculas brillantes cerca del borde y oscurecimiento del limbo.
     col += hot * 0.28 * smoothstep(0.25, 0.7, mottle) * (1.0 - mu);
     col *= 0.38 + 0.62 * pow(mu, 0.45);
     col = mix(col, uColor * 0.55, (1.0 - mu) * (1.0 - mu) * 0.5);
+    // Cromosfera: un filo rojizo y brillante justo en el borde del disco.
+    col += mix(uColor, vec3(1.0, 0.45, 0.35), 0.5) * pow(1.0 - mu, 9.0) * 0.9;
     gl_FragColor = vec4(col * 0.95, 1.0);
   }
 `;
@@ -473,6 +484,7 @@ const CORONA_FRAGMENT = /* glsl */ `
   uniform float uTime;
   uniform float uDark;
   uniform vec3 uSeed;
+  uniform float uNear;
   varying vec3 vViewPos;
   varying vec3 vCenterView;
   ${NOISE_GLSL}
@@ -487,7 +499,8 @@ const CORONA_FRAGMENT = /* glsl */ `
     vec3 closest = rd * max(t, 0.0) - cc;
     vec3 dirW = normalize((vec4(closest, 0.0) * viewMatrix).xyz);
     float x = h - 1.0;
-    float halo = 0.5 * exp(-x * 7.0) + 0.24 * exp(-x * 1.5);
+    // Cerca de la estrella el resplandor crece (la luz satura la vista).
+    float halo = (0.5 * exp(-x * 7.0) + 0.24 * exp(-x * 1.5)) * (1.0 + 2.2 * uNear);
     float fade = 1.0 - smoothstep(2.8, 4.8, h);
     // La corona ocupa mucha pantalla: donde apenas se ve, no se calcula el ruido.
     if (halo * fade < 0.004) discard;
@@ -496,6 +509,12 @@ const CORONA_FRAGMENT = /* glsl */ `
     float rays = 0.8 + 0.4 * streak * smoothstep(0.0, 0.35, x);
     float a = halo * max(rays, 0.0) * fade * (uDark > 0.5 ? 0.45 : 1.0);
     vec3 col = mix(uColor, vec3(1.0), 0.35 * exp(-x * 8.0)) * a;
+    // Protuberancias: arcos de plasma rojizos pegados al borde que cambian despacio.
+    if (uDark < 0.5 && x < 0.25) {
+      float p = snoise(dirW * 9.0 + uSeed.yzx + vec3(uTime * 0.012, 0.0, 0.0));
+      float loops = smoothstep(0.5, 0.78, p) * exp(-x * 22.0) * (0.6 + 0.4 * snoise(dirW * 30.0 - vec3(uTime * 0.02)));
+      col += vec3(1.0, 0.42, 0.4) * max(loops, 0.0) * 0.9;
+    }
     gl_FragColor = vec4(col, 1.0);
   }
 `;
@@ -592,6 +611,7 @@ export function createStarSurfaceMaterial(color: THREE.Color, seed: THREE.Vector
       uDark: { value: dark ? 1 : 0 },
       uSeed: { value: seed },
       uMaxOctaves: shared.uMaxOctaves,
+      uSpin: { value: 0 },
     },
     ...withLogDepth({ vertexShader: BODY_VERTEX, fragmentShader: STAR_FRAGMENT }),
   });
@@ -606,6 +626,7 @@ export function createCoronaMaterial(color: THREE.Color, radius: number, seed: T
       uTime: shared.uTime,
       uDark: { value: dark ? 1 : 0 },
       uSeed: { value: seed },
+      uNear: { value: 0 },
     },
     ...withLogDepth({ vertexShader: BODY_VERTEX, fragmentShader: CORONA_FRAGMENT }),
     side: THREE.BackSide,
@@ -614,6 +635,9 @@ export function createCoronaMaterial(color: THREE.Color, radius: number, seed: T
     blending: THREE.AdditiveBlending,
   });
 }
+
+/** Vuelta de la estrella en su ecuador (s): rápida a propósito, para que se note que gira. */
+export const STAR_SPIN_PERIOD_SEC = 90;
 
 /** Radio de la corona respecto al de la estrella. */
 export const CORONA_SCALE = 5;

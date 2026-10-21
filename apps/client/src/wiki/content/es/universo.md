@@ -51,6 +51,8 @@ Cada cuerpo tiene **un solo radio**: el que se dibuja es el mismo de las colisio
 
 La gravedad simulada de las estrellas está recortada (ver [Pilotar](/wiki/pilotar#gravedad)).
 
+Las estrellas **giran** (más deprisa en el ecuador que en los polos, como el Sol) y muestran granulado, manchas, el filo rojizo de la cromosfera y protuberancias junto al borde. Al acercarte, su **resplandor** crece hasta llenar la vista (la mitad con «reducir efectos»).
+
 ### Calor de las estrellas
 
 Cerca de una estrella hace **calor**: dentro de su zona, la nave recibe daño cada segundo, poco en el borde y **cada vez más deprisa** al acercarse (crece con el cuadrado de lo que te has metido). Primero se gastan los **escudos**, que no se recargan mientras te estés quemando, y después el **casco**. El HUD lo avisa con el daño por segundo; a partir del daño por segundo de la última fila de la tabla, la zona es **mortal**: el aviso parpadea y el **pulso se corta** mientras vayas hacia la estrella (alejándote sí funciona). Las zonas quedan siempre por dentro de la órbita de los planetas y de donde se aparcan las naves. Si mueres así, la causa es «calor estelar».
