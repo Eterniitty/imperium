@@ -28,6 +28,8 @@ Enemy ships are a few metres long and look like a dot: your ship helps you aim.
 
 Damage goes first to the **shield** and, once it is depleted, to the **hull**. The shield **recharges by itself** after a few seconds without being hit; the hull does not. If the hull reaches 0, the ship is destroyed.
 
+The shield is **visible**: when it stops a hit, a **dome of hexagons** lights up around the ship on the side of the impact and fades slowly (on your ship and on the others, so you can tell whether the enemy's shield is holding). Near a star it glows orange on the star's side while the heat drains it; once it is depleted the dome disappears and the hull starts to burn.
+
 Your ship's combat state persists even if you leave the system: you do not heal by leaving and coming back.
 
 ## The Emperor's ship

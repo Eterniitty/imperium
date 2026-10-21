@@ -28,6 +28,8 @@ Las naves enemigas miden pocos metros y se ven como un punto: la nave te ayuda a
 
 El daño va primero al **escudo** y, cuando se agota, al **casco**. El escudo se **recarga solo** tras unos segundos sin recibir impactos; el casco no. Si el casco llega a 0, la nave queda destruida.
 
+El escudo se **ve**: cuando para un impacto, una **cúpula de hexágonos** se enciende alrededor de la nave por el lado del golpe y se apaga poco a poco (en tu nave y en las demás, así sabes si el escudo del enemigo aguanta). Cerca de una estrella brilla en naranja por el lado de la estrella mientras el calor lo gasta; cuando se agota, la cúpula desaparece y empieza a quemarse el casco.
+
 El estado de combate de tu nave dura aunque salgas del sistema: no se cura saliendo y entrando.
 
 ## La nave del Emperador

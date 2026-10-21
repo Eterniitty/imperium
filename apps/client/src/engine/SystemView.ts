@@ -11,6 +11,7 @@ import { connection, serverNow } from "../net/world";
 import { RemoteShips } from "./RemoteShips";
 import { FleetScene } from "./FleetScene";
 import { createShipModel, shipLength } from "./shipFactory";
+import { ShieldDome } from "./fx/shieldDome";
 import { Effects } from "./Effects";
 import { worldStore } from "../net/world";
 import { BODY_COLLISION, EMPEROR_FLAGSHIP, FLIGHT_MODEL, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_SUPPLIES, MINING, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC, QUANTUM_RIFT, SHIP_COLLISION, STAR_HEAT_LETHAL_DPS, FLAGSHIP_DOCK } from "@imperium/content";
@@ -158,6 +159,9 @@ export class SystemView implements View {
   private ownRadius = FLAGSHIP_HIT_RADIUS_M;
   /** Se pilota a distancia una nave de flota (no salta, no aparca ni mina). */
   private remotePiloting = false;
+  /** Cúpula del escudo propio y el escudo que tenía en el fotograma anterior (para ver los impactos). */
+  private dome: ShieldDome | null = null;
+  private lastShield = -1;
   /** Sacudida por un choque (0–1); se apaga en medio segundo. */
   private impactShake = 0;
   /**
@@ -594,6 +598,11 @@ export class SystemView implements View {
       ship.position.set(...parkedPosition(this.parkHere(), serverNow()));
     }
     this.remotePiloting = !!remote;
+    this.dome?.dispose();
+    if (this.dome) this.scene.remove(this.dome.mesh);
+    this.dome = new ShieldDome(this.ownLength);
+    this.scene.add(this.dome.mesh);
+    this.lastShield = -1;
     // Sin explorar, el sistema se dibuja sin planetas y su borde parece más cercano que el real:
     // la nave que llega de un salto (en el borde real) no debe salir nada más aparecer.
     this.boundary = Math.max(this.layout.boundary, ship.position.length() / ARRIVAL_EDGE + 1000);
@@ -848,6 +857,11 @@ export class SystemView implements View {
     this.ship = null;
     this.remotePiloting = false;
     this.fleetScene.hide(null, null);
+    if (this.dome) {
+      this.scene.remove(this.dome.mesh);
+      this.dome.dispose();
+      this.dome = null;
+    }
     if (spaceStore.getState().docked) spaceStore.setState({ docked: null, undocked: false });
     this.controls.enabled = true;
     this.cockpit.visible = false;
@@ -1357,6 +1371,41 @@ export class SystemView implements View {
     } else this.shakeQ.identity();
   }
 
+  /**
+   * Cúpula del escudo propio: se enciende cuando el escudo pierde carga (por el
+   * lado de la estrella si es calor; si no, hacia el blanco fijado o el
+   * enemigo más cercano) y brilla mientras el calor de la estrella lo gasta.
+   */
+  private updateDome(dt: number): void {
+    const dome = this.dome;
+    const ship = this.ship;
+    if (!dome || !ship) return;
+    const self = spaceStore.getState().self;
+    const reduce = settingsStore.getState().prefs.reduceEffects;
+    const shield = self?.shield ?? 0;
+    const towardStar = ship.position.clone().negate();
+    const heat = telemetry.heat.dps;
+    dome.setHeat(heat > 0 ? Math.min(1, 0.25 + heat / STAR_HEAT_LETHAL_DPS) : 0, towardStar, reduce);
+    if (self && this.lastShield >= 0 && shield < this.lastShield - 0.5 && heat <= 0) {
+      const { targetId } = spaceStore.getState();
+      let from = targetId ? this.remote.positionOf(targetId) : null;
+      if (!from) {
+        let best = Infinity;
+        for (const s of Object.values(spaceStore.getState().ships)) {
+          const p = this.remote.positionOf(s.state.id);
+          const d = p ? p.distanceTo(ship.position) : Infinity;
+          if (p && d < best) {
+            best = d;
+            from = p;
+          }
+        }
+      }
+      dome.impact(from ? from.clone().sub(ship.position) : null, (this.lastShield - shield) / Math.max(1, self.shieldMax) * 4, reduce);
+    }
+    this.lastShield = self ? shield : -1;
+    dome.update(dt, this.time, ship, shield > 0.5);
+  }
+
   /** Deshace la sacudida del fotograma anterior (antes de volver a colocar la cámara). */
   private undoShake(): void {
     this.camera.quaternion.multiply(this.shakeQ.invert());
@@ -1716,7 +1765,7 @@ export class SystemView implements View {
         this.sendPose(dt);
       }
       this.updateRemoteRifts();
-      this.remote.update(dt, this.time);
+      this.remote.update(dt, this.time, this.ship.position);
       this.updateRemoteEmerge();
       const rig = shipRig(this.ship);
       if (!this.quantum && !this.arrival) rig.setThrust(this.flight.thrust, this.flight.pulse);
@@ -1728,6 +1777,7 @@ export class SystemView implements View {
       // Al entrar en la grieta, la cámara exterior se queda quieta y la ve alejarse; en cabina, entra con ella.
       if (!departing || gameStore.getState().cameraView === "first") this.placeChaseCamera(1 - Math.exp(-dt * 8));
       this.updateCameraFx(dt);
+      this.updateDome(dt);
       telemetry.freeCam = this.chase.free && gameStore.getState().cameraView !== "first";
       // Vuelo con ratón: el cursor es la retícula (una cruz); en cámara libre, el de siempre.
       const mouseFlight = settingsStore.getState().prefs.flight.mouseFlight;

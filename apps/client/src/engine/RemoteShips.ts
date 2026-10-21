@@ -3,9 +3,11 @@ import { serverNow } from "../net/world";
 import { shipName, spaceStore, type PoseSample } from "../net/space";
 import { gameStore } from "../state/store";
 import type { WeaponKind } from "@imperium/shared";
-import { FLAGSHIP_HIT_RADIUS_M, getAnyShipClass, SHIP_COLLISION } from "@imperium/content";
+import { FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, getAnyShipClass, SHIP_COLLISION } from "@imperium/content";
 import { createFlagship, disposeShip, SHIP_SCALE, shipRig } from "./shipModel";
-import { createShipModel } from "./shipFactory";
+import { createShipModel, shipLength } from "./shipFactory";
+import { ShieldDome } from "./fx/shieldDome";
+import { settingsStore } from "../state/settings";
 import { labelTexture } from "./textures";
 
 const ALLY_COLOR = "#5fd3e6";
@@ -23,6 +25,10 @@ interface Visual {
   /** Posición del fotograma anterior, para estimar la velocidad (empuje y balanceo). */
   prev: THREE.Vector3;
   speed: number;
+  /** Cúpula del escudo (se crea al primer impacto) y el escudo que tenía. */
+  dome: ShieldDome | null;
+  lastShield: number;
+  lengthM: number;
 }
 
 const qa = new THREE.Quaternion();
@@ -56,7 +62,9 @@ export class RemoteShips {
   readonly group = new THREE.Group();
   private visuals = new Map<string, Visual>();
 
-  update(dt = 0, time = 0): void {
+  /** `viewer`: la nave propia (los impactos en otras naves se dibujan hacia ella, que suele ser quien dispara). */
+  update(dt = 0, time = 0, viewer: THREE.Vector3 | null = null): void {
+    const reduce = settingsStore.getState().prefs.reduceEffects;
     const { ships } = spaceStore.getState();
     const locale = gameStore.getState().locale;
     const t = serverNow() - INTERP_DELAY_MS;
@@ -80,6 +88,18 @@ export class RemoteShips {
         rig.setThrust(Math.min(1, v.speed / 1000), v.speed > 2000);
         rig.tick(time, dt, Math.max(0, 1 - v.speed / 60));
       }
+      // El escudo de la otra nave pierde carga: su cúpula se enciende.
+      const shield = remote.state.shield;
+      if (v.lastShield >= 0 && shield < v.lastShield - 0.5) {
+        if (!v.dome) {
+          v.dome = new ShieldDome(v.lengthM);
+          this.group.add(v.dome.mesh);
+        }
+        v.dome.update(0, time, v.ship, true);
+        v.dome.impact(viewer ? viewer.clone().sub(v.ship.position) : null, (v.lastShield - shield) / Math.max(1, remote.state.shieldMax) * 4, reduce);
+      }
+      v.lastShield = shield;
+      v.dome?.update(dt, time, v.ship, shield > 0.5);
     }
     for (const [id, v] of this.visuals) if (!ships[id]) this.remove(id, v);
   }
@@ -95,13 +115,15 @@ export class RemoteShips {
     label.center.set(0.5, -1.4);
     label.renderOrder = 12;
     this.group.add(ship, label);
-    const v = { ship, label, key, prev: new THREE.Vector3(Infinity, 0, 0), speed: 0 };
+    const lengthM = (classId ? shipLength(classId) : null) ?? FLAGSHIP_LENGTH_M;
+    const v: Visual = { ship, label, key, prev: new THREE.Vector3(Infinity, 0, 0), speed: 0, dome: null, lastShield: -1, lengthM };
     this.visuals.set(id, v);
     return v;
   }
 
   private remove(id: string, v: Visual): void {
     this.group.remove(v.ship, v.label);
+    this.dropDome(v);
     disposeShip(v.ship);
     v.label.material.map?.dispose();
     v.label.material.dispose();
@@ -116,10 +138,18 @@ export class RemoteShips {
     const v = this.visuals.get(id);
     if (!v) return null;
     this.visuals.delete(id);
+    this.dropDome(v);
     this.group.remove(v.label);
     v.label.material.map?.dispose();
     v.label.material.dispose();
     return v.ship;
+  }
+
+  private dropDome(v: Visual): void {
+    if (!v.dome) return;
+    this.group.remove(v.dome.mesh);
+    v.dome.dispose();
+    v.dome = null;
   }
 
   /** Suelta un modelo de `detach`. */
