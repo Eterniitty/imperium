@@ -17,7 +17,7 @@ test("Wiki: página aparte, sin entrar al juego, con índice, enlaces, tablas de
   // Tabla generada con los datos del juego (instalaciones de @imperium/content).
   const installations = page.locator('table[data-table="instalaciones"]');
   await expect(installations.getByRole("cell", { name: "Refinería de aleaciones" })).toBeVisible();
-  await expect(installations.getByRole("cell", { name: "Astillero" })).toBeVisible();
+  await expect(installations.getByRole("cell", { name: "Astillero", exact: true })).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/wiki-economia.png`, fullPage: true });
 
   // Carga directa de un artículo (y la ruta sin barra final).
@@ -74,7 +74,6 @@ test("Wiki: especies alienígenas e IA y territorios, con tablas generadas", asy
   await page.goto("/wiki/especies");
   await expect(page.getByRole("heading", { level: 1, name: "Especies" })).toBeVisible();
   await expect(page.locator('table[data-table="especies-resumen"]').getByRole("cell", { name: "Los Erradicadores" })).toBeVisible();
-  await expect(page.locator('table[data-table="naves-alienigenas"]').getByRole("cell", { name: "Arca de la Estela" })).toBeVisible();
   // Ficha ampliada: filosofía, territorio y naves propias.
   const tharaxi = page.locator(".wiki-card").filter({ hasText: "THARAXI" });
   await expect(tharaxi.getByText("Filosofía")).toBeVisible();
@@ -85,5 +84,19 @@ test("Wiki: especies alienígenas e IA y territorios, con tablas generadas", asy
   await expect(page.locator('table[data-table="anillos"]')).toBeVisible();
   await expect(page.locator('table[data-table="ia-emperadores"]').getByRole("cell", { name: "Expansionista" })).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/wiki-ia-territorios.png`, fullPage: true });
+
+  // Naves: humanas, alienígenas y Carroñeros, con sus tablas generadas.
+  await page.goto("/wiki/naves-alienigenas");
+  await expect(page.getByRole("heading", { level: 1, name: "Naves alienígenas" })).toBeVisible();
+  await expect(page.locator('table[data-table="naves-alienigenas"]').getByRole("cell", { name: "Arca de la Estela" })).toBeVisible();
+  await page.goto("/wiki/naves");
+  await expect(page.getByRole("heading", { level: 1, name: "Naves humanas" })).toBeVisible();
+  await expect(page.locator('table[data-table="naves"]').getByRole("cell", { name: "Portanaves", exact: true })).toBeVisible();
+  await expect(page.locator('table[data-table="naves"]').getByRole("cell", { name: "Astillero, Dique orbital, Refinería de aleaciones" }).first()).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/wiki-naves.png`, fullPage: true });
+  await page.goto("/wiki/carroneros");
+  await expect(page.getByRole("heading", { level: 1, name: "Carroñeros" })).toBeVisible();
+  await expect(page.locator('table[data-table="carroneros-peligro"]').getByRole("cell", { name: "Nave nodriza (50 %)" })).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/wiki-carroneros.png`, fullPage: true });
   expect(errors).toEqual([]);
 });
