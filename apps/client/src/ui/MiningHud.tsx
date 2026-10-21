@@ -42,6 +42,13 @@ export function MiningHud() {
   const inRange = aim !== null && aim.distance <= MINING.rangeM;
   const recentFail = fail && Date.now() - fail.at < 2500 ? fail.reason : null;
 
+  const jettison = async (r: (typeof HOLD_STOCK_IDS)[number]) => {
+    if (!window.confirm(t("hold.jettisonConfirm", { res: t(`resource.${r}`) }))) return;
+    setBusy(true);
+    setError(await connection.command("flagship.jettison", { resource: r }));
+    setBusy(false);
+  };
+
   const toggleRefine = async () => {
     setBusy(true);
     setError(await connection.command("flagship.refine", { on: !refining }));
@@ -91,13 +98,17 @@ export function MiningHud() {
           ? t("hold.empty", { n: capacity })
           : HOLD_STOCK_IDS.filter((r) => (hold[r] ?? 0) >= 0.1).map((r) => (
               <span key={r}>
-                <span style={{ color: STOCK_COLORS[r] }}>{t(`resource.${r}`)}</span> <span className="mono">{fmtInt(hold[r] ?? 0)}</span>
+                <span style={{ color: STOCK_COLORS[r] }}>{t(`resource.${r}`)}</span> <span className="mono">{fmtInt(hold[r] ?? 0)}</span>{" "}
+                <button className="icon-btn" type="button" disabled={busy} onClick={() => void jettison(r)} title={t("hold.jettison")} aria-label={`${t("hold.jettison")}: ${t(`resource.${r}`)}`}>
+                  ✕
+                </button>
               </span>
             ))}
       </div>
       <button className={refining ? "btn btn-primary btn-small" : "btn btn-small"} type="button" disabled={busy || (!refining && (hold.volatiles ?? 0) < 0.1)} onClick={() => void toggleRefine()} title={t("hold.refineTitle", { k: FLAGSHIP_HOLD.refineVolatilesPerFuel })}>
         {t(refining ? "hold.refining" : "hold.refine")}
       </button>
+      {!refining && used >= 0.1 && (hold.volatiles ?? 0) < 0.1 && <span className="muted small">{t("hold.noVolatiles")}</span>}
       {error && <span className="hud-tag warn">{t(error)}</span>}
     </div>
   );

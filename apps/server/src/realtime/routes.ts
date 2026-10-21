@@ -230,6 +230,14 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     }
                     return res.ok ? ({ ok: true } as const) : res;
                   }
+                  case "flagship.jettison": {
+                    const r = msg.args.resource;
+                    const res = await flagships.updateHold(owner.emperorId, (hold) => ((hold[r] ?? 0) > 1e-6 ? { hold: { ...hold, [r]: 0 }, result: true } : null));
+                    if (!res) return { ok: false, error: "hold_empty" } as const;
+                    space.holdChanged(owner.emperorId);
+                    await hub.publishFlagship(owner.emperorId);
+                    return { ok: true } as const;
+                  }
                   case "flagship.refine": {
                     await space.setRefining(owner.emperorId, msg.args.on);
                     return { ok: true } as const;

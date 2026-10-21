@@ -64,6 +64,8 @@ export interface CommandArgs {
   "flagship.unload": { colonyId: string };
   /** Enciende o apaga la refinería de a bordo (volátiles de la bodega → combustible, despacio). */
   "flagship.refine": { on: boolean };
+  /** Tira por la borda todo un recurso de la bodega (para hacer sitio). */
+  "flagship.jettison": { resource: StockId };
   "fleet.move": { fleetId: string; systemId: string };
   /**
    * Reclama un planeta libre de un sistema descubierto. Sin `fleetId`, desembarca
