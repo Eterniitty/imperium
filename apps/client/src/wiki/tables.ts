@@ -727,6 +727,9 @@ export const GEN_TABLES: Record<string, Builder> = {
       ["wiki.k.hostileAt", num(locale, g.hostileAt)],
       ["wiki.k.interceptGrudge", num(locale, g.intercept)],
       ["wiki.k.grudgeDecay", num(locale, g.decayPerDay)],
+      ["wiki.k.punishAt", num(locale, ALIEN_AI.punish.grudgeAt)],
+      ["wiki.k.punishRange", t("wiki.v.ly", { n: num(locale, ALIEN_AI.punish.rangeLy) })],
+      ["wiki.k.punishCooldown", h(ALIEN_AI.punish.cooldownHours)],
       ["wiki.k.tribute", `₢ ${num(locale, g.tributeCreditsPerPoint)}`],
       ["wiki.k.minTribute", `₢ ${num(locale, g.minTribute)}`],
       [

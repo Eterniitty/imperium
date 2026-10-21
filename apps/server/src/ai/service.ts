@@ -103,6 +103,8 @@ export class AlienService {
   /** Asedios (Fase 9b; lo enlaza `app.ts`) y aviso a los afectados por uno. */
   sieges: SiegeService | null = null;
   onSiege: ((fx: SiegeEffects) => void) | null = null;
+  /** Última expedición de castigo de cada región (en memoria: tras reiniciar, como mucho una de más). */
+  private lastPunish = new Map<string, number>();
 
   constructor(
     private readonly db: Database,
@@ -406,7 +408,15 @@ export class AlienService {
   }
 
   /** Envía hasta `max` flotas paradas de la región (las más cercanas) a `target`. */
-  private async respond(tx: Tx, key: string, factionId: string, target: StarSystemSummary, max: number, keep?: Set<string>): Promise<string[]> {
+  private async respond(
+    tx: Tx,
+    key: string,
+    factionId: string,
+    target: StarSystemSummary,
+    max: number,
+    keep?: Set<string>,
+    rangeLy: number = ALIEN_AI.responseRangeLy,
+  ): Promise<string[]> {
     const actorId = this.actors.get(factionId);
     if (!actorId || max <= 0) return [];
     // Las que asedian no se mueven (Fase 9b).
@@ -414,7 +424,7 @@ export class AlienService {
     const candidates = (await this.regionFleets(tx, key))
       .filter((f) => f.idle && f.place.location.systemId !== target.id && !sieging.has(f.place.location.systemId))
       .map((f) => ({ id: f.id, d: distance(f.place.location.position, target.position) }))
-      .filter((f) => f.d <= ALIEN_AI.responseRangeLy)
+      .filter((f) => f.d <= rangeLy)
       .sort((a, b) => a.d - b.d)
       .slice(0, max);
     const sent: string[] = [];
@@ -493,9 +503,21 @@ export class AlienService {
     const sieging = new Set((this.sieges ? await this.sieges.activeBy(tx, actorId) : []).map((s) => s.systemId));
     const siegeFx = await this.considerSieges(tx, key, row.factionId, actorId, own, systems, sieging);
 
+    // Flotas de castigo contra quien la facción guarda mucho rencor.
+    if (siegeFx.length === 0) await this.considerPunish(tx, key, row.factionId, systems, sieging);
+
+    // Las flotas paradas fuera de su territorio (tras un castigo) vuelven a casa.
+    const inTerritory = new Set(systems.map((s) => s.id));
+    for (const f of own) {
+      const here = f.place.location;
+      if (!f.idle || inTerritory.has(here.systemId) || sieging.has(here.systemId)) continue;
+      const home = systems.reduce((a, b) => (distance(a.position, here.position) <= distance(b.position, here.position) ? a : b));
+      await this.fleetService.moveTx(tx, actorId, f.id, home.id);
+    }
+
     // Patrullas: las flotas paradas recorren su territorio.
     for (const f of own) {
-      if (!f.idle || sieging.has(f.place.location.systemId) || this.random() >= species.ai.patrol) continue;
+      if (!f.idle || !inTerritory.has(f.place.location.systemId) || sieging.has(f.place.location.systemId) || this.random() >= species.ai.patrol) continue;
       const here = f.place.location;
       const options = systems.filter((s) => s.id !== here.systemId && distance(s.position, here.position) <= ALIEN_AI.patrolRangeLy);
       if (options.length === 0) continue;
@@ -535,12 +557,16 @@ export class AlienService {
     const info = this.speciesOf(factionId);
     if (!this.sieges || !info || info.species.ai.intruders === "ignore" || systems.length === 0) return [];
     const inRegion = new Set(systems.map((s) => s.id));
-    if ([...sieging].filter((id) => inRegion.has(id)).length >= ALIEN_SIEGE.maxPerRegion) return [];
+    // Donde haya flotas suyas paradas fuera de su territorio (una expedición de castigo que llegó), asedian sin dudar.
+    const abroad = new Set(own.filter((f) => f.idle && !inRegion.has(f.place.location.systemId)).map((f) => f.place.location.systemId));
+    const full = [...sieging].filter((id) => inRegion.has(id)).length >= ALIEN_SIEGE.maxPerRegion;
+    if (full && abroad.size === 0) return [];
     const targets = await tx
       .select({ id: colonies.id, emperorId: colonies.emperorId, systemId: colonies.systemId, createdAt: emperors.createdAt })
       .from(colonies)
       .leftJoin(emperors, eq(emperors.id, colonies.emperorId))
-      .where(inArray(colonies.systemId, [...inRegion]));
+      .where(inArray(colonies.systemId, [...inRegion, ...abroad]));
+    targets.sort((a, b) => Number(abroad.has(b.systemId)) - Number(abroad.has(a.systemId)));
     // Fase 10: los que persiguen las Cunas de linaje miran primero las colonias que tienen una.
     if (CRADLE_HUNTERS.includes(info.species.id) && targets.length > 1) {
       const cradles = new Set(
@@ -560,18 +586,61 @@ export class AlienService {
         if (!(await this.isHostileTo(tx, factionId, t.emperorId))) continue;
         if (t.createdAt && gameHours(t.createdAt.getTime(), this.now(), this.timeScale) < ALIEN_AI.noviceGraceHours) continue;
       }
-      if (this.random() >= chance) continue;
+      if (!abroad.has(t.systemId) && (full || this.random() >= chance)) continue;
       const here = own.some((f) => f.idle && f.place.location.systemId === t.systemId);
       if (here) {
         const res = await this.sieges.startTx(tx, actorId, t.id);
         if (res.ok) sieging.add(t.systemId);
         return res.ok ? [res.fx] : [];
       }
+      if (abroad.has(t.systemId)) continue;
       const system = findSystem(this.seed, t.systemId);
       if (system) await this.respond(tx, key, factionId, system, info.species.ai.responders, sieging);
       return [];
     }
     return [];
+  }
+
+  /**
+   * Flota de castigo (fase 2): a quien la facción guarda `ALIEN_AI.punish.grudgeAt`
+   * de rencor o más, le envía flotas a su colonia más cercana (fuera del Núcleo y
+   * de la gracia), aunque esté fuera de su territorio. Una por región cada
+   * `cooldownHours`; al llegar, `considerSieges` empieza el asedio.
+   */
+  private async considerPunish(tx: Tx, key: string, factionId: string, systems: StarSystemSummary[], sieging: Set<string>): Promise<void> {
+    const info = this.speciesOf(factionId);
+    if (!this.sieges || !info || info.species.ai.intruders !== "attack" || systems.length === 0) return;
+    const P = ALIEN_AI.punish;
+    const now = this.now();
+    const last = this.lastPunish.get(key);
+    if (last !== undefined && now - last < this.ms(P.cooldownHours)) return;
+    const rows = await tx.select().from(alienStandings).where(eq(alienStandings.factionId, factionId));
+    const angry = rows
+      .map((r) => ({ emperorId: r.emperorId, grudge: this.decayed(r.grudge, r.updatedAt, now) }))
+      .filter((r) => r.grudge >= P.grudgeAt - EPS && !this.isActor(r.emperorId))
+      .sort((a, b) => b.grudge - a.grudge);
+    for (const a of angry) {
+      const cols = await tx
+        .select({ systemId: colonies.systemId, createdAt: emperors.createdAt })
+        .from(colonies)
+        .innerJoin(emperors, eq(emperors.id, colonies.emperorId))
+        .where(eq(colonies.emperorId, a.emperorId));
+      let best: { system: StarSystemSummary; d: number } | null = null;
+      for (const c of cols) {
+        if (inHumanCore(c.systemId) || sieging.has(c.systemId)) continue;
+        if (gameHours(c.createdAt.getTime(), now, this.timeScale) < ALIEN_AI.noviceGraceHours) continue;
+        const system = findSystem(this.seed, c.systemId);
+        if (!system) continue;
+        const d = Math.min(...systems.map((s) => distance(s.position, system.position)));
+        if (d <= P.rangeLy && (!best || d < best.d)) best = { system, d };
+      }
+      if (!best) continue;
+      const sent = await this.respond(tx, key, factionId, best.system, P.fleets, sieging, P.rangeLy + 60);
+      if (sent.length > 0) {
+        this.lastPunish.set(key, now);
+        return;
+      }
+    }
   }
 
   /**

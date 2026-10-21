@@ -42,6 +42,10 @@ Each faction keeps a **grudge** against each Emperor. Factions **hostile** by na
 
 Factions that do not ignore intruders **besiege the human colonies in their territory** when they are hostile to you (by nature or by grudge): on each decision of their region, with a chance based on their **aggression**, they start a siege if they have a fleet there or send fleets. They land no humans: when the siege is complete they **occupy** the colony (part of the population dies). You can take it back by besieging it yourself (which adds to their grudge). Never in the Human Core nor against Emperors in their grace period. See [Conquest](/wiki/conquista#aliens).
 
+## Punitive fleets
+
+If a faction holds a **large grudge** against you (see the table above), it no longer stays in its territory: it sends **punitive fleets** to your nearest colony within reach, even far from its systems. On arrival they **besiege** it (unless your fleets defend it) and, with nothing left to do, they go home. They never attack in the Human Core nor during the grace period of new Emperors. In **Battles → Known factions** it shows as "Hunting you". Tribute or time calms it down.
+
 ## Void Nomad trade
 
 The **Void Nomads** have a **habitat** in their territory and a credit wallet. When their region is awake, they **sell volatiles and metal** and **buy crystal** on the [global market](/wiki/mercado), close to the last price, with the same orders as any Emperor. What you buy from them **travels** from their habitat, far from the Core: it takes longer.

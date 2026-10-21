@@ -42,6 +42,10 @@ Cada facción guarda **rencor** a cada Emperador. Las facciones **hostiles** por
 
 Las facciones que no ignoran a los intrusos **asedian las colonias humanas de su territorio** cuando te son hostiles (por naturaleza o por rencor): en cada decisión de su región, con una probabilidad según su **agresividad**, empiezan un asedio si tienen una flota allí o envían flotas. No desembarcan humanos: al completar el asedio, **ocupan** la colonia (muere parte de la población). Puedes recuperarla asediándola tú (eso les suma rencor). Nunca en el Núcleo Humano ni contra Emperadores en su gracia. Ver [Conquista](/wiki/conquista#alienigenas).
 
+## Flotas de castigo
+
+Si una facción te guarda **mucho rencor** (ver la tabla de arriba), ya no se queda en su territorio: envía **flotas de castigo** a tu colonia más cercana a su alcance, aunque esté lejos de sus sistemas. Al llegar la **asedian** (si no hay flotas tuyas defendiéndola) y, cuando no les queda nada que hacer, vuelven a casa. Nunca atacan en el Núcleo Humano ni durante la gracia de los Emperadores nuevos. En **Batallas → Facciones conocidas** la verás como «Te persigue». Un tributo o el paso del tiempo la calman.
+
 ## Comercio de los Nómadas del Vacío
 
 Los **Nómadas del Vacío** tienen un **hábitat** en su territorio y una cartera de créditos. Cuando su región está despierta, **venden volátiles y metal** y **compran cristal** en el [mercado global](/wiki/mercado), cerca del último precio, con las mismas órdenes que cualquier Emperador. Lo que les compras **viaja** desde su hábitat, lejos del Núcleo: tarda más.

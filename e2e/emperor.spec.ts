@@ -53,6 +53,10 @@ test("nombrar al Emperador, entrar en su sistema, trasladarlo y que lo recuerde"
 
   // Vuela un poco hacia delante y cambia a la cámara de cabina.
   await page.locator(".viewport canvas").click({ position: { x: 640, y: 400 } });
+  // La nave aparece con los motores apagados: hay que arrancarlos (I).
+  await page.keyboard.press("KeyI");
+  await expect(page.getByText(/Motores apagados/)).toBeHidden({ timeout: 15_000 });
+  await page.waitForTimeout(4000);
   await page.keyboard.down("KeyW");
   await page.waitForTimeout(1200);
   await page.keyboard.up("KeyW");

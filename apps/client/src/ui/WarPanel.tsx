@@ -204,7 +204,7 @@ export function WarPanel() {
                       <span className="muted">({speciesName(locale, s.speciesId)})</span>
                     </span>
                     <span className={`small ${s.hostile ? "alien-hostile" : ""}`}>
-                      {t(s.hostile ? "aliens.hostile" : s.grudge > 0 ? "aliens.wary" : "aliens.neutral")}
+                      {t(s.grudge >= ALIEN_AI.punish.grudgeAt ? "aliens.punish" : s.hostile ? "aliens.hostile" : s.grudge > 0 ? "aliens.wary" : "aliens.neutral")}
                       {s.grudge > 0 && <> · {t("aliens.grudge", { n: s.grudge.toFixed(2), max: hostileAt })}</>}
                     </span>
                     {s.grudge > 0 && s.acceptsTribute && (

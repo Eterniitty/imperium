@@ -476,6 +476,22 @@ export const ALIEN_AI = {
     /** Tributo mínimo. */
     minTribute: 50,
   },
+  /**
+   * Flotas de castigo (fase 2 del plan, «La galaxia contraataca»): con mucho
+   * rencor, la facción sale de su territorio a por las colonias del Emperador
+   * (nunca en el Núcleo Humano ni durante la gracia de los nuevos). Las flotas
+   * asedian al llegar y, sin nada que hacer, vuelven a casa.
+   */
+  punish: {
+    /** Rencor a partir del cual envía flotas de castigo. */
+    grudgeAt: 3,
+    /** Distancia máxima desde su territorio hasta la colonia castigada (a.l.). */
+    rangeLy: 120,
+    /** Flotas por expedición, como mucho. */
+    fleets: 2,
+    /** Horas de juego entre expediciones de una región. */
+    cooldownHours: 12,
+  },
   /** Comercio de los Nómadas del Vacío en el mercado global. */
   trade: {
     /** Recursos que venden y compran. */
