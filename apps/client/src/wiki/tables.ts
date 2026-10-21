@@ -37,6 +37,7 @@ import {
   PROBE,
   ESCORT,
   ALIEN_LOCAL,
+  CORE_MILITIA,
   FLEET_TACTIC_IDS,
   STAR_HEAT_LETHAL_DPS,
   FLEET_BATTLE,
@@ -511,6 +512,13 @@ export const GEN_TABLES: Record<string, Builder> = {
     }),
     numeric: [1, 2],
   }),
+
+  milicia: (t, locale) =>
+    kv(t, [
+      ["wiki.k.militiaShips", CORE_MILITIA.ships.map((id) => shipName(locale, id)).join(", ")],
+      ["wiki.k.militiaAggressor", `${num(locale, CORE_MILITIA.aggressorSec)} s`],
+      ["wiki.k.militiaRespawn", `${num(locale, CORE_MILITIA.respawnSec / 60)} min`],
+    ]),
 
   "alienigenas-local": (t, locale) =>
     kv(t, [

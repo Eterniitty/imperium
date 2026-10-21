@@ -1,8 +1,9 @@
-import { AIM_ASSIST, ALIEN_LOCAL, BODY_COLLISION, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, getAlienShipClass, getShipClass, MINING, PIRATE_AI, type ShipClassId } from "@imperium/content";
+import { AIM_ASSIST, ALIEN_LOCAL, BODY_COLLISION, CORE_MILITIA, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, getAlienShipClass, getShipClass, MINING, PIRATE_AI, type ShipClassId } from "@imperium/content";
 import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
 import { addToHold, arriveVelocity, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { EmperorService } from "../emperor/service";
+import { inHumanCore } from "../emperor/world";
 import type { Client, RemotePilot } from "../realtime/hub";
 import type { SocialService } from "../social/service";
 import type { FlagshipService } from "./flagship";
@@ -18,6 +19,8 @@ interface Member {
   kind: "emperor" | "pirate" | "fleet";
   /** Solo naves de flota (pilotadas a distancia o escoltas): su Emperador, su clase, su flota y su nave (en la base de datos). */
   owner?: string;
+  /** Solo la milicia del Núcleo (Fase 9d): su índice en el sistema (para reaparecer). */
+  militia?: { index: number };
   /** Solo naves alienígenas (Fase 9d): su facción y los Emperadores que les han disparado (a esos los atacan siempre). */
   alien?: { factionId: string; provoked: Set<string> };
   /** Solo escoltas de la IA (Fase 9d): a quién escoltan, su sitio en la formación y su modo. */
@@ -135,6 +138,9 @@ export class SpaceService {
   onColony: (emperorId: string, colonyId: string) => void = () => {};
   /** Piratas destruidos y hasta cuándo no reaparecen. */
   private readonly deadPirates = new Map<string, number>();
+  /** Milicia del Núcleo: agresores (Emperador → hasta cuándo) por sistema, y patrullas caídas esperando reaparecer. */
+  private readonly aggressors = new Map<string, Map<string, number>>();
+  private readonly deadMilitia = new Map<string, number>();
   /** Espacio profundo: contenido de las regiones y minería (lo pone `buildApp`). */
   deep: DeepSpaceService | null = null;
   /** Facciones alienígenas: ¿es hostil a un Emperador? y un Emperador les disparó (rencor). Los pone el servidor. */
@@ -745,6 +751,7 @@ export class SpaceService {
     if (!room) {
       this.rooms.set(systemId, (room = new Set()));
       this.spawnPirates(systemId, room);
+      this.spawnMilitia(systemId, room);
       void this.spawnAliens(systemId, room);
       await this.refreshParked(systemId);
     }
@@ -1032,8 +1039,8 @@ export class SpaceService {
       // El estado de combate de los Emperadores dura (no se cura saliendo y entrando); el de los piratas, no.
       if (o.kind === "pirate") this.combatants.delete(o.emperorId);
       // Naves de flota sin piloto (alienígenas): vuelven a su flota con su casco.
-      if (o.kind === "fleet") {
-        this.combatants.delete(o.emperorId);
+      if (o.kind === "fleet") this.combatants.delete(o.emperorId);
+      if (o.kind === "fleet" && o.fleetId) {
         void this.fleetShips?.saveHull(o.owner!, o.fleetId!, o.shipId!, Math.round(o.combat.hull)).catch((err: unknown) => this.log.error(err, "Error al guardar el casco de una nave alienígena"));
       }
     }
@@ -1253,6 +1260,12 @@ export class SpaceService {
   private hit(victimId: string, damage: number, attackerName: string, missileSystem: string | null, attackerOwner: string | null = null): void {
     const v = this.members.get(victimId);
     if (!v || (missileSystem !== null && v.systemId !== missileSystem)) return;
+    // Atacar a otro humano en el Núcleo: la milicia va a por el agresor.
+    if (attackerOwner && !v.alien && !v.militia && v.kind !== "pirate" && (v.owner ?? v.emperorId) !== attackerOwner && !attackerOwner.startsWith("pirate:") && !attackerOwner.startsWith("militia:") && inHumanCore(v.systemId)) {
+      const list = this.aggressors.get(v.systemId) ?? new Map<string, number>();
+      list.set(attackerOwner, this.now() + CORE_MILITIA.aggressorSec * 1000);
+      this.aggressors.set(v.systemId, list);
+    }
     // Disparar a una nave alienígena: esa nave te ataca desde ya y su facción te guarda rencor.
     if (v.alien && attackerOwner && !attackerOwner.startsWith("pirate:") && !v.alien.provoked.has(attackerOwner)) {
       v.alien.provoked.add(attackerOwner);
@@ -1269,6 +1282,12 @@ export class SpaceService {
    * o en el Núcleo Humano; la nave nueva se lee de la base de datos al renacer.
    */
   private async destroy(v: Member, by: string): Promise<void> {
+    if (v.militia) {
+      this.leave(v.emperorId, "destroyed");
+      this.combatants.delete(v.emperorId);
+      this.deadMilitia.set(v.emperorId, this.now() + CORE_MILITIA.respawnSec * 1000);
+      return;
+    }
     if (v.kind === "fleet") {
       const clients = [...v.clients];
       this.leave(v.emperorId, "destroyed");
@@ -1376,10 +1395,72 @@ export class SpaceService {
         for (const m of pack) this.stepPirate(m, pack, enemies, preyId, obstacles, dt, now);
       }
       this.stepAliens(systemId, room, dt, now);
+      this.stepMilitia(systemId, room, dt, now);
       // Reaparecen los que ya cumplieron su espera.
       const any = room.values().next().value as Member | undefined;
       if (any) this.spawnPirates(any.systemId, room);
     }
+  }
+
+  // --- Milicia del Núcleo Humano (Fase 9d, `CORE_MILITIA`) ---
+
+  /** Patrullas de la milicia en un sistema del Núcleo (las que no estén caídas esperando). */
+  private spawnMilitia(systemId: string, room: Set<Member>): void {
+    if (isDeepId(systemId) || !inHumanCore(systemId)) return;
+    const layout = this.layout(systemId);
+    if (!layout) return;
+    const now = this.now();
+    CORE_MILITIA.ships.forEach((classId, i) => {
+      const id = `militia:${systemId}:${i}`;
+      if (this.members.has(id) || (this.deadMilitia.get(id) ?? 0) > now) return;
+      const cls = getShipClass(classId as ShipClassId);
+      if (!cls) return;
+      this.deadMilitia.delete(id);
+      const home = pirateHome(systemId, 200 + i, layout, now);
+      const combat = new Combatant(cls.hull, cls.combat, now);
+      this.combatants.set(id, combat);
+      const m: Member = {
+        emperorId: id,
+        kind: "fleet",
+        classId: cls.id,
+        militia: { index: i },
+        ai: { home, phase: (i * 0.53) % 1, classId: cls.id, aimJitter: CORE_MILITIA.aimJitter, mode: "hunt" },
+        radius: Math.max(HIT_RADIUS, cls.model.lengthM * 0.45),
+        name: "#militia",
+        systemId,
+        clients: new Set(),
+        pose: { p: home, q: [0, 0, 0, 1], v: [0, 0, 0] },
+        poseAt: now,
+        history: [{ t: now, p: home }],
+        dirty: true,
+        allies: new Set(),
+        combat,
+        sentShield: -1,
+        park: null,
+      };
+      for (const o of room) this.sendTo(o, { t: "ship", ship: this.stateFor(m, o) });
+      room.add(m);
+      this.members.set(id, m);
+    });
+  }
+
+  /** La milicia patrulla y persigue a los agresores del sistema (y a los piratas que se colasen). */
+  private stepMilitia(systemId: string, room: Set<Member>, dt: number, now: number): void {
+    const pack = [...room].filter((m) => m.militia && m.ai);
+    if (pack.length === 0) {
+      this.spawnMilitia(systemId, room);
+      return;
+    }
+    const list = this.aggressors.get(systemId);
+    if (list) for (const [id, until] of list) if (until < now) list.delete(id);
+    const enemies = [...room].filter((o) => o.combat.hull > 0 && !o.militia && (o.kind === "pirate" || (!!list && list.has(o.owner ?? o.emperorId) && (o.clients.size > 0 || !!o.escort))));
+    const preyId = packTarget(
+      pack.map((m) => m.pose.p),
+      enemies.map((o) => ({ id: o.emperorId, p: o.pose.p, hull: o.combat.hull, shield: o.combat.shield })),
+    );
+    const obstacles = this.pirateObstacles(systemId, now);
+    for (const m of pack) this.stepPirate(m, pack, enemies, preyId, obstacles, dt, now);
+    this.spawnMilitia(systemId, room);
   }
 
   // --- Naves alienígenas en el espacio local (Fase 9d, `ALIEN_LOCAL`) ---

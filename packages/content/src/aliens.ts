@@ -364,6 +364,19 @@ export const ALIEN_LOCAL = {
   hostilityCacheSec: 30,
 } as const;
 
+/**
+ * Milicia del Núcleo Humano (Fase 9d, `docs/ia-naves.md` §6b): patrullas en
+ * los sistemas del Núcleo que persiguen a quien ataque a otro humano allí
+ * (agresor durante `aggressorSec`) y nunca salen del Núcleo. Naves humanas de
+ * `SHIP_CLASSES`, con buena puntería y disciplina (el piloto de la 9d).
+ */
+export const CORE_MILITIA = {
+  ships: ["frigate", "corvette"] as readonly string[],
+  aimJitter: 0.02,
+  aggressorSec: 120,
+  respawnSec: 600,
+} as const;
+
 /** Nivel de peligro de los Carroñeros de un sistema (según su distancia al Núcleo Humano). */
 export interface ScavengerDangerLevel {
   /** Anillo mínimo (distancia al Núcleo en sectores, como en el territorio). */

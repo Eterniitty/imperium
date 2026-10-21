@@ -44,6 +44,12 @@ El casco **no se cura solo al salir del sistema**: la tripulación lo repara poc
 
 El **PvP es libre** en todo el universo, sin protección para los desconectados: puedes atacar a cualquier Emperador que vuele en tu mismo sistema. Hay **fuego amigo**: tus disparos dañan a cualquier nave que toquen, también a tus **compañeros** (ver [Compañeros](/wiki/companeros)), que salen marcados como «compañero» con un círculo cian. Ojo al disparar con un compañero delante.
 
+### Milicia del Núcleo
+
+En los sistemas del **Núcleo Humano** patrulla la **Milicia del Núcleo** (naves humanas de la IA, con buena puntería). No se mete con nadie salvo con quien **ataque a otro humano** allí: durante un rato, ese Emperador (y sus escoltas) es un agresor y la milicia va a por él en manada. Si la destruyes, reaparece al cabo de un tiempo. También caza a cualquier Carroñero que se colase.
+
+{{tabla:milicia}}
+
 ## Choques
 
 Las naves **chocan** entre sí: dos naves que se tocan acercándose reciben daño según la velocidad del choque y rebotan.

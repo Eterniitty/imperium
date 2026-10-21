@@ -44,6 +44,12 @@ The hull **does not heal by leaving the system**: the crew repairs it slowly and
 
 **PvP is open** across the whole universe, with no protection for offline players: you can attack any Emperor flying in your system. There is **friendly fire**: your shots damage any ship they touch, your **companions** too (see [Companions](/wiki/companeros)), who are marked as "companion" with a cyan circle. Mind your fire with a companion ahead.
 
+### Core Militia
+
+In the **Human Core** systems the **Core Militia** patrols (AI human ships with good aim). It leaves everyone alone except whoever **attacks another human** there: for a while that Emperor (and their escorts) counts as an aggressor and the militia goes after them as a pack. If you destroy it, it comes back after a while. It also hunts any Scavenger that slips in.
+
+{{tabla:milicia}}
+
 ## Collisions
 
 Ships **collide** with each other: two ships that touch while closing in take damage according to the impact speed and bounce off.

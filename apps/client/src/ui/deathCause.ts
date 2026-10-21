@@ -16,5 +16,6 @@ export function naturalCause(by: string): { short: I18nKey; dead: I18nKey; notic
 /** Nombre de quien derribó la nave: un Emperador, una facción alienígena (`#alien:<id>`) o un Carroñero (vacío). */
 export function killerLabel(by: string, locale: Locale): string {
   if (by.startsWith("#alien:")) return factionName(locale, by.slice(7));
+  if (by === "#militia") return translate(locale, "npc.militia");
   return by || translate(locale, "npc.pirate");
 }

@@ -106,7 +106,7 @@ export function shipName(state: Pick<ShipState, "kind" | "name" | "classId">, lo
   if (state.kind === "fleet") {
     const cls = state.classId ? contentDictionaries[locale][`ship.${state.classId}.name`] : undefined;
     // Nave alienígena: «Facción · clase».
-    const owner = state.name.startsWith("#alien:") ? factionName(locale, state.name.slice(7)) : state.name;
+    const owner = state.name.startsWith("#alien:") ? factionName(locale, state.name.slice(7)) : state.name === "#militia" ? translate(locale, "npc.militia") : state.name;
     return cls ? `${owner} · ${cls}` : owner;
   }
   if (state.kind !== "pirate") return state.name;
