@@ -10,7 +10,7 @@
  * ninguna, el Markdown del repositorio. También pueden crear artículos nuevos y
  * ocultar cualquiera (`wiki_pages`).
  */
-import type { Locale } from "./i18n";
+import type { Locale } from "./i18n/index";
 
 export const WIKI_GROUPS = ["start", "world", "ship", "empire", "war", "people"] as const;
 export type WikiGroup = (typeof WIKI_GROUPS)[number];
