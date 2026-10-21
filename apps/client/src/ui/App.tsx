@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useStore } from "zustand";
 import { Engine } from "../engine/Engine";
 import { music } from "../audio/music";
 import { engineRef } from "../engineRef";
@@ -81,6 +82,7 @@ export function App() {
     };
   }, [started]);
 
+  const docked = useStore(spaceStore, (s) => s.docked !== null);
   if (!started) return <StartScreen />;
 
   return (
@@ -115,6 +117,15 @@ export function App() {
             <FlightHud />
             <CombatHud />
             <EscortHud />
+            {/* Puente de mando a bordo de la nave nodriza (acoplado): el imperio, como en el túnel. */}
+            {docked && (
+              <div className="left-col">
+                <BridgePanel />
+                <FleetsPanel />
+                <WarPanel />
+                <ColoniesPanel />
+              </div>
+            )}
             <MiningHud />
             <QuantumHud />
             <CruiseHud />
