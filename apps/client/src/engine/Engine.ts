@@ -11,7 +11,9 @@ import { Keyboard } from "./input";
 import { isBound, keyLabel, pixelRatioFor, settingsStore } from "../state/settings";
 import { SystemView } from "./SystemView";
 import { TunnelView } from "./TunnelView";
-import { playQuantumJump } from "../audio/quantumSfx";
+import { playQuantumJump, playQuantumTear } from "../audio/quantumSfx";
+import { QuantumRift } from "./fx/quantumRift";
+import { telemetry } from "./telemetry";
 import type { View } from "./View";
 
 /**
@@ -26,6 +28,8 @@ export class Engine {
   private system: SystemView;
   /** Viaje cuántico: el túnel por el que va la nave mientras viaja. */
   private tunnel = new TunnelView();
+  /** Efecto de la realidad que se rompe al cargar, saltar y llegar (posprocesado solo mientras dura). */
+  private rift = new QuantumRift();
   private active: View;
   private timer = new THREE.Timer();
   private frameId = 0;
@@ -216,6 +220,8 @@ export class Engine {
       return this.notify(error);
     }
     playQuantumJump();
+    playQuantumTear(1);
+    this.rift.jump();
     this.enterTunnel();
   }
 
@@ -303,7 +309,11 @@ export class Engine {
     }
     const emperor = this.emperor();
     if (!emperor || isTravelling(emperor, serverNow())) return;
-    this.pilot(null);
+    const fromTunnel = this.active === this.tunnel;
+    if (this.pilot(null) && fromTunnel) {
+      this.rift.arrive();
+      playQuantumTear(0.6);
+    }
   }
 
   // --- Órdenes desde la interfaz ---
@@ -448,7 +458,11 @@ export class Engine {
     this.checkArrival();
     this.checkDestroyed();
     this.active.update(dt);
-    this.renderer.render(this.active.scene, this.active.camera);
+    const prefs = settingsStore.getState().prefs;
+    const charge = this.active === this.system ? telemetry.quantumCharge : null;
+    if (!this.rift.render(this.renderer, this.active.scene, this.active.camera, dt, charge, { reduce: prefs.reduceEffects, low: prefs.quality === "low" })) {
+      this.renderer.render(this.active.scene, this.active.camera);
+    }
 
     this.fpsAccum += dt;
     this.fpsFrames++;
@@ -472,6 +486,7 @@ export class Engine {
     this.galaxy.dispose();
     this.system.dispose();
     this.tunnel.dispose();
+    this.rift.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }

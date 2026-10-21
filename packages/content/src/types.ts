@@ -296,10 +296,19 @@ export type HullShape = "needle" | "wedge" | "disc" | "spindle" | "shard" | "pod
  * Pistas para el modelo 3D procedural (no son lógica: el cliente construye la
  * nave con ellas y el servidor coloca las bocas de fuego con `shipHardpoints`).
  */
+/**
+ * Familia de diseño del modelo 3D (receta del generador del cliente): cada una
+ * monta los mismos módulos (casco por secciones, motores, propulsores de
+ * maniobra, radiadores, sensores…) con otra disposición. Solo es aspecto.
+ */
+export type ShipArchetype = "scout" | "fighter" | "transport" | "miner" | "frigate" | "capital";
+
 export interface ShipModelHints {
   /** Eslora en metros (la nave del Emperador mide ~45 m). */
   lengthM: number;
   hullShape: HullShape;
+  /** Receta del modelo; si falta, se deduce de la forma y el tamaño. */
+  archetype?: ShipArchetype;
   /** Número de motores o fuentes de luz (el modelo los reparte por la popa). */
   engines: number;
   /** Alas (cazas e interceptores). */

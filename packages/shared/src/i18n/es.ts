@@ -252,6 +252,8 @@ export const es = {
   "settings.qualityHint": "Tu ventana: {width} × {height} px, densidad {dpr}×. Si va a tirones, baja la calidad.",
   "settings.music": "Música",
   "settings.off": "Apagada",
+  "settings.reduceEffects": "Reducir efectos visuales",
+  "settings.reduceEffectsHint": "Sin destellos fuertes, sacudidas de cámara ni cortes de imagen rápidos (por ejemplo, en el salto cuántico).",
   "settings.uiScale": "Tamaño de la interfaz",
   "settings.uiScale.auto": "Automático según la ventana ({percent} %)",
   "error.unknown_emperor": "No hay ningún Emperador con ese nombre.",

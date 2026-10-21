@@ -47,7 +47,7 @@ Con el mismo presupuesto (comprobado en pruebas automáticas):
 
 ## Modelos
 
-Cada nave tiene su propio modelo 3D, generado por código a partir de sus datos (eslora, forma del casco, motores, alas, torretas, contenedores, hangar). Los cañones y lanzadores están en sus **bocas de fuego**, las mismas desde las que dispara el servidor. Tus flotas paradas se ven en formación en la vista del sistema, junto a tu colonia.
+Cada nave tiene su propio modelo 3D, generado por código a partir de sus datos (eslora, familia de diseño, forma del casco, motores, torretas, contenedores, hangar). Son naves espaciales de ingeniería industrial y militar, no aviones: casco por módulos, toberas grandes que brillan según el empuje, propulsores de maniobra que se encienden al girar o desplazarse, radiadores para disipar el calor, antenas, sensores y luces de navegación (roja a babor, verde a estribor, destellos blancos). Cada familia —exploradores, cazas, fragatas, naves capitales, transportes y, en el futuro, mineros— monta las mismas piezas con otra disposición; las de los Carroñeros son chatarra recompuesta y asimétrica. Los cañones y lanzadores están en sus **bocas de fuego**, las mismas desde las que dispara el servidor. Tus flotas paradas se ven en formación en la vista del sistema, junto a tu colonia.
 
 {{tabla:naves-modelos}}
 
