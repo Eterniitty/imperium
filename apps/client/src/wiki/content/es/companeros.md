@@ -14,6 +14,8 @@ Ser compañeros significa:
 - Vuestras flotas **no combaten entre sí** ni os aparecéis como [contactos](/wiki/guerra#contactos-e-interceptacion).
 - Con la visibilidad «Solo mis compañeros», ellos ven dónde estás.
 
+**Emperadores de la IA**: también puedes pedírselo a ellos. Los expansionistas y los mercaderes aceptan al momento; los militaristas nunca, y nadie acepta si hay un asedio en curso entre vosotros.
+
 ## Empezar junto a un compañero
 
 Al **nombrar a tu Emperador** (solo al darte de alta) puedes pedir aparecer cerca de alguien que ya juega:

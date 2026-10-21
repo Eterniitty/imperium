@@ -1012,6 +1012,8 @@ export const es = {
   "remote.cannotJump": "Las naves de flota no hacen saltos cuánticos: da a la flota una orden de viaje.",
   "colony.isolated": "Aislada: fuera de la red de suministro (a más de {ly} a.l. de la capital y de tus colonias conectadas). Extrae solo el {pct} %.",
   "colony.isolatedShort": "Aislada",
+  "colony.autoGovern": "Autogestión por la IA",
+  "colony.autoGovernHint": "Mientras no estás, la IA encarga instalaciones en tus colonias con la cola vacía, en el orden de un Emperador expansionista. Nunca construye naves ni toca las colonias que gobierna un Heredero.",
   "colony.manager": "Gestión de colonias",
   "colony.manage": "Gestionar colonias",
   "colony.noColonies": "Aún no tienes colonias.",

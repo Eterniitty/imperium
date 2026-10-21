@@ -92,7 +92,7 @@ El usuario delegó el orden: se sigue esta cola sin pedir permiso, un solo agent
 6. [x] **9d. IA de naves** (`docs/ia-naves.md`): ✔ piloto de los Carroñeros (`packages/sim` ai/pirate.ts: manada con presa común, huir y reagruparse, esquivar, no chocar con cuerpos ni entrar en el calor, disciplina de fuego); ✔ escoltas: las naves armadas de las flotas paradas salen a escoltar al Emperador en 3D y atacan a los Carroñeros (`ESCORT`, `packages/sim` ai/escort.ts); ✔ órdenes a las escoltas (`escort.order`: seguir, atacar blanco, mantener, replegar); ✔ tenaza de la manada (`flankOffset`); pendiente: más planes de grupo (cebo, emboscadas, oleadas), ✔ milicia del Núcleo (`CORE_MILITIA`: persigue a quien ataque a otro humano en el Núcleo). ✔ Combate pilotado contra alienígenas: las naves de sus flotas paradas salen al espacio local (`ALIEN_LOCAL`), atacan según la hostilidad de su facción o si se les dispara (rencor `grudge.attack`).
 7. [ ] **9c. Combate a gran escala**: por encima de ~5 naves por bando, el combate en tiempo real pasa a rondas.
 8. [x] ✔ **Conquista instalación a instalación** (bombardeo orbital `siege.raze`) y ✔ **red de suministro** (colonias a más de `ECONOMY.supplyRangeLy` de la red desde la capital extraen `isolatedExtraction`).
-9. [ ] **Emperadores IA completos**: guerra, compañeros y gobierno de colonias de jugadores ausentes.
+9. [x] **Emperadores IA completos**: ✔ guerra (9b), ✔ aceptan compañeros según su personalidad (`AI_COMPANIONS`), ✔ autogestión de las colonias de un jugador ausente (`colony.autoGovern`, evento `colony.govern`).
 10. [ ] **Zonas de interés** por sector en el WebSocket (masividad).
 
 ## Antes de abrir al público (obligatorio, en paralelo)

@@ -14,6 +14,8 @@ Being companions means:
 - Your fleets **do not fight each other** and do not show up as [contacts](/wiki/guerra#contacts-and-interception).
 - With the "Only my companions" visibility, they can see where you are.
 
+**AI Emperors**: you can ask them too. Expansionists and merchants accept at once; militarists never do, and nobody accepts while there is a siege under way between you.
+
 ## Starting next to a companion
 
 When you **name your Emperor** (only when signing up) you can ask to start near someone who already plays:

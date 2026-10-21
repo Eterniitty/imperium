@@ -74,6 +74,8 @@ export const emperors = pgTable("emperors", {
    * decir, aliados mutuos) o "hidden" (nadie). Lo aplica el servidor al enviar.
    */
   visibility: text("visibility").notNull().default("allies"),
+  /** Autogestión de las colonias por la IA mientras el jugador no está (`colony.autoGovern`, evento `colony.govern`). */
+  autoGovern: boolean("auto_govern").notNull().default(false),
   /**
    * Fase 11: "player" (un jugador), "ai" (Emperador humano de la IA) o "alien"
    * (actor de una facción alienígena: sus flotas usan las mismas tablas y

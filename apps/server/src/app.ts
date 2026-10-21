@@ -322,6 +322,18 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     const fx = await lineage.born(tx, heirId);
     if (fx) return () => announceLineage(fx);
   });
+  // Autogestión de las colonias de un jugador por la IA.
+  worker.on("colony.govern", async (tx, { emperorId }) => {
+    const run = await aiEmperors.governFor(tx, emperorId);
+    if (run)
+      return () =>
+        void run().then(
+          (ids) => {
+            for (const id of ids) void hub.publishColony(emperorId, id);
+          },
+          (err: unknown) => app.log.error({ err, emperorId }, "Fallo en la autogestión de colonias"),
+        );
+  });
   worker.on("probe.arrive", async (tx, { probeId }) => {
     const done = await probes.arrive(tx, probeId);
     if (done)

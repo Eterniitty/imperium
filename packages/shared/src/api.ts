@@ -92,6 +92,8 @@ export interface Emperor {
   ai?: true;
   /** Fase 10: ha caído y su cuerpo nuevo se está gestando (su nave no está en ningún sitio). */
   gestating?: true;
+  /** La IA gestiona sus colonias (orden `colony.autoGovern`). */
+  autoGovern?: true;
 }
 
 /** Una nave de una flota. `classId` es una clase de `@imperium/content` (SHIP_CLASSES). */

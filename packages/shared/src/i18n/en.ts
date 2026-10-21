@@ -1010,6 +1010,8 @@ export const en: Record<I18nKey, string> = {
   "remote.cannotJump": "Fleet ships do not make quantum jumps: give the fleet a travel order.",
   "colony.isolated": "Isolated: outside the supply network (more than {ly} ly from the capital and your connected colonies). It extracts only {pct}%.",
   "colony.isolatedShort": "Isolated",
+  "colony.autoGovern": "AI self-management",
+  "colony.autoGovernHint": "While you are away, the AI orders installations in your colonies with an empty queue, in the order of an expansionist Emperor. It never builds ships and leaves colonies ruled by an Heir alone.",
   "colony.manager": "Colony management",
   "colony.manage": "Manage colonies",
   "colony.noColonies": "You have no colonies yet.",

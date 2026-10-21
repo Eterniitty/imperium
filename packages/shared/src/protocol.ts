@@ -108,6 +108,8 @@ export interface CommandArgs {
   "flagship.dock": { fleetId: string };
   /** Desacopla la nave del Emperador de su nave nodriza. */
   "flagship.undock": Record<string, never>;
+  /** Activa o desactiva la autogestión de las colonias propias por la IA (instalaciones, nunca naves; no en las que gobierna un Heredero). */
+  "colony.autoGovern": { on: boolean };
   /** Lanza una sonda de exploración a un sistema sin descubrir (`PROBE`: cuesta créditos y tiene alcance). */
   "probe.launch": { systemId: string };
   /** Pilota a distancia una nave de una flota propia parada (ni viajando ni en batalla); `leave` deja de pilotarla. */

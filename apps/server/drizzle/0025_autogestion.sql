@@ -1,0 +1,1 @@
+ALTER TABLE "emperors" ADD COLUMN "auto_govern" boolean DEFAULT false NOT NULL;

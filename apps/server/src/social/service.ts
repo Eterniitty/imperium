@@ -1,7 +1,8 @@
 import { isDeepId, type AllyEntry, type CompanionTrailResponse, type SocialResponse, type Visibility } from "@imperium/shared";
-import { and, eq, inArray, or } from "drizzle-orm";
+import { AI_COMPANIONS, AI_EMPERORS } from "@imperium/content";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import type { Database } from "../db/client";
-import { emperorAllies, emperors, systemParks } from "../db/schema";
+import { emperorAllies, emperors, sieges, systemParks } from "../db/schema";
 import { nameKey } from "../emperor/world";
 
 export type AddAllyResult = { ok: true; allyId: string } | { ok: false; error: "unknown_emperor" | "cannot_ally_self" };
@@ -39,14 +40,29 @@ export class SocialService {
   /** Añade como compañero al Emperador con ese nombre (sin distinguir mayúsculas ni formas Unicode). */
   async addAlly(emperorId: string, name: string): Promise<AddAllyResult> {
     const [target] = await this.db
-      .select({ id: emperors.id })
+      .select({ id: emperors.id, kind: emperors.kind, name: emperors.name })
       .from(emperors)
       .where(eq(emperors.nameKey, nameKey(name.normalize("NFC").trim().replace(/\s+/gu, " "))))
       .limit(1);
     if (!target) return { ok: false, error: "unknown_emperor" };
     if (target.id === emperorId) return { ok: false, error: "cannot_ally_self" };
     await this.db.insert(emperorAllies).values({ emperorId, allyId: target.id }).onConflictDoNothing();
+    if (target.kind === "ai" && (await this.aiAccepts(emperorId, target.id, target.name))) {
+      await this.db.insert(emperorAllies).values({ emperorId: target.id, allyId: emperorId }).onConflictDoNothing();
+    }
     return { ok: true, allyId: target.id };
+  }
+
+  /** Un Emperador de la IA contesta a una petición de compañero según su personalidad (`AI_COMPANIONS`). */
+  private async aiAccepts(fromId: string, aiId: string, aiName: string): Promise<boolean> {
+    const personality = AI_EMPERORS.find((e) => e.name === aiName)?.personality ?? "expansionist";
+    if (!AI_COMPANIONS.acceptCompanions.includes(personality)) return false;
+    const [war] = await this.db
+      .select({ id: sieges.id })
+      .from(sieges)
+      .where(and(isNull(sieges.endedAt), or(and(eq(sieges.attackerId, fromId), eq(sieges.defenderId, aiId)), and(eq(sieges.attackerId, aiId), eq(sieges.defenderId, fromId)))))
+      .limit(1);
+    return !war;
   }
 
   /** Quita a alguien de tus compañeros (o rechaza su petición): deja de haber relación en ningún sentido. */

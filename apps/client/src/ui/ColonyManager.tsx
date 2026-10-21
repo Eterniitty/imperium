@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Colony, I18nKey } from "@imperium/shared";
 import { connection, useWorld } from "../net/world";
+import { useAuth } from "../state/auth";
 import { gameStore, useGame, useT } from "../state/store";
 import { fmtInt, livePopulation } from "./colonies";
 import { ColonyDetail } from "./PlanetColony";
@@ -18,6 +19,7 @@ export function ColonyManager() {
   const locale = useGame((s) => s.locale);
   const openId = useGame((s) => s.colonyManager);
   const colonies = useWorld((s) => s.colonies);
+  const emperor = useAuth((s) => s.emperor);
   const now = useServerNow();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<I18nKey | null>(null);
@@ -53,6 +55,9 @@ export function ColonyManager() {
             ×
           </button>
         </div>
+        <label className="small auto-govern" title={t("colony.autoGovernHint")}>
+          <input type="checkbox" checked={!!emperor?.autoGovern} disabled={busy} onChange={(e) => void run(connection.command("colony.autoGovern", { on: e.target.checked }))} /> {t("colony.autoGovern")}
+        </label>
         {list.length === 0 || !colony ? (
           <p className="muted">{t("colony.noColonies")}</p>
         ) : (

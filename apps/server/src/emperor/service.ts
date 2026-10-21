@@ -21,9 +21,10 @@ const columns = {
   departAt: emperors.departAt,
   arriveAt: emperors.arriveAt,
   deadAt: emperors.deadAt,
+  autoGovern: emperors.autoGovern,
 };
 const PARK_SELECT = { parkX: emperors.parkX, parkY: emperors.parkY, parkZ: emperors.parkZ, parkAt: emperors.parkAt };
-type Row = PlaceRow & { name: string; kind: string; deadAt: Date | null };
+type Row = PlaceRow & { name: string; kind: string; deadAt: Date | null; autoGovern: boolean };
 
 /** `companionId`: el compañero cerca del que apareció (alta con compañero aceptada). */
 export type CreateResult = { ok: true; emperor: Emperor; companionId: string | null } | { ok: false; error: "emperor_exists" | "name_taken" };
@@ -74,7 +75,18 @@ export class EmperorService {
       ...(row.kind === "ai" ? { ai: true as const } : {}),
       // Fase 10: caído y gestándose.
       ...(row.deadAt ? { gestating: true as const } : {}),
+      ...(row.autoGovern ? { autoGovern: true as const } : {}),
     };
+  }
+
+  /** Orden `colony.autoGovern`: activa o desactiva la autogestión; al activarla, programa la primera decisión. */
+  async setAutoGovern(emperorId: string, on: boolean): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      const [row] = await tx.select({ was: emperors.autoGovern }).from(emperors).where(eq(emperors.id, emperorId)).for("update").limit(1);
+      if (!row) return;
+      await tx.update(emperors).set({ autoGovern: on }).where(eq(emperors.id, emperorId));
+      if (on && !row.was) await schedule(tx, "colony.govern", new Date(this.now() + 1000), { emperorId });
+    });
   }
 
   async byAccount(accountId: string): Promise<Emperor | null> {

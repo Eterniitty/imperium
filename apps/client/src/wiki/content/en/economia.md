@@ -92,6 +92,8 @@ Your colonies form a **network** from the capital: a colony is **supplied** if i
 
 In the **Colonies** panel, **Manage colonies** opens a window with all your colonies: population, stock and production, installations and build queue for each one. From there you can order and cancel builds **without being in the system**, also during a quantum trip (on the command bridge, clicking a colony opens it here). What needs you to be present, such as landing humans or unloading the hold, stays in the planet panel.
 
+**AI self-management**: in that window you can let the AI run your colonies while you are away. Every so often it orders the next installation in colonies with an empty queue (mines, power plants, refinery, shipyard… in the order of an expansionist Emperor). It never builds ships and leaves colonies ruled by an [Heir](/wiki/linaje) alone.
+
 **Demolishing** an installation (two clicks, so you do not do it by accident) removes the most recent one of that type and returns half its cost to the colony's stock, up to its storage. Use it to cut upkeep or make room for another; it is recorded in the resource ledger.
 
 ## Resource ledger

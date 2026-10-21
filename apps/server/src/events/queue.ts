@@ -34,6 +34,8 @@ export interface EventPayloads {
   "heir.born": { heirId: string };
   /** Fase 10: decisión del gobernador (Heredero) de una colonia. */
   "heir.govern": { heirId: string };
+  /** Autogestión: la IA encarga instalaciones en las colonias de un jugador que la activó. */
+  "colony.govern": { emperorId: string };
   /** Una sonda de exploración llega a su destino. */
   "probe.arrive": { probeId: string };
 }

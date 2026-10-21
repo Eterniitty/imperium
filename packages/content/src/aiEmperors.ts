@@ -63,6 +63,15 @@ export const AI_PERSONALITIES: Readonly<Record<AiPersonality, AiPersonalityDefin
 };
 
 /** Los Emperadores de la IA (nombres propios: no se traducen). */
+/**
+ * Peticiones de compañero a un Emperador de la IA (Fase 11): las aceptan al
+ * momento las personalidades de `acceptCompanions`, nunca si hay un asedio en
+ * curso entre los dos. Los militaristas no aceptan compañeros.
+ */
+export const AI_COMPANIONS = {
+  acceptCompanions: ["expansionist", "merchant"] as readonly AiPersonality[],
+} as const;
+
 export const AI_EMPERORS: ReadonlyArray<{ name: string; personality: AiPersonality }> = [
   { name: "Casio Varn", personality: "expansionist" },
   { name: "Ilsa Moran", personality: "merchant" },

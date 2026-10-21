@@ -169,6 +169,13 @@
       "when": 1792596172413,
       "tag": "0024_sondas",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792602756937,
+      "tag": "0025_autogestion",
+      "breakpoints": true
     }
   ]
 }

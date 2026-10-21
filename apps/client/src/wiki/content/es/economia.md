@@ -92,6 +92,8 @@ Tus colonias forman una **red** desde la capital: una colonia está **abastecida
 
 En el panel **Colonias**, **Gestionar colonias** abre una ventana con todas tus colonias: población, existencias y producción, instalaciones y cola de obras de cada una. Desde ahí puedes encargar y cancelar obras **sin estar en el sistema**, también durante un viaje cuántico (en el puente de mando, pulsar una colonia la abre aquí). Lo que pide estar presente, como desembarcar humanos o descargar la bodega, sigue en la ficha del planeta.
 
+**Autogestión por la IA**: en esa ventana puedes activar que la IA gestione tus colonias mientras no estás. Cada cierto tiempo encarga la siguiente instalación en las colonias con la cola vacía (minas, centrales, refinería, astillero… en el orden de un Emperador expansionista). Nunca construye naves ni toca las colonias que gobierna un [Heredero](/wiki/linaje).
+
 **Derribar** una instalación (dos clics, para no hacerlo sin querer) quita la más reciente de ese tipo y devuelve la mitad de su coste a las existencias de la colonia, sin pasar del almacén. Sirve para quitarte mantenimiento o hacer sitio a otra; queda apuntado en el libro de recursos.
 
 ## Libro de recursos

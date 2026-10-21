@@ -16,7 +16,7 @@ import {
 } from "@imperium/content";
 import { colonyDefense, gameHours, minColonists, realDurationMs, siegePower, type InstallationCounts } from "@imperium/sim";
 import { distance, type Colony, type Fleet, type StarSystemDetail, type StarSystemSummary } from "@imperium/shared";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import type { FastifyBaseLogger } from "fastify";
 import type { ColonyService } from "../colony/service";
 import type { ServerConfig } from "../config";
@@ -375,6 +375,34 @@ export class AiEmperorService {
     };
     const best = candidates.map((c) => ({ c, d: defense(c) })).sort((a, b) => a.d - b.d)[0]!;
     return { colonyId: best.c.id, systemId: best.c.systemId };
+  }
+
+  /**
+   * Autogestión de las colonias de un jugador (evento `colony.govern`): en las
+   * que tienen la cola vacía y no gobierna un Heredero, encarga la siguiente
+   * instalación del orden de un Emperador expansionista. Devuelve las
+   * colonias que cambiaron, o null si el jugador ya no la quiere.
+   */
+  async governFor(tx: Tx, emperorId: string): Promise<(() => Promise<string[]>) | null> {
+    const [me] = await tx.select({ autoGovern: emperors.autoGovern, kind: emperors.kind }).from(emperors).where(eq(emperors.id, emperorId)).limit(1);
+    if (!me || me.kind !== "player" || !me.autoGovern) return null;
+    await schedule(tx, "colony.govern", new Date(this.now() + this.decideMs()), { emperorId });
+    // Las obras se encargan tras confirmar el evento, con las órdenes de un jugador.
+    return async () => {
+      const persona = AI_PERSONALITIES.expansionist;
+      const governed = new Set(
+        (await this.db.select({ id: colonies.id }).from(colonies).where(and(eq(colonies.emperorId, emperorId), isNotNull(colonies.governor)))).map((r) => r.id),
+      );
+      const changed: string[] = [];
+      for (const c of await this.colonyService.list(emperorId)) {
+        if (c.builds.length > 0 || governed.has(c.id)) continue;
+        const next = this.nextInstallation(c, persona);
+        if (!next) continue;
+        const res = await this.colonyService.build(emperorId, c.id, "installation", next);
+        if (res.ok) changed.push(c.id);
+      }
+      return changed;
+    };
   }
 
   private nextInstallation(c: Colony, persona: AiPersonalityDefinition): string | null {
