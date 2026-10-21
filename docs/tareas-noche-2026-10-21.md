@@ -7,8 +7,8 @@ si antes se hace copia de seguridad (una por cambio grande, no por cada cambio).
 Copia inicial: `proyecto/imperium-20261021-051653-antes-noche.tar.gz` + `imperium-20261021-051654-antes-noche.dump`.
 
 ## Agente 1 (árbol principal)
-1. [ ] Cerrar Fase 9a (combate de flotas por rondas e intercepción) y commit.
-2. [ ] Colonias independientes al borrar una cuenta y commit.
+1. [x] Cerrar Fase 9a (combate de flotas por rondas e intercepción) y commit (`c4640f7`).
+2. [x] Colonias independientes al borrar una cuenta y commit (`8be8a4f`).
 3. [ ] Tipos de nave nuevos y mejorados para humanos y Carroñeros (datos en `packages/content`,
        modelos procedurales en el cliente, uso por la IA de Carroñeros y en construcción de colonias).
        Empieza después de fusionar el pilotaje (comparte `shipModel.ts`).
