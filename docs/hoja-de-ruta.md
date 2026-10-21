@@ -93,7 +93,7 @@ El usuario delegó el orden: se sigue esta cola sin pedir permiso, un solo agent
 7. [ ] **9c. Combate a gran escala**: por encima de ~5 naves por bando, el combate en tiempo real pasa a rondas.
 8. [x] ✔ **Conquista instalación a instalación** (bombardeo orbital `siege.raze`) y ✔ **red de suministro** (colonias a más de `ECONOMY.supplyRangeLy` de la red desde la capital extraen `isolatedExtraction`).
 9. [x] **Emperadores IA completos**: ✔ guerra (9b), ✔ aceptan compañeros según su personalidad (`AI_COMPANIONS`), ✔ autogestión de las colonias de un jugador ausente (`colony.autoGovern`, evento `colony.govern`).
-10. [ ] **Zonas de interés** por sector en el WebSocket (masividad).
+10. [x] **Zonas de interés** en el WebSocket (`INTEREST.rangeLy`: el tema `emperors` solo lleva los Emperadores públicos cercanos; compañeros siempre; al moverse, lista nueva).
 
 ## Antes de abrir al público (obligatorio, en paralelo)
 

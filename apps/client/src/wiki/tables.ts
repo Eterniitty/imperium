@@ -38,6 +38,7 @@ import {
   ESCORT,
   ALIEN_LOCAL,
   CORE_MILITIA,
+  INTEREST,
   FLEET_TACTIC_IDS,
   STAR_HEAT_LETHAL_DPS,
   FLEET_BATTLE,
@@ -512,6 +513,8 @@ export const GEN_TABLES: Record<string, Builder> = {
     }),
     numeric: [1, 2],
   }),
+
+  interes: (t, locale) => kv(t, [["wiki.k.interestRange", `${num(locale, INTEREST.rangeLy)} a.l.`]]),
 
   bombardeo: (t, locale) => kv(t, [["wiki.k.razeProgress", `${num(locale, SIEGE.razeProgressAfter * 100)} %`]]),
 

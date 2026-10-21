@@ -44,6 +44,10 @@ In **Settings → Companions → Who sees where you are** you choose who can see
 | **Only my companions** (default) | Your companions. |
 | **No one** | Nobody but you. |
 
+So that the game can hold many players, on the map you only see the Emperors **near** your ship (within the distance in the table); when you move, the list updates. You always see your companions, wherever they are.
+
+{{tabla:interes}}
+
 - The filter is applied **on the server**: your position is **not even sent** to anyone who cannot see you.
 - **Your fleets are only visible to you.**
 - If you fly in the same system as another player, you see each other's ships: you are in the same place.

@@ -1,5 +1,7 @@
 import type { FastifyBaseLogger } from "fastify";
-import { PROTOCOL_VERSION, type CommandError, type DeltaOp, type Emperor, type EmperorView, type Probe, type ServerMessage, type Topic } from "@imperium/shared";
+import { distance, PROTOCOL_VERSION, type CommandError, type DeltaOp, type Emperor, type EmperorView, type Probe, type ServerMessage, type Topic } from "@imperium/shared";
+import { INTEREST } from "@imperium/content";
+import { positionAt } from "@imperium/sim";
 import type { ColonyService } from "../colony/service";
 import type { DiscoveryService } from "../discovery/service";
 import type { EmperorService } from "../emperor/service";
@@ -143,12 +145,7 @@ export class Hub {
   subscribe(client: Client, topic: Topic): Promise<void> {
     return this.enqueue(async () => {
       if (topic === "emperors") {
-        const [all, visibility, mine] = await Promise.all([this.emperors.all(), this.social.visibilities(), this.social.mutualAllies(client.emperorId)]);
-        if (!this.clients.has(client)) return;
-        // Los compañeros son mutuos: el objetivo tiene al cliente como compañero si el cliente lo tiene a él.
-        const visible = all.filter((e) => canSee(client.emperorId, e.id, visibility.get(e.id) ?? "hidden", mine.has(e.id) ? new Set([client.emperorId]) : new Set()));
-        client.known = new Set(visible.map((e) => e.id));
-        client.send({ t: "snap", topic, seq: this.emperorsSeq, serverTime: this.now(), data: { emperors: visible.map((e) => this.view(e)) } });
+        await this.emperorsSnapshot(client);
       } else {
         const [fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes] = await Promise.all([
           this.fleets.byEmperor(client.emperorId),
@@ -175,6 +172,32 @@ export class Hub {
     });
   }
 
+  // --- Zonas de interés (`INTEREST`) ---
+
+  /** Última posición conocida de cada Emperador (para las zonas de interés). */
+  private where = new Map<string, Emperor>();
+
+  /** ¿Entra `target` en la zona de interés de `viewerId`? Sin posición conocida de alguno, sí. */
+  private inInterest(viewerId: string, target: Emperor): boolean {
+    const viewer = this.where.get(viewerId);
+    if (!viewer || viewerId === target.id) return true;
+    const now = this.now();
+    return distance(positionAt(viewer, now), positionAt(target, now)) <= INTEREST.rangeLy;
+  }
+
+  /** Lista de Emperadores de la zona de un cliente (al suscribirse o al moverse él). */
+  private async emperorsSnapshot(client: Client): Promise<void> {
+    const [all, visibility, mine] = await Promise.all([this.emperors.all(), this.social.visibilities(), this.social.mutualAllies(client.emperorId)]);
+    if (!this.clients.has(client)) return;
+    for (const e of all) this.where.set(e.id, e);
+    // Los compañeros son mutuos: el objetivo tiene al cliente como compañero si el cliente lo tiene a él; se ven siempre, estén donde estén.
+    const visible = all.filter(
+      (e) => canSee(client.emperorId, e.id, visibility.get(e.id) ?? "hidden", mine.has(e.id) ? new Set([client.emperorId]) : new Set()) && (mine.has(e.id) || this.inInterest(client.emperorId, e)),
+    );
+    client.known = new Set(visible.map((e) => e.id));
+    client.send({ t: "snap", topic: "emperors", seq: this.emperorsSeq, serverTime: this.now(), data: { emperors: visible.map((e) => this.view(e)) } });
+  }
+
   private send(topic: Topic, seq: number, ops: DeltaOp[], to: (c: Client) => boolean): void {
     const msg: ServerMessage = { t: "delta", topic, seq, serverTime: this.now(), ops };
     for (const c of this.clients) if (c.subscribed.has(topic) && to(c)) c.send(msg);
@@ -188,11 +211,14 @@ export class Hub {
   publish(emperorId: string): Promise<void> {
     return this.enqueue(async () => {
       const [e, visibility, allies] = await Promise.all([this.emperors.byId(emperorId), this.social.visibility(emperorId), this.social.mutualAllies(emperorId)]);
+      const before = this.where.get(emperorId);
+      if (e) this.where.set(emperorId, e);
+      else this.where.delete(emperorId);
       const seq = ++this.emperorsSeq;
       const path = `emperors.${emperorId}` as const;
       for (const c of this.clients) {
         if (!c.subscribed.has("emperors")) continue;
-        const sees = e !== null && canSee(c.emperorId, emperorId, visibility, allies);
+        const sees = e !== null && canSee(c.emperorId, emperorId, visibility, allies) && (allies.has(c.emperorId) || this.inInterest(c.emperorId, e));
         let ops: DeltaOp[] = [];
         if (sees) {
           ops = [{ path, v: this.view(e) }];
@@ -202,6 +228,9 @@ export class Hub {
         }
         c.send({ t: "delta", topic: "emperors", seq, serverTime: this.now(), ops });
       }
+      // Se movió: su zona de interés cambia y sus clientes reciben de nuevo la lista.
+      const moved = !!e && (!before || before.location.systemId !== e.location.systemId || (before.travel?.arriveAt ?? 0) !== (e.travel?.arriveAt ?? 0));
+      if (moved) for (const c of [...this.clients]) if (c.emperorId === emperorId && c.subscribed.has("emperors")) await this.emperorsSnapshot(c);
     });
   }
 

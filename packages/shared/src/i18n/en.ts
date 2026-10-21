@@ -567,6 +567,7 @@ export const en: Record<I18nKey, string> = {
   "wiki.k.supplyRange": "Maximum distance between network colonies",
   "wiki.k.isolatedExtraction": "Extraction of an isolated colony",
   "wiki.k.razeProgress": "Siege progress after a bombardment",
+  "wiki.k.interestRange": "You see Emperors within",
   "wiki.k.heatLethal": "Lethal zone (warning and pulse cut) from",
   "wiki.col.heatZone": "Heat zone (stellar radii)",
   "wiki.col.heatSurface": "Damage at the surface",

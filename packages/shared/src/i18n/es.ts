@@ -569,6 +569,7 @@ export const es = {
   "wiki.k.supplyRange": "Distancia máxima entre colonias de la red",
   "wiki.k.isolatedExtraction": "Extracción de una colonia aislada",
   "wiki.k.razeProgress": "Progreso del asedio tras bombardear",
+  "wiki.k.interestRange": "Ves a los Emperadores a menos de",
   "wiki.k.heatLethal": "Zona mortal (aviso y corte del pulso) desde",
   "wiki.col.heatZone": "Zona de calor (radios estelares)",
   "wiki.col.heatSurface": "Daño en la superficie",

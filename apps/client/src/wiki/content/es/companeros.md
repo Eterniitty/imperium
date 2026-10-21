@@ -44,6 +44,10 @@ En **Ajustes → Compañeros → Quién ve dónde estás** eliges quién ve la p
 | **Solo mis compañeros** (por defecto) | Tus compañeros. |
 | **Nadie** | Nadie más que tú. |
 
+Para que el juego aguante muchos jugadores, en el mapa solo ves a los Emperadores **cercanos** a tu nave (a la distancia de la tabla); al moverte, la lista se actualiza. A tus compañeros los ves siempre, estén donde estén.
+
+{{tabla:interes}}
+
 - El filtro se aplica **en el servidor**: a quien no puede verte, tu posición **ni siquiera se le envía**.
 - **Tus flotas solo las ves tú.**
 - Si vuelas en el mismo sistema que otro jugador, os veis las naves: estáis en el mismo sitio.

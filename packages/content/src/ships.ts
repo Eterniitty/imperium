@@ -513,6 +513,15 @@ export const FLAGSHIP_DOCK = {
   hullPerSec: 12,
 } as const;
 
+/**
+ * Zonas de interés del tema `emperors` (masividad): a cada jugador solo le
+ * llegan los Emperadores públicos a menos de `rangeLy` de su nave (los
+ * compañeros, siempre). Al moverse, recibe de nuevo la lista de su zona.
+ */
+export const INTEREST = {
+  rangeLy: 400,
+} as const;
+
 /** Naves con las que empieza cada Emperador nuevo, como su primera flota. */
 export const STARTING_FLEET: readonly ShipClassId[] = ["explorer"];
 
