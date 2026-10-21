@@ -55,10 +55,17 @@ export class ChaseCamera {
     return Math.abs(this.wantYaw) > 0.02 || Math.abs(this.wantPitch) > 0.02;
   }
 
+  /**
+   * Armas a punto (motores encendidos y ratón para combatir): el botón
+   * izquierdo dispara en vez de mover la cámara y la rueda cambia de arma
+   * (la distancia de la cámara pasa a Mayús + rueda). Lo pone la vista.
+   */
+  armed = false;
+
   private onDown = (e: PointerEvent) => {
     const mouseFlight = settingsStore.getState().prefs.flight.mouseFlight;
-    // Izquierdo: cámara (salvo pilotando con ratón); derecho: siempre cámara.
-    if (e.button === 2 || (e.button === 0 && !mouseFlight)) this.drag = { x: e.clientX, y: e.clientY };
+    // Izquierdo: cámara (salvo pilotando con ratón o con las armas a punto; con Alt, siempre); derecho: siempre cámara.
+    if (e.button === 2 || (e.button === 0 && !mouseFlight && (!this.armed || e.altKey))) this.drag = { x: e.clientX, y: e.clientY };
   };
 
   private onMove = (e: PointerEvent) => {
@@ -87,8 +94,10 @@ export class ChaseCamera {
   };
 
   private onWheel = (e: WheelEvent) => {
-    if (this.first) return;
-    this.wantDist = Math.max(ChaseCamera.MIN_DIST, Math.min(ChaseCamera.MAX_DIST, this.wantDist * Math.exp(e.deltaY * 0.001)));
+    if (this.first || (this.armed && !e.shiftKey)) return;
+    // Con Mayús, algunos navegadores convierten la rueda en desplazamiento horizontal (deltaX).
+    const delta = e.deltaY || e.deltaX;
+    this.wantDist = Math.max(ChaseCamera.MIN_DIST, Math.min(ChaseCamera.MAX_DIST, this.wantDist * Math.exp(delta * 0.001)));
   };
 
   /** Vuelve a la vista de seguimiento, detrás de la nave (o a mirar al frente en cabina). */

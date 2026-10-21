@@ -114,7 +114,7 @@ function FlightPrefsSection() {
   const t = useT();
   const flight = useSettings((s) => s.prefs.flight);
   const set = (changes: Partial<typeof flight>) => settingsStore.getState().setPrefs({ flight: { ...flight, ...changes } });
-  const check = (key: "assist" | "mouseFlight" | "invertCameraY" | "mouseInvertY", label: I18nKey) => (
+  const check = (key: "assist" | "mouseFlight" | "invertCameraY" | "mouseInvertY" | "mouseFire" | "autoFire", label: I18nKey) => (
     <label className="flight-pref">
       <input type="checkbox" checked={flight[key]} onChange={(e) => set({ [key]: e.target.checked })} /> {t(label)}
     </label>
@@ -135,6 +135,8 @@ function FlightPrefsSection() {
       {range("mouseDeadzone", "settings.flight.mouseDeadzone", 0, 0.3)}
       {check("mouseInvertY", "settings.flight.mouseInvertY")}
       {check("invertCameraY", "settings.flight.invertY")}
+      {check("mouseFire", "settings.flight.mouseFire")}
+      {check("autoFire", "settings.flight.autoFire")}
       {range("accel", "settings.flight.accel", 0.5, 1.5)}
       {range("inertia", "settings.flight.inertia", 0.5, 2)}
       {range("maxSpeed", "settings.flight.maxSpeed", 0.25, 1)}
@@ -215,6 +217,7 @@ export function SettingsPanel() {
         <ul className="howto">
           <li>{t("help.pilotMouse", keys)}</li>
           <li>{t("help.keysPilot", keys)}</li>
+          <li>{t("help.combat", keys)}</li>
           <li>{t("help.rotate")} · {t("help.pan")} · {t("help.zoom")}</li>
           <li>{t("help.select")}</li>
           <li>{t("help.keysMap", keys)}</li>

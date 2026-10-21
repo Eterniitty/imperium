@@ -4,9 +4,23 @@ Inside a system you fight in real time, at the controls. The **server is the aut
 
 ## Weapons
 
-- **Cannon** ([[F]], hold): rapid bursts towards where the nose points, with unlimited ammunition. It hits the first enemy the projectile grazes (within about 30 m of its centre).
-- **Missile** ([[R]]): heavy damage, and it **follows its target** inside the system. It needs a **locked target** ([[X]] locks the nearest enemy and, pressed again, the next one) that is **in range** and **ahead of the nose** (within 60°). Ammunition is limited and refills over time. On your ship, the cannons sit in the bow pods and missiles leave from the launchers at the bow of the two habitat modules, on the sides.
-- You cannot fire with the **pulse drive** on.
+- **Cannon** ([[F]] or **left click**, hold): rapid bursts, with unlimited ammunition. The cannons sit on **mounts that aim by themselves**: with a locked target they point at the **lead point** if it fits in their arc around the nose; otherwise they fire straight ahead. It hits **the first ship the projectile touches**, whichever it is (the server works out the trajectory against each ship's movement).
+- **Missile** ([[R]], or left click with missiles selected): heavy damage, and it **follows its target** inside the system. It needs a **locked target** that is **in range** and **ahead of the nose** (within 60°). If another ship crosses its path, that ship takes the hit. Ammunition is limited and refills over time. On your ship, the cannons sit in the bow pods and missiles leave from the launchers at the bow of the two habitat modules, on the sides.
+- **Mining laser** ([[L]], or left click with the laser selected): only in [deep space](/wiki/espacio-profundo), against asteroids.
+- Without **engines** running ([[I]]) there are no weapons, and you cannot fire with the **pulse drive** on.
+
+## Aim assist
+
+Enemy ships are a few metres long and look like a dot: your ship helps you aim.
+
+- **Markers**: every ship in the system has a marker even if you cannot see it, with its distance. Shape and colour tell who it is: **red diamond** = hostile (pirates), **amber square** = another Emperor, **cyan circle** = companion. The **locked target** gets a larger box with its name, shield and hull; if it is off screen, an **arrow** at the edge points to it.
+- **Locking**: [[X]] locks the ship closest to the reticle (the cursor in mouse flight; otherwise the line of the nose). [[N]] and [[H]]: next and previous (hostiles first, nearest to farthest; then other Emperors). [[U]]: the nearest. **Middle click** on a marker: lock that ship. Cycling **never locks companions**; middle click does (with a warning: friendly fire is on).
+- **Lead point**: a circle where you must shoot given the target's speed, yours and the projectile's. It turns **green** when the target is in range and inside the mounts' arc.
+- **Automatic aiming**: with a locked target, the cannons aim at that point by themselves; you decide when to fire. Missiles already chase the target by themselves.
+- **Auto-fire** ([[O]], also in Settings → Controls): the cannon fires by itself while the locked target is in range and in arc. It never fires by itself at a companion.
+- **Mouse**: with engines on, **left click** fires the selected weapon and the **wheel** switches weapon ([[1]] cannon, [[2]] missiles, [[3]] laser). Camera distance moves to **Shift + wheel**, moving the camera to the **right button** (or Alt + drag) and selecting a planet to **Alt + click**. It can be turned off in Settings → Controls ("Mouse for combat"). All keys can be rebound.
+
+{{tabla:punteria}}
 
 {{tabla:armas}}
 
@@ -26,9 +40,13 @@ Your ship explodes, leaves the system and **your Emperor falls**. A new body is 
 
 The hull **does not heal by leaving the system**: the crew repairs it slowly and, next to an own colony, it is repaired quickly with its alloys (see [Death and lineage](/wiki/linaje#the-hull)).
 
-## Against other Emperors
+## Against other Emperors and friendly fire
 
-**PvP is open** across the whole universe, with no protection for offline players. You can damage any Emperor flying in your system **except your companions** (players who have added each other; see [Companions](/wiki/companeros)), who are marked as "companion".
+**PvP is open** across the whole universe, with no protection for offline players: you can attack any Emperor flying in your system. There is **friendly fire**: your shots damage any ship they touch, your **companions** too (see [Companions](/wiki/companeros)), who are marked as "companion" with a cyan circle. Mind your fire with a companion ahead.
+
+## Collisions
+
+Ships **collide** with each other: two ships that touch while closing in take damage according to the impact speed and bounce off. Against planets, moons and asteroids the ship stops at the surface (no damage).
 
 ## Scavengers
 

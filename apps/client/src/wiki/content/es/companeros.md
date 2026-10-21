@@ -10,7 +10,7 @@ Dos Emperadores son **compañeros** cuando **los dos se han añadido**. Se gesti
 
 Ser compañeros significa:
 
-- **No os podéis dañar** en el [combate en tiempo real](/wiki/combate#contra-otros-emperadores); en pantalla salís marcados como «compañero».
+- En el [combate en tiempo real](/wiki/combate#contra-otros-emperadores-y-fuego-amigo) **hay fuego amigo**: vuestros disparos os dañan si os alcanzan. En pantalla salís marcados como «compañero» (círculo cian) y la asistencia de puntería no os fija al cambiar de blanco.
 - Vuestras flotas **no combaten entre sí** ni os aparecéis como [contactos](/wiki/guerra#contactos-e-interceptacion).
 - Con la visibilidad «Solo mis compañeros», ellos ven dónde estás.
 

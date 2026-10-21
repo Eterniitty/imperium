@@ -107,6 +107,13 @@ export class ShipController {
     this.cursor = { x: (e.clientX - r.left - r.width / 2) / half, y: (e.clientY - r.top - r.height / 2) / half };
   };
 
+  /** Dónde está el cursor sobre la vista en coordenadas normalizadas (−1…1), o null si está fuera. */
+  cursorNdc(): { x: number; y: number } | null {
+    if (!this.cursor) return null;
+    const r = this.dom.getBoundingClientRect();
+    return { x: (this.cursor.x * r.height) / Math.max(1, r.width), y: -this.cursor.y };
+  }
+
   private onLeave = () => {
     this.cursor = null;
   };
@@ -115,8 +122,8 @@ export class ShipController {
   private stickFromCursor(): void {
     const f = settingsStore.getState().prefs.flight;
     const stick = this.mouseStick.set(0, 0);
-    // Con un botón pulsado (mirar alrededor con el derecho, o un clic en la vista) no se dirige.
-    if (!f.mouseFlight || !this.cursor || this.buttons !== 0) return;
+    // Mirando alrededor (botón derecho) no se dirige; con el izquierdo sí (se dispara mientras se vira).
+    if (!f.mouseFlight || !this.cursor || (this.buttons & 2) !== 0) return;
     const R = FLIGHT_MODEL.mouseReticleRadius;
     const dead = f.mouseDeadzone * R;
     const len = Math.hypot(this.cursor.x, this.cursor.y);

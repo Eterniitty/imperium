@@ -8,7 +8,8 @@ import { createShipModel } from "./shipFactory";
 import { labelTexture } from "./textures";
 
 const ALLY_COLOR = "#5fd3e6";
-const OTHER_COLOR = "#ff9f5a";
+/** Otros Emperadores (neutrales: se les puede atacar, hay PvP). Ámbar, distinto del rojo de los hostiles. */
+const OTHER_COLOR = "#f2c14e";
 const PIRATE_COLOR = "#ff5a5a";
 /** Se dibuja ligeramente en el pasado para tener siempre dos muestras entre las que interpolar. */
 const INTERP_DELAY_MS = 150;
@@ -141,6 +142,25 @@ export class RemoteShips {
   positionOf(id: string): THREE.Vector3 | null {
     return this.visuals.get(id)?.ship.position ?? null;
   }
+
+  /**
+   * Velocidad de una nave ajena (m/s): la de su última muestra, o la que se ve
+   * entre fotogramas si la muestra no la trae.
+   */
+  velocityOf(id: string, out = new THREE.Vector3()): THREE.Vector3 | null {
+    const samples = spaceStore.getState().ships[id]?.samples;
+    const last = samples?.[samples.length - 1];
+    if (last?.v) return out.set(last.v[0], last.v[1], last.v[2]);
+    const prev = samples?.[samples.length - 2];
+    if (last && prev && last.t > prev.t) {
+      const k = 1000 / (last.t - prev.t);
+      return out.set((last.p[0] - prev.p[0]) * k, (last.p[1] - prev.p[1]) * k, (last.p[2] - prev.p[2]) * k);
+    }
+    return this.visuals.has(id) ? out.set(0, 0, 0) : null;
+  }
+
+  /** Retraso con que se dibujan las naves ajenas (s): para adelantar su posición al apuntar. */
+  static readonly DRAW_DELAY_SEC = INTERP_DELAY_MS / 1000;
 
   clear(): void {
     for (const [id, v] of this.visuals) this.remove(id, v);

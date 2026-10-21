@@ -29,6 +29,8 @@ import {
   SPECIES,
   ECONOMY,
   EMPEROR_FLAGSHIP,
+  AIM_ASSIST,
+  SHIP_COLLISION,
   FLEET_BATTLE,
   FLAGSHIP_BATTLE,
   FLAGSHIP_REPAIR,
@@ -352,6 +354,15 @@ export const GEN_TABLES: Record<string, Builder> = {
       numeric: [2],
     };
   },
+
+  punteria: (t, locale) =>
+    kv(t, [
+      ["wiki.k.gimbal", `${num(locale, AIM_ASSIST.cannonGimbalDeg)}°`],
+      ["wiki.k.collisionMin", `${num(locale, SHIP_COLLISION.minClosingMps)} m/s`],
+      ["wiki.k.collisionDamage", num(locale, SHIP_COLLISION.damagePerMps)],
+      ["wiki.k.collisionMax", num(locale, SHIP_COLLISION.maxDamage)],
+      ["wiki.k.collisionCooldown", `${num(locale, SHIP_COLLISION.cooldownSec)} s`],
+    ]),
 
   carroneros: (t, locale) =>
     kv(t, [

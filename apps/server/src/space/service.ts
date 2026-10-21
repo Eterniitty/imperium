@@ -1,13 +1,13 @@
-import { EMPEROR_FLAGSHIP, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, getAlienShipClass, MINING, PIRATE_AI } from "@imperium/content";
+import { AIM_ASSIST, EMPEROR_FLAGSHIP, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, getAlienShipClass, MINING, PIRATE_AI } from "@imperium/content";
 import { isDeepId, type ServerMessage, type ShipPose, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
-import { addToHold, bodiesAt, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
+import { addToHold, bodiesAt, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { EmperorService } from "../emperor/service";
 import type { Client } from "../realtime/hub";
 import type { SocialService } from "../social/service";
 import type { FlagshipService } from "./flagship";
 import type { DeepSpaceService } from "./deep";
-import { Combatant, type StoredSupplies, distance, forwardOf, HIT_RADIUS, MISSILE_LOCK_COS, normalize, rayHit, rotate } from "./combat";
+import { Combatant, type StoredSupplies, distance, forwardOf, HIT_RADIUS, MISSILE_LOCK_COS, normalize, rotate } from "./combat";
 import { pirateFlight, pirateHome, piratesOf, stepPirate } from "./pirates";
 import { PendingArrivals, RIFT_ARRIVE_WINDOW_MS, riftNear, type RiftNotice } from "./rift";
 
@@ -30,7 +30,7 @@ interface Member {
   history: Array<{ t: number; p: Vec3 }>;
   /** Cambió de posición desde la última difusión. */
   dirty: boolean;
-  /** Compañeros (aliados mutuos): se marcan como `ally` y no se les puede dañar. */
+  /** Compañeros (aliados mutuos): se marcan como `ally` (con fuego amigo: también se les puede dañar). */
   allies: Set<string>;
   combat: Combatant;
   /** Escudo enviado por última vez a los demás (para difundir la recarga solo si cambia). */
@@ -85,6 +85,8 @@ const RESUPPLY_MS = 2_000;
 const COLONIES_REFRESH_MS = 30_000;
 /** Por encima de esta velocidad (con margen) la nave va con el pulso, que gasta combustible y energía. */
 const PULSE_THRESHOLD = PILOT_SPEED * PILOT_BOOST * 1.3;
+/** Coseno del cono de los montajes del cañón de una insignia. */
+const CANNON_GIMBAL_COS = Math.cos((AIM_ASSIST.cannonGimbalDeg * Math.PI) / 180);
 
 /**
  * Espacio local: quién vuela en cada sistema, sus posiciones y el combate. Vive
@@ -120,6 +122,8 @@ export class SpaceService {
   private readonly joining = new Map<string, Promise<Member | null>>();
   /** Grietas de llegada anunciadas antes de que la nave entre en el sistema. */
   private readonly riftArrivals = new PendingArrivals();
+  /** Choques entre naves: pareja → hasta cuándo no vuelve a contar (hora del servidor). */
+  private readonly bumps = new Map<string, number>();
   /**
    * Fase 10: la nave de un Emperador cae en el combate pilotado. Registra la
    * muerte (gestación en una Cuna o en el Núcleo) y devuelve cuándo y dónde
@@ -702,10 +706,13 @@ export class SpaceService {
     return [...(this.rooms.get(systemId) ?? [])].map((m) => m.emperorId);
   }
 
-  /** ¿Puede `a` dañar a `b`? No a sí mismo, ni a sus compañeros, ni un pirata a otro. */
-  private hostile(a: Member, b: Member): boolean {
-    if (a === b || (a.kind === "pirate" && b.kind === "pirate")) return false;
-    return !a.allies.has(b.emperorId);
+  /**
+   * ¿Puede un disparo de `a` dañar a `b`? Cualquier nave salvo la propia: hay
+   * PvP y fuego amigo (petición del usuario, 21-10-2026), así que un proyectil
+   * que roza a un compañero o a otro pirata también le hace daño.
+   */
+  private canHit(a: Member, b: Member): boolean {
+    return a !== b;
   }
 
   /** Posiciones de un objetivo a tener en cuenta: la actual y las recientes (latencia del tirador). */
@@ -719,26 +726,40 @@ export class SpaceService {
     if (m) this.fireFrom(m, weapon, dirIn, targetId);
   }
 
-  /** Disparo de cualquier nave (jugador o pirata), con las mismas reglas para todas. */
+  /**
+   * Disparo de cualquier nave (jugador o pirata), con las mismas reglas para
+   * todas. Cañón: en la dirección `dir`, que para las naves de los Emperadores
+   * tiene que estar dentro del cono de sus montajes (`AIM_ASSIST.cannonGimbalDeg`
+   * alrededor del morro; la puntería automática del cliente apunta ahí al punto
+   * de adelanto). Los piratas llevan torretas (cualquier dirección). Misil: a la
+   * nave `target`, cualquiera menos la propia (fijarla es decisión del piloto),
+   * a tiro y delante del morro. Los impactos se calculan contra el movimiento
+   * de cada nave (no contra una foto fija) y valen para cualquier nave que se
+   * cruce en la trayectoria (fuego amigo incluido).
+   */
   private fireFrom(m: Member, weapon: WeaponKind, dirIn: Vec3, targetId?: string): void {
-    const dir = normalize(dirIn);
+    let dir = normalize(dirIn);
     if (!m || !dir) return;
     const room = this.rooms.get(m.systemId);
     if (!room) return;
     const now = this.now();
+    const fwd = forwardOf(m.pose.q);
 
     let target: Member | null = null;
     let hitDistance: number | null = null;
     if (weapon === "missile") {
-      // Misil: objetivo fijado, enemigo, a tiro y delante del morro.
+      // Misil: objetivo fijado, a tiro y delante del morro. Sale hacia él.
       target = targetId ? (this.members.get(targetId) ?? null) : null;
       const def = m.combat.weapons.get("missile")?.def;
-      if (!def || !target || target.systemId !== m.systemId || !this.hostile(m, target)) return;
+      if (!def || !target || target.systemId !== m.systemId || !this.canHit(m, target)) return;
       const d = distance(m.pose.p, target.pose.p);
       const to = normalize([target.pose.p[0] - m.pose.p[0], target.pose.p[1] - m.pose.p[1], target.pose.p[2] - m.pose.p[2]]);
-      const fwd = forwardOf(m.pose.q);
       if (d > def.rangeU || !to || to[0] * fwd[0] + to[1] * fwd[1] + to[2] * fwd[2] < MISSILE_LOCK_COS) return;
       hitDistance = d;
+      dir = to;
+    } else if (m.kind === "emperor") {
+      // Cañón de una insignia: solo dentro del cono de los montajes.
+      if (dir[0] * fwd[0] + dir[1] * fwd[1] + dir[2] * fwd[2] < CANNON_GIMBAL_COS) return;
     }
     const def = m.combat.tryFire(weapon, now);
     if (!def) return;
@@ -747,21 +768,36 @@ export class SpaceService {
     const off = rotate(m.pose.q, muzzle.offset);
     const from: Vec3 = [m.pose.p[0] + off[0], m.pose.p[1] + off[1], m.pose.p[2] + off[2]];
     // El proyectil hereda la velocidad de la nave en su dirección (si no, a toda máquina se quedaría atrás).
-    const v = m.pose.v;
-    const speed = def.speedU + Math.max(0, v[0] * dir[0] + v[1] * dir[1] + v[2] * dir[2]);
+    const speed = projectileSpeed(def.speedU, m.pose.v, dir);
 
     if (weapon === "cannon") {
-      // Cañón: el enemigo más cercano que el proyectil roza (ahora o hace un instante).
+      // Cañón: la primera nave que el proyectil toca (donde está ahora o donde estaba hace un instante, por la latencia del tirador).
+      const maxTime = def.rangeU / speed;
+      let best: number | null = null;
       for (const o of room) {
-        if (!this.hostile(m, o)) continue;
+        if (!this.canHit(m, o)) continue;
         for (const p of this.recentPositions(o, now)) {
-          const t = rayHit(from, dir, p, def.rangeU, o.radius);
-          if (t !== null && (hitDistance === null || t < hitDistance)) {
-            hitDistance = t;
+          const t = sweepHit(from, dir, speed, p, o.pose.v, maxTime, o.radius);
+          if (t !== null && (best === null || t < best)) {
+            best = t;
             target = o;
           }
         }
       }
+      hitDistance = best === null ? null : best * speed;
+    } else if (target && hitDistance !== null) {
+      // Misil: si otra nave se cruza en el camino hacia el blanco, el impacto es suyo.
+      const maxTime = hitDistance / speed;
+      let best = maxTime;
+      for (const o of room) {
+        if (o === target || !this.canHit(m, o)) continue;
+        const t = sweepHit(from, dir, speed, o.pose.p, o.pose.v, maxTime, o.radius);
+        if (t !== null && t < best) {
+          best = t;
+          target = o;
+        }
+      }
+      hitDistance = best * speed;
     }
 
     const hitAt = target && hitDistance !== null ? now + (hitDistance / speed) * 1000 : null;
@@ -900,11 +936,15 @@ export class SpaceService {
         m.dirty = true;
         if (target) {
           const to = normalize([target.pose.p[0] - step.p[0], target.pose.p[1] - step.p[1], target.pose.p[2] - step.p[2]]);
+          // El cañón apunta al punto de adelanto (los impactos se calculan contra el movimiento del blanco).
+          const cannonDef = m.combat.weapons.get("cannon")?.def;
+          const lead = cannonDef ? leadPoint(step.p, step.v, target.pose.p, target.pose.v, cannonDef.speedU) : null;
           // Puntería imperfecta: de lejos fallan más, de cerca casi nunca.
           const jitter = m.ai.aimJitter;
           const j = () => (Math.random() - 0.5) * jitter;
           const cannon = m.combat.weapons.get("cannon");
-          if (to && cannon && best <= cannon.def.rangeU) this.fireFrom(m, "cannon", [to[0] + j(), to[1] + j(), to[2] + j()]);
+          const aim = lead?.dir ?? to;
+          if (aim && cannon && best <= cannon.def.rangeU) this.fireFrom(m, "cannon", [aim[0] + j(), aim[1] + j(), aim[2] + j()]);
           const missile = m.combat.weapons.get("missile");
           if (to && missile && best <= missile.def.rangeU && (missile.ammo ?? 0) > 0 && now >= missile.readyAt) this.fireFrom(m, "missile", to, target.emperorId);
         }
@@ -990,10 +1030,53 @@ export class SpaceService {
     }
   }
 
+  /**
+   * Choques entre naves: dos naves que se tocan (suma de sus radios)
+   * acercándose reciben daño según la velocidad de acercamiento, como mucho una
+   * vez cada `SHIP_COLLISION.cooldownSec` por pareja. El rebote lo hace cada
+   * cliente con su nave; los piratas se separan aquí.
+   */
+  private collideShips(now: number): void {
+    for (const room of this.rooms.values()) {
+      const list = [...room];
+      for (let i = 0; i < list.length; i++) {
+        for (let k = i + 1; k < list.length; k++) {
+          const a = list[i]!;
+          const b = list[k]!;
+          if (a.combat.hull <= 0 || b.combat.hull <= 0) continue;
+          const d = distance(a.pose.p, b.pose.p);
+          const reach = a.radius + b.radius;
+          if (d >= reach || d < 1e-3) continue;
+          const n: Vec3 = [(b.pose.p[0] - a.pose.p[0]) / d, (b.pose.p[1] - a.pose.p[1]) / d, (b.pose.p[2] - a.pose.p[2]) / d];
+          const closing = -((b.pose.v[0] - a.pose.v[0]) * n[0] + (b.pose.v[1] - a.pose.v[1]) * n[1] + (b.pose.v[2] - a.pose.v[2]) * n[2]);
+          // Los piratas (los mueve el servidor) se apartan.
+          for (const [m, sign] of [[a, -1], [b, 1]] as const) {
+            if (m.kind !== "pirate") continue;
+            const push = (reach - d) * (a.kind === "pirate" && b.kind === "pirate" ? 0.5 : 1);
+            m.pose = { ...m.pose, p: [m.pose.p[0] + n[0] * push * sign, m.pose.p[1] + n[1] * push * sign, m.pose.p[2] + n[2] * push * sign] };
+            m.dirty = true;
+          }
+          if (closing < SHIP_COLLISION.minClosingMps) continue;
+          const key = a.emperorId < b.emperorId ? `${a.emperorId}|${b.emperorId}` : `${b.emperorId}|${a.emperorId}`;
+          if (now < (this.bumps.get(key) ?? 0)) continue;
+          this.bumps.set(key, now + SHIP_COLLISION.cooldownSec * 1000);
+          const damage = Math.min(SHIP_COLLISION.maxDamage, closing * SHIP_COLLISION.damagePerMps);
+          for (const [victim, other] of [[a, b], [b, a]] as const) {
+            const destroyed = victim.combat.damage(damage, now);
+            this.broadcastState(victim);
+            if (destroyed) void this.destroy(victim, other.kind === "pirate" ? "" : other.name);
+          }
+        }
+      }
+    }
+    if (this.bumps.size > 256) for (const [key, until] of this.bumps) if (until < now) this.bumps.delete(key);
+  }
+
   private tick(): void {
     const now = this.now();
     this.stepPirates(now);
     this.stepParked(now);
+    this.collideShips(now);
     if (now - this.lastSuppliesSend >= SUPPLIES_SEND_MS) {
       this.lastSuppliesSend = now;
       for (const m of this.members.values()) if (m.kind === "emperor") this.sendSupplies(m, now);

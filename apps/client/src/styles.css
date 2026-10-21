@@ -731,3 +731,31 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .photo-notice p { margin: 0 0 10px; }
 .photo-notice a { color: var(--cyan); }
 .photo-notice .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+
+/* Asistencia de puntería: marcadores de naves, flecha del blanco fuera de pantalla y punto de adelanto.
+   Forma y color según la relación (se distinguen también sin color): hostil = rombo rojo,
+   otro Emperador (neutral) = cuadrado ámbar, compañero = círculo cian. */
+.tgt-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; --tgt-hostile: #ff5a5a; --tgt-neutral: #f2c14e; --tgt-ally: #5fd3e6; }
+.tgt-marker { position: absolute; left: 0; top: 0; width: 0; height: 0; color: var(--tgt-neutral); will-change: transform; }
+.tgt-marker.hostile { color: var(--tgt-hostile); }
+.tgt-marker.ally { color: var(--tgt-ally); }
+.tgt-shape { position: absolute; left: -7px; top: -7px; width: 14px; height: 14px; border: 2px solid currentColor; box-sizing: border-box; }
+.tgt-marker.hostile .tgt-shape { transform: rotate(45deg) scale(0.85); }
+.tgt-marker.ally .tgt-shape { border-radius: 50%; }
+.tgt-marker.locked .tgt-shape { left: -13px; top: -13px; width: 26px; height: 26px; box-shadow: 0 0 6px currentColor; }
+.tgt-label { position: absolute; left: 12px; top: -7px; white-space: nowrap; font: 11px/1.2 ui-monospace, monospace; text-shadow: 0 0 3px #000, 0 0 2px #000; opacity: 0.85; }
+.tgt-marker.locked .tgt-label { left: 18px; top: -16px; font-size: 12px; opacity: 1; }
+.tgt-bars { display: none; position: absolute; left: 18px; top: 0; width: 70px; }
+.tgt-marker.locked .tgt-bars { display: block; }
+.tgt-bars b { display: block; height: 3px; margin-top: 2px; background: rgba(255, 255, 255, 0.15); position: relative; }
+.tgt-bars b::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; }
+.tgt-bars .tgt-shield::after { width: var(--shield, 0%); background: #6fb7ff; }
+.tgt-bars .tgt-hull::after { width: var(--hull, 0%); background: currentColor; }
+.tgt-arrow { position: absolute; left: -10px; top: -8px; width: 0; height: 0; border-top: 8px solid transparent; border-bottom: 8px solid transparent; border-left: 18px solid var(--tgt-neutral); transform-origin: 10px 8px; filter: drop-shadow(0 0 3px #000); }
+.tgt-arrow.hostile { border-left-color: var(--tgt-hostile); }
+.tgt-arrow.ally { border-left-color: var(--tgt-ally); }
+.tgt-lead { position: absolute; left: -8px; top: -8px; width: 16px; height: 16px; border: 2px solid rgba(255, 255, 255, 0.7); color: rgba(255, 255, 255, 0.7); border-radius: 50%; box-sizing: border-box; }
+.tgt-lead::after { content: ""; position: absolute; left: 5px; top: 5px; width: 2px; height: 2px; background: currentColor; }
+.tgt-lead.ready { border-color: #7ef0b0; color: #7ef0b0; box-shadow: 0 0 6px #7ef0b0; }
+.weapon-slot.selected { outline: 1px solid rgba(232, 182, 76, 0.8); outline-offset: 3px; border-radius: 3px; }
+.combat-assist { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }

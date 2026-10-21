@@ -43,8 +43,13 @@ export interface SpaceState {
   weapons: Array<{ kind: WeaponKind; ammo: number | null; ammoMax: number | null; readyAt: number }>;
   /** Energía y combustible de la nave propia según el servidor (mientras se pilota). */
   supplies: { energy: number; energyMax: number; fuel: number; fuelMax: number; resupplying: boolean } | null;
-  /** Nave enemiga fijada para los misiles. */
+  /**
+   * Blanco de armas fijado (asistencia de puntería: cañón con adelanto y
+   * misiles). Distinto de cualquier objetivo de navegación.
+   */
   targetId: string | null;
+  /** Arma seleccionada (clic izquierdo, rueda del ratón o 1/2/3). */
+  weapon: SelectedWeapon;
   /** Disparos recibidos pendientes de dibujar (la vista los recoge y vacía la lista). */
   shots: Array<Extract<ServerMessage, { t: "shot" }>>;
   /** Naves destruidas pendientes de dibujar su explosión. */
@@ -68,7 +73,10 @@ export interface SpaceState {
   mining: boolean;
 }
 
-const EMPTY = { systemId: null, ships: {}, correction: null, self: null, weapons: [], supplies: null, targetId: null, shots: [], explosions: [], rifts: [], destroyed: null, field: null, beams: {}, hold: null, mineFail: null, aim: null, mining: false };
+/** Armas que se pueden seleccionar: cañón, misiles y láser de minería (solo en el espacio profundo). */
+export type SelectedWeapon = "cannon" | "missile" | "laser";
+
+const EMPTY: SpaceState = { systemId: null, ships: {}, correction: null, self: null, weapons: [], supplies: null, targetId: null, weapon: "cannon", shots: [], explosions: [], rifts: [], destroyed: null, field: null, beams: {}, hold: null, mineFail: null, aim: null, mining: false };
 
 export const spaceStore = createStore<SpaceState>()(() => ({ ...EMPTY }));
 

@@ -8,7 +8,7 @@ import { useStore } from "zustand";
  */
 export const ACTIONS = {
   // Pilotar la nave (y el vuelo libre de cámara en el mapa).
-  flight: ["forward", "back", "strafeLeft", "strafeRight", "up", "down", "rollLeft", "rollRight", "turnLeft", "turnRight", "pitchUp", "pitchDown", "boost", "cameraView", "fireCannon", "fireMissile", "lockTarget", "pulse", "flightAssist", "mouseFlight", "cameraReset", "engines", "mine"],
+  flight: ["forward", "back", "strafeLeft", "strafeRight", "up", "down", "rollLeft", "rollRight", "turnLeft", "turnRight", "pitchUp", "pitchDown", "boost", "cameraView", "fireCannon", "fireMissile", "lockTarget", "targetNext", "targetPrev", "targetNearest", "autoFire", "weaponCannon", "weaponMissile", "weaponLaser", "pulse", "flightAssist", "mouseFlight", "cameraReset", "engines", "mine"],
   // Mover la cámara por el mapa galáctico.
   map: ["mapForward", "mapBack", "mapLeft", "mapRight", "mapUp", "mapDown", "mapBoost", "flightMode", "focus", "enter", "deselect"],
   // En cualquier momento.
@@ -38,7 +38,15 @@ export const DEFAULT_BINDINGS: Bindings = {
   cameraView: ["KeyT"],
   fireCannon: ["KeyF"],
   fireMissile: ["KeyR"],
+  // Asistencia de puntería: fijar en la retícula (X), siguiente / anterior / más cercano, fuego automático y elegir arma.
   lockTarget: ["KeyX"],
+  targetNext: ["KeyN"],
+  targetPrev: ["KeyH"],
+  targetNearest: ["KeyU"],
+  autoFire: ["KeyO"],
+  weaponCannon: ["Digit1"],
+  weaponMissile: ["Digit2"],
+  weaponLaser: ["Digit3"],
   pulse: ["KeyP"],
   flightAssist: ["KeyZ"],
   mouseFlight: ["KeyG"],
@@ -141,6 +149,14 @@ export interface FlightPrefs {
   maxSpeed: number;
   /** Invertir el eje vertical de la cámara orbital. */
   invertCameraY: boolean;
+  /**
+   * Ratón para combatir (con los motores encendidos): clic izquierdo dispara
+   * el arma seleccionada y la rueda cambia de arma (Mayús + rueda: distancia
+   * de la cámara). Sin él, el ratón solo mueve la cámara, como antes.
+   */
+  mouseFire: boolean;
+  /** Fuego automático del cañón cuando el blanco fijado está a tiro y en el arco de los montajes. */
+  autoFire: boolean;
 }
 
 export const DEFAULT_FLIGHT_PREFS: FlightPrefs = {
@@ -153,6 +169,8 @@ export const DEFAULT_FLIGHT_PREFS: FlightPrefs = {
   inertia: 1,
   maxSpeed: 1,
   invertCameraY: false,
+  mouseFire: true,
+  autoFire: false,
 };
 
 function loadFlightPrefs(saved: unknown): FlightPrefs {
@@ -170,6 +188,8 @@ function loadFlightPrefs(saved: unknown): FlightPrefs {
     inertia: num(f.inertia, 0.5, 2, d.inertia),
     maxSpeed: num(f.maxSpeed, 0.25, 1, d.maxSpeed),
     invertCameraY: bool(f.invertCameraY, d.invertCameraY),
+    mouseFire: bool(f.mouseFire, d.mouseFire),
+    autoFire: bool(f.autoFire, d.autoFire),
   };
 }
 
