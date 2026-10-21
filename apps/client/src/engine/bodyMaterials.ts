@@ -516,7 +516,7 @@ const CORONA_FRAGMENT = /* glsl */ `
     vec3 dirW = normalize((vec4(closest, 0.0) * viewMatrix).xyz);
     float x = h - 1.0;
     // Cerca de la estrella el resplandor crece (la luz satura la vista).
-    float halo = (0.5 * exp(-x * 7.0) + 0.24 * exp(-x * 1.5)) * (1.0 + 2.2 * uNear);
+    float halo = (0.5 * exp(-x * 7.0) + 0.24 * exp(-x * 1.5)) * (1.0 + 3.0 * uNear);
     float fade = 1.0 - smoothstep(2.8, 4.8, h);
     // La corona ocupa mucha pantalla: donde apenas se ve, no se calcula el ruido.
     if (halo * fade < 0.004) discard;

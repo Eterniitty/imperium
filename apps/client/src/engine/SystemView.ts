@@ -119,7 +119,7 @@ export class SystemView implements View {
   private systemId: string | null = null;
   private starName = "";
   /** La estrella del sistema: su superficie (giro), su corona y el resplandor que crece al acercarse. */
-  private starFx: { surface: THREE.ShaderMaterial; corona: THREE.ShaderMaterial; glare: THREE.Sprite; radius: number } | null = null;
+  private starFx: { surface: THREE.ShaderMaterial; corona: THREE.ShaderMaterial; radius: number } | null = null;
   /** Radio a partir del cual se sale al espacio interestelar (ver `pilot`). */
   private boundary = 0;
   private poseTimer = 0;
@@ -278,14 +278,7 @@ export class SystemView implements View {
     const corona = new THREE.Mesh(new THREE.SphereGeometry(starRadius * CORONA_SCALE, 64, 32), coronaMat);
     corona.renderOrder = 1;
     this.content.add(corona);
-    // Resplandor: un brillo delante del disco que crece al acercarse (lo tapan los planetas que se interpongan).
-    const glare = new THREE.Sprite(
-      new THREE.SpriteMaterial({ map: glowTexture(), color: starColor.clone().lerp(new THREE.Color(1, 1, 1), 0.6), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
-    );
-    glare.renderOrder = 2;
-    glare.visible = !isBlackHole;
-    this.content.add(glare);
-    this.starFx = { surface, corona: coronaMat, glare, radius: starRadius };
+    this.starFx = { surface, corona: coronaMat, radius: starRadius };
 
     if (isBlackHole) {
       const disk = new THREE.Mesh(
@@ -556,7 +549,6 @@ export class SystemView implements View {
     // Niveles de detalle que no estaban en uso (el actual ya se liberó arriba).
     for (const body of this.lodBodies) for (const g of body.levels.values()) g.dispose();
     this.lodBodies = [];
-    this.starFx?.glare.material.dispose();
     this.starFx = null;
     this.content.clear();
     this.planets = [];
@@ -1384,8 +1376,8 @@ export class SystemView implements View {
 
   /**
    * La estrella gira (rotación diferencial en el sombreador) y, cuanto más cerca
-   * está la cámara, más brilla su corona y mayor es el resplandor delante del
-   * disco. Crece con la distancia, sin saltos; con «reducir efectos», la mitad.
+   * está la cámara, más brilla su corona alrededor del disco. Crece con la
+   * distancia, sin saltos; con «reducir efectos», la mitad.
    */
   private updateStarFx(): void {
     const fx = this.starFx;
@@ -1398,12 +1390,9 @@ export class SystemView implements View {
     const r = fx.radius;
     const t = Math.min(1, Math.max(0, (d - r * 1.3) / (r * 20 - r * 1.3)));
     const near = (1 - t * t * (3 - 2 * t)) * (settingsStore.getState().prefs.reduceEffects ? 0.5 : 1);
+    // El resplandor es el de la corona, que rodea el disco sin taparlo nunca (un brillo
+    // delante del disco lo lavaba y, de cerca, se cortaba contra la esfera en un círculo).
     fx.corona.uniforms.uNear!.value = near;
-    const toCam = this.camera.position.clone().normalize();
-    fx.glare.position.copy(toCam).multiplyScalar(r * 1.02);
-    fx.glare.scale.setScalar(r * (3.2 + 9 * near));
-    // El resplandor rodea el disco sin taparlo del todo (si no, la superficie se ve lavada).
-    fx.glare.material.opacity = 0.05 + 0.28 * near;
   }
 
   /**
