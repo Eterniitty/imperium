@@ -30,7 +30,7 @@ import type { Keyboard } from "./input";
 import { createFlagship, disposeShip, SHIP_SCALE, shipRig } from "./shipModel";
 import { createCockpit } from "./cockpit";
 import { glowTexture, labelTexture, ringTexture } from "./textures";
-import { CORONA_SCALE, STAR_SPIN_PERIOD_SEC, createAtmosphereMaterial, createBodyUniforms, createCoronaMaterial, createPlanetMaterial, createRingMaterial, createStarSurfaceMaterial } from "./bodyMaterials";
+import { CORONA_SCALE, FLAME_SCALE, STAR_SPIN_PERIOD_SEC, createStarFlameMaterial, createAtmosphereMaterial, createBodyUniforms, createCoronaMaterial, createPlanetMaterial, createRingMaterial, createStarSurfaceMaterial } from "./bodyMaterials";
 import { bodyDetailFor, bodySegments, planetLook } from "./planetLook";
 import { claimsStore } from "../state/claims";
 import { ownColonyAt, planetLabel } from "../ui/colonies";
@@ -119,7 +119,7 @@ export class SystemView implements View {
   private systemId: string | null = null;
   private starName = "";
   /** La estrella del sistema: su superficie (giro), su corona y el resplandor que crece al acercarse. */
-  private starFx: { surface: THREE.ShaderMaterial; corona: THREE.ShaderMaterial; radius: number } | null = null;
+  private starFx: { surface: THREE.ShaderMaterial; corona: THREE.ShaderMaterial; radius: number; flames: THREE.Mesh | null } | null = null;
   /** Radio a partir del cual se sale al espacio interestelar (ver `pilot`). */
   private boundary = 0;
   private poseTimer = 0;
@@ -278,7 +278,14 @@ export class SystemView implements View {
     const corona = new THREE.Mesh(new THREE.SphereGeometry(starRadius * CORONA_SCALE, 64, 32), coronaMat);
     corona.renderOrder = 1;
     this.content.add(corona);
-    this.starFx = { surface, corona: coronaMat, radius: starRadius };
+    // Llamas en 3D: salen de la superficie y rompen la silueta (no en los agujeros negros).
+    let flames: THREE.Mesh | null = null;
+    if (!isBlackHole) {
+      flames = new THREE.Mesh(new THREE.SphereGeometry(starRadius * FLAME_SCALE, 64, 32), createStarFlameMaterial(starColor, starRadius, starSeed, surface.uniforms.uSpin as THREE.IUniform<number>, this.bodyUniforms));
+      flames.renderOrder = 2;
+      this.content.add(flames);
+    }
+    this.starFx = { surface, corona: coronaMat, radius: starRadius, flames };
 
     if (isBlackHole) {
       const disk = new THREE.Mesh(
@@ -1393,6 +1400,14 @@ export class SystemView implements View {
     // El resplandor es el de la corona, que rodea el disco sin taparlo nunca (un brillo
     // delante del disco lo lavaba y, de cerca, se cortaba contra la esfera en un círculo).
     fx.corona.uniforms.uNear!.value = near;
+    // Llamas: desde fuera, la cara delantera de su capa (y los planetas delante las tapan);
+    // desde dentro de la capa, la trasera y sin profundidad (la superficie ya la recorta el rayo).
+    if (fx.flames) {
+      const m = fx.flames.material as THREE.ShaderMaterial;
+      const inside = d < r * FLAME_SCALE * 1.01;
+      m.side = inside ? THREE.BackSide : THREE.FrontSide;
+      m.depthTest = !inside;
+    }
   }
 
   /**

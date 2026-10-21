@@ -535,6 +535,80 @@ const CORONA_FRAGMENT = /* glsl */ `
   }
 `;
 
+/**
+ * Llamas de la estrella en 3D: una capa hasta `uOuter` radios que se recorre
+ * por pasos a lo largo de cada rayo de la vista (en coordenadas de vista y en
+ * radios de la estrella, como la corona), sumando la luz de las lenguas de
+ * fuego. Cada lengua sale de la superficie, sube (el ruido se desplaza hacia
+ * fuera con el tiempo), se adelgaza y pasa de amarillo a rojo con la altura.
+ * El rayo se para en la superficie: delante del disco se ven por encima, y en
+ * el borde rompen la silueta. Pasos según la calidad (`uMaxOctaves`).
+ */
+const FLAME_FRAGMENT = /* glsl */ `
+  uniform vec3 uColor;
+  uniform float uRadius;
+  uniform float uOuter;
+  uniform float uTime;
+  uniform float uSpin;
+  uniform vec3 uSeed;
+  uniform float uMaxOctaves;
+  varying vec3 vViewPos;
+  varying vec3 vCenterView;
+  ${NOISE_GLSL}
+  void main() {
+    vec3 rd = normalize(vViewPos);
+    vec3 cc = vCenterView / uRadius;
+    float b = dot(rd, cc);
+    float c = dot(cc, cc) - uOuter * uOuter;
+    float disc = b * b - c;
+    if (disc <= 0.0) discard;
+    float s = sqrt(disc);
+    float t0 = max(b - s, 0.0);
+    float t1 = b + s;
+    // El rayo se para al tocar la superficie de la estrella.
+    float c1 = dot(cc, cc) - 1.0;
+    float d1 = b * b - c1;
+    if (d1 > 0.0) {
+      float tin = b - sqrt(d1);
+      if (tin > 0.0) t1 = min(t1, tin);
+    }
+    if (t1 <= t0) discard;
+    // Las llamas se ven sobre todo en el contorno (de frente, sobre el disco, apenas: como el Sol).
+    float impact = length(cross(rd, cc));
+    float facing = 0.12 + 0.88 * smoothstep(0.72, 1.0, impact);
+    int steps = int(clamp((uMaxOctaves - 3.0) * 3.0, 8.0, 24.0));
+    float dt = (t1 - t0) / float(steps);
+    float cs = cos(uSpin);
+    float sn = sin(uSpin);
+    float tm = uTime;
+    vec3 light = vec3(0.0);
+    for (int i = 0; i < 24; i++) {
+      if (i >= steps) break;
+      float t = t0 + (float(i) + 0.5) * dt;
+      // Punto del rayo respecto al centro, en el mundo (estable al girar la cámara) y girando con la estrella.
+      vec3 qv = rd * t - cc;
+      vec3 qw = (vec4(qv, 0.0) * viewMatrix).xyz;
+      vec3 q = vec3(cs * qw.x + sn * qw.z, qw.y, -sn * qw.x + cs * qw.z);
+      float r = length(q);
+      float h = clamp((r - 1.0) / (uOuter - 1.0), 0.0, 1.0);
+      vec3 dir = q / r;
+      // Lenguas: el ruido varía mucho de lado y poco con la altura, así que sale en
+      // franjas que se alargan hacia fuera; la altura entra desplazada con el tiempo
+      // (las llamas suben) y cada lengua se adelgaza al subir.
+      float base = snoise(dir * 4.0 + uSeed + vec3(tm * 0.012));
+      float rise = snoise(dir * 13.0 + uSeed.zxy + vec3(h * 1.6 - tm * 0.4));
+      float fine = snoise(dir * 31.0 - vec3(h * 3.0 - tm * 0.7));
+      float n = base * 0.45 + rise * 0.55 + fine * 0.18 + 0.2;
+      float tongue = smoothstep(0.2 + h * 0.7, 0.42 + h * 0.7, n);
+      // Sin banda continua en la base: cada lengua arranca de la superficie y se apaga arriba.
+      float density = tongue * pow(1.0 - h, 1.3) * (0.35 + 0.65 * smoothstep(0.0, 0.12, h));
+      vec3 col = mix(mix(uColor, vec3(1.0, 0.88, 0.6), 0.4), uColor * vec3(1.0, 0.38, 0.18), smoothstep(0.0, 0.7, h));
+      light += col * density * dt;
+    }
+    gl_FragColor = vec4(light * 3.2 * facing, 1.0);
+  }
+`;
+
 const RING_VERTEX = BODY_VERTEX;
 
 /** Superficie procedural de un planeta o luna de radio `radius` (m). */
@@ -652,6 +726,28 @@ export function createCoronaMaterial(color: THREE.Color, radius: number, seed: T
     blending: THREE.AdditiveBlending,
   });
 }
+
+/** Llamas 3D de la estrella (ver `FLAME_FRAGMENT`); `spin` es el uniforme de giro de la superficie. */
+export function createStarFlameMaterial(color: THREE.Color, radius: number, seed: THREE.Vector3, spin: THREE.IUniform<number>, shared: BodyUniforms): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uColor: { value: color },
+      uRadius: { value: radius },
+      uOuter: { value: FLAME_SCALE },
+      uTime: shared.uTime,
+      uSpin: spin,
+      uSeed: { value: seed },
+      uMaxOctaves: shared.uMaxOctaves,
+    },
+    ...withLogDepth({ vertexShader: BODY_VERTEX, fragmentShader: FLAME_FRAGMENT }),
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+}
+
+/** Altura de las llamas 3D (radios de la estrella, desde el centro). */
+export const FLAME_SCALE = 1.45;
 
 /** Vuelta de la estrella en su ecuador (s): rápida a propósito, para que se note que gira. */
 export const STAR_SPIN_PERIOD_SEC = 90;
