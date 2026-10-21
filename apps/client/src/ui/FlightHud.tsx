@@ -1,22 +1,40 @@
+import { PILOT_BOOST, PILOT_SPEED, PULSE_MAX_SPEED } from "@imperium/sim";
+import { useTelemetry } from "../engine/telemetry";
 import { useGame, useT } from "../state/store";
 import { useKeyLabels } from "./keys";
-
-import { PILOT_BOOST, PILOT_SPEED, PULSE_SPEED } from "@imperium/sim";
+import { formatDuration } from "./useNow";
 
 /** Velocidad máxima en cada vista: escala de la barra de velocidad (en un sistema, con impulso; con pulso, la del pulso). */
 const MAX_SPEED = { galaxy: 150, system: PILOT_SPEED * PILOT_BOOST } as const;
+
+/** Distancia en m o km, con pocas cifras. */
+export function formatDistance(m: number): string {
+  if (m < 10_000) return `${Math.round(m)} m`;
+  if (m < 100_000) return `${(m / 1000).toFixed(1)} km`;
+  return `${Math.round(m / 1000).toLocaleString()} km`;
+}
+
+/** Velocidad en m/s o km/s: número y unidad por separado. */
+export function speedParts(v: number): [string, "pilot.unitKm" | "pilot.unitM"] {
+  return v >= 1000 ? [(v / 1000).toFixed(v >= 100_000 ? 0 : 1), "pilot.unitKm"] : [v.toFixed(0), "pilot.unitM"];
+}
 
 /** Mira y velocímetro al volar: la cámara libre en el mapa o la nave al pilotar en un sistema. */
 export function FlightHud() {
   const t = useT();
   const keys = useKeyLabels();
   const flight = useGame((s) => s.flight);
-  const speed = useGame((s) => s.flightSpeed);
+  const galaxySpeed = useGame((s) => s.flightSpeed);
   const view = useGame((s) => s.view);
   const camera = useGame((s) => s.cameraView);
-  const pulse = useGame((s) => s.pulse);
+  const tel = useTelemetry();
   if (!flight) return null;
   const piloting = view === "system";
+  const speed = piloting ? tel.speed : galaxySpeed;
+  const pulse = piloting && tel.pulse;
+  const [num, unit] = speedParts(speed);
+  const [limitNum, limitUnit] = speedParts(tel.pulseLimit);
+  const scale = pulse ? Math.log(1 + speed) / Math.log(1 + PULSE_MAX_SPEED) : speed / MAX_SPEED[view];
   return (
     <div className="flight-hud" aria-hidden>
       {(!piloting || camera === "first") && (
@@ -31,13 +49,25 @@ export function FlightHud() {
           {piloting && ` · ${t(camera === "first" ? "pilot.cameraFirst" : "pilot.cameraThird")} (${keys.cameraView})`}
         </div>
         <div className={pulse ? "flight-speed pulse" : "flight-speed"}>
-          {piloting ? (speed >= 1000 ? (speed / 1000).toFixed(1) : speed.toFixed(0)) : speed.toFixed(1)}
-          <small>{piloting ? t(speed >= 1000 ? "pilot.unitKm" : "pilot.unitM") : `${t("unit.ly")}/s`}</small>
+          {piloting ? num : speed.toFixed(1)}
+          <small>{piloting ? t(unit) : `${t("unit.ly")}/s`}</small>
           {pulse && <span className="pulse-tag">{t("pilot.pulse")}</span>}
         </div>
         <div className="flight-bar">
-          <span style={{ width: `${Math.min(100, (speed / (pulse ? PULSE_SPEED : MAX_SPEED[view])) * 100)}%` }} />
+          <span style={{ width: `${Math.min(100, scale * 100)}%` }} />
         </div>
+        {piloting && (
+          <div className="flight-sub">
+            <span className={pulse ? "pulse-key on" : "pulse-key"}>{t("pilot.pulseHint", { key: keys.pulse })}</span>
+            {pulse && <span className="muted"> · {t("pilot.pulseLimit", { v: `${limitNum} ${t(limitUnit)}` })}</span>}
+          </div>
+        )}
+        {piloting && tel.eta && (
+          <div className="flight-eta">
+            <span className="stat-label">{t("pilot.eta")}</span> <strong>{tel.eta.name}</strong> · {formatDistance(tel.eta.distance)} ·{" "}
+            <span className="mono">{tel.eta.seconds !== null ? formatDuration(tel.eta.seconds * 1000) : t("pilot.etaNone")}</span>
+          </div>
+        )}
       </div>
     </div>
   );

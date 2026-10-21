@@ -41,8 +41,8 @@ import { SECTOR_SIZE, translate, type I18nKey, type Locale, type PlanetType, typ
 import {
   PILOT_BOOST,
   PILOT_SPEED,
-  PULSE_SAFE_RADII,
-  PULSE_SPEED,
+  PULSE_MIN_SPEED,
+  PULSE_MAX_SPEED,
   colonyEnergy,
   colonyFlows,
   minColonists,
@@ -303,8 +303,8 @@ export const GEN_TABLES: Record<string, Builder> = {
     kv(t, [
       ["wiki.k.pilotSpeed", `${num(locale, PILOT_SPEED)} m/s`],
       ["wiki.k.boost", `× ${num(locale, PILOT_BOOST)} (${num(locale, PILOT_SPEED * PILOT_BOOST)} m/s)`],
-      ["wiki.k.pulse", `${num(locale, PULSE_SPEED / 1000)} km/s`],
-      ["wiki.k.pulseSafe", t("wiki.v.radii", { n: num(locale, PULSE_SAFE_RADII) })],
+      ["wiki.k.pulse", `${num(locale, PULSE_MAX_SPEED / 1000)} km/s`],
+      ["wiki.k.pulseSafe", `${num(locale, PULSE_MIN_SPEED)} m/s`],
       ["wiki.k.jumpSpeed", t("wiki.v.lyh", { n: num(locale, EMPEROR_FLAGSHIP.speedLyPerHour) })],
     ]),
 

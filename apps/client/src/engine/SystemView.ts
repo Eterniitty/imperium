@@ -2,8 +2,9 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
 import type { I18nKey, StarSystemDetail } from "@imperium/shared";
-import { PILOT_BOOST, PILOT_SPEED, PULSE_SAFE_RADII, PULSE_SPEED, planetAngle, systemLayout, type PlanetLayout, type SystemLayout } from "@imperium/sim";
-import { resetSpace, spaceStore } from "../net/space";
+import { PILOT_BOOST, PILOT_SPEED, planetAngle, pulseLimitAt, systemLayout, type PlanetLayout, type SystemLayout } from "@imperium/sim";
+import { resetSpace, shipName, spaceStore } from "../net/space";
+import { telemetry, type FlightTelemetry } from "./telemetry";
 import { connection, serverNow } from "../net/world";
 import { RemoteShips } from "./RemoteShips";
 import { Effects } from "./Effects";
@@ -88,6 +89,7 @@ export class SystemView implements View {
   private chaseTarget = new THREE.Vector3();
   private leaving = false;
   private systemId: string | null = null;
+  private starName = "";
   private poseTimer = 0;
   private remote = new RemoteShips();
   private effects = new Effects(() => worldStore.getState().myEmperorId);
@@ -136,6 +138,7 @@ export class SystemView implements View {
     const layout = systemLayout(detail);
     this.layout = layout;
     this.systemId = summary.id;
+    this.starName = summary.name;
 
     // Estrella: superficie con granulado y manchas, y corona que no tapa el disco.
     const isBlackHole = summary.starClass === "BH";
@@ -348,7 +351,6 @@ export class SystemView implements View {
     const flight = new FlightController(ship, this.dom, this.keyboard);
     flight.baseSpeed = PILOT_SPEED;
     flight.boostFactor = PILOT_BOOST;
-    flight.pulseSpeed = PULSE_SPEED;
     flight.enabled = true;
     this.flight = flight;
     this.leaving = false;
@@ -397,40 +399,80 @@ export class SystemView implements View {
     return new THREE.Vector3(0, 0, -1).applyQuaternion(this.ship!.quaternion).normalize();
   }
 
-  /** Enciende o apaga el motor de pulso. No arranca pegado a un planeta o a la estrella. */
+  /** Enciende o apaga el motor de pulso. Se puede encender siempre: cerca de un cuerpo, simplemente va despacio. */
   private togglePulse(): void {
     const flight = this.flight;
     if (!flight) return;
-    if (flight.pulse) {
-      flight.pulse = false;
-      return;
+    flight.pulse = !flight.pulse;
+  }
+
+  /** Estrella y planetas con su posición actual (para el pulso, el altímetro y las colisiones). */
+  private bodies(): Array<{ name: string; center: THREE.Vector3; radius: number; planetIndex: number | null }> {
+    if (!this.layout) return [];
+    const out = [{ name: this.starName, center: new THREE.Vector3(), radius: this.layout.starRadius, planetIndex: null as number | null }];
+    for (const p of this.planets) {
+      out.push({ name: p.label ? p.label.key.split("|")[0]! : p.designation, center: p.mesh.getWorldPosition(new THREE.Vector3()), radius: p.layout.size, planetIndex: p.index });
     }
-    if (this.nearestBodyClearance() < 1) return this.events.notify("pilot.pulseBlocked");
-    flight.pulse = true;
+    return out;
   }
 
   /**
-   * Cuánto falta para la zona de seguridad del cuerpo más cercano, en múltiplos
-   * de esa zona (menos de 1: dentro). La zona es `PULSE_SAFE_RADII` radios.
+   * Límite del pulso según el rumbo y los cuerpos cercanos, y telemetría de
+   * navegación: cuerpo más cercano y distancia y tiempo estimado hasta el
+   * objetivo (planeta seleccionado, nave fijada o cuerpo que se tiene de frente).
    */
-  private nearestBodyClearance(): number {
-    if (!this.ship || !this.layout) return Infinity;
-    const pos = this.ship.position;
-    let best = pos.length() / (this.layout.starRadius * PULSE_SAFE_RADII);
-    const tmp = new THREE.Vector3();
-    for (const p of this.planets) best = Math.min(best, p.mesh.getWorldPosition(tmp).distanceTo(pos) / (p.layout.size * PULSE_SAFE_RADII));
-    return best;
-  }
-
-  /** El pulso se apaga solo al entrar en la zona de seguridad de un planeta o de la estrella. */
-  private checkPulse(): void {
+  private updateNavigation(): void {
     const flight = this.flight;
-    if (!flight?.pulse) return;
-    if (this.nearestBodyClearance() < 1) {
-      flight.pulse = false;
-      // Llega con poca velocidad: el pulso no se lleva por delante al planeta.
-      flight.velocity.setLength(Math.min(flight.velocity.length(), PILOT_SPEED * PILOT_BOOST));
+    const ship = this.ship;
+    if (!flight || !ship) return;
+    const pos = ship.position;
+    const fwd = this.forward();
+    const bodies = this.bodies();
+    const heading = [fwd.x, fwd.y, fwd.z];
+    flight.pulseLimit = pulseLimitAt([pos.x, pos.y, pos.z], heading, bodies.map((b) => ({ center: [b.center.x, b.center.y, b.center.z], radius: b.radius })));
+
+    let nearest: FlightTelemetry["nearest"] = null;
+    let ahead: { name: string; distance: number; at: THREE.Vector3 } | null = null;
+    let bestAlign = Math.cos((8 * Math.PI) / 180);
+    const selected = gameStore.getState().selectedPlanet;
+    let target: { name: string; distance: number; at: THREE.Vector3 } | null = null;
+    for (const b of bodies) {
+      const surface = b.center.distanceTo(pos) - b.radius;
+      if (!nearest || surface < nearest.distance) nearest = { name: b.name, distance: Math.max(0, surface) };
+      const dir = b.center.clone().sub(pos).normalize();
+      const align = dir.dot(fwd);
+      if (align > bestAlign) {
+        bestAlign = align;
+        ahead = { name: b.name, distance: Math.max(0, surface), at: b.center };
+      }
+      if (b.planetIndex !== null && b.planetIndex === selected) target = { name: b.name, distance: Math.max(0, surface), at: b.center };
     }
+    const locked = spaceStore.getState().targetId;
+    const lockedAt = locked ? this.remote.positionOf(locked) : null;
+    if (!target && locked && lockedAt) {
+      const s = spaceStore.getState().ships[locked];
+      target = { name: s ? shipName(s.state, gameStore.getState().locale) : "", distance: lockedAt.distanceTo(pos), at: lockedAt };
+    }
+    target ??= ahead;
+    let eta: FlightTelemetry["eta"] = null;
+    if (target) {
+      const closing = flight.velocity.dot(target.at.clone().sub(pos).normalize());
+      eta = { name: target.name, distance: target.distance, seconds: closing > 1 ? target.distance / closing : null };
+    }
+    telemetry.nearest = nearest;
+    telemetry.eta = eta;
+    telemetry.speed = flight.speed;
+    telemetry.pulse = flight.pulse;
+    telemetry.pulseLimit = flight.pulseLimit;
+    telemetry.thrust = flight.thrust;
+    // Actitud respecto al plano orbital (y = arriba) y rumbo respecto a la estrella.
+    const up = new THREE.Vector3(0, 1, 0);
+    telemetry.pitch = Math.asin(Math.max(-1, Math.min(1, fwd.dot(up))));
+    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(ship.quaternion);
+    telemetry.roll = Math.atan2(-right.y, new THREE.Vector3(0, 1, 0).applyQuaternion(ship.quaternion).y);
+    const toStar = pos.clone().negate().setY(0);
+    const flat = fwd.clone().setY(0);
+    telemetry.heading = toStar.lengthSq() > 0 && flat.lengthSq() > 0 ? Math.atan2(toStar.clone().cross(flat).y, toStar.dot(flat)) : 0;
   }
 
   /** Mantener la tecla dispara el cañón a su cadencia, hacia donde apunta el morro. */
@@ -597,8 +639,8 @@ export class SystemView implements View {
       this.selectRing.visible = false;
     }
     if (this.ship && this.flight) {
+      this.updateNavigation();
       this.flight.update(dt);
-      this.checkPulse();
       this.collide();
       this.applyCorrection();
       this.sendPose(dt);

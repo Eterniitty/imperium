@@ -1,7 +1,7 @@
 import { EMPEROR_FLAGSHIP, PIRATE_RAIDER } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import type { ServerMessage, ShipPose, ShipState, StarSystemDetail, StarSystemSummary, Vec3, WeaponKind } from "@imperium/shared";
-import { isTravelling, plausibleMove, systemLayout, type SystemLayout } from "@imperium/sim";
+import { bodiesAt, isTravelling, PILOT_BOOST, PILOT_SPEED, plausibleMove, pulseLimitAt, systemLayout, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { ServerConfig } from "../config";
 import type { EmperorService } from "../emperor/service";
@@ -108,6 +108,18 @@ export class SpaceService {
     return this.layout(systemId)?.boundary ?? 0;
   }
 
+  /**
+   * Velocidad más alta posible entre dos puntos: la del pulso alejándose del
+   * cuerpo más cercano (el caso más permisivo) en el mejor de los dos extremos,
+   * y nunca menos que la de maniobra con impulso.
+   */
+  private maxSpeedAt(systemId: string, a: Vec3, b: Vec3, now: number): number {
+    const layout = this.layout(systemId);
+    if (!layout) return PILOT_SPEED * PILOT_BOOST;
+    const bodies = bodiesAt(layout, now);
+    return Math.max(PILOT_SPEED * PILOT_BOOST, pulseLimitAt(a, null, bodies), pulseLimitAt(b, null, bodies));
+  }
+
   private combatantOf(emperorId: string): Combatant {
     let c = this.combatants.get(emperorId);
     if (!c) this.combatants.set(emperorId, (c = new Combatant(EMPEROR_FLAGSHIP.hull, EMPEROR_FLAGSHIP.combat, this.now())));
@@ -152,7 +164,7 @@ export class SpaceService {
     m.clients.add(client);
     const t = this.now();
     const outside = Math.hypot(...pose.p) > this.boundary(systemId) + BOUNDARY_SLACK;
-    if (outside || !plausibleMove(m.pose.p, pose.p, (t - m.poseAt) / 1000)) {
+    if (outside || !plausibleMove(m.pose.p, pose.p, (t - m.poseAt) / 1000, this.maxSpeedAt(systemId, m.pose.p, pose.p, t))) {
       // Posición imposible: se ignora y la nave vuelve a la última válida.
       client.send({ t: "poseRejected", ...m.pose });
       return;

@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { stepPulseSpeed } from "@imperium/sim";
 import type { Keyboard } from "./input";
 
 /**
@@ -24,11 +25,14 @@ export class FlightController {
   /** Mayor = responde antes; menor = más inercia. */
   responsiveness = 2.5;
   /**
-   * Motor de pulso: solo hacia delante, a `pulseSpeed`, con algo más de inercia.
-   * Lo enciende y apaga quien use el controlador (la vista de sistema).
+   * Motor de pulso (supercrucero): solo hacia delante. Quien use el controlador
+   * (la vista de sistema) lo enciende y apaga y fija en cada fotograma su
+   * velocidad máxima (`pulseLimit`, según la distancia a los cuerpos); la
+   * velocidad sube y baja de forma suave hacia ese límite.
    */
-  pulse = false;
-  pulseSpeed = 0;
+  private pulseOn = false;
+  pulseLimit = 0;
+  private pulseSpeed = 0;
 
   private dragging = false;
   private lastX = 0;
@@ -49,6 +53,19 @@ export class FlightController {
   get speed(): number {
     return this.velocity.length();
   }
+
+  get pulse(): boolean {
+    return this.pulseOn;
+  }
+
+  /** Enciende o apaga el pulso; arranca desde la velocidad que se lleve. */
+  set pulse(on: boolean) {
+    if (on && !this.pulseOn) this.pulseSpeed = this.velocity.length();
+    this.pulseOn = on;
+  }
+
+  /** Empuje relativo (0–1) para el brillo de los motores. */
+  thrust = 0;
 
   private onDown = (e: PointerEvent) => {
     if (!this.enabled) return;
@@ -75,6 +92,7 @@ export class FlightController {
   /** Detiene la nave en seco (al cambiar de modo o teletransportar). */
   stop(): void {
     this.velocity.set(0, 0, 0);
+    this.pulseSpeed = 0;
   }
 
   /** Devuelve el desplazamiento aplicado este fotograma. */
@@ -98,11 +116,21 @@ export class FlightController {
     if (input.lengthSq() > 0) input.normalize();
 
     const boost = kb.action("boost") ? this.boostFactor : 1;
-    if (this.pulse) this.desired.set(0, 0, -1).applyQuaternion(this.camera.quaternion).multiplyScalar(this.pulseSpeed);
-    else this.desired.copy(input).applyQuaternion(this.camera.quaternion).multiplyScalar(this.baseSpeed * boost);
-    const k = 1 - Math.exp(-dt * (this.pulse ? this.responsiveness * 0.6 : this.responsiveness));
-    this.velocity.lerp(this.desired, k);
-    if (this.velocity.lengthSq() < 1e-6 && input.lengthSq() === 0) this.velocity.set(0, 0, 0);
+    if (this.pulseOn) {
+      // Supercrucero: la nave va siempre hacia el morro; la velocidad, suave hacia el límite.
+      this.pulseSpeed = stepPulseSpeed(this.pulseSpeed, this.pulseLimit, dt);
+      this.velocity.set(0, 0, -1).applyQuaternion(this.camera.quaternion).multiplyScalar(this.pulseSpeed);
+      this.thrust = 1;
+    } else {
+      this.desired.copy(input).applyQuaternion(this.camera.quaternion).multiplyScalar(this.baseSpeed * boost);
+      // Al salir del pulso a gran velocidad se frena más deprisa que al maniobrar.
+      const fast = this.velocity.lengthSq() > (this.baseSpeed * this.boostFactor * 2) ** 2;
+      const k = 1 - Math.exp(-dt * (fast ? this.responsiveness * 1.6 : this.responsiveness));
+      this.velocity.lerp(this.desired, k);
+      if (this.velocity.lengthSq() < 1e-6 && input.lengthSq() === 0) this.velocity.set(0, 0, 0);
+      const target = input.lengthSq() > 0 ? (boost > 1 ? 1 : 0.55) : 0.08;
+      this.thrust += (target - this.thrust) * Math.min(1, dt * 4);
+    }
 
     const step = this.velocity.clone().multiplyScalar(dt);
     this.camera.position.add(step);

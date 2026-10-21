@@ -290,7 +290,6 @@ export const es = {
   "combat.pirates": "Carroñeros en el sistema",
   "action.pulse": "Motor de pulso (encender / apagar)",
   "pilot.pulse": "Pulso",
-  "pilot.pulseBlocked": "Demasiado cerca de un cuerpo celeste para encender el pulso.",
   "pilot.unitKm": "km/s",
   "pilot.unitM": "m/s",
   "error.no_build": "Ese encargo ya no está en la cola.",
@@ -514,8 +513,8 @@ export const es = {
   "wiki.k.respawn": "Tiempo hasta que reaparece uno derribado",
   "wiki.k.pilotSpeed": "Velocidad normal (maniobra y combate)",
   "wiki.k.boost": "Impulso",
-  "wiki.k.pulse": "Motor de pulso",
-  "wiki.k.pulseSafe": "El pulso se apaga a menos de",
+  "wiki.k.pulse": "Motor de pulso (máximo)",
+  "wiki.k.pulseSafe": "Pulso junto a un cuerpo, de frente",
   "wiki.k.jumpSpeed": "Salto entre estrellas (nave del Emperador)",
   "wiki.k.round": "Duración de una ronda",
   "wiki.k.maxRounds": "Rondas como máximo (luego, tablas)",
@@ -773,6 +772,10 @@ export const es = {
   "wiki.personality.expansionist": "Expansionista",
   "wiki.personality.merchant": "Mercader (vende excedentes)",
   "wiki.personality.militarist": "Militarista",
+  "pilot.pulseHint": "{key}: motor de pulso",
+  "pilot.pulseLimit": "máx. {v}",
+  "pilot.eta": "Tiempo estimado",
+  "pilot.etaNone": "—",
 } as const;
 
 export type I18nKey = keyof typeof es;

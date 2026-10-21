@@ -10,6 +10,7 @@
  */
 import { hashString, Rng, STAR_CLASSES } from "@imperium/procgen";
 import type { PlanetType, StarSystemDetail } from "@imperium/shared";
+import type { PulseBody } from "./flight";
 
 export interface PlanetLayout {
   index: number;
@@ -92,4 +93,14 @@ export function planetPosition(p: PlanetLayout, serverTimeMs: number): { x: numb
 /** Semilla estable para los detalles visuales de un sistema (anillos, lunas…). */
 export function systemVisualSeed(systemId: string): Rng {
   return new Rng(hashString(systemId));
+}
+
+/** Estrella y planetas como esferas a la hora `serverTimeMs` (para el límite del pulso y la validación). */
+export function bodiesAt(layout: SystemLayout, serverTimeMs: number): PulseBody[] {
+  const out: PulseBody[] = [{ center: [0, 0, 0], radius: layout.starRadius }];
+  for (const p of layout.planets) {
+    const c = planetPosition(p, serverTimeMs);
+    out.push({ center: [c.x, c.y, c.z], radius: p.size });
+  }
+  return out;
 }
