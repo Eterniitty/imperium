@@ -85,6 +85,16 @@ In the cockpit you see the **artificial horizon** (relative to the orbital plane
 - **Rounds and missiles**: limited. Only a small reserve is made on board.
 - **Resupply**: within 150 km of a planet with **one of your colonies**, the ship refills by itself from the colony's stock (volatiles for fuel, metal for rounds, alloys for missiles).
 
+## Escorts
+
+When you take the controls in a system where you have stationary fleets (not in battle), their **armed ships come out to escort you**: the biggest ones, up to the cap in the table. They fly in a wedge behind you and, if a Scavenger comes close, go after the nearest one (with their own aim, and holding fire when you or another escort is in the line of fire). They cannot keep up with the pulse: if they fall far behind, they rejoin you in one jump.
+
+- Escorts are real ships of your fleet: if they are destroyed, **the fleet loses them**; when you park, jump or leave the system they return to their fleet with whatever hull they have left.
+- Scavengers attack them too, and other ships see them with your name.
+- If you remotely pilot one of them, it stops escorting you and comes under your control.
+
+{{tabla:escoltas}}
+
 ## Docking in a mothership
 
 The **mothership** is the biggest ship you can build (1600 m, in an orbital drydock; see [Human ships](/wiki/naves)). When one of your fleets with a mothership is stationary in the system where you are flying, get close to it and press [[Enter]] (dock): your ship enters its hangar and **resupplies from the fleet's hold** as it would next to one of your colonies (volatiles → fuel, metal → ammunition, alloys → missiles and hull). Fill the fleet's hold at a colony first (see [Logistics](/wiki/logistica)).

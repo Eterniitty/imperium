@@ -334,6 +334,23 @@ export const PIRATE_AI = {
   friendlyFireClearanceU: 150,
 } as const;
 
+/**
+ * Escolta (Fase 9d, `docs/ia-naves.md` §5): las naves armadas de las flotas
+ * propias paradas en el sistema donde pilota el Emperador salen a escoltarlo
+ * (hasta `maxShips`), en formación a su alrededor, y atacan a los Carroñeros
+ * que se acerquen a menos de `engageRangeU` de él. Con el pulso no le siguen el
+ * paso: si se quedan a más de `catchUpM`, se reúnen con él de un salto.
+ */
+export const ESCORT = {
+  maxShips: 6,
+  engageRangeU: 7000,
+  speedU: 320,
+  preferredRangeU: 1500,
+  spacingM: 900,
+  catchUpM: 25000,
+  aimJitter: 0.03,
+} as const;
+
 /** Nivel de peligro de los Carroñeros de un sistema (según su distancia al Núcleo Humano). */
 export interface ScavengerDangerLevel {
   /** Anillo mínimo (distancia al Núcleo en sectores, como en el territorio). */

@@ -157,6 +157,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
       await fleets.removeShip(fleetId, shipId);
       await hub.publishFleet(emperorId, fleetId);
     },
+    escorts: (emperorId, systemId, max) => fleets.escorts(emperorId, systemId, max),
   };
   // Fase 10: muerte y linaje (Cunas, gestación, Herederos y encarnación).
   const lineage = new LineageService(deps.db, config, colonies, app.log);

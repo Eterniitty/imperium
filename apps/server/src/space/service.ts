@@ -1,6 +1,6 @@
-import { AIM_ASSIST, BODY_COLLISION, EMPEROR_FLAGSHIP, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, getAlienShipClass, getShipClass, MINING, PIRATE_AI, type ShipClassId } from "@imperium/content";
-import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, isDeepId, type CommandError, type ServerMessage, type ShipPose, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
-import { addToHold, avoidObstacles, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
+import { AIM_ASSIST, BODY_COLLISION, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, getAlienShipClass, getShipClass, MINING, PIRATE_AI, type ShipClassId } from "@imperium/content";
+import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, isDeepId, type CommandError, type ServerMessage, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
+import { addToHold, arriveVelocity, avoidObstacles, escortSlot, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { EmperorService } from "../emperor/service";
 import type { Client, RemotePilot } from "../realtime/hub";
@@ -16,8 +16,10 @@ interface Member {
   /** Id del Emperador, o "pirate:<sistema>:<n>" para los piratas. */
   emperorId: string;
   kind: "emperor" | "pirate" | "fleet";
-  /** Solo naves de flota pilotadas a distancia: su Emperador, su clase, su flota y su nave (en la base de datos). */
+  /** Solo naves de flota (pilotadas a distancia o escoltas): su Emperador, su clase, su flota y su nave (en la base de datos). */
   owner?: string;
+  /** Solo escoltas de la IA (Fase 9d): a quién escoltan, su sitio en la formación y su modo. */
+  escort?: { leader: string; slot: number; mode: PirateMode };
   classId?: string;
   fleetId?: string;
   shipId?: string;
@@ -134,7 +136,12 @@ export class SpaceService {
   /** La bodega de una flota cambió (reposición acoplada): avisar a su dueño. */
   onFleetCargo: ((emperorId: string, fleetId: string) => void) | null = null;
   /** Naves de flota pilotadas a distancia: guardar su casco al dejarlas y borrarlas si las destruyen (los pone el servidor). */
-  fleetShips: { saveHull(emperorId: string, fleetId: string, shipId: string, hull: number): Promise<void>; destroyed(emperorId: string, fleetId: string, shipId: string): Promise<void> } | null = null;
+  fleetShips: {
+    saveHull(emperorId: string, fleetId: string, shipId: string, hull: number): Promise<void>;
+    destroyed(emperorId: string, fleetId: string, shipId: string): Promise<void>;
+    /** Naves armadas de las flotas paradas en el sistema que salen a escoltar (Fase 9d). */
+    escorts(emperorId: string, systemId: string, max: number): Promise<Array<{ fleetId: string; shipId: string; classId: string; hull: number }>>;
+  } | null = null;
   /** Emperadores con la refinería de a bordo encendida (volátiles de la bodega → combustible). */
   private readonly refining = new Set<string>();
   /** Uniones en curso, para no validar dos veces a la vez la misma nave. */
@@ -447,6 +454,7 @@ export class SpaceService {
 
   /** La flota se va (orden de viaje o intercepción): quien pilotaba una de sus naves deja de hacerlo. */
   releaseFleet(fleetId: string): void {
+    for (const m of [...this.members.values()]) if (m.escort && m.fleetId === fleetId) this.dismissEscort(m);
     for (const m of this.members.values()) {
       if (m.dock?.fleetId !== fleetId) continue;
       m.dock = null;
@@ -457,6 +465,139 @@ export class SpaceService {
       for (const c of [...m.clients]) {
         this.endRemote(c, "left");
         c.send({ t: "remoteEnded", reason: "left" });
+      }
+    }
+  }
+
+  // --- Escoltas de la IA (Fase 9d, `ESCORT`) ---
+
+  /** La nave del Emperador toma los mandos: las naves armadas de sus flotas paradas aquí salen a escoltarla. */
+  private async spawnEscorts(leader: Member): Promise<void> {
+    if (!this.fleetShips || isDeepId(leader.systemId)) return;
+    let list: Awaited<ReturnType<NonNullable<SpaceService["fleetShips"]>["escorts"]>>;
+    try {
+      list = await this.fleetShips.escorts(leader.emperorId, leader.systemId, ESCORT.maxShips);
+    } catch (err) {
+      return this.log.error(err, "Error al buscar las escoltas");
+    }
+    const room = this.rooms.get(leader.systemId);
+    // Mientras se consultaba pudo dejar de pilotar.
+    if (!room || leader.park || this.members.get(leader.emperorId) !== leader) return;
+    const now = this.now();
+    list.forEach((e, i) => {
+      const key = fleetShipKey(e.shipId);
+      // Ya está en el espacio (pilotada a distancia o escoltando).
+      if (this.members.has(key)) return;
+      const cls = getShipClass(e.classId as ShipClassId);
+      if (!cls) return;
+      const combat = new Combatant(cls.hull, cls.combat, now);
+      combat.hull = Math.max(1, Math.min(cls.hull, e.hull));
+      this.combatants.set(key, combat);
+      const p = escortSlot(leader.pose.p, leader.pose.q, i);
+      const m: Member = {
+        emperorId: key,
+        kind: "fleet",
+        owner: leader.emperorId,
+        classId: cls.id,
+        fleetId: e.fleetId,
+        shipId: e.shipId,
+        escort: { leader: leader.emperorId, slot: i, mode: "hunt" },
+        radius: Math.max(HIT_RADIUS, cls.model.lengthM * 0.45),
+        name: leader.name,
+        systemId: leader.systemId,
+        clients: new Set(),
+        pose: { p, q: leader.pose.q, v: leader.pose.v },
+        poseAt: now,
+        history: [{ t: now, p }],
+        dirty: true,
+        allies: leader.allies,
+        combat,
+        sentShield: -1,
+        park: null,
+      };
+      for (const o of room) this.sendTo(o, { t: "ship", ship: this.stateFor(m, o) });
+      room.add(m);
+      this.members.set(key, m);
+    });
+  }
+
+  /** Una escolta vuelve a su flota con el casco que le quede. */
+  private dismissEscort(m: Member): void {
+    const hull = Math.round(m.combat.hull);
+    this.leave(m.emperorId, "left");
+    this.combatants.delete(m.emperorId);
+    void this.fleetShips?.saveHull(m.owner!, m.fleetId!, m.shipId!, hull).catch((err: unknown) => this.log.error(err, "Error al guardar el casco de una escolta"));
+  }
+
+  private dismissEscorts(leaderId: string): void {
+    for (const m of [...this.members.values()]) if (m.escort?.leader === leaderId) this.dismissEscort(m);
+  }
+
+  /**
+   * Un paso de las escoltas: en formación detrás de su Emperador (si se quedan
+   * muy atrás, se reúnen de un salto); si un Carroñero se acerca a él, van a
+   * por el más cercano, con la misma disciplina de fuego que los piratas.
+   */
+  private stepEscorts(now: number): void {
+    const dt = TICK_MS / 1000;
+    for (const [systemId, room] of this.rooms) {
+      const escorts = [...room].filter((m) => m.escort);
+      if (escorts.length === 0) continue;
+      const pirates = [...room].filter((o) => o.kind === "pirate" && o.combat.hull > 0);
+      const obstacles = this.pirateObstacles(systemId, now);
+      for (const m of escorts) {
+        const e = m.escort!;
+        const leader = this.members.get(e.leader);
+        if (!leader || leader.park || leader.systemId !== m.systemId) {
+          this.dismissEscort(m);
+          continue;
+        }
+        let target: Member | null = null;
+        let best: number = ESCORT.engageRangeU;
+        for (const o of pirates) {
+          const d = distance(leader.pose.p, o.pose.p);
+          if (d < best) {
+            best = d;
+            target = o;
+          }
+        }
+        const slot = escortSlot(leader.pose.p, leader.pose.q, e.slot);
+        let step: { p: Vec3; v: Vec3; q: Quat };
+        if (!target && distance(m.pose.p, slot) > ESCORT.catchUpM) {
+          // Se quedó atrás (el Emperador va con el pulso): se reúne con él.
+          step = { p: slot, v: leader.pose.v, q: leader.pose.q };
+        } else if (target) {
+          const toward = normalize([target.pose.p[0] - m.pose.p[0], target.pose.p[1] - m.pose.p[1], target.pose.p[2] - m.pose.p[2]]);
+          const underFire = now - m.combat.lastHitAt < PIRATE_AI.underFireSec * 1000;
+          step = stepPirate(m.pose.p, m.pose.v, slot, target.pose.p, dt, (e.slot * 0.37) % 1, { speedU: ESCORT.speedU, preferredRangeU: ESCORT.preferredRangeU }, {
+            mode: "hunt",
+            threat: target.pose.p,
+            avoid: avoidObstacles(m.pose.p, m.pose.v, obstacles, ESCORT.speedU),
+            jink: underFire && toward ? jinkVector(toward, (e.slot * 0.37) % 1, now / 1000, ESCORT.speedU) : null,
+          });
+        } else {
+          const want = arriveVelocity(m.pose.p, slot, leader.pose.v, Math.max(ESCORT.speedU, Math.hypot(...leader.pose.v) * 1.2));
+          const avoid = avoidObstacles(m.pose.p, m.pose.v, obstacles, ESCORT.speedU);
+          const k = 1 - Math.exp(-dt * 2);
+          const v: Vec3 = [m.pose.v[0] + (want[0] + avoid[0] - m.pose.v[0]) * k, m.pose.v[1] + (want[1] + avoid[1] - m.pose.v[1]) * k, m.pose.v[2] + (want[2] + avoid[2] - m.pose.v[2]) * k];
+          step = { p: [m.pose.p[0] + v[0] * dt, m.pose.p[1] + v[1] * dt, m.pose.p[2] + v[2] * dt], v, q: leader.pose.q };
+        }
+        m.pose = step;
+        m.poseAt = now;
+        m.history.push({ t: now, p: step.p });
+        if (m.history.length > HISTORY_SIZE) m.history.shift();
+        m.dirty = true;
+        if (!target) continue;
+        const dist = distance(step.p, target.pose.p);
+        const cannon = m.combat.weapons.get("cannon");
+        const lead = cannon ? leadPoint(step.p, step.v, target.pose.p, target.pose.v, cannon.def.speedU) : null;
+        const aim = lead?.dir ?? normalize([target.pose.p[0] - step.p[0], target.pose.p[1] - step.p[1], target.pose.p[2] - step.p[2]]);
+        const j = () => (Math.random() - 0.5) * ESCORT.aimJitter;
+        // Nunca con su Emperador ni otra escolta en la línea de tiro.
+        const friends = [leader, ...escorts.filter((o) => o !== m)].map((o) => o.pose.p);
+        if (aim && cannon && dist <= cannon.def.rangeU && !friendInLine(step.p, aim, dist, friends)) this.fireFrom(m, "cannon", [aim[0] + j(), aim[1] + j(), aim[2] + j()]);
+        const missile = m.combat.weapons.get("missile");
+        if (aim && missile && dist <= missile.def.rangeU && (missile.ammo ?? 0) > 0 && now >= missile.readyAt) this.fireFrom(m, "missile", aim, target.emperorId);
       }
     }
   }
@@ -472,6 +613,8 @@ export class SpaceService {
     const room = await this.ensureRoom(systemId);
     const already = this.members.get(key);
     if (already) {
+      // Era una escolta de la IA: ahora la pilota el jugador.
+      already.escort = undefined;
       already.clients.add(client);
       return already;
     }
@@ -624,6 +767,7 @@ export class SpaceService {
     const arrival = this.riftArrivals.take(m.emperorId, now);
     if (arrival) this.relayRift(m, arrival);
     void this.sendHold(m);
+    void this.spawnEscorts(m);
     // Espacio profundo: el contenido de la región (secreto: solo a quien está en ella).
     if (isDeepId(m.systemId) && this.deep) {
       const deep = this.deep;
@@ -815,6 +959,7 @@ export class SpaceService {
     const p: Vec3 = [m.pose.p[0] + m.pose.v[0] * ahead, m.pose.p[1] + m.pose.v[1] * ahead, m.pose.p[2] + m.pose.v[2] * ahead];
     m.park = { p, at: now };
     m.dock = null;
+    this.dismissEscorts(m.emperorId);
     m.pose = { p, q: m.pose.q, v: parkedVelocity(m.park, now) };
     m.poseAt = now;
     m.dirty = true;
@@ -875,6 +1020,7 @@ export class SpaceService {
   leave(emperorId: string, reason: "left" | "destroyed" | "jump"): void {
     const m = this.members.get(emperorId);
     if (!m) return;
+    if (m.kind === "emperor") this.dismissEscorts(emperorId);
     this.members.delete(emperorId);
     const room = this.rooms.get(m.systemId);
     room?.delete(m);
@@ -1172,7 +1318,7 @@ export class SpaceService {
       const pack = [...room].filter((m) => m.kind === "pirate" && m.ai);
       if (pack.length > 0) {
         // Solo naves pilotadas: una nave aparcada, sin nadie a bordo, no les llama la atención.
-        const enemies = [...room].filter((o) => o.kind !== "pirate" && o.clients.size > 0 && o.combat.hull > 0);
+        const enemies = [...room].filter((o) => o.kind !== "pirate" && (o.clients.size > 0 || o.escort) && o.combat.hull > 0);
         const preyId = packTarget(
           pack.map((m) => m.pose.p),
           enemies.map((o) => ({ id: o.emperorId, p: o.pose.p, hull: o.combat.hull, shield: o.combat.shield })),
@@ -1431,6 +1577,7 @@ export class SpaceService {
   private tick(): void {
     const now = this.now();
     this.stepPirates(now);
+    this.stepEscorts(now);
     this.stepParked(now);
     this.collideShips(now);
     this.heatShips(now);

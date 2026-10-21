@@ -16,6 +16,7 @@ import type { Battle, Colony, Fleet, Locale, ShipCounts } from "@imperium/shared
 import { translate } from "@imperium/shared";
 import { fleetRallyPoint, fleetSlotPosition, type SystemLayout } from "@imperium/sim";
 import { serverNow, worldStore } from "../net/world";
+import { fleetShipId, spaceStore } from "../net/space";
 import { gameStore } from "../state/store";
 import { createShipModel, shipLength } from "./shipFactory";
 import type { ShipRig } from "./shipModel";
@@ -177,6 +178,7 @@ export class FleetScene {
   update(dt: number, time: number): void {
     if (!this.systemId || !this.layout) return;
     const { fleets, battles } = worldStore.getState();
+    const flying = spaceStore.getState().ships;
     const locale = gameStore.getState().locale;
     const base = this.anchor(new THREE.Vector3());
 
@@ -187,7 +189,8 @@ export class FleetScene {
     parked.forEach((f, i) => {
       seen.add(f.id);
       const counts: ShipCounts = {};
-      for (const s of f.ships) counts[s.classId] = (counts[s.classId] ?? 0) + 1;
+      // Las naves que vuelan por su cuenta (escoltas o pilotadas a distancia) no se dibujan con su flota.
+      for (const s of f.ships) if (!flying[fleetShipId(s.id)]) counts[s.classId] = (counts[s.classId] ?? 0) + 1;
       const h = this.hidden;
       if (h && h.fleetId === f.id && counts[h.classId]) counts[h.classId]! -= 1;
       const key = JSON.stringify(Object.entries(counts).sort());

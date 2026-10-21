@@ -146,6 +146,23 @@ export class FleetService {
     return { ok: true, slot, colonyPlanet, lengthM: mother.model.lengthM };
   }
 
+  /**
+   * Naves que salen a escoltar al Emperador en `systemId` (Fase 9d): las
+   * armadas de sus flotas paradas allí fuera de batalla, las más grandes primero.
+   */
+  async escorts(emperorId: string, systemId: string, max: number): Promise<Array<{ fleetId: string; shipId: string; classId: string; hull: number }>> {
+    const all = await this.byEmperor(emperorId);
+    const out: Array<{ fleetId: string; shipId: string; classId: string; hull: number; size: number }> = [];
+    for (const f of all) {
+      if (f.travel || f.battleId || f.location.systemId !== systemId) continue;
+      for (const s of f.ships) {
+        const cls = getShipClass(s.classId as ShipClassId);
+        if (cls && cls.combat.weapons.length > 0) out.push({ fleetId: f.id, shipId: s.id, classId: s.classId, hull: s.hull, size: cls.hull });
+      }
+    }
+    return out.sort((a, b) => b.size - a.size || (a.shipId < b.shipId ? -1 : 1)).slice(0, max).map(({ size: _size, ...e }) => e);
+  }
+
   /** Casco de una nave tras pilotarla a distancia. */
   async setShipHull(fleetId: string, shipId: string, hull: number): Promise<void> {
     await this.db.update(ships).set({ hull: Math.max(1, Math.round(hull)) }).where(and(eq(ships.id, shipId), eq(ships.fleetId, fleetId)));

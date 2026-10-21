@@ -85,6 +85,16 @@ En la cabina ves el **horizonte artificial** (respecto al plano de las órbitas)
 - **Proyectiles y misiles**: contados. A bordo solo se fabrica una pequeña reserva.
 - **Reponer**: a menos de 150 km de un planeta con **colonia propia**, la nave se repone sola con las existencias de la colonia (volátiles para el combustible, metal para los proyectiles, aleaciones para los misiles).
 
+## Escoltas
+
+Cuando tomas los mandos en un sistema donde tienes flotas paradas (fuera de batalla), sus **naves armadas salen a escoltarte**: las más grandes, hasta el tope de la tabla. Vuelan en cuña detrás de ti y, si un Carroñero se acerca, van a por el más cercano (con su propia puntería y sin disparar si tú u otra escolta estáis en la línea de tiro). Con el pulso no te siguen el paso: si se quedan muy atrás, se reúnen contigo de un salto.
+
+- Las escoltas son naves de verdad de tu flota: si las destruyen, **la flota las pierde**; al aparcar, saltar o dejar el sistema vuelven a su flota con el casco que les quede.
+- Los Carroñeros también las atacan, y las demás naves las ven con tu nombre.
+- Si pilotas a distancia una de ellas, deja de escoltarte y pasa a tus mandos.
+
+{{tabla:escoltas}}
+
 ## Acoplarse en una nave nodriza
 
 La **nave nodriza** es la nave más grande que puedes construir (1600 m, en un dique orbital; ver [Naves humanas](/wiki/naves)). Cuando una flota tuya con nave nodriza está parada en el sistema donde pilotas, acércate a ella y pulsa [[Enter]] (acoplar): tu nave entra en su hangar y **se repone de la bodega de la flota** como junto a una colonia propia (volátiles → combustible, metal → munición, aleaciones → misiles y casco). Llena antes la bodega de la flota en una colonia (ver [Logística](/wiki/logistica)).

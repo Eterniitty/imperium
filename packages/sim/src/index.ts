@@ -16,3 +16,4 @@ export * from "./aim";
 export * from "./heat";
 export * from "./rally";
 export * from "./ai/pirate";
+export * from "./ai/escort";

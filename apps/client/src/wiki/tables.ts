@@ -35,6 +35,7 @@ import {
   STAR_HEAT,
   FLEET_TACTICS,
   PROBE,
+  ESCORT,
   FLEET_TACTIC_IDS,
   STAR_HEAT_LETHAL_DPS,
   FLEET_BATTLE,
@@ -509,6 +510,14 @@ export const GEN_TABLES: Record<string, Builder> = {
     }),
     numeric: [1, 2],
   }),
+
+  escoltas: (t, locale) =>
+    kv(t, [
+      ["wiki.k.escortMax", num(locale, ESCORT.maxShips)],
+      ["wiki.k.escortEngage", `${num(locale, ESCORT.engageRangeU)} m`],
+      ["wiki.k.escortSpeed", `${num(locale, ESCORT.speedU)} m/s`],
+      ["wiki.k.escortCatchUp", `${num(locale, ESCORT.catchUpM / 1000)} km`],
+    ]),
 
   sondas: (t, locale) =>
     kv(t, [
