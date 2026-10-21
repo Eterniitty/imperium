@@ -53,6 +53,8 @@ export interface GameState {
   settingsOpen: boolean;
   /** Panel de economía abierto: «Humanidad», «Mercado» o ninguno. */
   economyOpen: EconomyTab | null;
+  /** Panel del linaje (Fase 10: Cunas, Herederos, muertes) abierto. */
+  lineageOpen: boolean;
   /** Cámara al pilotar: desde la cabina (primera persona) o desde detrás de la nave (tercera). */
   cameraView: "first" | "third";
   /** Selector de destinos del salto cuántico abierto (al pilotar). */
@@ -73,6 +75,7 @@ export interface GameState {
   notify(key: I18nKey, params?: Record<string, string | number>): void;
   setSettingsOpen(open: boolean): void;
   setEconomyOpen(tab: EconomyTab | null): void;
+  setLineageOpen(open: boolean): void;
   toggleCameraView(): void;
   setQuantumPanel(open: boolean): void;
   setQuantumTarget(target: StarSystemSummary | null): void;
@@ -122,6 +125,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   notice: null,
   settingsOpen: false,
   economyOpen: null,
+  lineageOpen: false,
   cameraView: "third",
   quantumPanel: false,
   quantumTarget: null,
@@ -164,6 +168,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
 
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   setEconomyOpen: (economyOpen) => set({ economyOpen }),
+  setLineageOpen: (lineageOpen) => set({ lineageOpen }),
   toggleCameraView: () => set({ cameraView: get().cameraView === "first" ? "third" : "first" }),
   setQuantumPanel: (quantumPanel) => set({ quantumPanel }),
   setQuantumTarget: (quantumTarget) => set({ quantumTarget }),

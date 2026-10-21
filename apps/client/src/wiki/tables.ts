@@ -26,6 +26,12 @@ import {
   ECONOMY,
   EMPEROR_FLAGSHIP,
   FLEET_BATTLE,
+  FLAGSHIP_BATTLE,
+  FLAGSHIP_REPAIR,
+  FLAGSHIP_SUPPLIES,
+  HEIR_DOCTRINES,
+  HEIRS,
+  LINEAGE,
   HUMANS,
   INSTALLATIONS,
   PIRATE_AI,
@@ -55,6 +61,7 @@ import {
   netRates,
   populationCap,
   type InstallationCounts,
+  gestationMinutes,
 } from "@imperium/sim";
 import { ACTIONS, DEFAULT_BINDINGS, keyLabel, type ActionContext } from "../state/settings";
 
@@ -91,6 +98,7 @@ const INSTALLATION_EFFECT: Record<InstallationId, I18nKey> = {
   shipyard: "wiki.effect.shipyard",
   drydock: "wiki.effect.drydock",
   defense_platform: "wiki.effect.defense_platform",
+  lineage_cradle: "wiki.effect.lineage_cradle",
 };
 
 /** «Astillero, refinería» (las instalaciones que pide una nave). */
@@ -591,6 +599,59 @@ export const GEN_TABLES: Record<string, Builder> = {
       ];
     }),
     numeric: [2],
+  }),
+
+  // --- Fase 10: muerte y linaje ---
+
+  "linaje-gestacion": (t, locale) => {
+    const rows: string[][] = [];
+    for (let n = 1; n <= 12; n++) {
+      rows.push([String(n), t("wiki.v.minutes", { n: num(locale, gestationMinutes(n, false), 1) }), t("wiki.v.minutes", { n: num(locale, gestationMinutes(n, true), 1) })]);
+      if (gestationMinutes(n, false) >= LINEAGE.gestationMaxMinutes) break;
+    }
+    return { head: [t("wiki.col.deathStreak"), t("wiki.col.atCradle"), t("wiki.col.atCore")], rows, numeric: [0, 1, 2] };
+  },
+
+  linaje: (t, locale) => {
+    const onboard = (kind: "cannon" | "missile") => {
+      const w = EMPEROR_FLAGSHIP.combat.weapons.find((x) => x.kind === kind);
+      return w ? Math.min(w.ammo ?? 0, w.ammoRegenMax ?? w.ammo ?? 0) : 0;
+    };
+    return kv(t, [
+      ["wiki.k.gestationBase", t("wiki.v.minutes", { n: num(locale, LINEAGE.gestationBaseMinutes) })],
+      ["wiki.k.gestationGrowth", `× ${num(locale, LINEAGE.gestationGrowth)}`],
+      ["wiki.k.gestationMax", t("wiki.v.hours", { n: num(locale, LINEAGE.gestationMaxMinutes / 60) })],
+      ["wiki.k.coreGestation", `× ${num(locale, LINEAGE.coreGestationFactor)}`],
+      ["wiki.k.streakDecay", t("wiki.v.hours", { n: num(locale, LINEAGE.streakDecayHours) })],
+      ["wiki.k.rebirthHumans", num(locale, LINEAGE.rebirthHumans)],
+      ["wiki.k.rebirthFuel", `${num(locale, FLAGSHIP_SUPPLIES.emergencyFuelMax)} / ${num(locale, FLAGSHIP_SUPPLIES.fuelMax)}`],
+      ["wiki.k.rebirthAmmo", `${num(locale, onboard("cannon"))} · ${num(locale, onboard("missile"))}`],
+      ["wiki.k.incarnateCooldown", t("wiki.v.hours", { n: num(locale, LINEAGE.incarnateCooldownHours) })],
+      ["wiki.k.incarnateLock", t("wiki.v.seconds", { n: num(locale, LINEAGE.incarnateCombatLockSec) })],
+      ["wiki.k.flagshipBattle", t("wiki.v.flagshipBattle", { attack: num(locale, FLAGSHIP_BATTLE.attack), shield: num(locale, FLAGSHIP_BATTLE.battleShield), hull: num(locale, EMPEROR_FLAGSHIP.hull) })],
+      ["wiki.k.repairOnboard", t("wiki.v.repairOnboard", { n: num(locale, FLAGSHIP_REPAIR.onboardPerSec), s: num(locale, FLAGSHIP_REPAIR.onboardDelaySec) })],
+      ["wiki.k.repairColony", t("wiki.v.repairColony", { n: num(locale, FLAGSHIP_REPAIR.colonyPerSec), alloys: num(locale, FLAGSHIP_REPAIR.alloysPerHull) })],
+    ]);
+  },
+
+  herederos: (t, locale) =>
+    kv(t, [
+      ["wiki.k.heirsMax", num(locale, HEIRS.maxPerEmperor)],
+      ["wiki.k.heirCost", cost(t, locale, HEIRS.cost)],
+      ["wiki.k.heirPopulation", num(locale, HEIRS.population)],
+      ["wiki.k.heirGestation", t("wiki.v.hours", { n: num(locale, HEIRS.gestationHours) })],
+      ["wiki.k.governEvery", t("wiki.v.hours", { n: num(locale, HEIRS.governEveryHours) })],
+      ["wiki.k.governReserve", `${num(locale, HEIRS.reserveShare * 100)} %`],
+    ]),
+
+  doctrinas: (t, locale) => ({
+    head: [t("wiki.col.doctrine"), t("wiki.col.extraction"), t("wiki.col.defense"), t("wiki.col.governorBuilds")],
+    rows: HEIR_DOCTRINES.map((d) => [
+      t(`doctrine.${d.id}`),
+      `× ${num(locale, d.extraction)}`,
+      `× ${num(locale, d.defense)}`,
+      d.buildPriority.map((i) => t(`installation.${i}`)).join(" → "),
+    ]),
   }),
 
   "teclas-vuelo": (t, locale) => keysTable(t, locale, "flight"),

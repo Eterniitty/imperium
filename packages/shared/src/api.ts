@@ -90,6 +90,8 @@ export interface Emperor {
   travel: Travel | null;
   /** Emperador humano de la IA (Fase 11); ausente en los jugadores. */
   ai?: true;
+  /** Fase 10: ha caído y su cuerpo nuevo se está gestando (su nave no está en ningún sitio). */
+  gestating?: true;
 }
 
 /** Una nave de una flota. `classId` es una clase de `@imperium/content` (SHIP_CLASSES). */
@@ -221,7 +223,7 @@ export interface FlagshipStatus {
    * tiempo real). El combustible es el de la hora `fuelAt`: por debajo de la
    * reserva de emergencia se regenera solo (`regenFuel` de `@imperium/sim`).
    */
-  supplies: { fuel: number; fuelMax: number; fuelAt: number; cannon: number; cannonMax: number; missiles: number; missilesMax: number };
+  supplies: { fuel: number; fuelMax: number; fuelAt: number; cannon: number; cannonMax: number; missiles: number; missilesMax: number; hull: number; hullMax: number };
 }
 
 /** Construcción en la cola de una colonia: una instalación o una nave (del astillero). */
@@ -602,4 +604,82 @@ export interface MarketMineResponse {
   shipments: ShipmentView[];
   trades: MarketTradeView[];
   maxOpenOrders: number;
+}
+
+// --- Fase 10: muerte y linaje ---
+
+/** Doctrina de gobierno de un Heredero (`HEIR_DOCTRINES` en `@imperium/content`). */
+export type HeirDoctrineId = "prosperity" | "bastion" | "balanced";
+
+/** Dónde renace (o renació) el Emperador. */
+export interface RebirthPlace {
+  /** En una Cuna de linaje, en el Núcleo Humano (sin Cunas) o encarnado en un Heredero. */
+  kind: "cradle" | "core" | "heir";
+  systemId: string;
+  systemName: string;
+  colonyId: string | null;
+  /** Nombre de la colonia (el puesto por el dueño o la designación del planeta). */
+  colonyName: string | null;
+}
+
+/** Una Cuna de linaje propia (instalación `lineage_cradle` de una colonia). */
+export interface CradleView {
+  colonyId: string;
+  colonyName: string;
+  systemId: string;
+  systemName: string;
+  /** Hay un Heredero gestándose o viviendo en esta colonia (uno por colonia). */
+  heirId: string | null;
+}
+
+/** Un Heredero del linaje: se gesta en una Cuna y gobierna una colonia propia. */
+export interface HeirView {
+  id: string;
+  name: string;
+  colonyId: string;
+  colonyName: string;
+  systemId: string;
+  systemName: string;
+  doctrine: HeirDoctrineId;
+  /** El gobernador encarga instalaciones según su doctrina cuando la cola está vacía. */
+  builds: boolean;
+  state: "gestating" | "active";
+  /** Hora del servidor a la que nace (si se gesta). */
+  readyAt: number | null;
+}
+
+/** Una muerte del Emperador (historial del linaje). */
+export interface DeathRecord {
+  id: string;
+  systemId: string;
+  systemName: string;
+  /** En combate pilotado (tiempo real) o en una batalla de flotas por rondas. */
+  cause: "combat" | "battle";
+  /** Quién lo derribó (nombre de un Emperador, de una facción o vacío para piratas). */
+  by: string | null;
+  /** Muerte número tantos de su racha (cuantas más seguidas, más tarda la gestación). */
+  streak: number;
+  diedAt: number;
+  rebornAt: number;
+  /** Dónde renació (null mientras se gesta). */
+  rebirthKind: RebirthPlace["kind"] | null;
+}
+
+/** Estado del linaje de un Emperador (privado: tema `me`). */
+export interface LineageStatus {
+  /** Generación: sube con cada cuerpo nuevo (renacer o encarnarse). */
+  generation: number;
+  /** Muerto y gestándose: desde cuándo, cuándo renace y dónde (se vuelve a decidir al renacer). */
+  dead: { diedAt: number; rebornAt: number; place: RebirthPlace } | null;
+  /** Racha de muertes seguidas a esta hora (se olvida con el tiempo). */
+  streak: number;
+  /** Gestación (ms reales) si muriese ahora: en su Cuna, o en el Núcleo si no tiene. */
+  nextGestationMs: number;
+  /** Cuna preferida para renacer (si sigue siendo suya); null = la más cercana. */
+  preferredCradleId: string | null;
+  cradles: CradleView[];
+  heirs: HeirView[];
+  deaths: DeathRecord[];
+  /** Hora del servidor desde la que puede volver a encarnarse. */
+  incarnateReadyAt: number;
 }

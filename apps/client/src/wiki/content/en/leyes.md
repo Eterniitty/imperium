@@ -6,9 +6,7 @@ In Aeonarch, "Emperor" does not necessarily mean the ruler of an empire: **it is
 
 > The Emperor can die, but the death of their body does not necessarily mean the end of their existence.
 
-**In the game:** if your ship is destroyed, you do not lose. Today you are **reborn in a system of the Human Core** with your ship repaired (hull, shield and ammunition full). Your colonies, fleets and discoveries are still yours.
-
-> [!dev] **Lineage Cradles** (installations where you regenerate, with a gestation that grows longer if you die many times in a row) and **Heirs** (governors of your colonies you will be able to take over) will arrive with the "Death and lineage" phase.
+**In the game:** if your ship is destroyed, you do not lose. Your Emperor is **reborn** in a **Lineage Cradle** (or, without Cradles, in the Human Core) after a **gestation** that grows longer if you die many times in a row, and can **incarnate in their Heirs**. Your colonies, fleets and discoveries are still yours. See [Death and lineage](/wiki/linaje).
 
 ## II. Continuity
 

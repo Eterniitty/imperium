@@ -19,8 +19,9 @@ const columns = {
   destSystemId: emperors.destSystemId,
   departAt: emperors.departAt,
   arriveAt: emperors.arriveAt,
+  deadAt: emperors.deadAt,
 };
-type Row = PlaceRow & { name: string; kind: string };
+type Row = PlaceRow & { name: string; kind: string; deadAt: Date | null };
 
 export type CreateResult = { ok: true; emperor: Emperor } | { ok: false; error: "emperor_exists" | "name_taken" };
 export type MoveResult = { ok: true; emperor: Emperor } | { ok: false; error: CommandError };
@@ -50,7 +51,14 @@ export class EmperorService {
   }
 
   private toEmperor(row: Row): Emperor {
-    return { id: row.id, name: row.name, ...placeFromRow(this.seed, row, this.now()), ...(row.kind === "ai" ? { ai: true as const } : {}) };
+    return {
+      id: row.id,
+      name: row.name,
+      ...placeFromRow(this.seed, row, this.now()),
+      ...(row.kind === "ai" ? { ai: true as const } : {}),
+      // Fase 10: caído y gestándose.
+      ...(row.deadAt ? { gestating: true as const } : {}),
+    };
   }
 
   async byAccount(accountId: string): Promise<Emperor | null> {
@@ -102,21 +110,6 @@ export class EmperorService {
   }
 
   /**
-   * Renace tras caer en combate: aparece en un sistema del Núcleo Humano, sin
-   * viaje. (Las Cunas de linaje, más adelante, darán otros lugares.)
-   */
-  async respawn(emperorId: string): Promise<Emperor | null> {
-    const spawn = pickSpawnSystem(this.seed);
-    const [row] = await this.db
-      .update(emperors)
-      // Renace con la nave en el sitio de aparcamiento por defecto del sistema.
-      .set({ systemId: spawn.id, destSystemId: null, departAt: null, arriveAt: null, ...parkColumns(null), updatedAt: sql`now()` })
-      .where(eq(emperors.id, emperorId))
-      .returning(columns);
-    return row ? this.toEmperor(row) : null;
-  }
-
-  /**
    * Orden de viaje. La fila se bloquea durante la transacción: dos órdenes
    * simultáneas del mismo Emperador se aplican una detrás de otra.
    */
@@ -132,6 +125,8 @@ export class EmperorService {
         .for("update")
         .limit(1);
       if (!row) return { ok: false, error: "no_emperor" };
+      // Fase 10: muerto (gestándose), no tiene nave con la que saltar.
+      if (row.deadAt) return { ok: false, error: "dead" };
       const now = this.now();
       const current = this.toEmperor(row);
       if (isTravelling(current, now)) return { ok: false, error: "in_transit" };

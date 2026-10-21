@@ -76,6 +76,12 @@ export function TopBar() {
           {t("eco.humanity")}
         </button>
       )}
+      {/* Fase 10: linaje (Cunas, Herederos, muertes); en rojo mientras el Emperador se gesta. */}
+      {emperor && (
+        <button className={emperor.gestating ? "btn hide-sm lineage-btn dead" : "btn hide-sm lineage-btn"} onClick={() => gameStore.getState().setLineageOpen(true)} title={t("lineage.openTitle")}>
+          {t("lineage.open")}
+        </button>
+      )}
 
       {emperor && (
         <button className="btn" onClick={() => engineRef.current?.toggleMap()} title={t("action.toggleMap")}>

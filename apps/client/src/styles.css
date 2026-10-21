@@ -671,3 +671,20 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .build-btn .needs { color: #ff9f5a; font-size: 11px; }
 .fleet-ships { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center; }
 .fleet-ships > span { display: inline-flex; align-items: center; gap: 2px; }
+
+/* Fase 10: muerte y linaje. */
+.death-screen { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 45%, rgba(40, 10, 10, 0.35), rgba(2, 3, 10, 0.75)); z-index: 8; pointer-events: none; }
+.death-card { pointer-events: auto; width: min(460px, calc(100% - 24px)); padding: 18px 22px; text-align: center; display: flex; flex-direction: column; gap: 6px; }
+.death-card h2 { font-family: var(--font-display); letter-spacing: 0.1em; margin: 0; color: #ff9f8a; }
+.death-law { font-style: italic; color: #c3cbd9; margin: 0 0 6px; }
+.death-timer { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; }
+.death-timer .meter { width: 100%; }
+.death-time { font-size: 28px; color: var(--gold); }
+.death-heirs { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.death-heirs h4 { margin: 4px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--gold); }
+.death-actions { display: flex; gap: 16px; justify-content: center; margin-top: 8px; }
+.lineage-btn.dead { border-color: rgba(255, 120, 100, 0.7); color: #ffb4a6; }
+.lineage-list li { display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; border: 1px solid var(--panel-border); border-radius: 4px; margin-bottom: 6px; }
+.lineage-actions { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.lineage-actions select { font: inherit; font-size: 12px; }
+.lineage-gestate { margin-top: 10px; }

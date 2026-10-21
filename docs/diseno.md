@@ -35,6 +35,15 @@ El ritmo es **en horas** para construir, producir y asediar. **Viajar entre estr
 - Actúan como **gobernadores IA** de colonias, aplicando la doctrina elegida por el jugador.
 - El jugador puede **encarnarse** en un Heredero para tomar el control directo en otra parte del imperio.
 
+### Decisiones de la Fase 10 (21-10-2026)
+- **Cuándo se muere**: cuando la nave del Emperador llega a casco 0, en el combate pilotado o en una batalla de flotas por rondas. En las rondas, la nave pelea junto a sus flotas y, fuera del Núcleo Humano, también sola si llega una flota hostil a donde está (aunque esté aparcada); las naves de los Emperadores no empiezan batallas por sí solas. El casco se guarda (no se cura saliendo del sistema): se repara despacio a bordo y deprisa junto a una colonia propia, con aleaciones.
+- **Qué se pierde** (Ley III): los humanos de a bordo, el combustible, la munición, la posición y el tiempo de gestación. **Qué se conserva**: colonias, flotas (con su carga y rutas), créditos, descubrimientos, compañeros, Cunas y Herederos. El cuerpo nuevo despierta con unos pocos humanos (Ley II), la reserva de emergencia de combustible y la munición que se fabrica a bordo. La nave del Emperador no lleva bodega: la carga va en las flotas.
+- **Gestación**: unos minutos la primera vez, el doble con cada muerte seguida hasta unas horas; se olvida una muerte de la racha cada pocas horas sin morir. Sin Cunas, en el Núcleo Humano y un 50 % más larga. Mientras, el Emperador no tiene nave (no pilota, no salta, no coloniza), pero su imperio sigue funcionando.
+- **Cunas**: instalación de colonia (una por colonia). Se renace en la preferida (si sigue siendo propia) o en la más cercana a donde se cayó; la nave aparece junto a su planeta. Se pierden con la colonia (captura) y en las pérdidas de la captura.
+- **Herederos**: uno por colonia y tres por Emperador; doctrinas Prosperidad (extracción), Bastión (defensa contra asedios) y Equilibrio. El gobernador solo construye con la cola vacía y dejando una reserva, y se puede desactivar. Mueren si su colonia cambia de manos.
+- **Encarnarse**: consume al Heredero; el Emperador despierta en su colonia con su nave. Vivo conserva lo que lleva (no viajando, ni en batalla, ni con daño reciente); muerto, sustituye a la gestación. Como mucho una vez cada 12 h de juego.
+- Los **Emperadores de la IA** usan lo mismo: Cuna en su capital, Herederos que gobiernan sus colonias y encarnación si caen con una gestación larga.
+
 ## 4. Universo
 
 - **Sectores cúbicos de 100 años luz** de lado.

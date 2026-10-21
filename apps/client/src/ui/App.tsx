@@ -22,6 +22,8 @@ import { QuantumPanel } from "./QuantumPanel";
 import { StartScreen } from "./StartScreen";
 import { SystemPanel } from "./SystemPanel";
 import { TopBar } from "./TopBar";
+import { DeathScreen } from "./DeathScreen";
+import { LineagePanel } from "./LineagePanel";
 
 /** Escala de la interfaz según los ajustes y el tamaño de la ventana (se recalcula al cambiarla). */
 function useUiScale(): number {
@@ -99,9 +101,11 @@ export function App() {
             {quantumPanel ? <QuantumPanel /> : <PlanetPanel />}
           </>
         )}
+        <DeathScreen />
         <Notice />
         <SettingsPanel />
         <EconomyPanel />
+        <LineagePanel />
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EMPEROR_FLAGSHIP, FLAGSHIP_HARDPOINTS, FLAGSHIP_SUPPLIES } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, FLAGSHIP_HARDPOINTS, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES } from "@imperium/content";
 import { Combatant, forwardOf, rayHit, rotate } from "../src/space/combat";
 
 describe("reglas del combate", () => {
@@ -48,7 +48,7 @@ describe("reglas del combate", () => {
 
   it("energía, combustible y reposición de la nave del Emperador", () => {
     const S = FLAGSHIP_SUPPLIES;
-    const c = new Combatant(400, EMPEROR_FLAGSHIP.combat, 0, { fuel: 10, fuelAt: 0, cannon: 1500, missiles: 6, ammoAt: 0 });
+    const c = new Combatant(400, EMPEROR_FLAGSHIP.combat, 0, { fuel: 10, fuelAt: 0, cannon: 1500, missiles: 6, ammoAt: 0, hull: 300 });
     // El cañón gasta energía: sin energía no dispara, y el reactor la recarga sola.
     let t = 0;
     let shots = 0;
@@ -68,10 +68,13 @@ describe("reglas del combate", () => {
     expect(c.fuelNow(20_000 + 3_600_000)).toBeCloseTo(S.emergencyFuelPerHour, 0);
     expect(c.fuelNow(20_000 + 100 * 3_600_000)).toBe(S.emergencyFuelMax);
     // Junto a una colonia: se llena hasta el máximo, no más.
-    const added = c.refill({ fuel: 5000, cannon: 10, missiles: 3 }, 400 * 3_600_000);
+    // Fase 10: el casco guardado (300) también se repara junto a la colonia, hasta el máximo.
+    expect(c.missing(400 * 3_600_000).hull).toBe(100);
+    const added = c.refill({ fuel: 5000, cannon: 10, missiles: 3, hull: 500 }, 400 * 3_600_000);
     expect(added.fuel).toBe(S.fuelMax - S.emergencyFuelMax);
     expect(added.missiles).toBe(0);
-    expect(c.stored(400 * 3_600_000)).toMatchObject({ fuel: S.fuelMax, missiles: 6 });
+    expect(added.hull).toBe(100);
+    expect(c.stored(400 * 3_600_000)).toMatchObject({ fuel: S.fuelMax, missiles: 6, hull: 400 });
   });
 
   it("el daño va primero al escudo, luego al casco; el escudo se recarga tras unos segundos", () => {
@@ -86,5 +89,18 @@ describe("reglas del combate", () => {
     expect(c.damage(1000, 7000)).toBe(true);
     c.restore(8000);
     expect([c.shield, c.hull]).toEqual([200, 400]);
+  });
+
+  it("la tripulación repara el casco de la nave del Emperador poco a poco (Fase 10)", () => {
+    const c = new Combatant(400, EMPEROR_FLAGSHIP.combat, 0, { fuel: 100, fuelAt: 0, cannon: 10, missiles: 1, ammoAt: 0, hull: 200 });
+    c.damage(250, 1000);
+    expect(c.hull).toBe(150);
+    expect(c.repairHull(10, 5000)).toBe(false); // demasiado pronto tras el impacto
+    expect(c.repairHull(10, 1000 + FLAGSHIP_REPAIR.onboardDelaySec * 1000)).toBe(true);
+    expect(c.hull).toBeCloseTo(150 + 10 * FLAGSHIP_REPAIR.onboardPerSec);
+    // Los piratas (sin reactor) no se reparan.
+    const p = new Combatant(100, EMPEROR_FLAGSHIP.combat, 0);
+    p.damage(250, 0);
+    expect(p.repairHull(10, 1_000_000)).toBe(false);
   });
 });

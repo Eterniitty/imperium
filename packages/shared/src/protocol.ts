@@ -3,10 +3,10 @@
  * docs/arquitectura.md §8. Los esquemas Zod de lo que envía el cliente están en
  * `schemas.ts`.
  */
-import type { Battle, Cargo, Colony, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, OrderSide, Siege, Stock, StockId, Wallet } from "./api";
+import type { Battle, Cargo, Colony, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, HeirDoctrineId, LineageStatus, OrderSide, Siege, Stock, StockId, Wallet } from "./api";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
-export const PROTOCOL_VERSION = 10;
+export const PROTOCOL_VERSION = 12;
 
 /** Tamaño máximo de un mensaje del cliente, en bytes. */
 export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;
@@ -25,7 +25,8 @@ export interface TopicData {
   /** `battles`: las batallas en curso y las acabadas hace poco. */
   /** `wallet`: la cartera de créditos (economía de la humanidad). */
   /** `sieges`: asedios propios y a colonias propias (Fase 9b), en curso y acabados hace poco. */
-  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans; battles: Battle[]; wallet: Wallet; flagship: FlagshipStatus | null; sieges: Siege[] };
+  /** `lineage`: muerte, gestación, Cunas y Herederos (Fase 10). */
+  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans; battles: Battle[]; wallet: Wallet; flagship: FlagshipStatus | null; sieges: Siege[]; lineage: LineageStatus | null };
 }
 
 /** Emperador visto por los demás jugadores: añade si está conectado. */
@@ -92,6 +93,19 @@ export interface CommandArgs {
    * (por defecto, todos).
    */
   "siege.assault": { siegeId: string; fleetId?: string; troops?: number };
+  /** Fase 10: Cuna preferida para renacer (una colonia propia con Cuna), o null para la más cercana. */
+  "lineage.prefer": { colonyId: string | null };
+  /** Fase 10: gesta un Heredero en la Cuna de una colonia propia (sin otro Heredero), con su doctrina. */
+  "heir.gestate": { colonyId: string; doctrine: HeirDoctrineId };
+  /** Cambia la doctrina de un Heredero y si su gobernador encarga instalaciones. */
+  "heir.doctrine": { heirId: string; doctrine: HeirDoctrineId; builds: boolean };
+  /** Lleva a un Heredero nacido a gobernar otra colonia propia (sin Heredero). */
+  "heir.assign": { heirId: string; colonyId: string };
+  /**
+   * El Emperador se encarna en un Heredero nacido: despierta en su colonia (con
+   * su nave) y el Heredero se consume. Estando muerto, en vez de esperar la gestación.
+   */
+  "heir.incarnate": { heirId: string };
 }
 export type CommandOp = keyof CommandArgs;
 
@@ -195,6 +209,14 @@ export type CommandError =
   | "no_siege"
   | "siege_not_ready"
   | "no_troops"
+  | "dead"
+  | "no_cradle"
+  | "heir_limit"
+  | "colony_has_heir"
+  | "no_heir"
+  | "heir_not_ready"
+  | "cooldown"
+  | "in_combat"
   | "rate_limited"
   | "internal";
 
@@ -216,7 +238,9 @@ export type DeltaOp =
   | { path: `flagship.${string}`; v: FlagshipStatus }
 
   /** Asedio propio o a una colonia propia: empieza, avanza o termina (null si deja de mostrarse). */
-  | { path: `sieges.${string}`; v: Siege | null };
+  | { path: `sieges.${string}`; v: Siege | null }
+  /** Linaje del Emperador propio (Fase 10): muerte y gestación, Cunas, Herederos (el id es el suyo). */
+  | { path: `lineage.${string}`; v: LineageStatus };
 
 export type ServerMessage =
   /**
@@ -241,8 +265,11 @@ export type ServerMessage =
    * si lo hay; el daño llega aparte, con el nuevo estado de la nave (`ship`).
    */
   | { t: "shot"; id: string; weapon: WeaponKind; from: Vec3; muzzle: number; dir: Vec3; target: string | null; speed: number; range: number; serverTime: number; hitAt: number | null }
-  /** Tu nave ha sido destruida: renaces en `systemId` (Núcleo Humano). */
-  | { t: "destroyed"; by: string; systemId: string }
+  /**
+   * Tu nave ha sido destruida y tu Emperador ha caído (Fase 10): su cuerpo nuevo se
+   * gesta hasta `rebornAt` (hora del servidor) en `systemId` (una Cuna o el Núcleo Humano).
+   */
+  | { t: "destroyed"; by: string; systemId: string; rebornAt: number }
   /** Estado de tus armas: munición restante y cuándo vuelven a estar listas (hora del servidor). */
   | { t: "weapons"; weapons: Array<{ kind: WeaponKind; ammo: number | null; ammoMax: number | null; readyAt: number }> }
   /**

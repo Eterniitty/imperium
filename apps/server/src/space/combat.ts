@@ -3,7 +3,7 @@
  * nave (casco, escudo, armas, energía y combustible) y geometría de los
  * impactos. Las usa SpaceService.
  */
-import { FLAGSHIP_SUPPLIES, type ShipCombat, type WeaponDefinition } from "@imperium/content";
+import { FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, type ShipCombat, type WeaponDefinition } from "@imperium/content";
 import type { Quat, Vec3, WeaponKind } from "@imperium/shared";
 import { regenFuel } from "@imperium/sim";
 
@@ -31,6 +31,8 @@ export interface StoredSupplies {
   cannon: number;
   missiles: number;
   ammoAt: number;
+  /** Casco de la nave (Fase 10: se guarda; el mismo en el combate de flotas por rondas). */
+  hull: number;
 }
 
 /** Energía y combustible de una nave que los tiene (la del Emperador; los piratas no). */
@@ -72,6 +74,7 @@ export class Combatant {
   /** Carga los recursos guardados (al crear la nave o tras un salto). */
   load(s: StoredSupplies, now: number): void {
     this.reactor = { energy: FLAGSHIP_SUPPLIES.energyMax, energyAt: now, fuel: s.fuel, fuelAt: s.fuelAt };
+    this.hull = Math.max(0, Math.min(this.hullMax, s.hull));
     const cannon = this.weapons.get("cannon");
     if (cannon && cannon.ammo !== null) Object.assign(cannon, { ammo: s.cannon, ammoAt: s.ammoAt });
     const missile = this.weapons.get("missile");
@@ -162,8 +165,12 @@ export class Combatant {
    * Reposición junto a una colonia: añade combustible, proyectiles y misiles
    * (sin pasar del máximo). Devuelve lo que de verdad cabía.
    */
-  refill(add: { fuel: number; cannon: number; missiles: number }, now: number): { fuel: number; cannon: number; missiles: number } {
-    const out = { fuel: 0, cannon: 0, missiles: 0 };
+  refill(add: { fuel: number; cannon: number; missiles: number; hull: number }, now: number): { fuel: number; cannon: number; missiles: number; hull: number } {
+    const out = { fuel: 0, cannon: 0, missiles: 0, hull: 0 };
+    if (this.hull > 0) {
+      out.hull = Math.max(0, Math.min(add.hull, this.hullMax - this.hull));
+      this.hull += out.hull;
+    }
     if (this.reactor) {
       const fuel = this.fuelNow(now);
       out.fuel = Math.max(0, Math.min(add.fuel, FLAGSHIP_SUPPLIES.fuelMax - fuel));
@@ -179,19 +186,24 @@ export class Combatant {
       out[key] = Math.max(0, Math.min(Math.floor(add[key]), w.def.ammo - w.ammo));
       w.ammo += out[key];
     }
-    if (out.fuel > 0 || out.cannon > 0 || out.missiles > 0) this.dirty = true;
+    if (out.fuel > 0 || out.cannon > 0 || out.missiles > 0 || out.hull > 0) this.dirty = true;
     return out;
   }
 
   /** Lo que falta para tener todo lleno (para pedir a la colonia solo eso). */
-  missing(now: number): { fuel: number; cannon: number; missiles: number } {
+  missing(now: number): { fuel: number; cannon: number; missiles: number; hull: number } {
     const ammo = (kind: WeaponKind) => {
       const w = this.weapons.get(kind);
       if (!w || w.ammo === null || w.def.ammo === null) return 0;
       this.regenAmmo(w, now);
       return w.def.ammo - w.ammo;
     };
-    return { fuel: this.reactor ? FLAGSHIP_SUPPLIES.fuelMax - this.fuelNow(now) : 0, cannon: ammo("cannon"), missiles: ammo("missile") };
+    return {
+      fuel: this.reactor ? FLAGSHIP_SUPPLIES.fuelMax - this.fuelNow(now) : 0,
+      cannon: ammo("cannon"),
+      missiles: ammo("missile"),
+      hull: this.reactor && this.hull > 0 ? this.hullMax - this.hull : 0,
+    };
   }
 
   /** Recursos para guardar (resueltos a la hora `now`). */
@@ -204,6 +216,7 @@ export class Combatant {
       cannon: this.weapons.get("cannon")?.ammo ?? 0,
       missiles: this.weapons.get("missile")?.ammo ?? 0,
       ammoAt,
+      hull: this.hull,
     };
   }
 
@@ -238,8 +251,23 @@ export class Combatant {
     this.lastHitAt = now;
     const absorbed = Math.min(this.shield, amount);
     this.shield -= absorbed;
+    const before = this.hull;
     this.hull = Math.max(0, this.hull - (amount - absorbed));
+    // El casco de la nave del Emperador se guarda (Fase 10).
+    if (this.reactor && this.hull !== before) this.dirty = true;
     return this.hull <= 0;
+  }
+
+  /**
+   * Reparación a bordo (Fase 10): solo la nave del Emperador, despacio y tras
+   * un rato sin recibir daño. Devuelve true si cambió.
+   */
+  repairHull(dtSec: number, now: number): boolean {
+    if (!this.reactor || this.hull <= 0 || this.hull >= this.hullMax) return false;
+    if (now - this.lastHitAt < FLAGSHIP_REPAIR.onboardDelaySec * 1000) return false;
+    this.hull = Math.min(this.hullMax, this.hull + FLAGSHIP_REPAIR.onboardPerSec * dtSec);
+    this.dirty = true;
+    return true;
   }
 
   /**

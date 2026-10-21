@@ -73,7 +73,8 @@ export function WarPanel() {
 
   const counts = (c: ShipCounts) =>
     Object.entries(c)
-      .map(([id, n]) => t("ship.count", { count: n, name: contentText(locale, `ship.${id}.name`) }))
+      // Fase 10: la nave del Emperador también combate en las batallas por rondas.
+      .map(([id, n]) => t("ship.count", { count: n, name: id === "flagship" ? t("lineage.flagshipShip") : contentText(locale, `ship.${id}.name`) }))
       .join(" · ") || t("war.noShips");
 
   const intercept = async (contact: FleetContact) => {

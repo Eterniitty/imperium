@@ -68,7 +68,7 @@ export const POPULATION = {
 } as const;
 
 /** Clases de instalación de una colonia. */
-export type InstallationId = "mine" | "refinery" | "power_plant" | "shipyard" | "drydock" | "defense_platform";
+export type InstallationId = "mine" | "refinery" | "power_plant" | "shipyard" | "drydock" | "defense_platform" | "lineage_cradle";
 
 export interface InstallationDefinition {
   id: InstallationId;
@@ -144,6 +144,16 @@ export const INSTALLATIONS: readonly InstallationDefinition[] = [
     energyUse: 3,
     maxPerColony: 4,
     upkeepVolatilesPerHour: 0.5,
+  },
+  {
+    // Fase 10: donde renace el Emperador y se gestan sus Herederos (datos en lineage.ts).
+    id: "lineage_cradle",
+    nameKey: "installation.lineage_cradle",
+    cost: { metal: 600, volatiles: 200, crystal: 120, alloys: 150 },
+    buildTimeHours: 8,
+    energyUse: 5,
+    maxPerColony: 1,
+    upkeepVolatilesPerHour: 1.5,
   },
 ];
 

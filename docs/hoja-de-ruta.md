@@ -61,16 +61,18 @@ Orden de construcción de lo que pide [diseno.md](diseno.md). Cada fase se divid
 - **9b. Conquista de planetas ajenos** ✔ (21-10-2026). Asedio con progreso y presencia sostenida de naves armadas (`siege.start`, evento `siege.tick`; disputado si hay naves armadas del defensor, roto si el atacante se queda sin ellas), plataformas defensivas que frenan el asedio, dañan a los asediadores y aportan guarnición, desembarco de tropas (humanos de cargueros, colonizadores o la nave del Emperador; `siege.assault`) y captura con pérdidas (población, existencias, instalaciones; obras perdidas, órdenes del mercado y rutas canceladas). Colonias independientes conquistables. IA: facciones alienígenas que asedian y ocupan colonias de su territorio según agresividad y rencor; Emperadores IA que defienden y, los militaristas, conquistan. Protecciones: compañeros, gracia de 24 h y Núcleo Humano para la IA. Pendiente: conquista instalación a instalación, red de suministro y asedios en 3D.
 - **9c. Combate a gran escala**: por encima de ~5 naves por bando, el combate en tiempo real (6c) pasa a rondas.
 
-## Fase 10 — Muerte y linaje
+## Fase 10 — Muerte y linaje ✔ (21-10-2026)
 
-- La nave del Emperador puede caer. Cunas de linaje con gestación que crece con las muertes seguidas. Sin Cunas, reaparece en el Núcleo Humano. Herederos que gobiernan colonias y en los que el jugador puede encarnarse.
+- ✔ La nave del Emperador puede caer (combate pilotado y batallas por rondas, en las que ahora también combate; el casco se guarda y se repara). Cunas de linaje (instalación) con gestación que crece con las muertes seguidas y se olvida con el tiempo. Sin Cunas, reaparece en el Núcleo Humano. Se pierden los humanos de a bordo, el combustible y la munición. Herederos que gobiernan colonias con una doctrina (extracción, defensa, obras) y en los que el jugador puede encarnarse (vivo o muerto). Los Emperadores de la IA también lo usan. Pantalla de muerte con la gestación y panel «Linaje»; Wiki «Muerte y linaje». Migración `0017`, `PROTOCOL_VERSION` 11.
+- ✔ Los Erradicadores (`CRADLE_HUNTERS`) asedian primero las colonias con Cuna de su territorio.
+- Pendiente: conquista instalación a instalación (la Cuna como objetivo propio, 9b) y gobernadores que también recluten y defiendan.
 
 ## Fase 11 — Masividad e inteligencia artificial
 
 - ✔ (21-10-2026) **Especies alienígenas del lore** como datos (territorio, flotas, naves propias, IA) y **territorios** en una capa determinista y secreta (no cambia `GENERATOR_VERSION`), visibles en el mapa respetando la niebla de guerra.
 - ✔ **IA de facciones** con la misma tubería de órdenes que los jugadores (flotas, combate por rondas, mercado), sin bucles por tick: regiones que despiertan con humanos cerca (evento `ai.region`), guarnición, patrullas, expansión lenta, respuesta a intrusos según su agresividad, rencor y tributos, Nómadas del Vacío en el mercado. El Núcleo Humano es seguro y hay gracia para los Emperadores nuevos.
 - ✔ **Emperadores IA humanos** (versión básica, evento `ai.emperor`): colonizan, construyen, exploran y comercian. Pendiente: que guerreen, acepten compañeros y gobiernen colonias de jugadores ausentes.
-- Pendiente: proceso aparte `apps/ai` cuando haga falta escalar (hoy es un servicio dentro del servidor que usa la cola de eventos); ataques alienígenas a Cunas (los ataques a colonias, hechos con la 9b); pactos de los Grises y Custodios protectores; modelos 3D de las naves alienígenas y combate pilotado contra ellas (tras fusionar el pilotaje).
+- Pendiente: proceso aparte `apps/ai` cuando haga falta escalar (hoy es un servicio dentro del servidor que usa la cola de eventos); pactos de los Grises y Custodios protectores; modelos 3D de las naves alienígenas y combate pilotado contra ellas (tras fusionar el pilotaje).
 - Zonas de interés por sector en el WebSocket (cada jugador recibe solo lo cercano) para aguantar cientos de jugadores.
 
 ## Fase 12 — Organizaciones y comunidad

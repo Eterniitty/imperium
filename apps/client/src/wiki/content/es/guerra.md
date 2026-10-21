@@ -8,7 +8,7 @@ Al **llegar una flota** a un sistema, si allí hay **flotas paradas de dos Emper
 
 - Como mucho hay **una batalla por sistema**. Las flotas de uno de los bandos que llegan después **se unen** a su bando; las de terceros **esperan** a que termine.
 - Al terminar, se mira si quedan otros enemigos en el sistema (y puede empezar otra).
-- La nave del Emperador no participa en estas batallas: su combate es [en tiempo real](/wiki/combate).
+- **La nave del Emperador también combate** (ver [Muerte y linaje](/wiki/linaje#la-nave-del-emperador-en-las-batallas)): junto a sus flotas si están en la batalla y, fuera del Núcleo Humano, aunque esté sola, cuando llega una flota hostil a donde está. Las naves de los Emperadores no empiezan batallas por sí solas. Si cae, el Emperador muere.
 
 ## Cómo se resuelve una ronda
 

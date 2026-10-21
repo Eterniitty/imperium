@@ -15,6 +15,7 @@ import {
   canAfford,
   captureLosses,
   colonyEnergy,
+  doctrineExtraction,
   colonyFlows,
   flagshipHumansAfter,
   gameHours,
@@ -38,7 +39,7 @@ import {
 import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { colonies, colonyBuilds, discoveries, emperors, fleetRoutes, fleets, installations, resourceLedger, ships } from "../db/schema";
+import { colonies, colonyBuilds, discoveries, emperors, fleetRoutes, fleets, heirs, installations, resourceLedger, ships } from "../db/schema";
 import { discoverAround, type Discovered } from "../discovery/service";
 import { findSystem, placeFromRow } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
@@ -178,7 +179,9 @@ export class ColonyService {
   private site(row: ColonyRow, counts: InstallationCounts, extraUpkeep = 0): (ColonySite & { planet: Planet }) | null {
     const found = this.planet(row.systemId, row.planetIndex);
     if (!found) return null;
-    return { planet: found.planet, starEnergy: found.detail.energy, installations: counts, extraUpkeep, extractionMultiplier: this.bonuses().extraction };
+    // Fase 10: el Heredero que la gobierna (su doctrina) también multiplica la extracción.
+    const extractionMultiplier = this.bonuses().extraction * doctrineExtraction(row.governor);
+    return { planet: found.planet, starEnergy: found.detail.energy, installations: counts, extraUpkeep, extractionMultiplier };
   }
 
   // --- Mantenimiento de las flotas: lo paga la capital ---
@@ -409,12 +412,15 @@ export class ColonyService {
             arriveAt: emperors.arriveAt,
             humans: emperors.humans,
             humansAt: emperors.humansAt,
+            deadAt: emperors.deadAt,
           })
           .from(emperors)
           .where(eq(emperors.id, emperorId))
           .for("update")
           .limit(1);
         if (!row) return { ok: false, error: "no_emperor" };
+        // Fase 10: muerto (gestándose), su nave no está en ningún sitio.
+        if (row.deadAt) return { ok: false, error: "dead" };
         const place = placeFromRow(this.seed, row, now);
         if (isTravelling(place, now)) return { ok: false, error: "in_transit" };
         if (place.location.systemId !== system.id) return { ok: false, error: "not_present" };
@@ -669,12 +675,14 @@ export class ColonyService {
           arriveAt: emperors.arriveAt,
           humans: emperors.humans,
           humansAt: emperors.humansAt,
+          deadAt: emperors.deadAt,
         })
         .from(emperors)
         .where(eq(emperors.id, emperorId))
         .for("update")
         .limit(1);
       if (!emp) return { ok: false, error: "no_emperor" };
+      if (emp.deadAt) return { ok: false, error: "dead" };
       const now = this.now();
       const place = placeFromRow(this.seed, emp, now);
       if (isTravelling(place, now)) return { ok: false, error: "in_transit" };
@@ -780,7 +788,7 @@ export class ColonyService {
       await tx.delete(colonyBuilds).where(eq(colonyBuilds.colonyId, row.id));
       await tx
         .update(colonies)
-        .set({ emperorId: null, population: state.population, ...stock, resolvedAt: new Date(Math.max(at, row.resolvedAt.getTime())) })
+        .set({ emperorId: null, governor: null, population: state.population, ...stock, resolvedAt: new Date(Math.max(at, row.resolvedAt.getTime())) })
         .where(eq(colonies.id, row.id));
       await tx.insert(resourceLedger).values({ emperorId, colonyId: row.id, reason: "independence", ref: null });
     }
@@ -838,13 +846,16 @@ export class ColonyService {
     // Rutas automáticas que la usaban (de cualquier flota): se acaban.
     await tx.delete(fleetRoutes).where(or(eq(fleetRoutes.fromColonyId, row.id), eq(fleetRoutes.toColonyId, row.id)));
 
+    // Fase 10: el Heredero que la gobernaba (o se gestaba en su Cuna) muere con la colonia perdida.
+    await tx.delete(heirs).where(eq(heirs.colonyId, row.id));
+
     const inst = await tx.select({ id: installations.id }).from(installations).where(eq(installations.colonyId, row.id));
     const losses = captureLosses(state.population, state.stock, inst.map((i) => i.id), opts.seed, opts.extraPopulationLoss ?? 0);
     if (losses.destroyed.length) await tx.delete(installations).where(inArray(installations.id, losses.destroyed));
     const population = Math.min(locked.cap, losses.population + Math.max(0, opts.survivors));
     await tx
       .update(colonies)
-      .set({ emperorId: newOwnerId, population, ...losses.stock, resolvedAt: new Date(at), acquiredAt: new Date(at) })
+      .set({ emperorId: newOwnerId, governor: null, population, ...losses.stock, resolvedAt: new Date(at), acquiredAt: new Date(at) })
       .where(eq(colonies.id, row.id));
     const lost = (k: keyof StockAmounts) => losses.stock[k] - state.stock[k];
     await tx.insert(resourceLedger).values({

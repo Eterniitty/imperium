@@ -38,6 +38,8 @@ export class Engine {
   /** Salto en curso seguido por la cámara: origen y destino, para entrar al llegar por el lado correcto. */
   private jumping: { from: WorldPosition; to: WorldPosition } | null = null;
   private destroyedShown = false;
+  /** Fase 10: el Emperador propio estaba muerto (gestándose) en el fotograma anterior, y desde cuándo. */
+  private deadSince: number | null = null;
   /** Sistema dibujado en la vista de sistema y si se dibujó sin explorar (solo la estrella). */
   private shown: { id: string; explored: boolean } | null = null;
   /** Lado por el que entró la nave la última vez que se pilotó. */
@@ -129,7 +131,8 @@ export class Engine {
   pilot(from: THREE.Vector3 | null): boolean {
     const emperor = this.emperor();
     const now = serverNow();
-    if (!emperor || isTravelling(emperor, now)) return false;
+    // Fase 10: caído y gestándose, no hay nave que pilotar.
+    if (!emperor || emperor.gestating || isTravelling(emperor, now)) return false;
     const here = emperor.travel ? emperor.travel.to : emperor.location;
     const summary = findSystemSummary(here.systemId);
     if (!summary) return false;
@@ -157,7 +160,8 @@ export class Engine {
       this.system.stopPiloting();
       this.exitSystem();
     } else if (!this.pilot(null)) {
-      if (this.emperor()?.travel && isTravelling(this.emperor()!, serverNow())) this.enterTunnel();
+      if (this.emperor()?.gestating) this.notify("lineage.cannotPilot");
+      else if (this.emperor()?.travel && isTravelling(this.emperor()!, serverNow())) this.enterTunnel();
       else this.notify("pilot.cannotWhileJumping");
     }
   }
@@ -245,23 +249,45 @@ export class Engine {
   }
 
   /**
-   * Si la nave propia cayó: explosión, aviso y, cuando el servidor confirma el
-   * renacimiento en el Núcleo Humano, se vuelve a pilotar allí.
+   * Fase 10: si la nave propia cayó, explosión y aviso; unos segundos después
+   * se deja de pilotar (la pantalla de la gestación cubre la interfaz). Al
+   * renacer (o encarnarse en un Heredero), se vuelve a los mandos en el
+   * sistema nuevo. Si el Emperador cambia de sistema mientras se pilota sin
+   * viajar (encarnación), también.
    */
   private checkDestroyed(): void {
     const destroyed = spaceStore.getState().destroyed;
-    if (!destroyed) return;
-    if (!this.destroyedShown) {
+    if (destroyed && !this.destroyedShown) {
       this.destroyedShown = true;
       this.system.explodeOwnShip();
       this.notify("combat.destroyed", { by: destroyed.by || translate(gameStore.getState().locale, "npc.pirate") });
     }
     const emperor = this.emperor();
-    if (emperor?.location.systemId !== destroyed.systemId) return;
-    spaceStore.setState({ destroyed: null });
-    this.destroyedShown = false;
-    if (this.active === this.system) this.system.stopPiloting();
-    this.pilot(null);
+    const now = performance.now();
+    if (emperor?.gestating) {
+      this.deadSince ??= now;
+      if (now - this.deadSince > 2500 && this.active === this.system && this.system.isPiloting) this.system.stopPiloting();
+      return;
+    }
+    if (this.deadSince !== null) {
+      // Ha renacido: a los mandos donde esté ahora.
+      this.deadSince = null;
+      spaceStore.setState({ destroyed: null });
+      this.destroyedShown = false;
+      if (this.active === this.system) this.system.stopPiloting();
+      if (this.active !== this.tunnel) this.pilot(null);
+      return;
+    }
+    if (destroyed && emperor && !emperor.gestating && this.destroyedShown && Date.now() - destroyed.at > 10_000) {
+      // El servidor no llegó a registrar la muerte (p. ej. ya estaba muerto): se olvida el aviso.
+      spaceStore.setState({ destroyed: null });
+      this.destroyedShown = false;
+    }
+    // Encarnación estando vivo: la nave aparece en otro sistema.
+    if (emperor && !emperor.travel && this.active === this.system && this.system.isPiloting && this.shown && this.shown.id !== emperor.location.systemId) {
+      this.system.stopPiloting();
+      this.pilot(null);
+    }
   }
 
   /**

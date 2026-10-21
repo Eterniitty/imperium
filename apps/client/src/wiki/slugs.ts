@@ -18,6 +18,7 @@ export const WIKI_ARTICLES = [
   { slug: "niebla", group: "world" },
   { slug: "pilotar", group: "ship" },
   { slug: "combate", group: "ship" },
+  { slug: "linaje", group: "ship" },
   { slug: "humanos", group: "empire" },
   { slug: "colonias", group: "empire" },
   { slug: "economia", group: "empire" },

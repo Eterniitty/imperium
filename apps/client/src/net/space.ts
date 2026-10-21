@@ -39,7 +39,8 @@ export interface SpaceState {
   /** Naves destruidas pendientes de dibujar su explosión. */
   explosions: Vec3[];
   /** La nave propia fue destruida: dónde renace y quién la derribó. */
-  destroyed: { by: string; systemId: string } | null;
+  /** Tu nave cayó (Fase 10): quién la derribó, dónde renacerás y cuándo; `at` es la hora local del aviso. */
+  destroyed: { by: string; systemId: string; rebornAt: number; at: number } | null;
 }
 
 const EMPTY = { systemId: null, ships: {}, correction: null, self: null, weapons: [], supplies: null, targetId: null, shots: [], explosions: [], destroyed: null };
