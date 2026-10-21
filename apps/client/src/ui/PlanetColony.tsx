@@ -287,6 +287,9 @@ function ColonyDetail({
       {colony.shortage && (
         <p className="auth-warning" role="alert">
           {t("colony.shortage")}
+          {(colony.installations.refinery ?? 0) > 0 && <> {t("colony.shortageRefinery")}</>}
+          <br />
+          <span className="small">{t("colony.shortageHint")}</span>
         </p>
       )}
       {colony.capital && <p className="muted small">{t("colony.capitalHint")}</p>}
