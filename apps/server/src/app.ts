@@ -21,6 +21,7 @@ import { LogisticsService } from "./logistics/service";
 import { humanityRoutes } from "./humanity/routes";
 import { HumanityService } from "./humanity/service";
 import { ProbeService } from "./probe/service";
+import { gateRoutes } from "./gate/routes";
 import { MarketService } from "./market/service";
 import { inHumanCore } from "./emperor/world";
 import { FlagshipService } from "./space/flagship";
@@ -245,6 +246,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   await app.register(wikiRoutes, { config, db: deps.db, wiki });
   await app.register(accountRoutes, { config, db: deps.db, hub, space, colonies, humanity, market, sieges, lineage, wiki });
   await app.register(colonyRoutes, { config, db: deps.db, emperors, discoveries, colonies, sieges });
+  // Puerta de entrada antes de abrir al público (Caddy la consulta con forward_auth).
+  await app.register(gateRoutes, { config });
 
   // Cola de eventos programados: llegadas de flotas y del Emperador (y, más adelante, construcciones…).
   // Al llegar se descubre lo que cubre el escáner (niebla de guerra).

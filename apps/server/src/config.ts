@@ -48,6 +48,12 @@ const EnvSchema = z
       .string()
       .default("")
       .transform((v) => new Set(v.split(",").map((e) => e.trim().toLowerCase()).filter((e) => e.length > 0))),
+    // Puerta de entrada (antes de abrir al público; la usa Caddy con forward_auth):
+    // usuario, contraseña cifrada con scrypt (`scrypt$<sal>$<hash>`, ver
+    // scripts/gate-password.mjs) y secreto para firmar la cookie. Sin las tres, la puerta no deja pasar a nadie.
+    GATE_USER: z.string().trim().min(1).optional(),
+    GATE_PASSWORD_HASH: z.string().regex(/^scrypt\$[0-9a-f]{32}\$[0-9a-f]{128}$/).optional(),
+    GATE_SECRET: z.string().min(32).optional(),
     MAIL_TRANSPORT: z.enum(["console", "smtp"]).default("console"),
     // Correo real (MAIL_TRANSPORT=smtp): servidor del proveedor de correo transaccional.
     // Con smtp, SMTP_HOST, SMTP_USER, SMTP_PASS y MAIL_FROM son obligatorias.
