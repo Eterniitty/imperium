@@ -24,10 +24,13 @@ export const WIKI_ARTICLES = [
   { slug: "humanidad", group: "empire" },
   { slug: "mercado", group: "empire" },
   { slug: "flotas", group: "empire" },
+  { slug: "naves", group: "empire" },
   { slug: "guerra", group: "war" },
+  { slug: "carroneros", group: "war" },
   { slug: "companeros", group: "people" },
   { slug: "cuenta", group: "people" },
   { slug: "especies", group: "people" },
+  { slug: "naves-alienigenas", group: "people" },
   { slug: "ia-territorios", group: "people" },
   { slug: "lore", group: "people" },
 ] as const satisfies ReadonlyArray<{ slug: string; group: WikiGroup }>;

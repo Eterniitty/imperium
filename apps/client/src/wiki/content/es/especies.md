@@ -24,6 +24,6 @@ Cada ficha reúne su filosofía, su actitud hacia la humanidad, dónde vive, có
 
 Las naves alienígenas no se construyen en astilleros humanos: las despliega la IA en su territorio. En el [combate por rondas](/wiki/guerra) cuentan igual que las humanas (casco, ataque y escudo de batalla).
 
-{{tabla:naves-alienigenas}}
+Sus cifras, su aspecto en 3D (con la silueta y los colores de cada especie) y sus modelos están en [Naves alienígenas](/wiki/naves-alienigenas); las de los piratas, en [Carroñeros](/wiki/carroneros).
 
-> [!dev] Las naves alienígenas aún no se ven en 3D ni se combate contra ellas pilotando: llegarán con sus modelos propios (silueta y colores de cada especie). Los nombres de las facciones son provisionales.
+> [!dev] Aún no se combate pilotando contra las naves alienígenas (salvo los Carroñeros): llegará con la IA de naves. Los nombres de las facciones son provisionales.

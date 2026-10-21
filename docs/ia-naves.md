@@ -161,6 +161,11 @@ honor: buscan botín con el menor riesgo.
 - **Peligrosidad por zona**: más lejos del Núcleo Humano, Carroñeros más
   numerosos, mejor armados y con mejor puntería (niveles de habilidad como datos).
 - Nunca entran en el Núcleo Humano y abandonan la persecución en su borde.
+- *Hecho el 21-10-2026 (base para la 9d)*: seis clases de nave con vuelo propio
+  (`flight`: velocidad y distancia preferida; los bombarderos se alejan, los
+  arponeros se pegan) y niveles de peligro por anillo (`SCAVENGER_DANGER`:
+  número, mezcla de naves, jefe de manada y error de puntería), disparo de
+  misiles y radio de impacto según la eslora (`apps/server/src/space/pirates.ts`).
 
 ## 6b. Humanos controlados por la IA
 

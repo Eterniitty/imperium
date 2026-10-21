@@ -7,6 +7,7 @@ import { factionName, speciesColor } from "./aliens";
 import { useGame, useT } from "../state/store";
 import { cargoSummary } from "./FleetLogistics";
 import { contentText, shipCounts } from "./fleets";
+import { ShipThumb } from "./ShipThumb";
 import { formatDuration, useServerNow } from "./useNow";
 
 /** Lista de las flotas propias: dónde están, a dónde van y con qué naves. Clic: centrar en la flota. */
@@ -39,10 +40,13 @@ export function FleetsPanel() {
                       ? t("fleet.travelling", { system: moving.to.systemName, time: formatDuration(moving.arriveAt - now) })
                       : t("fleet.at", { system: at.systemName })}
                   </span>
-                  <span className="small">
-                    {shipCounts(f)
-                      .map(([id, n]) => t("ship.count", { count: n, name: contentText(locale, `ship.${id}.name`) }))
-                      .join(" · ")}
+                  <span className="small fleet-ships">
+                    {shipCounts(f).map(([id, n]) => (
+                      <span key={id}>
+                        <ShipThumb classId={id} size={34} />
+                        {t("ship.count", { count: n, name: contentText(locale, `ship.${id}.name`) })}
+                      </span>
+                    ))}
                   </span>
                   {cargoSummary(f).resources + cargoSummary(f).humans > 0 && (
                     <span className="muted small">

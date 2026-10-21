@@ -7,6 +7,7 @@ import { resetSpace, shipName, spaceStore } from "../net/space";
 import { telemetry, type FlightTelemetry } from "./telemetry";
 import { connection, serverNow } from "../net/world";
 import { RemoteShips } from "./RemoteShips";
+import { FleetScene } from "./FleetScene";
 import { Effects } from "./Effects";
 import { worldStore } from "../net/world";
 import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC } from "@imperium/content";
@@ -114,6 +115,10 @@ export class SystemView implements View {
   private targetRing: THREE.Sprite;
   /** Cadencia local del cañón: no se envían disparos que el servidor rechazaría. */
   private cannonReadyAt = 0;
+  /** Flotas propias paradas y batallas de flotas en 3D (solo se dibujan). */
+  private fleetScene = new FleetScene((at) => this.effects.explode(at));
+  /** Batalla a la que llevar la cámara en cuanto se dibuje. */
+  private pendingBattleFocus: string | null = null;
 
   constructor(
     dom: HTMLElement,
@@ -141,7 +146,7 @@ export class SystemView implements View {
     this.targetRing.scale.setScalar(0.06);
     this.targetRing.visible = false;
     this.targetRing.renderOrder = 11;
-    this.scene.add(this.backdrop.object, this.content, this.selectRing, this.remote.group, this.effects.group, this.targetRing);
+    this.scene.add(this.backdrop.object, this.content, this.selectRing, this.remote.group, this.effects.group, this.targetRing, this.fleetScene.group);
     this.scene.add(new THREE.AmbientLight(0x5a6688, 0.9));
     // Cabina en primera persona: cuelga de la cámara (por eso la cámara va en la escena).
     this.cockpit.visible = false;
@@ -160,6 +165,7 @@ export class SystemView implements View {
     const layout = systemLayout(detail);
     this.layout = layout;
     this.systemId = summary.id;
+    this.fleetScene.setSystem(summary.id, layout);
     this.starName = summary.name;
 
     // Estrella: superficie con granulado y manchas, y corona que no tapa el disco.
@@ -846,8 +852,23 @@ export class SystemView implements View {
     } else {
       this.controls.update();
     }
+    this.fleetScene.update(dt, this.time);
+    if (this.pendingBattleFocus && !this.ship) {
+      const at = this.fleetScene.battlePosition(this.pendingBattleFocus);
+      if (at) {
+        this.pendingBattleFocus = null;
+        this.controls.target.copy(at);
+        this.camera.position.set(at.x + 3000, at.y + 2200, at.z + 5200);
+        this.controls.update();
+      }
+    }
     this.backdrop.follow(this.camera);
     this.updateLod();
+  }
+
+  /** Lleva la cámara (modo observar) a una batalla de flotas de este sistema en cuanto se dibuje. */
+  focusBattle(battleId: string): void {
+    this.pendingBattleFocus = battleId;
   }
 
   resize(width: number, height: number): void {
@@ -895,6 +916,7 @@ export class SystemView implements View {
 
   dispose(): void {
     this.stopPiloting();
+    this.fleetScene.clear();
     this.clear();
     this.controls.dispose();
   }

@@ -30,7 +30,7 @@ const off = (o: Offset3) => new THREE.Vector3(o[0] * M, o[1] * M, o[2] * M);
 
 let panelTex: THREE.Texture | null = null;
 /** Paneles del casco: placas con juntas y algún tono distinto, dibujadas por código. */
-function panelTexture(): THREE.Texture {
+export function panelTexture(): THREE.Texture {
   if (panelTex) return panelTex;
   const size = 256;
   const canvas = document.createElement("canvas");

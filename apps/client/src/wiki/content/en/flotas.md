@@ -19,21 +19,12 @@ Your ships (except yours, the Emperor's) are grouped into **fleets** ("Fleet 1",
 
 They are built in a colony with a **shipyard** (see [Economy](/wiki/economia#build-queue)). The upkeep of all your ships is paid by your [capital](/wiki/colonias#the-capital), in volatiles per hour.
 
-{{tabla:naves}}
-
-\* The Colonizer is consumed when it founds a colony. In the *Humans* column: colonists (Colonizer) or passenger seats (Freighter).
-
-- **Explorer**: fast, with the largest scanner; barely armed. It leads the way.
-- **Freighter**: huge hold and passenger seats; slow and fragile, it needs an escort.
-- **Colonizer**: expensive and slow; it carries colonists to found a colony and is dismantled doing so.
-- **Frigate**: the only ship built to fight.
-
-Their combat figures are in [War](/wiki/guerra#ships-in-battle).
+There are twelve classes (exploration, fighters, escorts, line ships, capital ships, freighters, troopship and colonizer): their cost, what they need in the colony, speed, hold and combat figures are in [Human ships](/wiki/naves). Your parked fleets are shown in formation in the system view.
 
 ## Hold and passengers
 
 - A fleet's **hold** is the sum of its ships' holds and is shared by **all resources** (metal, volatiles, crystal and alloys together).
-- **Passenger seats** are separate and only transport ships (the Freighter) have them.
+- **Passenger seats** are separate and only transport ships (Freighter, Heavy freighter and Troopship) have them.
 - Energy cannot be transported.
 
 ## Loading and unloading

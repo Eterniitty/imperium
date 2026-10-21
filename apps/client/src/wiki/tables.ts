@@ -11,6 +11,8 @@ import {
   ALIEN_AI,
   ALIEN_SHIP_CLASSES,
   alienShipsOf,
+  battleProfileOf,
+  fleetComposition,
   CONTACT_SENSORS,
   CREDITS,
   HUMANITY,
@@ -23,7 +25,8 @@ import {
   FLEET_BATTLE,
   HUMANS,
   INSTALLATIONS,
-  PIRATE_RAIDER,
+  PIRATE_AI,
+  SCAVENGER_DANGER,
   POPULATION,
   SHIP_CLASSES,
   SHIP_HUMAN_CAPACITY,
@@ -83,7 +86,17 @@ const INSTALLATION_EFFECT: Record<InstallationId, I18nKey> = {
   refinery: "wiki.effect.refinery",
   power_plant: "wiki.effect.power_plant",
   shipyard: "wiki.effect.shipyard",
+  drydock: "wiki.effect.drydock",
 };
+
+/** «Astillero, refinería» (las instalaciones que pide una nave). */
+function requiresText(t: T, locale: Locale, req: Partial<Record<InstallationId, number>>): string {
+  return Object.entries(req)
+    .map(([id, n]) => (n! > 1 ? `${t(`installation.${id}` as I18nKey)} ×${num(locale, n!)}` : t(`installation.${id}` as I18nKey)))
+    .join(", ");
+}
+
+const SCAVENGER_SHIPS = () => ALIEN_SHIP_CLASSES.filter((s) => s.speciesId === "scavengers");
 
 function weaponName(t: T, w: WeaponDefinition): string {
   return t(w.kind === "cannon" ? "combat.cannon" : "wiki.weapon.missile");
@@ -212,10 +225,12 @@ export const GEN_TABLES: Record<string, Builder> = {
   }),
 
   naves: (t, locale) => ({
-    head: [t("wiki.col.ship"), t("wiki.col.cost"), t("wiki.col.time"), t("wiki.col.speed"), t("wiki.col.cargo"), t("wiki.col.humans"), t("wiki.col.scanner"), t("wiki.col.upkeep")],
+    head: [t("wiki.col.ship"), t("wiki.col.role"), t("wiki.col.cost"), t("wiki.col.requires"), t("wiki.col.time"), t("wiki.col.speed"), t("wiki.col.cargo"), t("wiki.col.humans"), t("wiki.col.scanner"), t("wiki.col.upkeep")],
     rows: SHIP_CLASSES.map((s) => [
       shipName(locale, s.id) + (s.consumedOnUse ? " *" : ""),
+      t(`wiki.role.${s.role}`),
       cost(t, locale, s.cost),
+      requiresText(t, locale, s.requires),
       t("colony.costHours", { h: num(locale, s.buildTimeHours) }),
       t("wiki.v.lyh", { n: num(locale, s.speedLyPerHour) }),
       num(locale, s.cargo),
@@ -223,22 +238,45 @@ export const GEN_TABLES: Record<string, Builder> = {
       t("wiki.v.ly", { n: num(locale, s.scannerRangeLy) }),
       t("colony.upkeepValue", { n: num(locale, s.upkeepVolatilesPerHour) }),
     ]),
-    numeric: [4, 5],
+    numeric: [6, 7],
   }),
 
   "naves-combate": (t, locale) => ({
-    head: [t("wiki.col.ship"), t("combat.hull"), t("wiki.col.attack"), t("wiki.col.battleShield"), t("wiki.col.rtShield"), t("wiki.col.weapons")],
+    head: [
+      t("wiki.col.ship"),
+      t("combat.hull"),
+      t("wiki.col.attack"),
+      t("wiki.col.shots"),
+      t("wiki.col.battleShield"),
+      t("wiki.col.profile"),
+      t("wiki.col.rtShield"),
+      t("wiki.col.weapons"),
+    ],
     rows: [
       ...SHIP_CLASSES.map((s) => [
         shipName(locale, s.id),
         num(locale, s.hull),
         num(locale, s.attack),
+        num(locale, s.battleShots ?? 1),
         num(locale, s.battleShield),
+        num(locale, battleProfileOf(s)),
         t("wiki.v.shield", { n: num(locale, s.combat.shield), regen: num(locale, s.combat.shieldRegenPerSec), delay: num(locale, s.combat.shieldDelaySec) }),
         s.combat.weapons.map((w) => weaponName(t, w)).join(", ") || "—",
       ]),
     ],
-    numeric: [1, 2, 3],
+    numeric: [1, 2, 3, 4, 5],
+  }),
+
+  "naves-modelos": (t, locale) => ({
+    head: [t("wiki.col.ship"), t("wiki.col.length"), t("wiki.col.shape"), t("wiki.col.engines"), t("wiki.col.weapons")],
+    rows: SHIP_CLASSES.map((s) => [
+      shipName(locale, s.id),
+      `${num(locale, s.model.lengthM)} m`,
+      t(`wiki.shape.${s.model.hullShape}`),
+      num(locale, s.model.engines),
+      `${num(locale, s.combat.hardpoints?.cannon.length ?? 0)} + ${num(locale, s.combat.hardpoints?.missile.length ?? 0)}`,
+    ]),
+    numeric: [1, 3],
   }),
 
   escaneres: (t, locale) => ({
@@ -273,7 +311,7 @@ export const GEN_TABLES: Record<string, Builder> = {
     };
     for (const w of EMPEROR_FLAGSHIP.combat.weapons) add(w, t("wiki.emperorShip"));
     for (const s of SHIP_CLASSES) for (const w of s.combat.weapons) add(w, shipName(locale, s.id));
-    for (const w of PIRATE_RAIDER.combat.weapons) add(w, t("npc.pirate"));
+    for (const s of SCAVENGER_SHIPS()) for (const w of s.combat.weapons) add(w, `${t("npc.pirate")} (${shipName(locale, s.id)})`);
     return {
       head: [t("wiki.col.weapon"), t("wiki.col.carriedBy"), t("wiki.col.damage"), t("wiki.col.cooldown"), t("wiki.col.range"), t("wiki.col.projectile"), t("wiki.col.ammo")],
       rows: [...seen.values()].map(({ w, on }) => [
@@ -291,13 +329,54 @@ export const GEN_TABLES: Record<string, Builder> = {
 
   carroneros: (t, locale) =>
     kv(t, [
-      ["combat.hull", num(locale, PIRATE_RAIDER.hull)],
-      ["combat.shield", t("wiki.v.shield", { n: num(locale, PIRATE_RAIDER.combat.shield), regen: num(locale, PIRATE_RAIDER.combat.shieldRegenPerSec), delay: num(locale, PIRATE_RAIDER.combat.shieldDelaySec) })],
-      ["wiki.k.pirateSpeed", `${num(locale, PIRATE_RAIDER.speedU)} m/s`],
-      ["wiki.k.aggro", `${num(locale, PIRATE_RAIDER.aggroRangeU)} m`],
-      ["wiki.k.preferred", `${num(locale, PIRATE_RAIDER.preferredRangeU)} m`],
-      ["wiki.k.respawn", `${num(locale, PIRATE_RAIDER.respawnSec / 60)} min`],
+      ["wiki.k.aggro", `${num(locale, PIRATE_AI.aggroRangeU)} m`],
+      ["wiki.k.respawn", `${num(locale, PIRATE_AI.respawnSec / 60)} min`],
     ]),
+
+  "carroneros-naves": (t, locale) => ({
+    head: [t("wiki.col.ship"), t("wiki.col.role"), t("combat.hull"), t("wiki.col.rtShield"), t("wiki.col.weapons"), t("wiki.col.flight"), t("wiki.col.attack"), t("wiki.col.length")],
+    rows: SCAVENGER_SHIPS().map((s) => [
+      shipName(locale, s.id),
+      t(`wiki.role.${s.role}`),
+      num(locale, s.hull),
+      t("wiki.v.shield", { n: num(locale, s.combat.shield), regen: num(locale, s.combat.shieldRegenPerSec), delay: num(locale, s.combat.shieldDelaySec) }),
+      s.combat.weapons.map((w) => `${weaponName(t, w)} (${num(locale, w.damage)})`).join(", "),
+      s.flight ? t("wiki.v.flight", { speed: num(locale, s.flight.speedU), range: num(locale, s.flight.preferredRangeU) }) : "—",
+      num(locale, s.attack),
+      `${num(locale, s.model.lengthM)} m`,
+    ]),
+    numeric: [2, 6],
+  }),
+
+  "carroneros-peligro": (t, locale) => ({
+    head: [t("wiki.col.ring"), t("wiki.col.chance"), t("wiki.col.count"), t("wiki.col.ships"), t("wiki.col.leader"), t("wiki.col.aim")],
+    rows: SCAVENGER_DANGER.map((l, i) => {
+      const next = SCAVENGER_DANGER[i + 1];
+      const total = l.ships.reduce((a, [, w]) => a + w, 0);
+      return [
+        next ? `${num(locale, l.minRing)}–${num(locale, next.minRing - 1)}` : `${num(locale, l.minRing)}+`,
+        `${num(locale, l.chancePct)} %`,
+        range(locale, l.count),
+        l.ships.map(([id, w]) => `${shipName(locale, id)} ${num(locale, (w / total) * 100, 0)} %`).join(", "),
+        l.leader ? t("wiki.v.chanceLeader", { ship: shipName(locale, l.leader[0]), pct: num(locale, l.leader[1]) }) : "—",
+        `± ${num(locale, (l.aimJitter / 2) * (180 / Math.PI), 1)}°`,
+      ];
+    }),
+  }),
+
+  "carroneros-flotas": (t, locale) => {
+    const sp = SPECIES.find((s) => s.id === "scavengers")!;
+    const near = fleetComposition(sp.fleet, 0);
+    const deep = fleetComposition(sp.fleet, 1);
+    const pct = (list: Array<[string, number]>) => {
+      const total = list.reduce((a, [, w]) => a + w, 0);
+      return list.map(([id, w]) => `${shipName(locale, id)} ${num(locale, (w / total) * 100, 0)} %`).join(", ");
+    };
+    return kv(t, [
+      ["wiki.k.fleetNear", `${pct(near)} · ${t("wiki.col.ships").toLowerCase()}: ${num(locale, sp.fleet.shipsPerFleet[0])}`],
+      ["wiki.k.fleetDeep", `${pct(deep)} · ${t("wiki.col.ships").toLowerCase()}: ${num(locale, sp.fleet.shipsPerFleet[1])}`],
+    ]);
+  },
 
   vuelo: (t, locale) =>
     kv(t, [
@@ -387,7 +466,18 @@ export const GEN_TABLES: Record<string, Builder> = {
   "naves-alienigenas": (t, locale) => {
     const d = contentDictionaries[locale];
     return {
-      head: [t("wiki.col.ship"), t("wiki.col.species"), t("wiki.col.role"), t("combat.hull"), t("wiki.col.attack"), t("wiki.col.battleShield"), t("wiki.col.speed"), t("wiki.col.scanner")],
+      head: [
+        t("wiki.col.ship"),
+        t("wiki.col.species"),
+        t("wiki.col.role"),
+        t("combat.hull"),
+        t("wiki.col.attack"),
+        t("wiki.col.battleShield"),
+        t("wiki.col.speed"),
+        t("wiki.col.scanner"),
+        t("wiki.col.length"),
+        t("wiki.col.shape"),
+      ],
       rows: ALIEN_SHIP_CLASSES.map((s) => [
         shipName(locale, s.id),
         d[`species.${s.speciesId}.name`] ?? s.speciesId,
@@ -397,6 +487,8 @@ export const GEN_TABLES: Record<string, Builder> = {
         num(locale, s.battleShield),
         t("wiki.v.lyh", { n: num(locale, s.speedLyPerHour) }),
         t("wiki.v.ly", { n: num(locale, s.scannerRangeLy) }),
+        `${num(locale, s.model.lengthM)} m`,
+        `${t(`wiki.shape.${s.model.hullShape}`)} · ${t(`wiki.style.${SPECIES.find((x) => x.id === s.speciesId)?.visual.silhouette ?? "geometric"}`)}`,
       ]),
       numeric: [3, 4, 5],
     };

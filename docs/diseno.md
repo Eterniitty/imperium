@@ -59,21 +59,29 @@ El ritmo es **en horas** para construir, producir y asediar. **Viajar entre estr
 - **Economía de la humanidad** (21-10-2026): por encima de las colonias, la de toda la humanidad. La moneda es el **crédito**, que generan las colonias según su población; una parte fija va al **tesoro común del Núcleo Humano**, que nadie gobierna (coherente con el lore: no hay imperio humano único) y que paga **proyectos comunes** con efectos para todos. Los Emperadores aportan los recursos de esos proyectos.
 - **Mercado global**: los Emperadores (y más adelante la IA, p. ej. los Nómadas del Vacío) compran y venden recursos con créditos en un libro de órdenes; los precios salen de la oferta y la demanda. Lo comprado **viaja** de la colonia del vendedor a la del comprador (la logística cuenta).
 
-## 6. Naves del MVP
+## 6. Naves
+
+Doce clases humanas (ampliadas el 21-10-2026), todas construidas en colonias con astillero; las pesadas piden refinería y aleaciones, y las capitales un **dique orbital**:
 
 | Clase | Rol | Notas |
 |---|---|---|
-| **Explorador** | Exploración | Rápido, escáner de largo alcance, casi sin armas. |
-| **Carguero** | Logística | Gran bodega, lento y frágil; necesita escolta. |
+| **Explorador** | Exploración | El más rápido y con mayor escáner; casi sin armas. |
+| **Caza ligero** / **Interceptor** | Combate ligero | Baratos y rápidos; el interceptor alcanza convoyes y huye. |
+| **Corbeta** | Escolta | Muchos disparos pequeños: barre cazas, pierde contra escudos. |
+| **Fragata** / **Destructor** | Línea | La fragata vale para todo; el destructor, torretas pesadas y torpedos. |
+| **Crucero** / **Portanaves** | Capitales | Caros, lentos, atraen el fuego; piden dique orbital. |
+| **Carguero** / **Carguero pesado** | Logística | Bodegas enormes; lentos y frágiles. |
+| **Transporte de tropas** | Transporte | 600 plazas; llevará las tropas de asalto. |
 | **Colonizador** | Colonización | Caro y lento; **se consume** al fundar la colonia. |
-| **Fragata** | Combate | La única con ataque relevante. |
 
-Los valores concretos están como datos en `packages/content/src/ships.ts`.
+En el combate por rondas cuentan además los **disparos por ronda** (el ataque se reparte) y el **tamaño como blanco** (las grandes atraen el fuego): así hay contrapesos entre clases (ver `packages/sim/test/balance.test.ts`). Los Carroñeros tienen seis naves (esquife, asaltante, arponero, bombardero, desguazador y nave nodriza) cuya mezcla depende del **peligro de la zona** (distancia al Núcleo). Todas las naves —humanas, Carroñeros y alienígenas— tienen **modelo 3D procedural** con la identidad visual de su facción y bocas de fuego como datos.
+
+Los valores concretos están como datos en `packages/content/src/ships.ts` y `aliens.ts`.
 
 ## 7. Combate por escala
 
 - **Tiempo real**: el jugador pilota la nave del Emperador con una **escolta de hasta ~5 naves por bando**. Combate directo, de acción.
-- **Combate de flotas por rondas**: cuando un encuentro supera ese tamaño, pasa a **combate por rondas resuelto en el servidor** y se **muestra en 3D** a los participantes.
+- **Combate de flotas por rondas**: cuando un encuentro supera ese tamaño, pasa a **combate por rondas resuelto en el servidor** y se **muestra en 3D** a los participantes (hecho: en la vista del sistema, con los modelos de cada nave).
 - El servidor es siempre la autoridad; el cliente solo visualiza y envía órdenes.
 
 ## 8. Conquista

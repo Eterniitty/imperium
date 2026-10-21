@@ -32,12 +32,10 @@ Your ship explodes, leaves the system and **you are reborn in a random system of
 
 ## Scavengers
 
-**Scavengers** are AI pirates (see [Species](/wiki/especies)). **There are none in the Human Core**; outside it, **four out of ten systems** have one to three of them, prowling around one of the planets.
+**Scavengers** are AI pirates (all about them in [Scavengers](/wiki/carroneros)). **There are none in the Human Core**; outside it, in some systems, prowling around one of the planets: **more and heavier the farther you go** (skiffs and raiders near the Core; harpooners, bombers, breakers and motherships in the deep zones).
 
-- They spot you and give chase when you get close; then they try to circle you at short range while firing their cannon (with imperfect aim: they miss more from far away).
-- A downed Scavenger reappears after a while.
-- With no players in the system, pirates do not move.
-
-{{tabla:carroneros}}
+- They spot you and give chase when you get close; each class keeps its own distance (harpooners close in, bombers fire missiles from afar) and fires from its hardpoints, with imperfect aim (they miss more from far away).
+- Big ships are easier to hit.
+- A downed Scavenger reappears after a while. With no players in the system, pirates do not move.
 
 > [!dev] **Escorts** (up to about 5 ships per side fighting alongside your ship in real time) and switching large encounters to round-based combat (phase 9c) are still to come. Today, fleet battles are resolved separately, in rounds: see [War](/wiki/guerra).

@@ -2,9 +2,9 @@ import * as THREE from "three";
 import { serverNow } from "../net/world";
 import { shipName, spaceStore, type PoseSample } from "../net/space";
 import { gameStore } from "../state/store";
-import { PIRATE_MODEL_SCALE } from "@imperium/content";
 import type { WeaponKind } from "@imperium/shared";
 import { createFlagship, disposeShip, SHIP_SCALE, shipRig } from "./shipModel";
+import { createShipModel } from "./shipFactory";
 import { labelTexture } from "./textures";
 
 const ALLY_COLOR = "#5fd3e6";
@@ -60,13 +60,13 @@ export class RemoteShips {
     const t = serverNow() - INTERP_DELAY_MS;
     for (const [id, remote] of Object.entries(ships)) {
       const name = shipName(remote.state, locale);
-      const key = `${name}|${remote.state.ally}|${remote.state.kind}`;
+      const key = `${name}|${remote.state.ally}|${remote.state.kind}|${remote.state.classId ?? ""}`;
       let v = this.visuals.get(id);
       if (v && v.key !== key) {
         this.remove(id, v);
         v = undefined;
       }
-      if (!v) v = this.add(id, name, remote.state.kind === "pirate" ? PIRATE_COLOR : remote.state.ally ? ALLY_COLOR : OTHER_COLOR, remote.state.kind === "pirate", key);
+      if (!v) v = this.add(id, name, remote.state.kind === "pirate" ? PIRATE_COLOR : remote.state.ally ? ALLY_COLOR : OTHER_COLOR, remote.state.classId, key);
       if (sampleAt(remote.samples, t, v.ship.position, v.ship.quaternion)) {
         v.label.position.copy(v.ship.position);
       }
@@ -82,10 +82,11 @@ export class RemoteShips {
     for (const [id, v] of this.visuals) if (!ships[id]) this.remove(id, v);
   }
 
-  private add(id: string, name: string, color: string, small: boolean, key: string): Visual {
-    const ship = createFlagship(color);
-    // A la escala de la nave propia; los piratas, algo más pequeños.
-    ship.scale.setScalar(SHIP_SCALE * (small ? PIRATE_MODEL_SCALE : 1));
+  private add(id: string, name: string, color: string, classId: string | undefined, key: string): Visual {
+    // Naves de la IA con clase (piratas Carroñeros…): su modelo procedural a escala real; las de los Emperadores, la insignia.
+    const model = classId ? createShipModel(classId) : null;
+    const ship = model ?? createFlagship(color);
+    if (!model) ship.scale.setScalar(SHIP_SCALE);
     const { texture, aspect } = labelTexture(name, color);
     const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, sizeAttenuation: false, transparent: true }));
     label.scale.set(LABEL_HEIGHT * aspect, LABEL_HEIGHT, 1);

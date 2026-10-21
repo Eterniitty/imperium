@@ -1,0 +1,37 @@
+# Scavengers
+
+Pirates of mixed species (faction **Rust Tide**): they raid anyone who ventures outside the **Human Core**, which they never enter. They do not fight for honour: they want loot at the lowest risk. They appear in two ways:
+
+- **in local space**, as AI-flown ships that attack you in [real-time combat](/wiki/combate) while you fly your ship;
+- **as fleets** in their territory, fighting your fleets in rounds (see [AI and territories](/wiki/ia-territorios) and [War](/wiki/guerra)).
+
+## Their ships
+
+{{tabla:carroneros-naves}}
+
+- **Skiff**: a cockpit welded to an engine; fast and disposable, it comes in swarms.
+- **Raider**: the classic pirate; it circles its prey at medium range.
+- **Harpooner**: it latches on at point-blank range with magnetic harpoons and boarding pods.
+- **Bomber**: it stays far away and fires missiles; if you close in, it backs off.
+- **Breaker**: a freighter armoured with hammer blows, with turrets and missiles.
+- **Mothership**: a colossal freighter turned lair; it leads the pack in the most dangerous zones.
+
+Each one has its own scrap model (asymmetric plates, spikes, engines of different sizes, reddish lights) and fires from its own hardpoints.
+
+> [!dev] Boarding (stealing cargo instead of destroying the ship) will come with the logistics of conquest; for now the harpooner just hits hard at close range.
+
+## Danger by zone
+
+The farther from the Core, the more numerous, the heavier and the better their aim. The ring is the distance to the Core in sectors (see [Universe](/wiki/universo)).
+
+{{tabla:carroneros-peligro}}
+
+{{tabla:carroneros}}
+
+They only chase **piloted** ships: your parked ship does not interest them. Destroyed ones come back after a while.
+
+## Their fleets
+
+The fleets in their territory also change with depth: skiffs and raiders at the edge; breakers, bombers and the odd mothership in the deepest regions.
+
+{{tabla:carroneros-flotas}}

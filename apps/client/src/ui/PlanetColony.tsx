@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { ECONOMY, INSTALLATIONS, SHIP_CLASSES, STOCK_IDS, type StockAmounts } from "@imperium/content";
 import { PLANET_NAME_MAX, PLANET_NAME_MIN, type Colony, type Fleet, type I18nKey, type Planet, type StarSystemDetail } from "@imperium/shared";
-import { minColonists } from "@imperium/sim";
+import { minColonists, missingInstallations } from "@imperium/sim";
 import { connection, useWorld } from "../net/world";
 import { useAuth } from "../state/auth";
 import { useClaims } from "../state/claims";
@@ -9,6 +9,7 @@ import { useGame, useT } from "../state/store";
 import { fmtInt, fmtRate, liveHumans, livePopulation, liveStock, ownColonyAt, planetLabel } from "./colonies";
 import { RESOURCE_COLORS } from "./common";
 import { contentText } from "./fleets";
+import { ShipThumb } from "./ShipThumb";
 import { formatDuration, useServerNow } from "./useNow";
 
 const STOCK_COLORS: Record<string, string> = { ...RESOURCE_COLORS, alloys: "#ff9f5a" };
@@ -306,10 +307,18 @@ function ColonyDetail({
       <ul className="build-list">
         {INSTALLATIONS.map((def) => {
           const full = (colony.installations[def.id] ?? 0) + queued(def.id) >= def.maxPerColony;
+          const missing = missingInstallations(def.requires, colony.installations);
           return (
             <li key={def.id}>
-              <button className="btn build-btn" disabled={busy || full || queueFull || !affordable(def.cost)} onClick={() => onBuild("installation", def.id)}>
-                <span>{t(def.nameKey as I18nKey)}</span>
+              <button
+                className="btn build-btn"
+                disabled={busy || full || queueFull || missing.length > 0 || !affordable(def.cost)}
+                onClick={() => onBuild("installation", def.id)}
+              >
+                <span className="ship-name">
+                  {t(def.nameKey as I18nKey)}
+                  {missing.length > 0 && !full && <span className="needs">{t("colony.needs", { list: missing.map((m) => t(`installation.${m}` as I18nKey)).join(", ") })}</span>}
+                </span>
                 <Cost cost={def.cost} stock={stock} />
                 <span className="muted small mono">{t("colony.costHours", { h: def.buildTimeHours })}</span>
               </button>
@@ -323,11 +332,21 @@ function ColonyDetail({
           <h3>{t("colony.buildShips")}</h3>
           <ul className="build-list">
             {SHIP_CLASSES.map((cls) => {
-              const cost = { ...cls.cost, alloys: 0 };
+              const cost = { ...cls.cost };
+              const missing = missingInstallations(cls.requires, colony.installations);
               return (
                 <li key={cls.id}>
-                  <button className="btn build-btn" disabled={busy || queueFull || !affordable(cost)} onClick={() => onBuild("ship", cls.id)}>
-                    <span>{contentText(locale, cls.nameKey)}</span>
+                  <button
+                    className="btn build-btn"
+                    disabled={busy || queueFull || missing.length > 0 || !affordable(cost)}
+                    title={contentText(locale, cls.descriptionKey)}
+                    onClick={() => onBuild("ship", cls.id)}
+                  >
+                    <ShipThumb classId={cls.id} />
+                    <span className="ship-name">
+                      {contentText(locale, cls.nameKey)}
+                      {missing.length > 0 && <span className="needs">{t("colony.needs", { list: missing.map((m) => t(`installation.${m}` as I18nKey)).join(", ") })}</span>}
+                    </span>
                     <Cost cost={cost} stock={stock} />
                     <span className="muted small mono">{t("colony.costHours", { h: cls.buildTimeHours })}</span>
                   </button>

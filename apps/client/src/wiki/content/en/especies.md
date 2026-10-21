@@ -24,6 +24,6 @@ Each card gathers its philosophy, its attitude towards humanity, where it lives,
 
 Alien ships are not built in human shipyards: the AI deploys them in its territory. In [round-based combat](/wiki/guerra) they count just like human ones (hull, attack and battle shield).
 
-{{tabla:naves-alienigenas}}
+Their figures, their 3D look (with each species' silhouette and colours) and their models are in [Alien ships](/wiki/naves-alienigenas); the pirates' in [Scavengers](/wiki/carroneros).
 
-> [!dev] Alien ships are not yet shown in 3D and you cannot fight them while piloting: they will come with their own models (each species' silhouette and colours). Faction names are provisional.
+> [!dev] You cannot yet fight alien ships while piloting (except the Scavengers): that will come with the ship AI. Faction names are provisional.

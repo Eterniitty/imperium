@@ -19,21 +19,12 @@ Tus naves (salvo la tuya, la del Emperador) se agrupan en **flotas** («Flota 1�
 
 Se construyen en una colonia con **astillero** (ver [Economía](/wiki/economia#cola-de-construccion)). El mantenimiento de todas tus naves lo paga tu [capital](/wiki/colonias#la-capital), en volátiles por hora.
 
-{{tabla:naves}}
-
-\* El Colonizador se consume al fundar una colonia. En la columna *Humanos*: colonos (Colonizador) o plazas de pasajeros (Carguero).
-
-- **Explorador**: rápido y con el mayor escáner; casi sin armas. Abre camino.
-- **Carguero**: bodega enorme y plazas para pasajeros; lento y frágil, necesita escolta.
-- **Colonizador**: caro y lento; lleva colonos para fundar una colonia y se desmantela al hacerlo.
-- **Fragata**: la única nave pensada para combatir.
-
-Sus datos de combate están en [Guerra](/wiki/guerra#las-naves-en-batalla).
+Hay doce clases (exploración, cazas, escoltas, naves de línea, capitales, cargueros, transporte de tropas y colonizador): su coste, lo que piden a la colonia, velocidad, bodega y datos de combate están en [Naves humanas](/wiki/naves). Tus flotas paradas se ven en formación en la vista del sistema.
 
 ## Bodega y pasajeros
 
 - La **bodega** de una flota es la suma de la de sus naves y la comparten **todos los recursos** (metal, volátiles, cristal y aleaciones juntos).
-- Las **plazas de pasajeros** son aparte y solo las tienen las naves de transporte (el Carguero).
+- Las **plazas de pasajeros** son aparte y solo las tienen las naves de transporte (Carguero, Carguero pesado y Transporte de tropas).
 - La energía no se transporta.
 
 ## Cargar y descargar

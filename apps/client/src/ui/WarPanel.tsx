@@ -1,3 +1,4 @@
+import { engineRef } from "../engineRef";
 import { useCallback, useEffect, useState } from "react";
 import { ALIEN_AI } from "@imperium/content";
 import type { AlienSighting, AlienStanding, Battle, ContactsResponse, Fleet, FleetContact, I18nKey, ShipCounts } from "@imperium/shared";
@@ -107,6 +108,11 @@ export function WarPanel() {
                     )}
                     {last && <span className="muted small">{t("war.lastRound", { dealt: last.dealt, taken: last.taken })}</span>}
                     {b.outcome === "ongoing" && <span className="muted small">{t("war.fleeHint")}</span>}
+                    {b.outcome === "ongoing" && (
+                      <button className="link-btn small" data-testid="battle-3d" onClick={() => engineRef.current?.showBattle(b.id)}>
+                        {t("war.view3d")}
+                      </button>
+                    )}
                   </li>
                 );
               })}

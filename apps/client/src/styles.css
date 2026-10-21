@@ -665,3 +665,9 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .quantum-dest-name { display: block; font-family: var(--font-display); font-size: 22px; letter-spacing: 0.06em; color: #bfd0ff; margin: 2px 0; }
 .quantum-time { font-size: 28px; color: var(--gold); margin: 4px 0; }
 .quantum-bar span { background: linear-gradient(90deg, #6f7dff, #bfd0ff); }
+.ship-thumb { display: inline-block; flex: none; }
+.ship-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.build-btn .ship-name { flex: 1; display: flex; flex-direction: column; }
+.build-btn .needs { color: #ff9f5a; font-size: 11px; }
+.fleet-ships { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center; }
+.fleet-ships > span { display: inline-flex; align-items: center; gap: 2px; }

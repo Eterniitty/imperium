@@ -13,7 +13,7 @@ Al **llegar una flota** a un sistema, si allí hay **flotas paradas de dos Emper
 ## Cómo se resuelve una ronda
 
 - **Todas las naves disparan a la vez** (también las que caen en esa ronda).
-- Cada nave con ataque elige **al azar** una nave enemiga que siga en pie y le hace su **ataque ± una variación**.
+- Cada nave con ataque reparte su ataque entre sus **disparos** (casi todas, uno; corbetas, cruceros y portanaves, varios). Cada disparo elige **al azar** una nave enemiga que siga en pie —las más **grandes** tienen más probabilidad de ser elegidas— y le hace su parte del ataque **± una variación**.
 - El **escudo de batalla** del objetivo absorbe daño hasta agotarse en esa ronda; el resto va al **casco**. El escudo se renueva en cada ronda; el casco no.
 - Con el casco a 0, la nave queda **destruida**.
 - El resultado es determinista: con los mismos bandos y la misma semilla, siempre sale lo mismo.
@@ -22,9 +22,7 @@ Al **llegar una flota** a un sistema, si allí hay **flotas paradas de dos Emper
 
 ## Las naves en batalla
 
-{{tabla:naves-combate}}
-
-Solo el ataque, el escudo de batalla y el casco cuentan en las rondas; las armas y escudos «en tiempo real» son los del [combate pilotado](/wiki/combate).
+Las cifras de cada nave (ataque, disparos, escudo de batalla, tamaño como blanco y casco) y el equilibrio entre clases están en [Naves humanas](/wiki/naves#en-batalla); las alienígenas, en [Naves alienígenas](/wiki/naves-alienigenas). Solo esas cifras cuentan en las rondas; las armas y escudos «en tiempo real» son los del [combate pilotado](/wiki/combate).
 
 ## Cómo termina
 
@@ -53,6 +51,10 @@ En el panel **Batallas**, la sección **Contactos** lista las **flotas enemigas 
 - cada una de tus **colonias**.
 
 Elige una flota tuya y pulsa **Interceptar**: viaja al **destino** del contacto y, si coinciden allí, combaten. Si el contacto ya no está al alcance de tus sensores, la orden falla.
+
+## Verla en 3D
+
+Las batallas en curso se ven en la **vista del sistema**: los dos bandos frente a frente, con los modelos de sus naves, disparos que salen de sus bocas de fuego y explosiones cuando una ronda derriba naves. En el panel **Batallas**, **Ver la batalla en 3D** abre el sistema y lleva la cámara hasta allí (si no estás pilotando). Es una puesta en escena de lo que resuelve el servidor en cada ronda; con muchas naves se dibuja una parte proporcional.
 
 ## El panel Batallas
 

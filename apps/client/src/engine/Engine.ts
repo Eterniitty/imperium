@@ -318,6 +318,19 @@ export class Engine {
     gameStore.getState().select(findSystemSummary((fleet.travel?.to ?? fleet.location).systemId));
   }
 
+  /**
+   * Muestra en 3D una batalla de flotas: abre la vista de su sistema (si no se
+   * está pilotando) y lleva la cámara hasta ella.
+   */
+  showBattle(battleId: string): void {
+    const battle = worldStore.getState().battles[battleId];
+    if (!battle || (this.active === this.system && this.system.isPiloting)) return;
+    const summary = findSystemSummary(battle.systemId);
+    if (!summary) return;
+    if (this.active !== this.system || this.shown?.id !== summary.id) this.enterSystem(summary);
+    this.system.focusBattle(battleId);
+  }
+
   enterSystem(s: StarSystemSummary): void {
     const store = gameStore.getState();
     store.select(s);

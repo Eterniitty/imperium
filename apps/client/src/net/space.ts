@@ -1,4 +1,5 @@
 import { createStore } from "zustand/vanilla";
+import { contentDictionaries } from "@imperium/content";
 import { translate, type Locale, type Quat, type ServerMessage, type ShipPose, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
 
 /** Muestra de posición de otra nave, con la hora del servidor en que se envió. */
@@ -53,8 +54,11 @@ export function resetSpace(): void {
 const MAX_SAMPLES = 8;
 
 /** Nombre visible de una nave: el del Emperador, o el de su tipo si es de la IA. */
-export function shipName(state: Pick<ShipState, "kind" | "name">, locale: Locale): string {
-  return state.kind === "pirate" ? translate(locale, "npc.pirate") : state.name;
+export function shipName(state: Pick<ShipState, "kind" | "name" | "classId">, locale: Locale): string {
+  if (state.kind !== "pirate") return state.name;
+  // «Carroñero · Arponero»: el pueblo y su clase de nave.
+  const cls = state.classId ? contentDictionaries[locale][`ship.${state.classId}.name`] : undefined;
+  return cls ? `${translate(locale, "npc.pirate")} · ${cls}` : translate(locale, "npc.pirate");
 }
 
 export function addSample(ship: RemoteShip, sample: PoseSample): void {

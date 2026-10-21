@@ -13,7 +13,7 @@ When **a fleet arrives** at a system, if there are **stopped fleets of two Emper
 ## How a round is resolved
 
 - **All ships fire at the same time** (including those that fall in that round).
-- Each ship with attack picks **at random** an enemy ship still standing and deals its **attack ± a variation**.
+- Each ship with attack splits its attack between its **shots** (most ships, one; corvettes, cruisers and carriers, several). Each shot picks **at random** an enemy ship still standing —**bigger** ships are more likely to be picked— and deals its share of the attack **± a variation**.
 - The target's **battle shield** absorbs damage until it runs out for that round; the rest goes to the **hull**. The shield is renewed every round; the hull is not.
 - With its hull at 0, the ship is **destroyed**.
 - The result is deterministic: the same sides with the same seed always give the same outcome.
@@ -22,9 +22,7 @@ When **a fleet arrives** at a system, if there are **stopped fleets of two Emper
 
 ## Ships in battle
 
-{{tabla:naves-combate}}
-
-Only attack, battle shield and hull count in rounds; the "real time" weapons and shields are those of [piloted combat](/wiki/combate).
+Each ship's figures (attack, shots, battle shield, target size and hull) and the balance between classes are in [Human ships](/wiki/naves#in-battle); alien ones in [Alien ships](/wiki/naves-alienigenas). Only those figures count in rounds; the "real time" weapons and shields are those of [piloted combat](/wiki/combate).
 
 ## How it ends
 
@@ -53,6 +51,10 @@ In the **Battles** panel, the **Contacts** section lists **enemy fleets in trans
 - each of your **colonies**.
 
 Pick one of your fleets and press **Intercept**: it travels to the contact's **destination** and, if they meet there, they fight. If the contact is no longer within your sensors' reach, the order fails.
+
+## Watching it in 3D
+
+Ongoing battles are shown in the **system view**: both sides face to face, with their ship models, shots coming out of their hardpoints and explosions when a round downs ships. In the **Battles** panel, **Watch the battle in 3D** opens the system and takes the camera there (if you are not flying). It is a staging of what the server resolves each round; with many ships, a proportional part is drawn.
 
 ## The Battles panel
 

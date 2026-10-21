@@ -9,7 +9,7 @@ Copia inicial: `proyecto/imperium-20261021-051653-antes-noche.tar.gz` + `imperiu
 ## Agente 1 (árbol principal)
 1. [x] Cerrar Fase 9a (combate de flotas por rondas e intercepción) y commit (`c4640f7`).
 2. [x] Colonias independientes al borrar una cuenta y commit (`8be8a4f`).
-3. [ ] Tipos de nave nuevos y mejorados para humanos y Carroñeros (datos en `packages/content`,
+3. [x] Tipos de nave nuevos y mejorados para humanos y Carroñeros (datos en `packages/content`,
        modelos procedurales en el cliente, uso por la IA de Carroñeros y en construcción de colonias).
        Empieza después de fusionar el pilotaje (comparte `shipModel.ts`).
 
@@ -28,7 +28,9 @@ Copia inicial: `proyecto/imperium-20261021-051653-antes-noche.tar.gz` + `imperiu
 - [x] Fusionar rama de pilotaje en `main`, typecheck y `pnpm test` (lo hizo el agente 2; la copia de seguridad, pendiente del orquestador).
 - [x] Ventana de ayuda detallada (sustituida por la Wiki, ver abajo) (economía con números reales, controles, combate, logística, lore,
       pilotaje nuevo). Se paró para respetar el límite de dos agentes; se relanza al quedar un hueco.
-- [ ] Tipos de nave (ver Agente 1, punto 3).
+- [x] Tipos de nave (ver Agente 1, punto 3). Hecho: 12 clases humanas (dique orbital nuevo), 6 de Carroñeros con
+      peligro por anillo, generador 3D paramétrico con LOD para humanos, Carroñeros y alienígenas, bocas de fuego como
+      datos, batallas por rondas en 3D, miniaturas, Wiki («Naves humanas», «Carroñeros», «Naves alienígenas»).
 - [ ] `pnpm build`, `pnpm e2e` completo (cierre de fase y cambios en motor 3D), revisar capturas.
 - [ ] Copia de seguridad de la base de producción → desplegar servidor y cliente.
 - [ ] Actualizar CLAUDE.md y este archivo con el resultado.
