@@ -7,10 +7,10 @@ Texto para jugadores (lo usará la ventana de ayuda del juego). Las teclas son l
 | Tecla | Qué hace |
 |---|---|
 | **I** | **Motores**: arrancar (unos 4 s) o apagar. Al tomar los mandos están apagados: sin ellos no hay empuje, giros ni pulso |
-| Arrastrar con el ratón | Mover la cámara alrededor de la nave (no la gira); rueda: distancia |
+| Ratón en **cámara libre** | Arrastrar mueve la cámara alrededor de la nave (no la gira); rueda: distancia |
 | B | Cámara: volver detrás de la nave (o mirar al frente en cabina) |
 | Z | Asistencia de vuelo (frenado y estabilización) |
-| G | Pilotaje con ratón: arrastrar con el botón izquierdo gira la nave; el derecho mueve la cámara |
+| **G** | **Modo del ratón**: cámara libre ↔ **vuelo con ratón** (retícula virtual: la nave gira hacia donde está el cursor respecto al centro, con zona muerta, sin arrastrar; la cámara sigue detrás y el botón derecho mira alrededor un momento). Las flechas y Q/E funcionan en los dos modos. Sensibilidad, zona muerta e invertir eje en Ajustes → Controles |
 | W / S | Acelerar / frenar y retroceder |
 | A / D | Desplazarse a izquierda / derecha |
 | Espacio / C | Subir / bajar |

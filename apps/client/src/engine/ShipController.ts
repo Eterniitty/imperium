@@ -60,7 +60,10 @@ export class ShipController {
   powered = true;
   private pulseOn = false;
   private pulseSpeed = 0;
-  private mouse: { x: number; y: number; ox: number; oy: number } | null = null;
+  /** Cursor sobre la vista, relativo al centro (−1 a 1 en media altura), para el vuelo con ratón; null si está fuera. */
+  private cursor: { x: number; y: number } | null = null;
+  /** Giro pedido con el ratón ahora (−1 a 1; x cabeceo, y guiñada), para la retícula del HUD. */
+  readonly mouseStick = new THREE.Vector2();
   private input = new THREE.Vector3();
   private turn = new THREE.Vector3();
   private tmp = new THREE.Vector3();
@@ -71,9 +74,10 @@ export class ShipController {
     private dom: HTMLElement,
     private keyboard: Keyboard,
   ) {
-    dom.addEventListener("pointerdown", this.onDown);
-    window.addEventListener("pointermove", this.onMove);
-    window.addEventListener("pointerup", this.onUp);
+    dom.addEventListener("pointermove", this.onMove);
+    dom.addEventListener("pointerleave", this.onLeave);
+    window.addEventListener("pointerdown", this.onButtons);
+    window.addEventListener("pointerup", this.onButtons);
   }
 
   get speed(): number {
@@ -90,26 +94,42 @@ export class ShipController {
     this.pulseOn = on;
   }
 
-  /** ¿Se está pilotando con el ratón ahora mismo (botón izquierdo en el modo de pilotaje con ratón)? */
+  /** ¿Se está pilotando con el ratón ahora mismo (modo de vuelo con ratón y cursor fuera de la zona muerta)? */
   get mouseSteering(): boolean {
-    return this.mouse !== null;
+    return this.mouseStick.lengthSq() > 0;
   }
 
-  // Pilotaje con ratón: con el botón izquierdo pulsado, la distancia al punto donde
-  // se pulsó marca la velocidad de giro (como una palanca), no un giro instantáneo.
-  private onDown = (e: PointerEvent) => {
-    if (!this.enabled || e.button !== 0 || !settingsStore.getState().prefs.flight.mouseFlight) return;
-    this.mouse = { x: e.clientX, y: e.clientY, ox: e.clientX, oy: e.clientY };
-  };
-
+  // Vuelo con ratón: retícula virtual. Se guarda dónde está el cursor respecto al
+  // centro de la vista; sin arrastrar, la distancia al centro marca la velocidad de giro.
   private onMove = (e: PointerEvent) => {
-    if (!this.mouse) return;
-    this.mouse.x = e.clientX;
-    this.mouse.y = e.clientY;
+    const r = this.dom.getBoundingClientRect();
+    const half = Math.max(1, r.height / 2);
+    this.cursor = { x: (e.clientX - r.left - r.width / 2) / half, y: (e.clientY - r.top - r.height / 2) / half };
   };
 
-  private onUp = () => {
-    this.mouse = null;
+  private onLeave = () => {
+    this.cursor = null;
+  };
+
+  /** Giro que pide el cursor (zona muerta, sensibilidad y eje invertido de los ajustes). */
+  private stickFromCursor(): void {
+    const f = settingsStore.getState().prefs.flight;
+    const stick = this.mouseStick.set(0, 0);
+    // Con un botón pulsado (mirar alrededor con el derecho, o un clic en la vista) no se dirige.
+    if (!f.mouseFlight || !this.cursor || this.buttons !== 0) return;
+    const R = FLIGHT_MODEL.mouseReticleRadius;
+    const dead = f.mouseDeadzone * R;
+    const len = Math.hypot(this.cursor.x, this.cursor.y);
+    if (len <= dead) return;
+    // Fuera de la zona muerta, el giro crece desde 0 hasta 1 en el radio de la retícula.
+    const k = Math.min(1, ((len - dead) / Math.max(1e-6, R - dead)) * f.mouseSensitivity) / len;
+    stick.set(-this.cursor.y * k * (f.mouseInvertY ? -1 : 1), -this.cursor.x * k);
+  }
+
+  /** Botones del ratón pulsados sobre la vista. */
+  private buttons = 0;
+  private onButtons = (e: PointerEvent) => {
+    this.buttons = e.buttons;
   };
 
   /** Detiene la nave en seco (al cambiar de modo o teletransportar). */
@@ -129,6 +149,7 @@ export class ShipController {
 
     // Mandos de giro (−1 a 1 por eje).
     const turn = this.turn.set(0, 0, 0);
+    this.mouseStick.set(0, 0);
     if (live) {
       if (kb.action("pitchUp")) turn.x += 1;
       if (kb.action("pitchDown")) turn.x -= 1;
@@ -136,10 +157,10 @@ export class ShipController {
       if (kb.action("turnRight")) turn.y -= 1;
       if (kb.action("rollLeft")) turn.z += 1;
       if (kb.action("rollRight")) turn.z -= 1;
-      if (this.mouse) {
-        const r = M.mouseStickPx;
-        turn.y -= Math.max(-1, Math.min(1, (this.mouse.x - this.mouse.ox) / r));
-        turn.x -= Math.max(-1, Math.min(1, (this.mouse.y - this.mouse.oy) / r));
+      this.stickFromCursor();
+      if (this.mouseStick.lengthSq() > 0) {
+        turn.x += this.mouseStick.x;
+        turn.y += this.mouseStick.y;
         turn.clampScalar(-1, 1);
       }
     }
@@ -235,8 +256,9 @@ export class ShipController {
   }
 
   dispose(): void {
-    this.dom.removeEventListener("pointerdown", this.onDown);
-    window.removeEventListener("pointermove", this.onMove);
-    window.removeEventListener("pointerup", this.onUp);
+    this.dom.removeEventListener("pointermove", this.onMove);
+    this.dom.removeEventListener("pointerleave", this.onLeave);
+    window.removeEventListener("pointerdown", this.onButtons);
+    window.removeEventListener("pointerup", this.onButtons);
   }
 }

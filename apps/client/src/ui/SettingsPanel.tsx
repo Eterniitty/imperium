@@ -110,12 +110,12 @@ function FlightPrefsSection() {
   const t = useT();
   const flight = useSettings((s) => s.prefs.flight);
   const set = (changes: Partial<typeof flight>) => settingsStore.getState().setPrefs({ flight: { ...flight, ...changes } });
-  const check = (key: "assist" | "mouseFlight" | "invertCameraY", label: I18nKey) => (
+  const check = (key: "assist" | "mouseFlight" | "invertCameraY" | "mouseInvertY", label: I18nKey) => (
     <label className="flight-pref">
       <input type="checkbox" checked={flight[key]} onChange={(e) => set({ [key]: e.target.checked })} /> {t(label)}
     </label>
   );
-  const range = (key: "accel" | "inertia" | "maxSpeed", label: I18nKey, min: number, max: number) => (
+  const range = (key: "accel" | "inertia" | "maxSpeed" | "mouseSensitivity" | "mouseDeadzone", label: I18nKey, min: number, max: number) => (
     <label className="flight-pref">
       {t(label)}{" "}
       <input type="range" min={min * 100} max={max * 100} step={5} value={Math.round(flight[key] * 100)} onChange={(e) => set({ [key]: Number(e.target.value) / 100 })} />{" "}
@@ -127,6 +127,9 @@ function FlightPrefsSection() {
       <h3>{t("settings.flight")}</h3>
       {check("assist", "settings.flight.assist")}
       {check("mouseFlight", "settings.flight.mouseFlight")}
+      {range("mouseSensitivity", "settings.flight.mouseSensitivity", 0.3, 3)}
+      {range("mouseDeadzone", "settings.flight.mouseDeadzone", 0, 0.3)}
+      {check("mouseInvertY", "settings.flight.mouseInvertY")}
       {check("invertCameraY", "settings.flight.invertY")}
       {range("accel", "settings.flight.accel", 0.5, 1.5)}
       {range("inertia", "settings.flight.inertia", 0.5, 2)}

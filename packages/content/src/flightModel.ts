@@ -29,8 +29,11 @@ export const FLIGHT_MODEL = {
   yawRate: 0.5,
   rollRate: 1.0,
   angularAccel: 1.8,
-  /** Pilotaje con ratón: píxeles desde el punto pulsado para el giro máximo. */
-  mouseStickPx: 160,
+  /**
+   * Vuelo con ratón (retícula virtual): a esta distancia del centro de la
+   * pantalla, en fracción de media altura, se gira a la velocidad máxima.
+   */
+  mouseReticleRadius: 0.45,
   /** Paso fijo de la integración (s): la física se calcula en subpasos de este tamaño. */
   substep: 1 / 120,
   /** Al apagar el pulso, la velocidad sobrante se pierde con esta rapidez (1/s). */

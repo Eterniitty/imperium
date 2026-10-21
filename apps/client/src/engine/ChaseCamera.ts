@@ -9,8 +9,9 @@ const DEFAULT_DIST = FLAGSHIP_LENGTH_M * 2.2;
  * Cámara del piloto, separada de la nave: mover la cámara nunca gira la nave.
  *
  * - Exterior: órbita libre alrededor de la nave (arriba, abajo, lados, detrás)
- *   arrastrando con el ratón (botón derecho siempre; izquierdo si no está el
- *   pilotaje con ratón) y rueda para acercar o alejar. Los ángulos son relativos
+ *   arrastrando con el ratón (botón derecho siempre; izquierdo en el modo de
+ *   cámara libre) y rueda para acercar o alejar. En el modo de vuelo con ratón
+ *   la cámara sigue detrás y, al soltar el botón derecho, vuelve detrás. Los ángulos son relativos
  *   a la nave: si la nave gira, la cámara la acompaña desde el mismo ángulo,
  *   con un seguimiento suave (sin saltos). La tecla de «vista de seguimiento»
  *   la devuelve detrás de la nave.
@@ -79,7 +80,10 @@ export class ChaseCamera {
   };
 
   private onUp = () => {
+    if (!this.drag) return;
     this.drag = null;
+    // En vuelo con ratón la cámara va detrás de la nave: mirar alrededor (botón derecho) es solo un momento.
+    if (settingsStore.getState().prefs.flight.mouseFlight && !this.first) this.reset();
   };
 
   private onWheel = (e: WheelEvent) => {

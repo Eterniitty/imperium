@@ -1,3 +1,4 @@
+import { FLIGHT_MODEL } from "@imperium/content";
 import { PILOT_BOOST, PILOT_SPEED, PULSE_MAX_SPEED } from "@imperium/sim";
 import { useTelemetry } from "../engine/telemetry";
 import { FlightInstruments } from "./FlightInstruments";
@@ -19,6 +20,23 @@ export function formatDistance(m: number): string {
 /** Velocidad en m/s o km/s: número y unidad por separado. */
 export function speedParts(v: number): [string, "pilot.unitKm" | "pilot.unitM"] {
   return v >= 1000 ? [(v / 1000).toFixed(v >= 100_000 ? 0 : 1), "pilot.unitKm"] : [v.toFixed(0), "pilot.unitM"];
+}
+
+/**
+ * Retícula del vuelo con ratón: zona muerta en el centro y círculo exterior en
+ * el que se gira a la velocidad máxima (`FLIGHT_MODEL.mouseReticleRadius`).
+ */
+function MouseReticle({ deadzone }: { deadzone: number }) {
+  const R = FLIGHT_MODEL.mouseReticleRadius;
+  // Tamaño en altura de la ventana: el radio exterior es R × media altura.
+  const size = `${R * 100}vh`;
+  return (
+    <svg className="mouse-reticle" viewBox="-100 -100 200 200" style={{ width: size, height: size }}>
+      <circle r="99" fill="none" stroke="currentColor" strokeWidth="0.8" strokeDasharray="3 5" />
+      <circle r={Math.max(3, deadzone * 100)} fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M0 -99v8M0 91v8M-99 0h8M91 0h8" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  );
 }
 
 /** Etapas del arranque: se marcan al pasar su umbral de potencia. */
@@ -65,6 +83,8 @@ export function FlightHud() {
   const camera = useGame((s) => s.cameraView);
   const tel = useTelemetry();
   const assist = useSettings((s) => s.prefs.flight.assist);
+  const mouseFlight = useSettings((s) => s.prefs.flight.mouseFlight);
+  const deadzone = useSettings((s) => s.prefs.flight.mouseDeadzone);
   if (!flight) return null;
   const piloting = view === "system";
   const speed = piloting ? tel.speed : galaxySpeed;
@@ -79,6 +99,7 @@ export function FlightHud() {
     <div className={hudClass} aria-hidden>
       {piloting && engines !== "on" && <EnginePanel state={engines} power={tel.enginePower} engineKey={keys.engines} />}
       {piloting && <FlightInstruments />}
+      {piloting && mouseFlight && engines === "on" && <MouseReticle deadzone={deadzone} />}
       {(!piloting || camera === "first") && (
         <svg className="crosshair" viewBox="0 0 46 46">
           <circle cx="23" cy="23" r="9" fill="none" stroke="currentColor" strokeWidth="1.2" />
@@ -107,6 +128,7 @@ export function FlightHud() {
               · {t("pilot.assist")} {assist ? "ON" : "OFF"} ({keys.flightAssist})
             </span>
             {engines === "on" && <span className="muted"> · {t("pilot.enginesStopHint", { key: keys.engines })}</span>}
+            <div className={mouseFlight ? "pulse-key on" : "pulse-key"}>{t(mouseFlight ? "pilot.mouseMode.flight" : "pilot.mouseMode.camera", { key: keys.mouseFlight })}</div>
             <div className="muted">
               {t(`pilot.region.${tel.gravity.region}`)}
               {tel.gravity.body && ` · ${tel.gravity.body}`}

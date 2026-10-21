@@ -610,6 +610,7 @@ export class SystemView implements View {
     this.ship = null;
     this.controls.enabled = true;
     this.cockpit.visible = false;
+    this.dom.style.cursor = "";
     gameStore.getState().setFlight(false, 0);
   }
 
@@ -695,6 +696,8 @@ export class SystemView implements View {
     const st = settingsStore.getState();
     const value = !st.prefs.flight[key];
     st.setPrefs({ flight: { ...st.prefs.flight, [key]: value } });
+    // Al pasar a vuelo con ratón, la cámara vuelve detrás de la nave.
+    if (key === "mouseFlight" && value) this.chase.reset();
     this.events.notify(value ? on : off);
   }
 
@@ -1080,6 +1083,10 @@ export class SystemView implements View {
       // Al entrar en la grieta, la cámara exterior se queda quieta y la ve alejarse; en cabina, entra con ella.
       if (!departing || gameStore.getState().cameraView === "first") this.placeChaseCamera(1 - Math.exp(-dt * 8));
       telemetry.freeCam = this.chase.free && gameStore.getState().cameraView !== "first";
+      // Vuelo con ratón: el cursor es la retícula (una cruz); en cámara libre, el de siempre.
+      const mouseFlight = settingsStore.getState().prefs.flight.mouseFlight;
+      const cursor = mouseFlight ? "crosshair" : "";
+      if (this.dom.style.cursor !== cursor) this.dom.style.cursor = cursor;
       gameStore.getState().setFlight(true, this.flight.speed, this.flight.pulse);
       // Más allá del borde: espacio interestelar.
       if (!this.leaving && this.layout && this.ship.position.length() > this.boundary) {
@@ -1136,6 +1143,8 @@ export class SystemView implements View {
 
   onHover(x: number, y: number): void {
     this.hoveredPlanet = this.pickPlanet(x, y);
+    // En vuelo con ratón el cursor es la retícula.
+    if (this.ship && settingsStore.getState().prefs.flight.mouseFlight) return;
     this.dom.style.cursor = this.hoveredPlanet !== null ? "pointer" : "";
   }
 

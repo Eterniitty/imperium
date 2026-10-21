@@ -118,8 +118,18 @@ export function uiScaleFor(scale: UiScale, width: number, height: number): numbe
 export interface FlightPrefs {
   /** Asistencia de vuelo: los propulsores frenan y estabilizan solos. */
   assist: boolean;
-  /** Pilotaje con ratón: arrastrar con el botón izquierdo gira la nave (si no, mueve la cámara). */
+  /**
+   * Modo del ratón al pilotar (se alterna con la tecla «mouseFlight»):
+   * - false, cámara libre: el ratón (arrastrando) orbita la cámara alrededor de la nave sin girarla;
+   * - true, vuelo con ratón: retícula virtual; la nave gira hacia donde está el
+   *   cursor respecto al centro de la pantalla (con zona muerta), sin arrastrar,
+   *   y la cámara la sigue por detrás (el botón derecho mira alrededor un momento).
+   */
   mouseFlight: boolean;
+  /** Vuelo con ratón: sensibilidad (0,3–3), zona muerta (fracción del radio, 0–0,3) e invertir el eje vertical. */
+  mouseSensitivity: number;
+  mouseDeadzone: number;
+  mouseInvertY: boolean;
   /** Multiplicador de la aceleración de los propulsores (0,5–1,5). */
   accel: number;
   /** Inercia de la asistencia (0,5 = muy ágil, 2 = muy pesada). */
@@ -130,7 +140,17 @@ export interface FlightPrefs {
   invertCameraY: boolean;
 }
 
-export const DEFAULT_FLIGHT_PREFS: FlightPrefs = { assist: true, mouseFlight: false, accel: 1, inertia: 1, maxSpeed: 1, invertCameraY: false };
+export const DEFAULT_FLIGHT_PREFS: FlightPrefs = {
+  assist: true,
+  mouseFlight: false,
+  mouseSensitivity: 1,
+  mouseDeadzone: 0.06,
+  mouseInvertY: false,
+  accel: 1,
+  inertia: 1,
+  maxSpeed: 1,
+  invertCameraY: false,
+};
 
 function loadFlightPrefs(saved: unknown): FlightPrefs {
   const f = (saved ?? {}) as Partial<Record<keyof FlightPrefs, unknown>>;
@@ -140,6 +160,9 @@ function loadFlightPrefs(saved: unknown): FlightPrefs {
   return {
     assist: bool(f.assist, d.assist),
     mouseFlight: bool(f.mouseFlight, d.mouseFlight),
+    mouseSensitivity: num(f.mouseSensitivity, 0.3, 3, d.mouseSensitivity),
+    mouseDeadzone: num(f.mouseDeadzone, 0, 0.3, d.mouseDeadzone),
+    mouseInvertY: bool(f.mouseInvertY, d.mouseInvertY),
     accel: num(f.accel, 0.5, 1.5, d.accel),
     inertia: num(f.inertia, 0.5, 2, d.inertia),
     maxSpeed: num(f.maxSpeed, 0.25, 1, d.maxSpeed),
