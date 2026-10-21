@@ -27,6 +27,8 @@ export interface FlightTelemetry {
   quantumAlign: number | null;
   /** La cámara exterior está fuera de la vista de seguimiento (orbitando la nave). */
   freeCam: boolean;
+  /** Gravedad que siente la nave (m/s²; 0 con el pulso), región y cuerpo dominante. */
+  gravity: { g: number; region: "deep" | "approach" | "surface"; body: string | null };
 }
 
 export const telemetry: FlightTelemetry = {
@@ -42,6 +44,7 @@ export const telemetry: FlightTelemetry = {
   quantumCharge: null,
   quantumAlign: null,
   freeCam: false,
+  gravity: { g: 0, region: "deep", body: null },
 };
 
 /** Copia de la telemetría refrescada cada `intervalMs` (para los números del HUD). */

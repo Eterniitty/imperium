@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
 import type { I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, WeaponKind, WorldPosition } from "@imperium/shared";
-import { ARRIVAL_EDGE, defaultPark, moonOffset, parkedPosition, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
+import { ARRIVAL_EDGE, defaultPark, moonOffset, parkedPosition, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
 import { resetSpace, shipName, spaceStore } from "../net/space";
 import { telemetry, type FlightTelemetry } from "./telemetry";
 import { connection, serverNow } from "../net/world";
@@ -90,6 +90,8 @@ export class SystemView implements View {
   private layout: SystemLayout | null = null;
   private ship: THREE.Group | null = null;
   private flight: ShipController | null = null;
+  /** Cuerpos con su posición en este fotograma (para la gravedad). */
+  private gravitySources: GravitySource[] = [];
   /** Cámara del piloto (exterior orbital o cabina), independiente de la orientación de la nave. */
   private chase: ChaseCamera;
   private leaving = false;
@@ -260,15 +262,15 @@ export class SystemView implements View {
       this.content.add(orbitLine, pivot);
       this.planets.push({ index: p.index, designation: p.name, label: null, layout: pl, pivot, mesh, orbitLine, moons });
     }
-    radius = Math.max(radius, layout.boundary - 60_000_000);
+    radius = Math.max(radius, layout.boundary * 0.9);
 
     if (detail.anomaly) {
       const anomaly = new THREE.Sprite(
         new THREE.SpriteMaterial({ map: glowTexture(), color: 0xb57bff, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }),
       );
       const a = rng.range(0, Math.PI * 2);
-      anomaly.position.set(Math.cos(a) * radius, rng.range(-1, 1) * 2_000_000, Math.sin(a) * radius);
-      anomaly.scale.setScalar(4_000_000);
+      anomaly.position.set(Math.cos(a) * radius, rng.range(-1, 1) * 200_000, Math.sin(a) * radius);
+      anomaly.scale.setScalar(400_000);
       anomaly.userData.anomaly = true;
       this.content.add(anomaly);
     }
@@ -389,6 +391,11 @@ export class SystemView implements View {
     this.ship = ship;
     const flight = new ShipController(ship, this.dom, this.keyboard);
     flight.enabled = true;
+    // Gravedad de los cuerpos cercanos (esferas de influencia), en cada subpaso de la física.
+    flight.gravity = (pos, out) => {
+      const g = gravityAt([pos.x, pos.y, pos.z], this.gravitySources);
+      out.set(g.acc[0], g.acc[1], g.acc[2]);
+    };
     this.flight = flight;
     this.leaving = false;
     this.controls.enabled = false;
@@ -555,6 +562,13 @@ export class SystemView implements View {
     const pos = ship.position;
     const fwd = this.forward();
     const bodies = this.bodies();
+    this.gravitySources = bodies.map((b) => ({ center: [b.center.x, b.center.y, b.center.z], body: b.body }));
+    const grav = gravityAt([pos.x, pos.y, pos.z], this.gravitySources);
+    telemetry.gravity = {
+      g: flight.pulse ? 0 : grav.g,
+      region: grav.region,
+      body: grav.dominant ? (bodies.find((b) => b.body === grav.dominant)?.name ?? null) : null,
+    };
     const heading = [fwd.x, fwd.y, fwd.z];
     flight.pulseLimit = pulseLimitAt([pos.x, pos.y, pos.z], heading, bodies.map((b) => ({ center: [b.center.x, b.center.y, b.center.z], radius: b.radius })));
 

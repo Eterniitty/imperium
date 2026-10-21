@@ -41,8 +41,13 @@ export class ShipController {
   readonly velocity = new THREE.Vector3();
   /** Velocidad angular en ejes de la nave (rad/s): x cabeceo, y guiñada, z alabeo. */
   readonly angular = new THREE.Vector3();
-  /** Aceleración externa (m/s², mundo) que se suma en cada subpaso: la gravedad. */
+  /** Aceleración externa (m/s², mundo) del último subpaso: la gravedad. */
   readonly external = new THREE.Vector3();
+  /**
+   * Gravedad en un punto (m/s², mundo), evaluada en cada subpaso (la pone la
+   * vista de sistema con `gravityAt` de `@imperium/sim`). Sin ella, no hay gravedad.
+   */
+  gravity: ((pos: THREE.Vector3, out: THREE.Vector3) => void) | null = null;
   /** Proporción de empuje (0–1) para el brillo de los motores. */
   thrust = 0;
   /** Lo que piden los mandos ahora (para los propulsores de maniobra del modelo). */
@@ -171,6 +176,8 @@ export class ShipController {
         this.velocity.set(0, 0, -1).applyQuaternion(this.ship.quaternion).multiplyScalar(this.pulseSpeed);
       } else {
         this.stepThrust(input, prefs.assist, maxSpeed, accelK * (boost ? M.boostAccelFactor : 1), prefs.inertia, h);
+        if (this.gravity) this.gravity(this.ship.position, this.external);
+        else this.external.set(0, 0, 0);
         this.velocity.addScaledVector(this.external, h);
       }
       // Semi-implícito: primero la velocidad, luego la posición con la velocidad nueva.

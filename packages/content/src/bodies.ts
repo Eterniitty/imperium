@@ -19,34 +19,40 @@ import type { PlanetType, ResourceId, StarClass } from "@imperium/shared";
  *    y alcance del pulso, derivadas de las anteriores.
  */
 export const WORLD_SCALE = {
-  /** Metros físicos por radio terrestre lógico (1/10 del real: la Tierra mediría 637 km). */
-  earthRadiusM: 637_100,
+  /**
+   * Metros físicos por radio terrestre lógico a la potencia `planetRadiusExponent`:
+   * la Tierra mediría 62 km de radio (unas 2700 veces la nave de diámetro); los
+   * rocosos, de 20 a 95 km; los gigantes gaseosos, de 220 a 350 km.
+   */
+  earthRadiusM: 62_000,
+  /** Compresión de los radios planetarios: conserva el orden (gigante > rocoso) sin que los gigantes ocupen el sistema. */
+  planetRadiusExponent: 0.7,
   /**
    * Metros por radio solar a la potencia `starRadiusExponent`: el Sol mediría
-   * 40 radios terrestres (25 484 km; el real, 109), así una estrella es siempre
-   * claramente mayor que el mayor gigante gaseoso (12 radios terrestres).
+   * 2500 km, unas 40 veces la Tierra del juego (la real, 109), así una estrella
+   * normal es siempre mucho mayor que el mayor gigante gaseoso (350 km).
    */
-  sunRadiusM: 25_484_000,
+  sunRadiusM: 2_500_000,
   /** Compresión de los radios estelares (raíz cuadrada): una gigante roja no ocupa medio sistema. */
   starRadiusExponent: 0.5,
   /** Radio mínimo de una estrella (las de neutrones medirían 10 km). */
-  minStarRadiusM: 200_000,
+  minStarRadiusM: 30_000,
   /**
    * Metros por unidad astronómica a la potencia `orbitExponent`. Las órbitas se
    * comprimen con la raíz cuadrada (conservan el orden y la proporción entre
    * planetas interiores y exteriores) para cruzar el sistema con el pulso en uno
    * o dos minutos.
    */
-  auM: 180_000_000,
+  auM: 18_000_000,
   orbitExponent: 0.5,
   /** Hueco mínimo entre las esferas de influencia de dos cuerpos vecinos (m). */
-  orbitGapM: 20_000_000,
+  orbitGapM: 2_000_000,
   /** Media anchura de un cinturón de asteroides (m). */
-  beltHalfWidthM: 8_000_000,
+  beltHalfWidthM: 800_000,
   /** Periodo de rotación de los planetas (horas reales), entre estos extremos. */
   spinHours: [14, 60],
   /** Margen entre el último cuerpo y el borde del sistema (m). */
-  boundaryMarginM: 60_000_000,
+  boundaryMarginM: 6_000_000,
   /** Esfera de influencia de la estrella, en radios estelares (dentro no hay planetas). */
   starInfluenceRadii: 6,
   /** Esfera de influencia mínima de un planeta, en radios del planeta. */
@@ -56,16 +62,16 @@ export const WORLD_SCALE = {
   /** Órbita de la primera luna y separación entre lunas, en radios del planeta. */
   moonFirstOrbitRadii: 3.5,
   moonOrbitSpacingRadii: 2.2,
-  /** Radio mínimo de una luna (m): las más pequeñas siguen siendo miles de veces la nave. */
-  minMoonRadiusM: 15_000,
+  /** Radio mínimo de una luna (m): las más pequeñas siguen siendo cientos de veces la nave. */
+  minMoonRadiusM: 4_000,
   /**
-   * Velocidad orbital de referencia (m/s) de un planeta a 100 000 km de la
+   * Velocidad orbital de referencia (m/s) de un planeta a 10 000 km de la
    * estrella. Las órbitas siguen la ley de Kepler (T ∝ r^1,5) pero mucho más
    * despacio que la real: así un planeta nunca se escapa de una nave que
    * maniobra (250 m/s) y todos lo ven en el mismo sitio.
    */
   orbitSpeedRefMs: 25,
-  orbitSpeedRefRadiusM: 100_000_000,
+  orbitSpeedRefRadiusM: 10_000_000,
   /** Velocidad orbital de las lunas (m/s) en su primera órbita; las de fuera, más despacio. */
   moonOrbitSpeedMs: 12,
   /** Aceleración de la gravedad en la superficie de un cuerpo de 1 g (m/s²). */

@@ -68,6 +68,11 @@ export function FlightHud() {
               {" "}
               · {t("pilot.assist")} {assist ? "ON" : "OFF"} ({keys.flightAssist})
             </span>
+            <div className="muted">
+              {t(`pilot.region.${tel.gravity.region}`)}
+              {tel.gravity.body && ` · ${tel.gravity.body}`}
+              {tel.gravity.g > 0.005 && ` · ${t("pilot.gravity")} ${tel.gravity.g.toFixed(2)} m/s²`}
+            </div>
             {tel.freeCam && <div className="muted">{t("pilot.freeCam", { key: keys.cameraReset })}</div>}
           </div>
         )}

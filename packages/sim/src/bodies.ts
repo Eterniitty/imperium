@@ -90,7 +90,7 @@ export function starBody(starClass: StarClass): CelestialBody {
 
 /** Radio de un planeta en metros. `radiusEarth` es el del generador (radios terrestres). */
 export function planetRadiusM(_type: PlanetType, radiusEarth: number): number {
-  return S.earthRadiusM * Math.max(radiusEarth, 0.05);
+  return S.earthRadiusM * Math.pow(Math.max(radiusEarth, 0.01), S.planetRadiusExponent);
 }
 
 /** Cuerpo de un planeta o luna de tipo `type` y radio `radiusEarth` (radios terrestres lógicos). */

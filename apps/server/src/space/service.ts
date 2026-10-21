@@ -1,6 +1,6 @@
 import { EMPEROR_FLAGSHIP, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, getAlienShipClass, PIRATE_AI } from "@imperium/content";
 import type { ServerMessage, ShipPose, ShipState, Vec3, WeaponKind } from "@imperium/shared";
-import { bodiesAt, isTravelling, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_SPEED, plausibleMove, pulseLimitAt, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
+import { bodiesAt, gravitySpeedBound, isTravelling, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_SPEED, plausibleMove, pulseLimitAt, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { EmperorService } from "../emperor/service";
 import type { Client } from "../realtime/hub";
@@ -145,13 +145,15 @@ export class SpaceService {
   /**
    * Velocidad más alta posible entre dos puntos: la del pulso alejándose del
    * cuerpo más cercano (el caso más permisivo) en el mejor de los dos extremos,
-   * y nunca menos que la de maniobra con impulso.
+   * y nunca menos que la de maniobra con impulso más lo que se gana cayendo por
+   * la gravedad (cota de escape desde el borde de la esfera de influencia).
    */
   private maxSpeedAt(systemId: string, a: Vec3, b: Vec3, now: number): number {
     const layout = this.layout(systemId);
     if (!layout) return PILOT_SPEED * PILOT_BOOST;
     const bodies = bodiesAt(layout, now);
-    return Math.max(PILOT_SPEED * PILOT_BOOST, pulseLimitAt(a, null, bodies), pulseLimitAt(b, null, bodies));
+    const falling = Math.max(gravitySpeedBound(a, bodies), gravitySpeedBound(b, bodies));
+    return Math.max(PILOT_SPEED * PILOT_BOOST + falling, pulseLimitAt(a, null, bodies), pulseLimitAt(b, null, bodies));
   }
 
   /**

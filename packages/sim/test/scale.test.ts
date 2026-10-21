@@ -27,11 +27,12 @@ describe("escala astronómica", () => {
     for (const d of systems) {
       const l = systemLayout(d);
       for (const p of l.planets) {
-        expect(p.size).toBeGreaterThan(SHIP * 2000);
+        // Cientos o miles de veces la nave (diámetro).
+        expect(p.size * 2).toBeGreaterThan(SHIP * 800);
         if (d.summary.starClass !== "WD" && d.summary.starClass !== "NS" && d.summary.starClass !== "BH") expect(l.starRadius).toBeGreaterThan(p.size * 1.8);
         for (const m of p.moons) {
-          expect(m.body.radius).toBeGreaterThan(SHIP * 300);
-          expect(m.body.radius).toBeLessThan(p.size * 0.5);
+          expect(m.body.radius * 2).toBeGreaterThan(SHIP * 150);
+          expect(m.body.radius).toBeLessThan(p.size * 0.6);
           // Fuera del planeta y sin chocar con la luna anterior.
           expect(m.orbitRadius - m.body.radius).toBeGreaterThan(p.size * 2);
         }

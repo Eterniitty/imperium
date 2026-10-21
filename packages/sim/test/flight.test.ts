@@ -33,17 +33,17 @@ describe("motor de pulso (supercrucero)", () => {
     expect(v - braked).toBeLessThan(v * 0.05);
   });
 
-  it("cruza entre dos planetas a 300 000 km en menos de un minuto", () => {
-    // Dos planetas de 637 km de radio en la recta; la nave sale de la superficie del primero.
+  it("cruza entre dos planetas a 30 000 km en menos de un minuto", () => {
+    // Dos planetas de 62 km de radio en la recta; la nave sale de la superficie del primero.
     const bodies = [
-      { center: [0, 0, 0], radius: 637_000 },
-      { center: [300_000_000, 0, 0], radius: 637_000 },
+      { center: [0, 0, 0], radius: 62_000 },
+      { center: [30_000_000, 0, 0], radius: 62_000 },
     ];
-    let x = 638_000;
+    let x = 63_000;
     let v = 0;
     let t = 0;
     const dt = 1 / 30;
-    while (x < 300_000_000 - 637_000 * 4 && t < 600) {
+    while (x < 30_000_000 - 62_000 * 4 && t < 600) {
       v = stepPulseSpeed(v, pulseLimitAt([x, 0, 0], [1, 0, 0], bodies), dt);
       x += v * dt;
       t += dt;
