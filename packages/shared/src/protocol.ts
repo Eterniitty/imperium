@@ -18,6 +18,8 @@ export const IMPACT_CAUSE = "@impact";
 export const HEAT_CAUSE = "@heat";
 /** Causa de muerte al cruzar el horizonte de sucesos de un agujero negro. */
 export const HORIZON_CAUSE = "@horizon";
+/** Causa de muerte: iba acoplado en una nave nodriza que cayó en batalla. */
+export const MOTHERSHIP_CAUSE = "@mothership";
 
 /** Tamaño máximo de un mensaje del cliente, en bytes. */
 export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;

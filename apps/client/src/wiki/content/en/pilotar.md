@@ -103,6 +103,7 @@ The **mothership** is the biggest ship you can build (1600 m, in an orbital dryd
 
 - While docked your ship does not move on its own; press [[Enter]] again to leave.
 - You undock automatically if the fleet sets off or your ship moves away.
+- **Risk**: if the mothership falls in a battle while you are docked (parked inside too), **your Emperor falls with it** (see [Death and lineage](/wiki/linaje)).
 - **Command bridge**: while docked, on the left you have the empire summary and the fleet, battle and colony panels, as in the tunnel.
 - **Hangar**: when you fly in the system where its fleet waits, the mothership launches a **fighter wing** that escorts you like your other escorts (and follows their orders). A downed fighter is ready again after a while; the mothership itself stays with its fleet.
 - **Workshop**: every minute the mothership repairs the hull of the damaged ships in its fleet (outside battles), with alloys from the fleet's hold.

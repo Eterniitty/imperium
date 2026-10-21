@@ -1,5 +1,5 @@
 import { AIM_ASSIST, ALIEN_LOCAL, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, getAlienShipClass, getShipClass, MINING, PIRATE_AI, type ShipClassId } from "@imperium/content";
-import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
+import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, MOTHERSHIP_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
 import { addToHold, arriveVelocity, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { EmperorService } from "../emperor/service";
@@ -462,6 +462,16 @@ export class SpaceService {
 
   expectDock(emperorId: string, dock: { systemId: string; fleetId: string; slot: number; colonyPlanet: number | null }): void {
     this.expectedDocks.set(emperorId, dock);
+  }
+
+  /** La nave nodriza de esta flota cayó en batalla: si la nave del Emperador iba acoplada en ella, cae con ella. */
+  mothershipLost(emperorId: string, fleetId: string): void {
+    this.expectedDocks.delete(emperorId);
+    const m = this.members.get(emperorId);
+    if (!m || m.dock?.fleetId !== fleetId || m.combat.hull <= 0) return;
+    m.dock = null;
+    m.combat.damage(m.combat.hull + m.combat.shield, this.now());
+    void this.destroy(m, MOTHERSHIP_CAUSE);
   }
 
   /** Flota en cuya nave nodriza está acoplada la nave de este Emperador, o null. */

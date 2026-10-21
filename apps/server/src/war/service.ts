@@ -1,5 +1,5 @@
 import { randomInt } from "node:crypto";
-import { CONTACT_SENSORS, EMPEROR_FLAGSHIP, FLAGSHIP_BATTLE, FLEET_BATTLE, CARGO_STOCK_IDS } from "@imperium/content";
+import { CONTACT_SENSORS, EMPEROR_FLAGSHIP, FLAGSHIP_BATTLE, FLEET_BATTLE, CARGO_STOCK_IDS, getShipClass, type ShipClassId } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import {
   distance,
@@ -35,6 +35,8 @@ export class WarEffects {
   readonly hulls = new Map<string, number>();
   /** Fase 10: Emperadores cuya nave cayó en la batalla (ya registrados como muertos). */
   readonly deaths: Array<{ emperorId: string; by: string; rebornAt: number; systemId: string }> = [];
+  /** Naves nodriza caídas en la ronda: si el Emperador iba acoplado en ella, cae con ella (lo resuelve el espacio local). */
+  readonly motherships: Array<{ emperorId: string; fleetId: string }> = [];
 
   get empty(): boolean {
     return this.battles.size + this.fleets.size + this.colonies.size + this.hulls.size + this.deaths.length === 0;
@@ -358,6 +360,7 @@ export class WarService {
       const hull = result.hull[s.id];
       if (hull !== undefined && !destroyed.has(s.id) && hull !== s.hull) await tx.update(ships).set({ hull }).where(eq(ships.id, s.id));
     }
+    for (const s of shipRows) if (destroyed.has(s.id) && getShipClass(s.classId as ShipClassId)?.dockFlagship) fx.motherships.push({ emperorId: fleetOwner.get(s.fleetId)!, fleetId: s.fleetId });
     if (destroyed.size > 0) {
       // Las naves perdidas dejan de costar mantenimiento: cada capital se cobra hasta ahora.
       const losers = new Set(shipRows.filter((s) => destroyed.has(s.id)).map((s) => fleetOwner.get(s.fleetId)!));

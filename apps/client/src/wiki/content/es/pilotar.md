@@ -103,6 +103,7 @@ La **nave nodriza** es la nave más grande que puedes construir (1600 m, en un d
 
 - Mientras estás acoplada la nave no se mueve por su cuenta; vuelve a pulsar [[Enter]] para salir. Si dejas de pilotar (por ejemplo, para abrir el mapa), tu nave sigue en el hangar.
 - Te desacoplas sola si la flota se pone en marcha o si tu nave se aleja.
+- **Riesgo**: si la nodriza cae en una batalla mientras vas acoplado (también aparcado dentro), **tu Emperador cae con ella** (ver [Muerte y linaje](/wiki/linaje)).
 - **Puente de mando**: acoplado, a la izquierda tienes el resumen del imperio y los paneles de flotas, batallas y colonias, como en el túnel.
 - **Hangar**: cuando pilotas en el sistema donde espera su flota, la nodriza lanza un **ala de cazas** que te escolta como las demás escoltas (y obedece sus órdenes). Un caza derribado vuelve a estar listo al rato; la nodriza en sí se queda con su flota.
 - **Taller**: la nodriza repara cada minuto el casco de las naves dañadas de su flota (fuera de batalla), con las aleaciones de la bodega de la flota.

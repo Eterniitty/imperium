@@ -284,7 +284,12 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   // Una ronda de una batalla de flotas: daños, naves destruidas y, quizá, el final.
   worker.on("battle.round", async (tx, { battleId }) => {
     const fx = await wars.round(tx, battleId);
-    if (fx) return () => hub.publishWar(fx);
+    if (fx)
+      return () => {
+        hub.publishWar(fx);
+        // Una nodriza caída se lleva al Emperador que iba acoplado en ella.
+        for (const m of fx.motherships) space.mothershipLost(m.emperorId, m.fleetId);
+      };
   });
   worker.on("emperor.arrive", async (tx, { emperorId, systemId }) => {
     const found = await discoveries.emperorArrived(tx, emperorId, systemId);
