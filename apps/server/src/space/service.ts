@@ -1,6 +1,6 @@
 import { AIM_ASSIST, BODY_COLLISION, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, getAlienShipClass, getShipClass, MINING, PIRATE_AI, type ShipClassId } from "@imperium/content";
 import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
-import { addToHold, arriveVelocity, avoidObstacles, escortSlot, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
+import { addToHold, arriveVelocity, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { EmperorService } from "../emperor/service";
 import type { Client, RemotePilot } from "../realtime/hub";
@@ -1389,11 +1389,14 @@ export class SpaceService {
     const best = target ? distance(m.pose.p, target.pose.p) : Infinity;
     const flight = pirateFlight(ai.classId);
     const toward = target ? normalize([target.pose.p[0] - m.pose.p[0], target.pose.p[1] - m.pose.p[1], target.pose.p[2] - m.pose.p[2]]) : null;
+    // Tenaza: los que cazan la presa de la manada se reparten alrededor de ella.
+    const hunters = target && target === prey ? pack.filter((o) => o.ai?.mode !== "flee" && o.ai?.mode !== "regroup") : [];
     const intent = {
       mode: ai.mode,
       threat: nearest?.pose.p ?? null,
       avoid: avoidObstacles(m.pose.p, m.pose.v, obstacles, flight.speedU),
       jink: underFire && toward ? jinkVector(toward, ai.phase, now / 1000, flight.speedU) : null,
+      flank: hunters.length >= 2 ? flankOffset(Math.max(0, hunters.indexOf(m)), hunters.length, flight.preferredRangeU) : undefined,
     };
     const step = stepPirate(m.pose.p, m.pose.v, ai.home, target?.pose.p ?? null, dt, ai.phase, flight, intent);
     m.pose = step;

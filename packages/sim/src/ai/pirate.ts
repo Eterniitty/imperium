@@ -110,3 +110,15 @@ export function friendInLine(from: V, dir: V, targetDistance: number, friends: r
   }
   return false;
 }
+
+/**
+ * Tenaza: cada pirata de la manada que caza la misma presa entra por su propio
+ * lado (repartidos alrededor de ella), así la presa no puede encararlos a todos.
+ * Devuelve el desplazamiento respecto a la presa del punto por el que entra el
+ * pirata `index` de `count`, a la distancia `range`.
+ */
+export function flankOffset(index: number, count: number, range: number): Vec {
+  if (count < 2) return [0, 0, 0];
+  const a = (index / count) * Math.PI * 2;
+  return [Math.cos(a) * range, Math.sin(a * 2) * range * 0.3, Math.sin(a) * range];
+}

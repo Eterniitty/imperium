@@ -112,6 +112,8 @@ export interface PirateIntent {
   avoid: Vec3;
   /** Maniobra lateral si le están dando (m/s), o null. */
   jink: Vec3 | null;
+  /** Tenaza: por dónde entra respecto al blanco (desplazamiento), para rodearlo con la manada. */
+  flank?: Vec3;
 }
 
 /**
@@ -136,7 +138,12 @@ export function stepPirate(p: Vec3, v: Vec3, home: Vec3, target: Vec3 | null, dt
     const d = Math.hypot(...to);
     const dir = normalize(to) ?? [0, 0, -1];
     face = dir;
-    if (d > flight.preferredRangeU) {
+    // De lejos, cada uno entra por su lado de la tenaza; ya cerca, rodea como siempre.
+    const f = intent?.flank;
+    const entry = f && d > flight.preferredRangeU * 1.5 ? normalize([to[0] + f[0], to[1] + f[1], to[2] + f[2]]) : null;
+    if (entry) {
+      desired = [entry[0] * max, entry[1] * max, entry[2] * max];
+    } else if (d > flight.preferredRangeU) {
       desired = [dir[0] * max, dir[1] * max, dir[2] * max];
     } else {
       // Cerca: lo rodea (perpendicular en el plano horizontal), sentido según el pirata;

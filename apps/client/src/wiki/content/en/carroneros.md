@@ -25,6 +25,7 @@ Each one has its own scrap model (asymmetric plates, spikes, engines of differen
 Scavengers look for loot with the least risk:
 
 - **They hunt in packs**: those in a system pick **the same prey**, the ship that can take the least (hull and shield) near any of them, and go for it together.
+- **They surround you**: from afar, each one comes in from its own side (a pincer), so you cannot face them all at once.
 - **They jink** sideways when they are being hit, to throw off your aim.
 - **They harass, they do not die for it**: with low hull and under fire they **flee**; far from you they **regroup** until their shield recharges and come back hunting.
 - **They do not crash**: they steer around planets and moons and stay out of the star's heat zone.

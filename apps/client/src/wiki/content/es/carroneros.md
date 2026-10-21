@@ -25,6 +25,7 @@ Cada una tiene su modelo de chatarra (placas sin simetría, púas, motores de di
 Los Carroñeros buscan botín con el menor riesgo:
 
 - **Cazan en manada**: los de un sistema eligen la **misma presa**, la nave que menos aguanta (casco y escudo) cerca de alguno de ellos, y van a por ella juntos.
+- **Te rodean**: de lejos, cada uno entra por su propio lado (en tenaza), para que no puedas encararlos a todos a la vez.
 - **Esquivan** con maniobras laterales cuando les están dando, para romper tu puntería.
 - **Acosan, no se suicidan**: con el casco bajo y bajo fuego, **huyen**; lejos de ti se **reagrupan** hasta recargar el escudo y vuelven a cazar.
 - **No se estrellan**: rodean planetas y lunas y no entran en la zona de calor de la estrella.
