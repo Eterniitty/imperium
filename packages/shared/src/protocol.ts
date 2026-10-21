@@ -78,6 +78,8 @@ export interface CommandArgs {
   "colony.cancel": { colonyId: string; buildId: string };
   /** Desembarca humanos de la nave del Emperador (presente en el sistema) en una colonia propia. */
   "colony.disembark": { colonyId: string; humans: number };
+  /** Embarca humanos de una colonia propia en la nave del Emperador (presente en el sistema), sin pasar de su capacidad y dejando `HUMANS.colonyKeep`. */
+  "colony.embark": { colonyId: string; humans: number };
   /** Carga o descarga recursos y pasajeros entre una flota y una colonia propia del mismo sistema. */
   "fleet.transfer": { fleetId: string; colonyId: string; direction: "load" | "unload"; amounts: Partial<Cargo> };
   /** Pone a una flota en una ruta de transporte automática entre dos colonias propias. */
@@ -225,6 +227,10 @@ export type CommandError =
   | "queue_full"
   | "no_build"
   | "colony_full"
+  /** La nave del Emperador no tiene sitio para tantos humanos. */
+  | "flagship_full"
+  /** Embarcar dejaría la colonia por debajo de la población mínima (`HUMANS.colonyKeep`). */
+  | "colony_keep"
   | "cargo_full"
   | "storage_full"
   | "nothing_to_transfer"

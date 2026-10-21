@@ -352,6 +352,14 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     }
                     return res;
                   }
+                  case "colony.embark": {
+                    const res = await colonies.embark(owner.emperorId, msg.args.colonyId, msg.args.humans);
+                    if (res.ok) {
+                      await hub.publishColony(res.emperorId, res.colonyId);
+                      await hub.publishHumans(res.emperorId);
+                    }
+                    return res;
+                  }
                 }
               })
               .then((ack) => client.send(ack));

@@ -6,7 +6,8 @@
 
 - Your ship **generates humans by itself**, little by little, **up to its capacity**. The current number is shown in the top bar (*Humans*: aboard / capacity).
 - You use them to **found colonies** (landing them on a free planet) or to **reinforce** one of your colonies in the system where you are (the colony's *Disembark* button, without exceeding its planet's population cap).
-- To land them, your ship must be in that system and **not jumping**.
+- You can also **take them back**: a colony's *Embark* button moves humans from its population onto your ship, until it is full and always leaving the colony the minimum population kept when embarking (see table). That way you carry colonists from a populous world to another, or reinforce another colony. It is instant and costs nothing else.
+- To land or embark humans, your ship must be in that system and **not jumping**. Humans aboard are lost if your ship falls (see [Death and lineage](/wiki/linaje)).
 
 {{tabla:humanos}}
 

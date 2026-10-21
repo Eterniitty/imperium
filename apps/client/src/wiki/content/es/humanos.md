@@ -6,7 +6,8 @@ Los **humanos** son un recurso más, y el más importante: sin ellos no se funda
 
 - Tu nave **genera humanos sola**, poco a poco, **hasta su capacidad**. El número actual aparece en la barra superior (*Humanos*: a bordo / capacidad).
 - Con ellos **fundas colonias** (desembarcándolos en un planeta libre) o **refuerzas** una colonia tuya del sistema donde estás (botón *Desembarcar* de la colonia, sin pasar del tope de población de su planeta).
-- Para desembarcar, tu nave tiene que estar en ese sistema y **no estar saltando**.
+- También puedes **recuperarlos**: el botón *Embarcar* de una colonia tuya sube humanos de su población a tu nave, hasta llenarla y dejando siempre en la colonia la población mínima que se conserva al embarcar (ver tabla). Así llevas colonos de un mundo poblado a otro, o refuerzas otra colonia. Es inmediato y no cuesta nada más.
+- Para desembarcar o embarcar, tu nave tiene que estar en ese sistema y **no estar saltando**. Los humanos de a bordo se pierden si tu nave cae (ver [Muerte y linaje](/wiki/linaje)).
 
 {{tabla:humanos}}
 
