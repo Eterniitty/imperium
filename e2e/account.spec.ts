@@ -1,3 +1,4 @@
+import { awaken } from "./ui";
 import { expect, test } from "@playwright/test";
 import { lastLoginLink } from "./mail";
 
@@ -32,7 +33,7 @@ test("aceptar los términos, descargar los datos y borrar la cuenta", async ({ p
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await page.getByLabel("Nombre del Emperador").fill("Efimera Tal");
   await page.getByRole("button", { name: "Coronar" }).click();
-  await page.getByRole("button", { name: "Despertar" }).click();
+  await awaken(page);
 
   await page.getByRole("button", { name: "Abrir los ajustes" }).click();
   await page.getByRole("tab", { name: "Cuenta" }).click();

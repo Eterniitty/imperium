@@ -1,3 +1,4 @@
+import { awaken } from "./ui";
 import { expect, test } from "@playwright/test";
 import { lastLoginLink } from "./mail";
 
@@ -18,7 +19,7 @@ test("se reclama un planeta del sistema de inicio, se renombra y se construye un
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await page.getByLabel("Nombre del Emperador").fill("Colona Ilse");
   await page.getByRole("button", { name: "Coronar" }).click();
-  await page.getByRole("button", { name: "Despertar" }).click();
+  await awaken(page);
   await expect(page.locator(".flight-hud")).toBeVisible();
   await page.keyboard.press("KeyM");
 

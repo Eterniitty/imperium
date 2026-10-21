@@ -1,3 +1,4 @@
+import { awaken } from "./ui";
 import { expect, test } from "@playwright/test";
 import { lastLoginLink } from "./mail";
 
@@ -15,7 +16,7 @@ async function enter(page: import("@playwright/test").Page, email: string, name:
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await page.getByLabel("Nombre del Emperador").fill(name);
   await page.getByRole("button", { name: "Coronar" }).click();
-  await page.getByRole("button", { name: "Despertar" }).click();
+  await awaken(page);
 }
 
 test("economía de la humanidad: créditos, tesoro, aportar y mercado", async ({ page }) => {

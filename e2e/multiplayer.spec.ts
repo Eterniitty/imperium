@@ -1,3 +1,4 @@
+import { awaken } from "./ui";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import type { EmperorView, StarSystemSummary } from "@imperium/shared";
 import { unlimitedFuel } from "../apps/server/test/e2eFuel";
@@ -32,7 +33,7 @@ async function newPlayer(browser: Browser, email: string, name: string): Promise
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await page.getByLabel("Nombre del Emperador").fill(name);
   await page.getByRole("button", { name: "Coronar" }).click();
-  await page.getByRole("button", { name: "Despertar" }).click();
+  await awaken(page);
   // Se empieza pilotando: M lleva al mapa.
   await expect(page.locator(".flight-hud")).toBeVisible();
   await page.keyboard.press("KeyM");

@@ -412,8 +412,8 @@ export const EMPEROR_FLAGSHIP: {
   combat: { shield: 200, shieldRegenPerSec: 20, shieldDelaySec: 4, weapons: [FLAGSHIP_CANNON, FLAGSHIP_MISSILE], hardpoints: FLAGSHIP_HARDPOINTS },
 };
 
-/** Segundos que tarda en cargar el motor cuántico (con la nave ya alineada con el destino). */
-export const QUANTUM_CHARGE_SEC = 5;
+/** Segundos que tarda en cargar el motor cuántico (con la nave ya alineada con el destino). Con la alineación y la entrada en la grieta, el salto se prepara en unos 20 s. */
+export const QUANTUM_CHARGE_SEC = 15;
 
 /**
  * Grieta del salto cuántico (solo visual, la ven todos los del sistema), en

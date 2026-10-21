@@ -1,3 +1,4 @@
+import { awaken } from "./ui";
 import { expect, test } from "@playwright/test";
 import { generateSector, universeSeedFromString } from "@imperium/procgen";
 import { distance, type StarSystemSummary } from "@imperium/shared";
@@ -26,7 +27,7 @@ test("niebla de guerra: un sistema lejano sale sin explorar y, al llegar la flot
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await page.getByLabel("Nombre del Emperador").fill("Exploradora Nim");
   await page.getByRole("button", { name: "Coronar" }).click();
-  await page.getByRole("button", { name: "Despertar" }).click();
+  await awaken(page);
   await expect(page.locator(".flight-hud")).toBeVisible();
   await page.keyboard.press("KeyM");
 

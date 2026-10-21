@@ -1,3 +1,4 @@
+import { awaken } from "./ui";
 import { expect, test, type Page } from "@playwright/test";
 import { lastLoginLink } from "./mail";
 
@@ -40,7 +41,7 @@ test("la interfaz cabe en distintas resoluciones, pilotando y en el mapa", { tag
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await page.getByLabel("Nombre del Emperador").fill("Vista Amplia");
   await page.getByRole("button", { name: "Coronar" }).click();
-  await page.getByRole("button", { name: "Despertar" }).click();
+  await awaken(page);
   await expect(page.locator(".flight-hud")).toBeVisible();
 
   for (const size of SIZES) {

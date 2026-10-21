@@ -1,3 +1,4 @@
+import { awaken } from "./ui";
 import { expect, test, type Page } from "@playwright/test";
 import { lastLoginLink } from "./mail";
 
@@ -89,7 +90,7 @@ test("planetas y estrella de cerca, sin errores de shader", { tag: "@lento" }, a
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await page.getByLabel("Nombre del Emperador").fill("Mirada Lejana");
   await page.getByRole("button", { name: "Coronar" }).click();
-  await page.getByRole("button", { name: "Despertar" }).click();
+  await awaken(page);
   await expect(page.locator(".flight-hud")).toBeVisible();
 
   // El detalle del sistema llega del servidor.

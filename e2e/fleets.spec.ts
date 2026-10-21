@@ -1,3 +1,4 @@
+import { awaken } from "./ui";
 import { expect, test } from "@playwright/test";
 import { generateSector, universeSeedFromString } from "@imperium/procgen";
 import type { StarSystemSummary } from "@imperium/shared";
@@ -21,7 +22,7 @@ test("la flota inicial aparece, se envía a otro sistema y llega", async ({ page
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await page.getByLabel("Nombre del Emperador").fill("Almirante Vex");
   await page.getByRole("button", { name: "Coronar" }).click();
-  await page.getByRole("button", { name: "Despertar" }).click();
+  await awaken(page);
   // Se empieza pilotando: M lleva al mapa.
   await expect(page.locator(".flight-hud")).toBeVisible();
   await page.keyboard.press("KeyM");

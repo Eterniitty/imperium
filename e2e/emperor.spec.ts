@@ -1,3 +1,4 @@
+import { awaken } from "./ui";
 import { expect, test, type Page } from "@playwright/test";
 import { generateSector, universeSeedFromString } from "@imperium/procgen";
 import type { StarSystemSummary } from "@imperium/shared";
@@ -43,7 +44,7 @@ test("nombrar al Emperador, entrar en su sistema, trasladarlo y que lo recuerde"
   await page.screenshot({ path: `${SHOTS}/2-coronado.png` });
 
   // Al entrar, se empieza a los mandos de la nave, dentro del sistema del Emperador.
-  await page.getByRole("button", { name: "Despertar" }).click();
+  await awaken(page);
   await expect(page.locator(".viewport canvas")).toBeVisible();
   await expect(page.getByRole("button", { name: /Aurelia Varn/ })).toBeVisible();
   await expect(page.getByText("Exterior (T)")).toBeVisible();
