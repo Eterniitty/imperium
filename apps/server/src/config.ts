@@ -35,6 +35,8 @@ const EnvSchema = z
     // y producción. 1 es el ritmo del diseño (horas reales); en el servidor de
     // pruebas se sube para poder ver las cosas sin esperar horas.
     TIME_SCALE: z.coerce.number().positive().max(1e7).default(1),
+    /** Enlaces de acceso que puede pedir una IP cada 15 min. Las pruebas de navegador lo suben (todas salen de la misma IP). */
+    AUTH_REQUESTS_PER_IP: z.coerce.number().int().min(1).max(1000).default(10),
     MAIL_TRANSPORT: z.enum(["console", "smtp"]).default("console"),
     // Correo real (MAIL_TRANSPORT=smtp): servidor del proveedor de correo transaccional.
     // Con smtp, SMTP_HOST, SMTP_USER, SMTP_PASS y MAIL_FROM son obligatorias.

@@ -43,6 +43,8 @@ export default async function globalSetup() {
       COOKIE_SECURE: "false",
       // Tiempo 600 veces más rápido: un salto dentro del Núcleo dura unos segundos.
       TIME_SCALE: "600",
+      // Todas las pruebas piden enlaces desde la misma IP.
+      AUTH_REQUESTS_PER_IP: "200",
     },
   });
 

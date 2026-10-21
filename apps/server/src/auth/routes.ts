@@ -64,7 +64,7 @@ function usableLink(token: string) {
 
 export async function authRoutes(app: FastifyInstance, { config, db, mailer }: AuthDeps) {
   // Límites para pedir enlaces: frenan el abuso del correo y el spam a terceros.
-  const perIp = new RateLimiter(10, 15 * MINUTE);
+  const perIp = new RateLimiter(config.AUTH_REQUESTS_PER_IP, 15 * MINUTE);
   const perEmail = new RateLimiter(3, 15 * MINUTE);
   // Tope global de envíos: protege la reputación del dominio aunque el atacante reparta IP y correos.
   const globalSends = new RateLimiter(60, MINUTE);
