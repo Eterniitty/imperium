@@ -1,5 +1,5 @@
 import { FLIGHT_MODEL } from "@imperium/content";
-import { PILOT_BOOST, PILOT_SPEED, PULSE_MAX_SPEED } from "@imperium/sim";
+import { PILOT_BOOST, PILOT_SPEED, PULSE_CHARGE_SEC, PULSE_MAX_SPEED } from "@imperium/sim";
 import { useTelemetry } from "../engine/telemetry";
 import { FlightInstruments } from "./FlightInstruments";
 import { useGame, useT } from "../state/store";
@@ -121,7 +121,9 @@ export function FlightHud() {
         </div>
         {piloting && (
           <div className="flight-sub">
-            <span className={pulse ? "pulse-key on" : "pulse-key"}>{t("pilot.pulseHint", { key: keys.pulse })}</span>
+            <span className={pulse ? "pulse-key on" : "pulse-key"}>
+              {tel.pulseCharge !== null && piloting ? t("pilot.pulseCharging", { s: Math.ceil((1 - tel.pulseCharge) * PULSE_CHARGE_SEC) }) : t("pilot.pulseHint", { key: keys.pulse })}
+            </span>
             {pulse && <span className="muted"> · {t("pilot.pulseLimit", { v: `${limitNum} ${t(limitUnit)}` })}</span>}
             <span className={assist ? "pulse-key on" : "pulse-key"}>
               {" "}

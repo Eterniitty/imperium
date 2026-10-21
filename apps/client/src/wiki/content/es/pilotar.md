@@ -51,7 +51,7 @@ El motor de pulso ([[P]], encender y apagar) es un **supercrucero** para cruzar 
 
 - Empuja **solo hacia delante**; mientras está encendido **no puedes disparar**.
 - Se puede encender **siempre**, también junto a un planeta. Su velocidad máxima depende de la distancia al **cuerpo más cercano**: de frente hacia un planeta va despacio (cientos de m/s) y frena solo al acercarse; al **alejarte**, el límite es varias veces mayor; en el espacio abierto llega a la velocidad máxima de la tabla.
-- Acelera y frena **de forma suave**. El panel de abajo muestra el límite actual y el **tiempo estimado** hasta el planeta seleccionado, la nave fijada o el cuerpo que tienes de frente.
+- Al pulsarlo, el motor **se carga 5 segundos** (el HUD cuenta atrás; pulsar otra vez lo cancela) y después **acelera casi de golpe** hasta su máximo; frena de forma suave. El panel de abajo muestra el límite actual y el **tiempo estimado** hasta el planeta seleccionado, la nave fijada o el cuerpo que tienes de frente.
 - Gasta **combustible** y algo de **energía**: sin combustible no funciona.
 
 ## Piloto automático de crucero
@@ -60,6 +60,7 @@ Dentro de un sistema (o de una región de espacio profundo) la nave puede ir sol
 
 - **Elegir destino**: [[N]] abre la lista con los planetas, las lunas, los cinturones de asteroides, la anomalía del sistema y, en el espacio profundo, los asteroides más cercanos, además de las naves a la vista (primero tus [compañeros](/wiki/companeros)). También puedes pulsar **Crucero hasta aquí** en el panel del planeta seleccionado o hacer **doble clic** en la vista sobre un planeta, una luna, una nave o un punto vacío del plano del sistema (un punto marcado; con los motores encendidos, **Alt + doble clic**, porque el clic izquierdo dispara).
 - **Ir a un sitio**: la nave se orienta, enciende el pulso si el destino está lejos (y lo modera para frenar a tiempo), lo apaga cerca y termina con los propulsores hasta **detenerse a una distancia segura** (sobre un planeta o una luna, a la mitad de su radio de altura, entre 5 y 120 km; junto a un asteroide, a tiro del láser de minería). Rodea la estrella, los planetas y las lunas que se crucen en el camino. Al llegar se desactiva y te avisa.
+- **Orbitar**: en la lista, junto a un planeta o una luna, **Orbitar** lleva la nave hasta él y la deja dando vueltas por su ecuador, a la misma altura segura, con el morro en el sentido de la órbita, hasta que la canceles.
 - **Seguir una nave**: [[H]] sigue a la nave fijada ([[X]]) o, si no hay, a la nave a la vista más cercana (primero los compañeros); pulsarla otra vez pasa a la siguiente. La tuya se pone en formación detrás y a un lado, igualando su velocidad (con pulso si ella lo lleva). Si salta fuera del sistema o deja de verse, el piloto automático se desactiva con un aviso.
 - **Cancelar**: [[N]], Esc o **cualquier mando de pilotaje** (moverse, girar, impulso, pulso, motores; en vuelo con ratón, mover el cursor fuera de la zona muerta). Un aviso en el HUD muestra el modo, el destino, la distancia y la tecla para cancelar.
 - Si los motores están apagados, se arrancan solos. Sin combustible, va solo con los propulsores (mucho más despacio). Disparar y minar no lo cancelan.

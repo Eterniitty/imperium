@@ -1063,7 +1063,7 @@ export class SystemView implements View {
     this.gravitySources = bodies.map((b) => ({ center: [b.center.x, b.center.y, b.center.z], body: b.body }));
     const grav = gravityAt([pos.x, pos.y, pos.z], this.gravitySources);
     telemetry.gravity = {
-      g: flight.pulse ? 0 : grav.g,
+      g: flight.pulseActive ? 0 : grav.g,
       region: grav.region,
       body: grav.dominant ? (bodies.find((b) => b.body === grav.dominant)?.name ?? null) : null,
     };
@@ -1109,7 +1109,8 @@ export class SystemView implements View {
     telemetry.nearest = nearest;
     telemetry.eta = eta;
     telemetry.speed = flight.speed;
-    telemetry.pulse = flight.pulse;
+    telemetry.pulse = flight.pulseActive;
+    telemetry.pulseCharge = flight.pulseCharging;
     telemetry.pulseLimit = flight.pulseLimit;
     telemetry.thrust = flight.thrust;
     // Actitud respecto al plano orbital (y = arriba) y rumbo respecto a la estrella.
@@ -1612,24 +1613,25 @@ export class SystemView implements View {
   }
 
   /** Destino del piloto automático en curso, o null. */
-  get cruiseTarget(): { id: string; mode: "goto" | "follow"; name: string } | null {
+  get cruiseTarget(): { id: string; mode: "goto" | "follow" | "orbit"; name: string } | null {
     return this.autopilot.target;
   }
 
   /** Activa el piloto automático hacia un destino del catálogo (`ship:<id>` = seguir esa nave) o un punto del espacio. */
-  cruiseTo(id: string, point?: THREE.Vector3): void {
+  cruiseTo(id: string, point?: THREE.Vector3, orbit = false): void {
     const ship = this.ship;
     if (!ship || !this.flight || this.quantum || this.arrival) return;
     const spot = id === "point" ? null : this.cruiseWorld().spots.find((s) => s.id === id);
     if (id !== "point" && !spot) return;
     const name = spot?.name ?? translate(gameStore.getState().locale, "cruise.point");
-    const mode = spot?.kind === "ship" ? "follow" : "goto";
+    // Orbitar solo planetas y lunas.
+    const mode = spot?.kind === "ship" ? "follow" : orbit && (spot?.kind === "planet" || spot?.kind === "moon") ? "orbit" : "goto";
     this.autopilot.engage(id, mode, name, point);
     this.cruiseCursor = this.flight.cursorAt;
     gameStore.getState().setCruisePanel(false);
     // Sin motores no hay crucero: se arrancan solos.
     if (this.engines.state === "off" || this.engines.state === "stopping") this.startEngines();
-    this.cruiseNotice(mode === "follow" ? "cruise.following" : "cruise.engaged", { name });
+    this.cruiseNotice(mode === "follow" ? "cruise.following" : mode === "orbit" ? "cruise.orbiting" : "cruise.engaged", { name });
   }
 
   /** Desactiva el piloto automático (con un aviso si se da el motivo). */
@@ -1726,7 +1728,7 @@ export class SystemView implements View {
       return this.cancelCruise(jumped ? "cruise.lostJump" : "cruise.lost");
     }
     if (this.engines.state === "off" || this.engines.state === "stopping") this.startEngines();
-    const status = ap.step(dt, { ship, velocity: flight.velocity, pulseOn: flight.pulse, powered: flight.powered, canPulse: !this.outOfFuel(), spot, obstacles });
+    const status = ap.step(dt, { ship, velocity: flight.velocity, pulseOn: flight.pulseActive, powered: flight.powered, canPulse: !this.outOfFuel(), spot, obstacles });
     if (status === "arrived") return this.cancelCruise("cruise.arrived");
     if (status === "lost") return this.cancelCruise("cruise.lost");
     const cmd = ap.command;
@@ -1808,7 +1810,7 @@ export class SystemView implements View {
       this.remote.update(dt, this.time, this.ship.position);
       this.updateRemoteEmerge();
       const rig = shipRig(this.ship);
-      if (!this.quantum && !this.arrival) rig.setThrust(this.flight.thrust, this.flight.pulse);
+      if (!this.quantum && !this.arrival) rig.setThrust(this.flight.thrust, this.flight.pulseActive);
       // Propulsores de maniobra del modelo, si los tiene (lo expone el generador de naves).
       (rig as { setManeuver?: (m: Maneuver) => void }).setManeuver?.(this.flight.maneuver);
       rig.tick(this.time, dt, this.quantum || this.arrival ? 0 : Math.max(0, 1 - this.flight.speed / 20));
@@ -1823,7 +1825,7 @@ export class SystemView implements View {
       const mouseFlight = settingsStore.getState().prefs.flight.mouseFlight;
       const cursor = mouseFlight ? "crosshair" : "";
       if (this.dom.style.cursor !== cursor) this.dom.style.cursor = cursor;
-      gameStore.getState().setFlight(true, this.flight.speed, this.flight.pulse);
+      gameStore.getState().setFlight(true, this.flight.speed, this.flight.pulseActive);
       // Más allá del borde: espacio interestelar.
       if (!this.leaving && this.layout && this.ship.position.length() > this.boundary) {
         this.leaving = true;

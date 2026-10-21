@@ -48,6 +48,11 @@ export function CruisePanel() {
           {formatDistance(o.distance)} · {t(o.kind === "ship" ? "cruise.follow" : "cruise.go")}
         </span>
       </button>
+      {(o.kind === "planet" || o.kind === "moon") && (
+        <button className="link-btn small" onClick={() => engineRef.current?.cruiseTo(o.id, true)}>
+          {t("cruise.orbit")}
+        </button>
+      )}
     </li>
   );
 
@@ -84,7 +89,7 @@ export function CruiseHud() {
         {t("cruise.title")} · {t(`cruise.phase.${c.phase}`)}
       </div>
       <div>
-        {t(c.mode === "follow" ? "cruise.hud.follow" : "cruise.hud.goto")} <strong>{c.name}</strong> · <span className="mono">{formatDistance(c.distance)}</span>
+        {t(c.mode === "follow" ? "cruise.hud.follow" : c.mode === "orbit" ? "cruise.hud.orbit" : "cruise.hud.goto")} <strong>{c.name}</strong> · <span className="mono">{formatDistance(c.distance)}</span>
         {c.seconds !== null && <span className="mono"> · {formatDuration(c.seconds * 1000)}</span>}
       </div>
       <div className="muted small">

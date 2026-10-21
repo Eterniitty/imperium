@@ -27,10 +27,16 @@ export const PULSE_MAX_SPEED = 2_000_000;
 export const PULSE_APPROACH_SEC = 3;
 /** Al alejarse de un cuerpo (de espaldas a él), el límite se multiplica hasta por este valor. */
 export const PULSE_RECEDE_FACTOR = 7;
-/** Crecimiento máximo de la velocidad del pulso por segundo (proporcional: 0,55 = +55 % por segundo). */
-export const PULSE_ACCEL_RATE = 0.55;
+/**
+ * Crecimiento máximo de la velocidad del pulso por segundo (proporcional: 5 =
+ * ×e⁵ por segundo). Tras la carga (`PULSE_CHARGE_SEC`) el pulso llega a su
+ * límite en un par de segundos: casi de inmediato.
+ */
+export const PULSE_ACCEL_RATE = 5;
 /** Aceleración mínima (m/s²) del pulso, para arrancar desde poca velocidad. */
-export const PULSE_ACCEL_MIN = 400;
+export const PULSE_ACCEL_MIN = 20_000;
+/** Segundos que se carga el motor de pulso antes de arrancar (se puede cancelar mientras). */
+export const PULSE_CHARGE_SEC = 5;
 /** Rapidez con la que el pulso frena hasta su límite (1/s): suave pero firme. */
 export const PULSE_BRAKE_RATE = 2;
 export const PILOT_MAX_SPEED = PULSE_MAX_SPEED;

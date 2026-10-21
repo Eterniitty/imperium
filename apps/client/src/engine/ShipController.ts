@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { stepPulseSpeed } from "@imperium/sim";
+import { PULSE_CHARGE_SEC, stepPulseSpeed } from "@imperium/sim";
 import { FLIGHT_MODEL } from "@imperium/content";
 import { settingsStore } from "../state/settings";
 import type { Keyboard } from "./input";
@@ -91,15 +91,33 @@ export class ShipController {
     return this.velocity.length();
   }
 
+  /** ¿Pulso pedido? (encendido o cargándose: pedirlo otra vez lo cancela). */
   get pulse(): boolean {
+    return this.pulseOn || this.pulseCharge !== null;
+  }
+
+  /** ¿Pulso encendido de verdad (no cargándose)? */
+  get pulseActive(): boolean {
     return this.pulseOn;
   }
 
-  /** Enciende o apaga el pulso; arranca desde la velocidad que se lleve. */
-  set pulse(on: boolean) {
-    if (on && !this.pulseOn) this.pulseSpeed = this.velocity.length();
-    this.pulseOn = on;
+  /** Carga del pulso (0–1), o null si no se está cargando. */
+  get pulseCharging(): number | null {
+    return this.pulseCharge === null ? null : 1 - this.pulseCharge / PULSE_CHARGE_SEC;
   }
+
+  /** Pide o apaga el pulso: se carga `PULSE_CHARGE_SEC` y luego arranca desde la velocidad que se lleve. */
+  set pulse(on: boolean) {
+    if (!on) {
+      this.pulseOn = false;
+      this.pulseCharge = null;
+      return;
+    }
+    if (!this.pulseOn && this.pulseCharge === null) this.pulseCharge = PULSE_CHARGE_SEC;
+  }
+
+  /** Segundos que faltan de la carga del pulso (null: no se está cargando). */
+  private pulseCharge: number | null = null;
 
   /** Cursor sobre la vista (relativo al centro, en medias alturas), o null si está fuera. */
   get cursorAt(): { x: number; y: number } | null {
@@ -163,7 +181,19 @@ export class ShipController {
     const kb = this.keyboard;
     const prefs = settingsStore.getState().prefs.flight;
     const M = FLIGHT_MODEL;
-    if (!this.powered) this.pulseOn = false;
+    if (!this.powered) {
+      this.pulseOn = false;
+      this.pulseCharge = null;
+    }
+    // Carga del pulso: al terminar, arranca desde la velocidad que se lleve.
+    if (this.pulseCharge !== null) {
+      this.pulseCharge -= dt;
+      if (this.pulseCharge <= 0) {
+        this.pulseCharge = null;
+        this.pulseOn = true;
+        this.pulseSpeed = this.velocity.length();
+      }
+    }
     const live = this.enabled && this.powered;
     const auto = live ? this.autopilot : null;
 

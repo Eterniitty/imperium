@@ -101,11 +101,19 @@ function clamp1(v: number): number {
   return Math.max(-1, Math.min(1, v));
 }
 
+/** Modo del piloto automático: ir a un sitio, seguir una nave u orbitar un planeta o luna. */
+export type CruiseMode = "goto" | "follow" | "orbit";
+
+/** Órbita: velocidad (fracción de la de impulso) y sentido (antihorario visto desde arriba, como los planetas). */
+const ORBIT_SPEED_FACTOR = 0.85;
+/** Se empieza a orbitar a menos de esta distancia del radio de la órbita (m, o fracción del radio si es mayor). */
+const ORBIT_CAPTURE_M = 8_000;
+
 export class Autopilot {
   /** Destino o nave seguida; null: apagado. */
-  target: { id: string; mode: "goto" | "follow"; name: string; point?: THREE.Vector3 } | null = null;
+  target: { id: string; mode: CruiseMode; name: string; point?: THREE.Vector3 } | null = null;
   /** Fase para el HUD. */
-  phase: "align" | "cruise" | "approach" | "formation" = "align";
+  phase: "align" | "cruise" | "approach" | "formation" | "orbit" = "align";
   /** Distancia al punto de llegada (o al hueco de la formación) y velocidad de acercamiento. */
   distance = 0;
   closing = 0;
@@ -119,7 +127,7 @@ export class Autopilot {
     return this.target !== null;
   }
 
-  engage(id: string, mode: "goto" | "follow", name: string, point?: THREE.Vector3): void {
+  engage(id: string, mode: CruiseMode, name: string, point?: THREE.Vector3): void {
     this.target = { id, mode, name, point: point?.clone() };
     this.phase = "align";
     this.targetVel.set(0, 0, 0);
@@ -151,10 +159,31 @@ export class Autopilot {
     const M = FLIGHT_MODEL;
     const ship = ctx.ship;
     const pos = ship.position;
-    const follow = tg.mode === "follow";
+    const R0 = spot.stopRadius;
+    // Órbita: ya en su radio, se persigue un punto que da vueltas al cuerpo por su ecuador (plano XZ).
+    let orbiting = false;
+    const orbitGoal = new THREE.Vector3();
+    const orbitVel = new THREE.Vector3();
+    if (tg.mode === "orbit") {
+      const rel = pos.clone().sub(spot.center);
+      const flat = new THREE.Vector3(rel.x, 0, rel.z);
+      if (flat.lengthSq() < 1) flat.set(1, 0, 0);
+      const u = flat.normalize();
+      if (Math.abs(rel.length() - R0) < Math.max(ORBIT_CAPTURE_M, R0 * 0.25)) {
+        orbiting = true;
+        const vOrb = M.maxSpeed * prefs.maxSpeed * M.boostFactor * ORBIT_SPEED_FACTOR;
+        const tangent = new THREE.Vector3().crossVectors(UP, u).normalize();
+        orbitVel.copy(tangent).multiplyScalar(vOrb);
+        // El sitio en la órbita, un poco por delante (así se avanza en vez de pararse).
+        const ahead = Math.min(0.5, (vOrb * 2) / R0);
+        const dirAhead = u.clone().multiplyScalar(Math.cos(ahead)).addScaledVector(tangent, Math.sin(ahead));
+        orbitGoal.copy(spot.center).addScaledVector(dirAhead, R0);
+      }
+    }
+    const follow = tg.mode === "follow" || orbiting;
 
     // Velocidad de la nave seguida (los cuerpos se mueven a decenas de m/s: se ignora).
-    if (follow && dt > 0) {
+    if (tg.mode === "follow" && dt > 0) {
       if (this.targetPrev) {
         const inst = spot.center.clone().sub(this.targetPrev).divideScalar(dt);
         // Un salto grande entre muestras no es velocidad (corrección o nave nueva).
@@ -162,12 +191,14 @@ export class Autopilot {
       }
       this.targetPrev = spot.center.clone();
     }
-    const goalVel = follow ? this.targetVel : new THREE.Vector3();
+    const goalVel = orbiting ? orbitVel : follow ? this.targetVel : new THREE.Vector3();
     const targetSpeed = goalVel.length();
 
     // Punto de llegada: el hueco de la formación, o a la distancia segura del objeto por el lado de la nave.
     const goal = new THREE.Vector3();
-    if (follow) {
+    if (orbiting) {
+      goal.copy(orbitGoal);
+    } else if (follow) {
       const q = spot.quaternion ?? new THREE.Quaternion();
       goal.copy(FORMATION).applyQuaternion(q).add(spot.center).addScaledVector(goalVel, REMOTE_DELAY_S);
     } else {
@@ -185,9 +216,9 @@ export class Autopilot {
     this.distance = dGoal;
     this.closing = relVel.dot(uGoal);
 
-    // Llegada (solo al ir a un sitio): cerca y casi quieto.
+    // Llegada (solo al ir a un sitio; orbitando no se llega nunca): cerca y casi quieto.
     const tol = spot.kind === "point" || spot.kind === "belt" ? 1_500 : Math.max(600, spot.stopRadius * 0.03);
-    if (!follow && dGoal < tol && relVel.length() < 25 && !ctx.pulseOn) return "arrived";
+    if (!follow && tg.mode !== "orbit" && dGoal < tol && relVel.length() < 25 && !ctx.pulseOn) return "arrived";
 
     if (!ctx.powered) {
       // Arrancando los motores: nada que pedir todavía.
@@ -213,6 +244,8 @@ export class Autopilot {
         face = targetSpeed > 20 ? goalVel.clone().normalize() : new THREE.Vector3(0, 0, -1).applyQuaternion(spot.quaternion ?? ship.quaternion);
       } else if (!follow && dGoal < 2_500) face = null; // Al final, sin girar (se frena con los propulsores).
     }
+    // Orbitando, el morro sigue el rumbo de la órbita.
+    if (orbiting && !pulse) face = orbitVel.clone().normalize();
     if (face) this.steer(ship.quaternion, face, prefs.accel, cmd);
     else this.levelRoll(ship.quaternion, prefs.accel, cmd);
 
@@ -228,7 +261,7 @@ export class Autopilot {
     }
 
     // Propulsores con asistencia: velocidad pedida hacia el punto (y la de la nave seguida), frenando a tiempo.
-    this.phase = follow ? "formation" : dGoal > PULSE_ENTER_M && ctx.canPulse ? "align" : "approach";
+    this.phase = orbiting ? "orbit" : follow ? "formation" : dGoal > PULSE_ENTER_M && ctx.canPulse ? "align" : "approach";
     // Lejos, o aún rápido (al salir del pulso): con impulso, que también frena más.
     const far = dGoal > 3_000 || relVel.length() > M.maxSpeed * prefs.maxSpeed * 1.05;
     const brake = M.reverseAccel * prefs.accel * (far ? M.boostAccelFactor : 1);

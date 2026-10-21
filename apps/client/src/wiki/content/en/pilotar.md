@@ -51,7 +51,7 @@ The pulse drive ([[P]], on and off) is a **supercruise** to cross the system fro
 
 - It pushes **forward only**; while it is on you **cannot fire**.
 - It can **always** be engaged, even next to a planet. Its top speed depends on the distance to the **nearest body**: heading straight at a planet it goes slowly (hundreds of m/s) and brakes by itself as you approach; **moving away**, the limit is several times higher; in open space it reaches the maximum speed in the table.
-- It speeds up and slows down **smoothly**. The bottom panel shows the current limit and the **estimated time** to the selected planet, the locked ship or the body ahead.
+- When you press it, the engine **charges for 5 seconds** (the HUD counts down; pressing again cancels) and then **accelerates almost at once** to its maximum; it slows down smoothly. The bottom panel shows the current limit and the **estimated time** to the selected planet, the locked ship or the body ahead.
 - It uses **fuel** and some **energy**: without fuel it does not work.
 
 ## Cruise autopilot
@@ -60,6 +60,7 @@ Inside a system (or a deep-space region) the ship can fly itself to a place or f
 
 - **Choose a destination**: [[N]] opens the list of planets, moons, asteroid belts, the system's anomaly and, in deep space, the nearest asteroids, plus the ships in sight (your [companions](/wiki/companeros) first). You can also press **Cruise here** in the panel of the selected planet, or **double-click** a planet, moon, ship or an empty point of the system plane (a marked point) in the view (with engines on, **Alt + double-click**, since left click fires).
 - **Go to a place**: the ship turns, engages the pulse drive if the destination is far (throttling it to brake in time), drops it when close and finishes on thrusters until it **stops at a safe distance** (above a planet or moon, at half its radius of altitude, between 5 and 120 km; next to an asteroid, within mining-laser range). It flies around the star, planets and moons in the way. On arrival it disengages and tells you.
+- **Orbit**: in the list, next to a planet or a moon, **Orbit** takes the ship there and leaves it circling its equator at the same safe altitude, nose along the orbit, until you cancel.
 - **Follow a ship**: [[H]] follows the locked ship ([[X]]) or, if there is none, the nearest ship in sight (companions first); press it again to switch to the next one. Your ship takes up formation behind and to one side, matching its speed (with the pulse drive if it uses it). If it jumps out of the system or goes out of sight, the autopilot disengages with a notice.
 - **Cancel**: [[N]], Esc or **any flight control** (move, turn, boost, pulse, engines; in mouse flight, moving the cursor out of the dead zone). A HUD notice shows the mode, destination, distance and the key to cancel.
 - If the engines are off, they start on their own. Without fuel it uses thrusters only (much slower). Firing and mining do not cancel it.

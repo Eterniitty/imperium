@@ -9,6 +9,8 @@ export interface FlightTelemetry {
   /** Velocidad (m/s). */
   speed: number;
   pulse: boolean;
+  /** Carga del motor de pulso antes de arrancar (0–1), o null si no se está cargando. */
+  pulseCharge: number | null;
   /** Velocidad máxima del pulso en este punto y con este rumbo (m/s). */
   pulseLimit: number;
   /** Cuerpo más cercano: nombre y distancia a su superficie (m). */
@@ -33,7 +35,7 @@ export interface FlightTelemetry {
   /** Gravedad que siente la nave (m/s²; 0 con el pulso), región y cuerpo dominante. */
   gravity: { g: number; region: "deep" | "approach" | "surface"; body: string | null };
   /** Piloto automático de crucero: modo, destino, fase, distancia (m) y tiempo estimado (s); null si está apagado. */
-  cruise: { mode: "goto" | "follow"; name: string; phase: "align" | "cruise" | "approach" | "formation"; distance: number; seconds: number | null } | null;
+  cruise: { mode: "goto" | "follow" | "orbit"; name: string; phase: "align" | "cruise" | "approach" | "formation" | "orbit"; distance: number; seconds: number | null } | null;
   /** Calor de la estrella: daño por segundo (0 fuera de la zona), si es mortal y si es un agujero negro. */
   heat: { dps: number; lethal: boolean; blackHole: boolean };
 }
@@ -41,6 +43,7 @@ export interface FlightTelemetry {
 export const telemetry: FlightTelemetry = {
   speed: 0,
   pulse: false,
+  pulseCharge: null,
   pulseLimit: 0,
   nearest: null,
   eta: null,
