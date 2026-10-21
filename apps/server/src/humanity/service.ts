@@ -82,7 +82,7 @@ const sumStock = (a: Stock, b: Partial<Stock> | undefined): Stock => {
   if (b) for (const r of STOCK_IDS) out[r] += b[r] ?? 0;
   return out;
 };
-const stockOf = (r: { metal: number; volatiles: number; crystal: number; alloys: number }): Stock => ({ metal: r.metal, volatiles: r.volatiles, crystal: r.crystal, alloys: r.alloys });
+const stockOf = (r: { metal: number; volatiles: number; crystal: number; alloys: number; rare_metals: number; exotic: number }): Stock => ({ metal: r.metal, volatiles: r.volatiles, crystal: r.crystal, alloys: r.alloys, rare_metals: r.rare_metals, exotic: r.exotic });
 
 /**
  * Economía de la humanidad: carteras de créditos, el tesoro común del Núcleo
@@ -406,6 +406,8 @@ export class HumanityService {
         volatiles: sql<number>`coalesce(sum(${shipments.volatiles}), 0)::float8`,
         crystal: sql<number>`coalesce(sum(${shipments.crystal}), 0)::float8`,
         alloys: sql<number>`coalesce(sum(${shipments.alloys}), 0)::float8`,
+        rare_metals: sql<number>`coalesce(sum(${shipments.rare_metals}), 0)::float8`,
+        exotic: sql<number>`coalesce(sum(${shipments.exotic}), 0)::float8`,
       })
       .from(shipments)
       .where(and(eq(shipments.kind, "contribution"), projectId ? eq(shipments.projectId, projectId) : undefined))
@@ -425,6 +427,8 @@ export class HumanityService {
         volatiles: sql`${humanityProjects.volatiles} + ${amounts.volatiles}`,
         crystal: sql`${humanityProjects.crystal} + ${amounts.crystal}`,
         alloys: sql`${humanityProjects.alloys} + ${amounts.alloys}`,
+        rare_metals: sql`${humanityProjects.rare_metals} + ${amounts.rare_metals}`,
+        exotic: sql`${humanityProjects.exotic} + ${amounts.exotic}`,
       })
       .where(eq(humanityProjects.projectId, s.projectId));
     await tx.insert(humanityContributions).values({ emperorId: s.emperorId, projectId: s.projectId, ...amounts });
@@ -523,6 +527,8 @@ export class HumanityService {
         volatiles: sql<number>`coalesce(sum(${colonies.volatiles}), 0)::float8`,
         crystal: sql<number>`coalesce(sum(${colonies.crystal}), 0)::float8`,
         alloys: sql<number>`coalesce(sum(${colonies.alloys}), 0)::float8`,
+        rare_metals: sql<number>`coalesce(sum(${colonies.rare_metals}), 0)::float8`,
+        exotic: sql<number>`coalesce(sum(${colonies.exotic}), 0)::float8`,
       })
       .from(colonies)
       .where(isNull(colonies.emperorId));
@@ -549,7 +555,7 @@ export class HumanityService {
       const top = await this.db
         .select({
           name: emperors.name,
-          total: sql<number>`sum(${humanityContributions.metal} + ${humanityContributions.volatiles} + ${humanityContributions.crystal} + ${humanityContributions.alloys} + ${humanityContributions.credits})::float8`,
+          total: sql<number>`sum(${humanityContributions.metal} + ${humanityContributions.volatiles} + ${humanityContributions.crystal} + ${humanityContributions.alloys} + ${humanityContributions.rare_metals} + ${humanityContributions.exotic} + ${humanityContributions.credits})::float8`,
         })
         .from(humanityContributions)
         .leftJoin(emperors, eq(emperors.id, humanityContributions.emperorId))

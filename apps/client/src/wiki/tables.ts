@@ -210,7 +210,7 @@ export const GEN_TABLES: Record<string, Builder> = {
     const population = 500;
     const flows = colonyFlows(planet, starEnergy, installations, population);
     const energy = colonyEnergy(starEnergy, installations);
-    const half = { metal: ECONOMY.storage.metal / 2, volatiles: ECONOMY.storage.volatiles / 2, crystal: ECONOMY.storage.crystal / 2, alloys: ECONOMY.storage.alloys / 2 };
+    const half = { metal: ECONOMY.storage.metal / 2, volatiles: ECONOMY.storage.volatiles / 2, crystal: ECONOMY.storage.crystal / 2, alloys: ECONOMY.storage.alloys / 2, rare_metals: 0, exotic: 0 };
     const net = netRates(half, flows);
     const h = (n: number) => t("colony.perHour", { n: num(locale, n, 1) });
     return kv(t, [

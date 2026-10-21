@@ -64,7 +64,7 @@ export const HUMANITY_PROJECTS: readonly HumanityProjectDefinition[] = [
     // Las flotas que combaten en un sistema del Núcleo Humano tienen más escudo.
     id: "core_defenses",
     maxLevel: 5,
-    baseCost: { credits: 1500, metal: 4000, volatiles: 1000, crystal: 200, alloys: 600 },
+    baseCost: { credits: 1500, metal: 4000, volatiles: 1000, crystal: 200, alloys: 600, rare_metals: 0, exotic: 0 },
     costGrowth: 1.6,
     effectPerLevel: 0.1,
   },
@@ -72,7 +72,7 @@ export const HUMANITY_PROJECTS: readonly HumanityProjectDefinition[] = [
     // Todas las colonias extraen más (metal, volátiles y cristal).
     id: "core_research",
     maxLevel: 5,
-    baseCost: { credits: 2000, metal: 2000, volatiles: 1500, crystal: 400, alloys: 400 },
+    baseCost: { credits: 2000, metal: 2000, volatiles: 1500, crystal: 400, alloys: 400, rare_metals: 0, exotic: 0 },
     costGrowth: 1.6,
     effectPerLevel: 0.04,
   },
@@ -80,7 +80,7 @@ export const HUMANITY_PROJECTS: readonly HumanityProjectDefinition[] = [
     // Las colonias nuevas nacen con más existencias (subvención del Núcleo).
     id: "colony_grants",
     maxLevel: 4,
-    baseCost: { credits: 1000, metal: 3000, volatiles: 1500, crystal: 100, alloys: 200 },
+    baseCost: { credits: 1000, metal: 3000, volatiles: 1500, crystal: 100, alloys: 200, rare_metals: 0, exotic: 0 },
     costGrowth: 1.5,
     effectPerLevel: 0.25,
   },
@@ -88,7 +88,7 @@ export const HUMANITY_PROJECTS: readonly HumanityProjectDefinition[] = [
     // Los envíos del Núcleo (aportes y mercado) llegan antes.
     id: "trade_network",
     maxLevel: 5,
-    baseCost: { credits: 1200, metal: 2500, volatiles: 2000, crystal: 150, alloys: 300 },
+    baseCost: { credits: 1200, metal: 2500, volatiles: 2000, crystal: 150, alloys: 300, rare_metals: 0, exotic: 0 },
     costGrowth: 1.5,
     effectPerLevel: 0.2,
   },

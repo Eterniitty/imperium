@@ -11,3 +11,4 @@ export * from "./siege";
 export * from "./lineage";
 export * from "./bodies";
 export * from "./gravity";
+export * from "./deepspace";

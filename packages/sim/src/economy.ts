@@ -32,7 +32,7 @@ export function realDurationMs(hours: number, timeScale: number): number {
   return Math.ceil((hours * HOUR_MS) / timeScale);
 }
 
-export const zeroStock = (): StockAmounts => ({ metal: 0, volatiles: 0, crystal: 0, alloys: 0 });
+export const zeroStock = (): StockAmounts => ({ metal: 0, volatiles: 0, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 });
 
 // --- Humanos y población ---
 
@@ -158,6 +158,9 @@ export function colonyFlows(
       volatiles: rich.volatiles * perRichness,
       crystal: rich.crystal * perRichness * ECONOMY.crystalFactor,
       alloys: 0,
+      // Los metales raros y la materia exótica no se extraen en las colonias: se minan en el espacio profundo.
+      rare_metals: 0,
+      exotic: 0,
     },
     refinery: {
       metal: ECONOMY.refinery.metal * refineries,
@@ -198,6 +201,8 @@ export function netRates(stock: StockAmounts, flows: ColonyFlows, storage: Stock
     volatiles: flows.extraction.volatiles - f * flows.refinery.volatiles - upkeepPaid,
     crystal: flows.extraction.crystal,
     alloys: f * flows.refinery.alloys,
+    rare_metals: 0,
+    exotic: 0,
   };
   for (const r of STOCK_IDS) {
     if (Math.abs(rates[r]) < 1e-12) rates[r] = 0;

@@ -100,7 +100,7 @@ export const HEIRS = {
   /** Herederos por Emperador (contando los que se gestan). */
   maxPerEmperor: 3,
   /** Coste en existencias de la colonia de la Cuna. */
-  cost: { metal: 400, volatiles: 120, crystal: 60, alloys: 80 } satisfies StockAmounts,
+  cost: { metal: 400, volatiles: 120, crystal: 60, alloys: 80, rare_metals: 0, exotic: 0 } satisfies StockAmounts,
   /** Habitantes de la colonia que se dedican a criarlo (salen de su población). */
   population: 25,
   /** Horas de juego de gestación. */

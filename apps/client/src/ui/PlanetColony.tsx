@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { ECONOMY, INSTALLATIONS, SHIP_CLASSES, STOCK_IDS, type StockAmounts } from "@imperium/content";
+import { ECONOMY, INSTALLATIONS, SHIP_CLASSES, STOCK_IDS, type StockAmounts, type StockId } from "@imperium/content";
 import { PLANET_NAME_MAX, PLANET_NAME_MIN, type Colony, type Fleet, type I18nKey, type Planet, type StarSystemDetail } from "@imperium/shared";
 import { minColonists, missingInstallations } from "@imperium/sim";
 import { connection, useWorld } from "../net/world";
@@ -7,14 +7,15 @@ import { useAuth } from "../state/auth";
 import { useClaims } from "../state/claims";
 import { useGame, useT } from "../state/store";
 import { fmtInt, fmtRate, liveHumans, livePopulation, liveStock, ownColonyAt, planetLabel } from "./colonies";
-import { RESOURCE_COLORS } from "./common";
+import { STOCK_COLORS } from "./common";
 import { contentText } from "./fleets";
 import { ShipThumb } from "./ShipThumb";
 import { formatDuration, useServerNow } from "./useNow";
 import { factionName } from "./aliens";
 import { PlanetSiege } from "./SiegePanel";
 
-const STOCK_COLORS: Record<string, string> = { ...RESOURCE_COLORS, alloys: "#ff9f5a" };
+/** Abreviatura de los recursos cuya inicial coincide con otro (metal / metales raros). */
+const SHORT: Partial<Record<StockId, string>> = { rare_metals: "R", exotic: "X" };
 
 /** Coste compacto: «M150 V20». */
 function Cost({ cost, stock }: { cost: StockAmounts; stock: StockAmounts | null }) {
@@ -23,7 +24,7 @@ function Cost({ cost, stock }: { cost: StockAmounts; stock: StockAmounts | null 
     <span className="cost mono small">
       {STOCK_IDS.filter((r) => cost[r] > 0).map((r) => (
         <span key={r} style={{ color: STOCK_COLORS[r], opacity: stock && stock[r] < cost[r] ? 0.45 : 1 }} title={t(`resource.${r}`)}>
-          {t(`resource.${r}`).charAt(0)}
+          {SHORT[r] ?? t(`resource.${r}`).charAt(0)}
           {cost[r]}
         </span>
       ))}
@@ -339,7 +340,7 @@ function ColonyDetail({
           <h3>{t("colony.buildShips")}</h3>
           <ul className="build-list">
             {SHIP_CLASSES.map((cls) => {
-              const cost = { ...cls.cost };
+              const cost = { rare_metals: 0, exotic: 0, ...cls.cost };
               const missing = missingInstallations(cls.requires, colony.installations);
               return (
                 <li key={cls.id}>

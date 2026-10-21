@@ -170,7 +170,7 @@ export function captureLosses(
   const s = 1 - SIEGE.capture.stockLoss;
   return {
     population: Math.max(0, population * keep),
-    stock: { metal: stock.metal * s, volatiles: stock.volatiles * s, crystal: stock.crystal * s, alloys: stock.alloys * s },
+    stock: { metal: stock.metal * s, volatiles: stock.volatiles * s, crystal: stock.crystal * s, alloys: stock.alloys * s, rare_metals: stock.rare_metals * s, exotic: stock.exotic * s },
     destroyed,
   };
 }

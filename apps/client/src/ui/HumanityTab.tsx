@@ -4,14 +4,14 @@ import type { Colony, HumanityProject, HumanityResponse, I18nKey } from "@imperi
 import { connection, useWorld } from "../net/world";
 import { api } from "../state/auth";
 import { useT } from "../state/store";
-import { RESOURCE_COLORS, Meter } from "./common";
+import { STOCK_COLORS, Meter } from "./common";
 import { fmtCredits, fmtInt, fmtRate, liveCredits, liveStock } from "./colonies";
 import { useServerNow } from "./useNow";
 
 const REFRESH_MS = 30_000;
 const HOUR_MS = 3_600_000;
 
-const color = (r: StockId) => (r === "alloys" ? "#ffb070" : RESOURCE_COLORS[r]);
+const color = (r: StockId) => STOCK_COLORS[r];
 const pct = (x: number) => `${Math.round(x * 1000) / 10} %`;
 
 /** Pestaña «Humanidad»: agregados de toda la humanidad, el tesoro del Núcleo, tu cartera y los proyectos comunes. */
@@ -109,7 +109,7 @@ function ProjectCard({ project: p, onDone }: { project: HumanityProject; onDone:
   const colonies = useWorld((s) => s.colonies);
   const own = (Object.values(colonies) as Colony[]).sort((a, b) => a.foundedAt - b.foundedAt);
   const [colonyId, setColonyId] = useState<string>("");
-  const [amounts, setAmounts] = useState<Record<StockId | "credits", string>>({ metal: "", volatiles: "", crystal: "", alloys: "", credits: "" });
+  const [amounts, setAmounts] = useState<Record<StockId | "credits", string>>({ metal: "", volatiles: "", crystal: "", alloys: "", rare_metals: "", exotic: "", credits: "" });
   const [error, setError] = useState<I18nKey | null>(null);
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -134,7 +134,7 @@ function ProjectCard({ project: p, onDone }: { project: HumanityProject; onDone:
     setError(err);
     if (!err) {
       setDone(true);
-      setAmounts({ metal: "", volatiles: "", crystal: "", alloys: "", credits: "" });
+      setAmounts({ metal: "", volatiles: "", crystal: "", alloys: "", rare_metals: "", exotic: "", credits: "" });
       await onDone();
     }
   };

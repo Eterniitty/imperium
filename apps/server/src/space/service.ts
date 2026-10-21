@@ -1,11 +1,12 @@
-import { EMPEROR_FLAGSHIP, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, getAlienShipClass, PIRATE_AI } from "@imperium/content";
-import type { ServerMessage, ShipPose, ShipState, Vec3, WeaponKind } from "@imperium/shared";
-import { bodiesAt, gravitySpeedBound, isTravelling, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_SPEED, plausibleMove, pulseLimitAt, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
+import { EMPEROR_FLAGSHIP, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, getAlienShipClass, MINING, PIRATE_AI } from "@imperium/content";
+import { isDeepId, type ServerMessage, type ShipPose, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
+import { addToHold, bodiesAt, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { EmperorService } from "../emperor/service";
 import type { Client } from "../realtime/hub";
 import type { SocialService } from "../social/service";
 import type { FlagshipService } from "./flagship";
+import type { DeepSpaceService } from "./deep";
 import { Combatant, type StoredSupplies, distance, forwardOf, HIT_RADIUS, MISSILE_LOCK_COS, normalize, rayHit, rotate } from "./combat";
 import { pirateFlight, pirateHome, piratesOf, stepPirate } from "./pirates";
 
@@ -48,6 +49,13 @@ interface Member {
   resupplyingUntil?: number;
   /** Energía y combustible enviados por última vez al piloto (para no repetirlos). */
   sentSupplies?: string;
+  /** Espacio profundo: asteroide al que apunta su láser de minería (null: apagado). */
+  beam?: number | null;
+  /** Último pulso de minería aceptado (hora del servidor) y si hay uno en curso. */
+  mineAt?: number;
+  minePending?: boolean;
+  /** Refinado en curso (una operación a la vez). */
+  refinePending?: boolean;
 }
 
 const TICK_MS = 100;
@@ -100,6 +108,10 @@ export class SpaceService {
   onColony: (emperorId: string, colonyId: string) => void = () => {};
   /** Piratas destruidos y hasta cuándo no reaparecen. */
   private readonly deadPirates = new Map<string, number>();
+  /** Espacio profundo: contenido de las regiones y minería (lo pone `buildApp`). */
+  deep: DeepSpaceService | null = null;
+  /** Emperadores con la refinería de a bordo encendida (volátiles de la bodega → combustible). */
+  private readonly refining = new Set<string>();
   /** Uniones en curso, para no validar dos veces a la vez la misma nave. */
   private readonly joining = new Map<string, Promise<Member | null>>();
   /**
@@ -149,6 +161,8 @@ export class SpaceService {
    * la gravedad (cota de escape desde el borde de la esfera de influencia).
    */
   private maxSpeedAt(systemId: string, a: Vec3, b: Vec3, now: number): number {
+    // Espacio profundo: no hay cuerpos que limiten el pulso.
+    if (isDeepId(systemId)) return PILOT_MAX_SPEED;
     const layout = this.layout(systemId);
     if (!layout) return PILOT_SPEED * PILOT_BOOST;
     const bodies = bodiesAt(layout, now);
@@ -386,6 +400,137 @@ export class SpaceService {
     client.send({ t: "ship", ship: this.stateFor(m, m) });
     this.sendWeapons(m);
     this.sendSupplies(m, now, true);
+    void this.sendHold(m);
+    // Espacio profundo: el contenido de la región (secreto: solo a quien está en ella).
+    if (isDeepId(m.systemId) && this.deep) {
+      const deep = this.deep;
+      void deep
+        .view(m.systemId)
+        .then((region) => {
+          if (region) client.send({ t: "field", region });
+          // Los láseres de minería que ya estaban encendidos.
+          for (const o of this.rooms.get(m.systemId) ?? []) if (o !== m && o.beam != null) client.send({ t: "beam", id: o.emperorId, asteroid: o.beam });
+        })
+        .catch((err: unknown) => this.log.error(err, "Error al cargar una región de espacio profundo"));
+    }
+  }
+
+  /** Bodega y refinería al piloto (o a la conexión indicada). */
+  private async sendHold(m: Member, hold?: Hold): Promise<void> {
+    try {
+      const h = hold ?? (await this.flagships.hold(m.emperorId));
+      this.sendTo(m, { t: "hold", hold: h, capacity: FLAGSHIP_HOLD.capacity, refining: this.refining.has(m.emperorId) });
+    } catch (err) {
+      this.log.error(err, "Error al leer la bodega");
+    }
+  }
+
+  /**
+   * Pulso del láser de minería de un piloto en el espacio profundo: si el
+   * asteroide está a su alcance (desde la nave hasta su superficie), le queda
+   * algo y hay sitio en la bodega y energía, extrae lo de un intervalo
+   * (`MINING`). `null` apaga el láser. Los demás presentes ven el láser y el
+   * asteroide que se agota.
+   */
+  mine(client: Client, asteroid: number | null): void {
+    const m = this.members.get(client.emperorId);
+    const deep = this.deep;
+    if (!m || m.park || !deep || !isDeepId(m.systemId)) return;
+    const room = this.rooms.get(m.systemId);
+    const setBeam = (a: number | null) => {
+      if ((m.beam ?? null) === a) return;
+      m.beam = a;
+      for (const o of room ?? []) if (o !== m) this.sendTo(o, { t: "beam", id: m.emperorId, asteroid: a });
+    };
+    if (asteroid === null) return setBeam(null);
+    const now = this.now();
+    // Un pulso por intervalo, como mucho (el cliente los manda a ese ritmo).
+    if (m.minePending || now - (m.mineAt ?? 0) < MINING.tickSec * 1000 * 0.7) return;
+    const fail = (reason: "range" | "empty" | "full" | "energy" | "none") => {
+      setBeam(null);
+      client.send({ t: "mineFail", reason });
+    };
+    const region = deep.region(m.systemId);
+    const a = region?.asteroids[asteroid];
+    if (!a) return fail("none");
+    if (distance(m.pose.p, a.p) - a.r > MINING.rangeM + 50) return fail("range");
+    const dt = Math.min(MINING.tickSec * 1.5, (now - (m.mineAt ?? 0)) / 1000);
+    if (!m.combat.spendEnergy(MINING.energyPerSec * dt, now)) return fail("energy");
+    m.mineAt = now;
+    m.minePending = true;
+    setBeam(asteroid);
+    const regionId = m.systemId;
+    const want = MINING.unitsPerSec * dt;
+    void (async () => {
+      const left = deep.left(regionId, asteroid, now);
+      if (left <= 0.01) return fail("empty");
+      const take = Math.min(want, left);
+      // Primero la bodega (con la fila bloqueada): lo que quepa es lo que se extrae.
+      const stored = await this.flagships.updateHold(m.emperorId, (hold) => {
+        const { hold: next, added } = addToHold(hold, miningYield(a.kind, take));
+        return added > 1e-6 ? { hold: next, result: { hold: next, added } } : null;
+      });
+      if (!stored) return fail("full");
+      const res = await deep.mine(regionId, asteroid, stored.added);
+      for (const o of this.rooms.get(regionId) ?? []) this.sendTo(o, { t: "asteroid", i: asteroid, left: Math.round(res.left * 10) / 10 });
+      void this.sendHold(m, stored.hold);
+    })()
+      .catch((err: unknown) => this.log.error(err, "Error al minar"))
+      .finally(() => (m.minePending = false));
+  }
+
+  /** Enciende o apaga la refinería de a bordo (funciona mientras la nave está en un sistema o región activos). */
+  async setRefining(emperorId: string, on: boolean): Promise<void> {
+    if (on) this.refining.add(emperorId);
+    else this.refining.delete(emperorId);
+    const m = this.members.get(emperorId);
+    if (m) await this.sendHold(m);
+  }
+
+  /** La bodega cambió fuera del espacio local (descarga en una colonia): al piloto. */
+  holdChanged(emperorId: string): void {
+    const m = this.members.get(emperorId);
+    if (m) void this.sendHold(m);
+  }
+
+  /**
+   * Refinería de a bordo: convierte despacio los volátiles de la bodega en
+   * combustible (peor rendimiento que en una colonia). Se apaga sola sin
+   * volátiles o con el depósito lleno.
+   */
+  private refineAll(now: number): void {
+    const sec = RESUPPLY_MS / 1000;
+    for (const id of this.refining) {
+      const m = this.members.get(id);
+      if (!m || !m.combat.hasReactor || m.combat.stale || m.refinePending) continue;
+      const missing = m.combat.missing(now).fuel;
+      if (missing < 0.05) {
+        this.refining.delete(id);
+        void this.sendHold(m);
+        continue;
+      }
+      const fuelWanted = Math.min(missing, FLAGSHIP_HOLD.refineFuelPerSec * sec);
+      m.refinePending = true;
+      void this.flagships
+        .updateHold(id, (hold) => {
+          const have = hold.volatiles ?? 0;
+          const used = Math.min(have, fuelWanted * FLAGSHIP_HOLD.refineVolatilesPerFuel);
+          if (used <= 1e-6) return null;
+          return { hold: { ...hold, volatiles: have - used }, result: { hold: { ...hold, volatiles: have - used }, fuel: used / FLAGSHIP_HOLD.refineVolatilesPerFuel } };
+        })
+        .then((res) => {
+          if (!res) {
+            // Sin volátiles en la bodega: la refinería se apaga.
+            this.refining.delete(id);
+            return this.sendHold(m);
+          }
+          m.combat.refill({ fuel: res.fuel, cannon: 0, missiles: 0, hull: 0 }, this.now());
+          this.sendSupplies(m, this.now());
+          return this.sendHold(m, res.hold);
+        })
+        .catch((err: unknown) => this.log.error(err, "Error en la refinería de a bordo"))
+        .finally(() => (m.refinePending = false));
+    }
   }
 
   /**
@@ -827,6 +972,7 @@ export class SpaceService {
     if (now - this.lastResupply >= RESUPPLY_MS) {
       this.lastResupply = now;
       this.resupplyAll(now);
+      this.refineAll(now);
     }
     for (const room of this.rooms.values()) {
       const changed = [...room].filter((m) => m.dirty);
