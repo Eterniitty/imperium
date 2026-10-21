@@ -13,6 +13,8 @@ export const GATE_PAGE = /* html */ `<!doctype html>
 <style>
   :root { color-scheme: dark; --gold: #e8b64c; --text: #e6ecf5; --muted: #8d9ab0; --panel: rgba(10, 16, 28, 0.78); --line: rgba(232, 182, 76, 0.35); --error: #ff8a6a; }
   * { box-sizing: border-box; }
+  /* Lo oculto se oculta del todo (los títulos de las casillas tienen display propio). */
+  [hidden] { display: none !important; }
   html, body { margin: 0; height: 100%; background: #04060c; color: var(--text); font-family: "Segoe UI", system-ui, -apple-system, sans-serif; }
   canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
   main { position: relative; min-height: 100%; display: grid; place-items: center; padding: 24px 16px; }
@@ -66,7 +68,7 @@ export const GATE_PAGE = /* html */ `<!doctype html>
   const touchMac = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
   const mobile = (navigator.userAgentData && navigator.userAgentData.mobile) || /Mobi|Android|iPhone|iPad|iPod|PlayStation|Xbox|Nintendo|SmartTV|SMART-TV|Tizen|webOS|Web0S|CrKey/i.test(ua);
   if (touchMac || mobile || new URLSearchParams(location.search).has("dispositivo")) {
-    for (const el of form.querySelectorAll("label, input, button")) el.hidden = true;
+    for (const el of form.querySelectorAll("label, input, button, .error")) el.hidden = true;
     document.getElementById("device").hidden = false;
   }
   const error = document.getElementById("error");
