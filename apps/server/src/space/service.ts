@@ -1,4 +1,4 @@
-import { AIM_ASSIST, ALIEN_LOCAL, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, getAlienShipClass, getShipClass, MINING, PIRATE_AI, type ShipClassId } from "@imperium/content";
+import { AIM_ASSIST, ALIEN_LOCAL, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, getAlienShipClass, getShipClass, MINING, PIRATE_AI, PIRATE_AMBUSH, type ShipClassId } from "@imperium/content";
 import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, MOTHERSHIP_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
 import { addToHold, arriveVelocity, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
@@ -1002,7 +1002,10 @@ export class SpaceService {
 
   private relayRift(m: Member, notice: RiftNotice): void {
     if (!riftNear(notice, m.pose.p)) return;
-    if (notice.phase === "arrive") m.riftArrived = true;
+    if (notice.phase === "arrive") {
+      m.riftArrived = true;
+      this.ambush(m);
+    }
     const msg: ServerMessage = { t: "rift", id: m.emperorId, phase: notice.phase, at: notice.at, q: notice.q, serverTime: this.now() };
     for (const o of this.rooms.get(m.systemId) ?? []) if (o !== m) this.sendTo(o, msg);
   }
@@ -1150,6 +1153,28 @@ export class SpaceService {
       for (const o of room) this.sendTo(o, { t: "ship", ship: this.stateFor(m, o) });
       room.add(m);
       this.members.set(id, m);
+    });
+  }
+
+  /**
+   * Emboscada (`PIRATE_AMBUSH`): la manada de Carroñeros del sistema aparece
+   * alrededor de una nave que acaba de salir de la grieta.
+   */
+  private ambush(m: Member): void {
+    if (Math.random() >= PIRATE_AMBUSH.chance) return;
+    const pack = [...(this.rooms.get(m.systemId) ?? [])].filter((o) => o.kind === "pirate" && o.combat.hull > 0);
+    const now = this.now();
+    pack.forEach((o, i) => {
+      const a = (i / pack.length) * Math.PI * 2 + Math.random();
+      const p: Vec3 = [
+        m.pose.p[0] + Math.cos(a) * PIRATE_AMBUSH.distanceU,
+        m.pose.p[1] + (Math.random() - 0.5) * PIRATE_AMBUSH.distanceU * 0.3,
+        m.pose.p[2] + Math.sin(a) * PIRATE_AMBUSH.distanceU,
+      ];
+      o.pose = { p, q: o.pose.q, v: [0, 0, 0] };
+      o.poseAt = now;
+      o.history = [{ t: now, p }];
+      o.dirty = true;
     });
   }
 

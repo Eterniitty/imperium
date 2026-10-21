@@ -31,6 +31,10 @@ Scavengers look for loot with the least risk:
 - **They do not crash**: they steer around planets and moons and stay out of the star's heat zone.
 - **They do not shoot each other**: they hold fire when a packmate is in the line of fire.
 
+### Ambushes at jump exits
+
+When you leave the rift in a system with Scavengers, sometimes (35 % of arrivals) the pack is **already waiting** a few kilometres from the arrival point. Start your engines and ready your weapons as soon as you arrive.
+
 ## Danger by zone
 
 The farther from the Core, the more numerous, the heavier and the better their aim. The ring is the distance to the Core in sectors (see [Universe](/wiki/universo)).

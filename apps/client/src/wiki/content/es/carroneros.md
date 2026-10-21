@@ -31,6 +31,10 @@ Los Carroñeros buscan botín con el menor riesgo:
 - **No se estrellan**: rodean planetas y lunas y no entran en la zona de calor de la estrella.
 - **No se disparan entre ellos**: no tiran si un compañero está en la línea de tiro.
 
+### Emboscadas al salir del salto
+
+Al salir de la grieta en un sistema con Carroñeros, a veces (un 35 % de las llegadas) la manada **ya te está esperando** a pocos kilómetros del punto de llegada. Arranca motores y prepara las armas nada más llegar.
+
 ## Peligro por zona
 
 Cuanto más lejos del Núcleo, más numerosos, más pesados y con mejor puntería. El anillo es la distancia al Núcleo en sectores (ver [Universo](/wiki/universo)).

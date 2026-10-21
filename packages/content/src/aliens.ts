@@ -335,6 +335,17 @@ export const PIRATE_AI = {
 } as const;
 
 /**
+ * Emboscadas en las salidas de salto (fase 2 del plan): al salir de la grieta
+ * en un sistema con Carroñeros, a veces la manada ya está esperando cerca.
+ */
+export const PIRATE_AMBUSH = {
+  /** Probabilidad de emboscada por llegada a un sistema con Carroñeros vivos. */
+  chance: 0.35,
+  /** Distancia a la que esperan, alrededor del punto de llegada (m): dentro de su alcance de caza. */
+  distanceU: 4500,
+} as const;
+
+/**
  * Escolta (Fase 9d, `docs/ia-naves.md` §5): las naves armadas de las flotas
  * propias paradas en el sistema donde pilota el Emperador salen a escoltarlo
  * (hasta `maxShips`), en formación a su alrededor, y atacan a los Carroñeros
