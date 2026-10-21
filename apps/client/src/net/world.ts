@@ -313,9 +313,14 @@ class Connection {
           ships,
           targetId: state.targetId === msg.id ? null : state.targetId,
           explosions: msg.reason === "destroyed" && last ? [...state.explosions, last.p] : state.explosions,
+          // Saltó: se la ve entrar en su grieta (desde donde se dibujaba).
+          rifts: msg.reason === "jump" && last ? [...state.rifts, { id: msg.id, phase: "jump", at: last.p, q: last.q }] : state.rifts,
         });
         return;
       }
+      case "rift":
+        spaceStore.setState({ rifts: [...spaceStore.getState().rifts, { id: msg.id, phase: msg.phase, at: msg.at, q: msg.q }] });
+        return;
       case "shot":
         spaceStore.setState({ shots: [...spaceStore.getState().shots, msg] });
         return;

@@ -154,6 +154,9 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
           case "fire":
             space.fire(client, msg.weapon, msg.dir, msg.target);
             return;
+          case "rift":
+            space.rift(client, { phase: msg.phase, at: msg.at, q: msg.q });
+            return;
           case "sub":
             void hub.subscribe(client, msg.topic);
             return;
@@ -185,7 +188,7 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     const res = await emperors.move(owner.accountId, msg.args.systemId);
                     if (res.ok) {
                       // Al saltar, la nave deja el sistema en el que volaba (y su combustible cambió en la base de datos).
-                      space.leave(res.emperor.id, "left");
+                      space.leave(res.emperor.id, "jump");
                       space.suppliesChanged(res.emperor.id);
                       await hub.publish(res.emperor.id);
                       // Dónde aparecerá al llegar (borde del destino).

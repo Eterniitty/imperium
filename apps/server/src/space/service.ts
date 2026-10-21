@@ -8,6 +8,7 @@ import type { SocialService } from "../social/service";
 import type { FlagshipService } from "./flagship";
 import { Combatant, type StoredSupplies, distance, forwardOf, HIT_RADIUS, MISSILE_LOCK_COS, normalize, rayHit, rotate } from "./combat";
 import { pirateFlight, pirateHome, piratesOf, stepPirate } from "./pirates";
+import { PendingArrivals, RIFT_ARRIVE_WINDOW_MS, riftNear, type RiftNotice } from "./rift";
 
 /** Una nave presente en un sistema: de un Emperador o un pirata de la IA. */
 interface Member {
@@ -48,6 +49,9 @@ interface Member {
   resupplyingUntil?: number;
   /** Energía y combustible enviados por última vez al piloto (para no repetirlos). */
   sentSupplies?: string;
+  /** Cuándo tomó los mandos y si ya anunció su grieta de llegada (solo una por vez). */
+  boardedAt?: number;
+  riftArrived?: boolean;
 }
 
 const TICK_MS = 100;
@@ -102,6 +106,8 @@ export class SpaceService {
   private readonly deadPirates = new Map<string, number>();
   /** Uniones en curso, para no validar dos veces a la vez la misma nave. */
   private readonly joining = new Map<string, Promise<Member | null>>();
+  /** Grietas de llegada anunciadas antes de que la nave entre en el sistema. */
+  private readonly riftArrivals = new PendingArrivals();
   /**
    * Fase 10: la nave de un Emperador cae en el combate pilotado. Registra la
    * muerte (gestación en una Cuna o en el Núcleo) y devuelve cuándo y dónde
@@ -386,6 +392,33 @@ export class SpaceService {
     client.send({ t: "ship", ship: this.stateFor(m, m) });
     this.sendWeapons(m);
     this.sendSupplies(m, now, true);
+    m.boardedAt = now;
+    m.riftArrived = false;
+    // Llegó de un salto: los presentes ven abrirse su grieta.
+    const arrival = this.riftArrivals.take(m.emperorId, now);
+    if (arrival) this.relayRift(m, arrival);
+  }
+
+  /**
+   * Grieta del salto cuántico anunciada por un piloto: se reenvía a los demás
+   * de su sistema si está junto a su nave. La de llegada puede llegar antes que
+   * la nave (se guarda) y solo vale una vez tras tomar los mandos.
+   */
+  rift(client: Client, notice: RiftNotice): void {
+    const m = this.members.get(client.emperorId);
+    const now = this.now();
+    const piloting = !!m && !m.park && m.clients.has(client);
+    if (notice.phase === "arrive" && !piloting) return this.riftArrivals.hold(client.emperorId, notice, now);
+    if (!m || !piloting) return;
+    if (notice.phase === "arrive" && (m.riftArrived || now - (m.boardedAt ?? 0) > RIFT_ARRIVE_WINDOW_MS)) return;
+    this.relayRift(m, notice);
+  }
+
+  private relayRift(m: Member, notice: RiftNotice): void {
+    if (!riftNear(notice, m.pose.p)) return;
+    if (notice.phase === "arrive") m.riftArrived = true;
+    const msg: ServerMessage = { t: "rift", id: m.emperorId, phase: notice.phase, at: notice.at, q: notice.q, serverTime: this.now() };
+    for (const o of this.rooms.get(m.systemId) ?? []) if (o !== m) this.sendTo(o, msg);
   }
 
   /**
@@ -457,8 +490,8 @@ export class SpaceService {
     this.refreshedAt.delete(systemId);
   }
 
-  /** La nave deja su sistema (vuelve al mapa, salta, se desconecta, cae…). */
-  leave(emperorId: string, reason: "left" | "destroyed"): void {
+  /** La nave deja su sistema (vuelve al mapa, salta —`jump`, entra en su grieta—, se desconecta, cae…). */
+  leave(emperorId: string, reason: "left" | "destroyed" | "jump"): void {
     const m = this.members.get(emperorId);
     if (!m) return;
     this.members.delete(emperorId);

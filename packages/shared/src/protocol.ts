@@ -6,7 +6,7 @@
 import type { Battle, Cargo, Colony, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, HeirDoctrineId, LineageStatus, OrderSide, Siege, Stock, StockId, Wallet } from "./api";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
-export const PROTOCOL_VERSION = 12;
+export const PROTOCOL_VERSION = 13;
 
 /** Tamaño máximo de un mensaje del cliente, en bytes. */
 export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;
@@ -155,7 +155,17 @@ export type ClientMessage =
    * Disparo. Cañón: en la dirección `dir` (vector unitario). Misil: hacia la nave
    * `target` (fijada), que tiene que estar a tiro y delante.
    */
-  | { t: "fire"; weapon: WeaponKind; dir: Vec3; target?: string };
+  | { t: "fire"; weapon: WeaponKind; dir: Vec3; target?: string }
+  /**
+   * Grieta del salto cuántico (solo visual; la ven los demás del sistema): se
+   * abre al cargar el motor (`charge`), se cierra si se cancela (`cancel`) y se
+   * abre otra al llegar al destino (`arrive`). `at`: centro de la grieta (cerca
+   * de la nave); `q`: su orientación (la de la nave, mirando al destino).
+   */
+  | { t: "rift"; phase: RiftPhase; at: Vec3; q: Quat };
+
+/** Fases de la grieta del salto que anuncia el piloto. */
+export type RiftPhase = "charge" | "cancel" | "arrive";
 
 /** Tipos de arma (los mismos que en `@imperium/content`). */
 export type WeaponKind = "cannon" | "missile";
@@ -259,7 +269,10 @@ export type ServerMessage =
   /** Una nave entra en el sistema o cambia su estado (casco, escudo). */
   | { t: "ship"; ship: ShipState }
   /** Una nave deja el sistema. */
-  | { t: "shipGone"; id: string; reason: "left" | "destroyed" }
+  /** `jump`: entró en la grieta de su salto cuántico (el cliente la dibuja entrando). */
+  | { t: "shipGone"; id: string; reason: "left" | "destroyed" | "jump" }
+  /** Grieta del salto cuántico de otra nave del sistema (ver el mensaje `rift` del cliente). */
+  | { t: "rift"; id: string; phase: RiftPhase; at: Vec3; q: Quat; serverTime: number }
   /**
    * Alguien disparó (para dibujarlo). `hitAt` es la hora del servidor del impacto,
    * si lo hay; el daño llega aparte, con el nuevo estado de la nave (`ship`).

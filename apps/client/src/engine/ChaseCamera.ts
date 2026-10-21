@@ -93,6 +93,12 @@ export class ChaseCamera {
     if (!this.first) this.wantDist = ChaseCamera.DEFAULT_DIST;
   }
 
+  /** Pone la órbita en un ángulo (rad, respecto a la nave; π = de frente) de golpe, sin suavizado. */
+  setOrbit(yaw: number, pitch: number): void {
+    this.wantYaw = this.yaw = yaw;
+    this.wantPitch = this.pitch = pitch;
+  }
+
   /** Coloca la cámara de golpe (al empezar a pilotar o tras una corrección del servidor). */
   snap(ship: THREE.Object3D, first: boolean): void {
     this.frame.copy(ship.quaternion);

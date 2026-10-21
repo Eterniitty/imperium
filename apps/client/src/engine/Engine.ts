@@ -219,10 +219,13 @@ export class Engine {
       this.system.cancelQuantum();
       return this.notify(error);
     }
-    playQuantumJump();
+    // La grieta se abre del todo y la nave entra (en el mundo: los demás lo ven); al cruzarla, el túnel.
     playQuantumTear(1);
-    this.rift.jump();
-    this.enterTunnel();
+    this.system.departQuantum(() => {
+      playQuantumJump();
+      this.rift.jump(this.renderer, this.system.scene, this.system.camera);
+      this.enterTunnel();
+    });
   }
 
   /** Viaje en curso: la nave deja el sistema y se ve el túnel cuántico hasta llegar. */
@@ -311,6 +314,8 @@ export class Engine {
     if (!emperor || isTravelling(emperor, serverNow())) return;
     const fromTunnel = this.active === this.tunnel;
     if (this.pilot(null) && fromTunnel) {
+      // Se abre una grieta en el destino y la nave sale de ella.
+      this.system.arriveFromJump();
       this.rift.arrive();
       playQuantumTear(0.6);
     }
@@ -460,7 +465,14 @@ export class Engine {
     this.active.update(dt);
     const prefs = settingsStore.getState().prefs;
     const charge = this.active === this.system ? telemetry.quantumCharge : null;
-    if (!this.rift.render(this.renderer, this.active.scene, this.active.camera, dt, charge, { reduce: prefs.reduceEffects, low: prefs.quality === "low" })) {
+    const low = prefs.quality === "low";
+    if (this.active === this.system) {
+      // Grietas del salto en el mundo: captura del fondo para su refracción (solo si hay alguna a la vista).
+      this.system.camera.updateMatrixWorld();
+      this.system.rifts.capture(this.renderer, this.system.scene, this.system.camera, low);
+      this.rift.center = this.system.rifts.screenOf("self", this.system.camera);
+    }
+    if (!this.rift.render(this.renderer, this.active.scene, this.active.camera, dt, charge, { reduce: prefs.reduceEffects, low })) {
       this.renderer.render(this.active.scene, this.active.camera);
     }
 

@@ -106,6 +106,26 @@ export class RemoteShips {
     this.visuals.delete(id);
   }
 
+  /**
+   * Se queda con el modelo de una nave que se va (entra en su grieta): deja de
+   * seguir sus posiciones y quita su rótulo; hay que soltarlo con `discard`.
+   */
+  detach(id: string): THREE.Group | null {
+    const v = this.visuals.get(id);
+    if (!v) return null;
+    this.visuals.delete(id);
+    this.group.remove(v.label);
+    v.label.material.map?.dispose();
+    v.label.material.dispose();
+    return v.ship;
+  }
+
+  /** Suelta un modelo de `detach`. */
+  discard(ship: THREE.Group): void {
+    this.group.remove(ship);
+    disposeShip(ship);
+  }
+
   /** Dónde está ahora la boca de un arma de una nave ajena, o null si no se dibuja. */
   muzzleOf(id: string, weapon: WeaponKind, index: number): THREE.Vector3 | null {
     const v = this.visuals.get(id);

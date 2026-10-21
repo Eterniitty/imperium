@@ -369,6 +369,24 @@ export const EMPEROR_FLAGSHIP: {
 
 /** Segundos que tarda en cargar el motor cuántico (con la nave ya alineada con el destino). */
 export const QUANTUM_CHARGE_SEC = 5;
+/** Eslora de la nave insignia del Emperador (m): el modelo 3D, las cámaras y la grieta del salto se miden con ella. */
+export const FLAGSHIP_LENGTH_M = 46;
+
+/**
+ * Grieta del salto cuántico (solo visual, la ven todos los del sistema), en
+ * esloras de la nave insignia: se abre `aheadLengths` por delante del morro,
+ * mide `heightLengths` de alto y dura lo que la carga más la entrada o salida.
+ * El servidor solo reenvía grietas a menos de `maxOffsetLengths` de la nave.
+ */
+export const QUANTUM_RIFT = {
+  aheadLengths: 3.2,
+  heightLengths: 2.6,
+  maxOffsetLengths: 12,
+  /** Segundos que tarda la nave en entrar en la grieta al saltar, y en salir de la de llegada. */
+  departSec: 1.5,
+  arriveSec: 2.2,
+} as const;
+
 /** Velocidad con la que la nave se alinea sola con el destino del salto (radianes por segundo). */
 export const QUANTUM_ALIGN_RAD_PER_SEC = 1.4;
 

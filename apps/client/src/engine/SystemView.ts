@@ -10,8 +10,9 @@ import { RemoteShips } from "./RemoteShips";
 import { FleetScene } from "./FleetScene";
 import { Effects } from "./Effects";
 import { worldStore } from "../net/world";
-import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC } from "@imperium/content";
-import { playQuantumCharge, stopQuantumCharge } from "../audio/quantumSfx";
+import { EMPEROR_FLAGSHIP, FLAGSHIP_LENGTH_M, FLAGSHIP_SUPPLIES, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC, QUANTUM_RIFT } from "@imperium/content";
+import { playQuantumCharge, playQuantumTear, stopQuantumCharge } from "../audio/quantumSfx";
+import { RiftField } from "./fx/riftPortal";
 import { distanceGain, playCannon, playExplosion, playHit, playMissile } from "../audio/combatSfx";
 import { isBound, settingsStore, type Action } from "../state/settings";
 import { gameStore } from "../state/store";
@@ -112,7 +113,14 @@ export class SystemView implements View {
    * Salto cuántico en preparación: la nave se alinea con el destino (`align`),
    * carga el motor (`charge`) y espera la confirmación del servidor (`sent`).
    */
-  private quantum: { target: StarSystemSummary; dir: THREE.Vector3; phase: "align" | "charge" | "sent"; t: number; glow: THREE.Sprite } | null = null;
+  private quantum: { target: StarSystemSummary; dir: THREE.Vector3; phase: "align" | "charge" | "sent" | "depart"; t: number; riftSent: boolean; onDeparted?: () => void } | null = null;
+  /**
+   * Llegada de un salto: la nave sale de una grieta abierta en `spawn` (donde
+   * aparece), desde `L` esloras por detrás; los mandos esperan a que salga.
+   */
+  private arrival: { t: number; spawn: THREE.Vector3; dir: THREE.Vector3; q: THREE.Quaternion } | null = null;
+  /** Grietas del salto cuántico (la propia y las de otras naves), en el mundo. */
+  readonly rifts = new RiftField();
   private targetRing: THREE.Sprite;
   /** Cadencia local del cañón: no se envían disparos que el servidor rechazaría. */
   private cannonReadyAt = 0;
@@ -148,7 +156,7 @@ export class SystemView implements View {
     this.targetRing.scale.setScalar(0.06);
     this.targetRing.visible = false;
     this.targetRing.renderOrder = 11;
-    this.scene.add(this.backdrop.object, this.content, this.selectRing, this.remote.group, this.effects.group, this.targetRing, this.fleetScene.group);
+    this.scene.add(this.backdrop.object, this.content, this.selectRing, this.remote.group, this.effects.group, this.targetRing, this.fleetScene.group, this.rifts.group);
     this.scene.add(new THREE.AmbientLight(0x5a6688, 0.9));
     // Cabina en primera persona: cuelga de la cámara (por eso la cámara va en la escena).
     this.cockpit.visible = false;
@@ -165,6 +173,11 @@ export class SystemView implements View {
     const rng = new Rng(hashString(summary.id));
 
     const layout = systemLayout(detail);
+    // Las grietas son del sistema: al cambiar de sistema se van (si se vuelve a dibujar el mismo, siguen).
+    if (this.systemId !== summary.id) {
+      this.rifts.clear();
+      this.arrival = null;
+    }
     this.layout = layout;
     this.systemId = summary.id;
     this.fleetScene.setSystem(summary.id, layout);
@@ -400,8 +413,54 @@ export class SystemView implements View {
     this.leaving = false;
     this.controls.enabled = false;
     this.chase.reset();
+    // Se volvió a dibujar el sistema en plena llegada (llegó su detalle): la salida de la grieta sigue.
+    if (this.arrival) this.placeArrival();
     this.placeChaseCamera(1);
     gameStore.getState().setFlight(true, 0);
+  }
+
+  /**
+   * La nave llega de un salto cuántico: se abre una grieta donde aparece y la
+   * nave sale de ella (los demás del sistema la ven: se anuncia al servidor).
+   * La cámara la recibe de frente y luego vuelve detrás.
+   */
+  arriveFromJump(): void {
+    const ship = this.ship;
+    if (!ship) return;
+    const dir = this.forward();
+    this.arrival = { t: 0, spawn: ship.position.clone(), dir, q: ship.quaternion.clone() };
+    const reduce = settingsStore.getState().prefs.reduceEffects;
+    this.rifts.open("self:arrive", ship.position, ship.quaternion, reduce).arrive();
+    const { position: p, quaternion: q } = ship;
+    connection.send({ t: "rift", phase: "arrive", at: [p.x, p.y, p.z], q: [q.x, q.y, q.z, q.w] });
+    this.placeArrival();
+    if (gameStore.getState().cameraView !== "first") this.chase.setOrbit(Math.PI * 0.82, 0.18);
+    this.placeChaseCamera(1);
+  }
+
+  /** Posición de la nave en la salida de la grieta (sale despacio, frenando). */
+  private placeArrival(): void {
+    const a = this.arrival;
+    const ship = this.ship;
+    if (!a || !ship) return;
+    const L = FLAGSHIP_LENGTH_M;
+    const T = QUANTUM_RIFT.arriveSec;
+    // Primero se abre la grieta; luego la nave sale y frena.
+    const k = Math.max(0, Math.min(1, (a.t - 0.35) / (T - 0.35)));
+    const ease = 1 - (1 - k) ** 3;
+    ship.position.copy(a.spawn).addScaledVector(a.dir, -1.6 * L + 2.2 * L * ease);
+    ship.quaternion.copy(a.q);
+  }
+
+  private updateArrival(dt: number): void {
+    const a = this.arrival;
+    if (!a || !this.ship || !this.flight) return;
+    a.t += dt;
+    this.flight.stop();
+    this.placeArrival();
+    shipRig(this.ship).setThrust(a.t < QUANTUM_RIFT.arriveSec * 0.7 ? 1 : 0.4, a.t < QUANTUM_RIFT.arriveSec * 0.5);
+    if (a.t > QUANTUM_RIFT.arriveSec * 0.55) this.chase.reset();
+    if (a.t >= QUANTUM_RIFT.arriveSec) this.arrival = null;
   }
 
   /**
@@ -414,11 +473,7 @@ export class SystemView implements View {
     this.cancelQuantum();
     const dir = new THREE.Vector3(target.position.x - from.x, target.position.y - from.y, target.position.z - from.z).normalize();
     this.flight.pulse = false;
-    const glow = new THREE.Sprite(
-      new THREE.SpriteMaterial({ map: glowTexture(), color: 0x9fb8ff, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 }),
-    );
-    this.content.add(glow);
-    this.quantum = { target, dir, phase: "align", t: 0, glow };
+    this.quantum = { target, dir, phase: "align", t: 0, riftSent: false };
     gameStore.getState().setQuantumTarget(target);
   }
 
@@ -428,8 +483,14 @@ export class SystemView implements View {
     if (!q) return;
     this.quantum = null;
     stopQuantumCharge();
-    this.content.remove(q.glow);
-    q.glow.material.dispose();
+    // Cancelado antes de saltar: la grieta se cierra (también para los demás).
+    if (q.phase !== "depart") {
+      this.rifts.close("self");
+      if (q.riftSent && this.ship) {
+        const { position: p, quaternion: r } = this.ship;
+        connection.send({ t: "rift", phase: "cancel", at: [p.x, p.y, p.z], q: [r.x, r.y, r.z, r.w] });
+      }
+    }
     telemetry.quantumCharge = null;
     telemetry.quantumAlign = null;
     gameStore.getState().setQuantumTarget(null);
@@ -457,22 +518,53 @@ export class SystemView implements View {
         q.t = 0;
         telemetry.quantumAlign = null;
         playQuantumCharge(QUANTUM_CHARGE_SEC);
+        // La grieta se abre delante del morro, en el mundo: la ven todos los del sistema.
+        const at = RiftField.ahead(ship.position, ship.quaternion);
+        this.rifts.open("self", at, ship.quaternion, settingsStore.getState().prefs.reduceEffects);
+        const r = ship.quaternion;
+        connection.send({ t: "rift", phase: "charge", at: [at.x, at.y, at.z], q: [r.x, r.y, r.z, r.w] });
+        q.riftSent = true;
       }
     } else if (q.phase === "charge") {
       q.t += dt;
       const k = Math.min(1, q.t / QUANTUM_CHARGE_SEC);
       telemetry.quantumCharge = k;
-      // Un resplandor que crece delante del morro.
-      q.glow.position.copy(ship.position).addScaledVector(fwd, 90 + 40 * k);
-      q.glow.scale.setScalar(20 + 260 * k * k);
-      q.glow.material.opacity = 0.25 + 0.75 * k;
-      shipRig(ship).setThrust(1, k > 0.5);
+      this.rifts.get("self")?.setCharge(k);
+      shipRig(ship).setThrust(0.3 + 0.7 * k, k > 0.5);
       if (k >= 1) {
         q.phase = "sent";
-        this.effects.flash(q.glow.position.clone(), 900, 0.8, 0xbfd0ff);
         this.events.onQuantumJump(q.target);
       }
+    } else if (q.phase === "depart") {
+      q.t += dt;
+      shipRig(ship).setThrust(1, true);
+      // Ya dentro: un instante para ver cerrarse la grieta y al túnel.
+      if (q.t >= QUANTUM_RIFT.departSec + 0.35 && q.onDeparted) {
+        const done = q.onDeparted;
+        q.onDeparted = undefined;
+        done();
+      }
     }
+  }
+
+  /**
+   * El servidor aceptó el salto: la grieta se abre del todo y la nave entra en
+   * ella (los demás la ven entrar); al cruzarla, `onDeparted` (el túnel).
+   */
+  departQuantum(onDeparted: () => void): void {
+    const q = this.quantum;
+    const ship = this.ship;
+    if (!q || !ship) return onDeparted();
+    q.phase = "depart";
+    q.t = 0;
+    q.onDeparted = onDeparted;
+    telemetry.quantumCharge = null;
+    if (!this.rifts.get("self")) this.rifts.open("self", RiftField.ahead(ship.position, ship.quaternion), ship.quaternion, settingsStore.getState().prefs.reduceEffects);
+    const reduce = settingsStore.getState().prefs.reduceEffects;
+    this.rifts.swallow("self", ship, (s) => {
+      s.visible = false;
+      if (!reduce) this.effects.flash(s.position.clone(), FLAGSHIP_LENGTH_M * 8, 0.6, 0xbfd0ff);
+    });
   }
 
   /** Deja de pilotar y vuelve a la cámara orbital. */
@@ -699,6 +791,44 @@ export class SystemView implements View {
     if (target) this.targetRing.position.copy(target);
   }
 
+  /**
+   * Grietas de otras naves del sistema: se abren al cargar, se cierran si
+   * cancelan, se las ve entrar al saltar (su nave acelera hacia la grieta y
+   * desaparece) y se abre otra cuando llegan.
+   */
+  private updateRemoteRifts(): void {
+    const events = spaceStore.getState().rifts;
+    if (events.length === 0) return;
+    spaceStore.setState({ rifts: [] });
+    const reduce = settingsStore.getState().prefs.reduceEffects;
+    const me = this.ship?.position;
+    for (const e of events) {
+      const gain = me ? distanceGain(me.distanceTo(new THREE.Vector3(...e.at))) : 0.3;
+      if (e.phase === "charge") this.rifts.open(e.id, e.at, e.q, reduce);
+      else if (e.phase === "cancel") this.rifts.close(e.id);
+      else if (e.phase === "arrive") {
+        this.rifts.open(`${e.id}:arrive`, e.at, e.q, reduce).arrive();
+        playQuantumTear(0.5 * gain);
+      } else {
+        // Saltó: entra en su grieta (si no se vio cargar, se abre ahora delante de ella).
+        const ship = this.remote.detach(e.id);
+        const p = ship?.position.clone() ?? new THREE.Vector3(...e.at);
+        const q = ship?.quaternion.clone() ?? new THREE.Quaternion(...e.q);
+        if (!this.rifts.get(e.id) || this.rifts.get(e.id)!.closing) this.rifts.open(e.id, RiftField.ahead(p, q), q, reduce);
+        playQuantumTear(gain);
+        if (ship) {
+          this.rifts.swallow(e.id, ship, (s) => {
+            if (!reduce) this.effects.flash(s.position.clone(), FLAGSHIP_LENGTH_M * 8, 0.6, 0xbfd0ff);
+            this.remote.discard(s as THREE.Group);
+          });
+        } else {
+          this.rifts.get(e.id)!.burst();
+          setTimeout(() => this.rifts.close(e.id), QUANTUM_RIFT.departSec * 1000);
+        }
+      }
+    }
+  }
+
   /** La nave propia ha caído: explosión donde estaba. El motor la hace renacer. */
   explodeOwnShip(): void {
     if (!this.ship) return;
@@ -853,21 +983,28 @@ export class SystemView implements View {
         this.events.notify("pilot.noFuel");
       }
       this.updateNavigation();
+      const departing = this.quantum?.phase === "depart";
       if (this.quantum) this.updateQuantum(dt);
+      else if (this.arrival) this.updateArrival(dt);
       else this.flight.update(dt);
-      this.collide();
-      this.applyCorrection();
-      this.followParkUntilBoarded();
-      this.sendPose(dt);
+      if (!departing) {
+        this.collide();
+        this.applyCorrection();
+        this.followParkUntilBoarded();
+        // Al saltar, el servidor ya la sacó del sistema: no se envían más posiciones.
+        this.sendPose(dt);
+      }
+      this.updateRemoteRifts();
       this.remote.update(dt, this.time);
       const rig = shipRig(this.ship);
       rig.setThrust(this.flight.thrust, this.flight.pulse);
       // Propulsores de maniobra del modelo, si los tiene (lo expone el generador de naves).
       (rig as { setManeuver?: (m: Maneuver) => void }).setManeuver?.(this.flight.maneuver);
-      rig.tick(this.time, dt, Math.max(0, 1 - this.flight.speed / 40));
-      this.fireCannon();
+      rig.tick(this.time, dt, this.quantum || this.arrival ? 0 : Math.max(0, 1 - this.flight.speed / 40));
+      if (!this.quantum && !this.arrival) this.fireCannon();
       this.updateCombatVisuals(dt);
-      this.placeChaseCamera(1 - Math.exp(-dt * 8));
+      // Al entrar en la grieta, la cámara exterior se queda quieta y la ve alejarse; en cabina, entra con ella.
+      if (!departing || gameStore.getState().cameraView === "first") this.placeChaseCamera(1 - Math.exp(-dt * 8));
       telemetry.freeCam = this.chase.free && gameStore.getState().cameraView !== "first";
       gameStore.getState().setFlight(true, this.flight.speed, this.flight.pulse);
       // Más allá del borde: espacio interestelar.
@@ -878,6 +1015,7 @@ export class SystemView implements View {
     } else {
       this.controls.update();
     }
+    this.rifts.update(dt, this.time, this.ship?.position ?? this.camera.position);
     this.fleetScene.update(dt, this.time);
     if (this.pendingBattleFocus && !this.ship) {
       const at = this.fleetScene.battlePosition(this.pendingBattleFocus);
@@ -930,7 +1068,10 @@ export class SystemView implements View {
   onKey(code: string): void {
     if (this.ship) {
       if (isBound("cameraView", code)) gameStore.getState().toggleCameraView();
-      else if (this.quantum && (code === "Escape" || isBound("jump", code))) this.cancelQuantum();
+      else if (this.quantum && (code === "Escape" || isBound("jump", code))) {
+        // Una vez dada la orden de salto ya no se puede cancelar (el servidor la tiene).
+        if (this.quantum.phase === "align" || this.quantum.phase === "charge") this.cancelQuantum();
+      }
       else if (this.quantum) return;
       else if (isBound("pulse", code)) this.togglePulse();
       else if (isBound("cameraReset", code)) this.chase.reset();
@@ -945,6 +1086,7 @@ export class SystemView implements View {
 
   dispose(): void {
     this.stopPiloting();
+    this.rifts.dispose();
     this.fleetScene.clear();
     this.clear();
     this.controls.dispose();

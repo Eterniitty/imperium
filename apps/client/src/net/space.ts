@@ -1,6 +1,17 @@
 import { createStore } from "zustand/vanilla";
 import { contentDictionaries } from "@imperium/content";
-import { translate, type Locale, type Quat, type ServerMessage, type ShipPose, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
+import { translate, type Locale, type Quat, type RiftPhase, type ServerMessage, type ShipPose, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
+
+/**
+ * Grieta del salto cuántico de otra nave, pendiente de dibujar. `jump`: la nave
+ * entró en su grieta (la deja el servidor al saltar); lleva su última posición.
+ */
+export interface RiftEvent {
+  id: string;
+  phase: RiftPhase | "jump";
+  at: Vec3;
+  q: Quat;
+}
 
 /** Muestra de posición de otra nave, con la hora del servidor en que se envió. */
 export interface PoseSample {
@@ -38,12 +49,14 @@ export interface SpaceState {
   shots: Array<Extract<ServerMessage, { t: "shot" }>>;
   /** Naves destruidas pendientes de dibujar su explosión. */
   explosions: Vec3[];
+  /** Grietas de salto de otras naves pendientes de dibujar (la vista las recoge y vacía la lista). */
+  rifts: RiftEvent[];
   /** La nave propia fue destruida: dónde renace y quién la derribó. */
   /** Tu nave cayó (Fase 10): quién la derribó, dónde renacerás y cuándo; `at` es la hora local del aviso. */
   destroyed: { by: string; systemId: string; rebornAt: number; at: number } | null;
 }
 
-const EMPTY = { systemId: null, ships: {}, correction: null, self: null, weapons: [], supplies: null, targetId: null, shots: [], explosions: [], destroyed: null };
+const EMPTY = { systemId: null, ships: {}, correction: null, self: null, weapons: [], supplies: null, targetId: null, shots: [], explosions: [], rifts: [], destroyed: null };
 
 export const spaceStore = createStore<SpaceState>()(() => ({ ...EMPTY }));
 
