@@ -7,7 +7,10 @@ Texto para jugadores (lo usará la ventana de ayuda del juego). Las teclas son l
 | Tecla | Qué hace |
 |---|---|
 | **I** | **Motores**: arrancar (unos 4 s) o apagar. Al tomar los mandos están apagados: sin ellos no hay empuje, giros ni pulso |
-| Ratón en **cámara libre** | Arrastrar mueve la cámara alrededor de la nave (no la gira); rueda: distancia |
+| Ratón en **cámara libre** | Arrastrar mueve la cámara alrededor de la nave (no la gira); rueda: distancia. **Con los motores encendidos** (ratón para combatir): arrastrar con el botón derecho (o Alt + izquierdo) y Mayús + rueda |
+| **Clic izquierdo** | Con los motores encendidos: **disparar el arma seleccionada** (mantener para el cañón y el láser). Alt + clic: seleccionar un planeta, como antes. Se desactiva en Ajustes → Controles («Ratón para combatir») |
+| **Rueda** | Con los motores encendidos: **cambiar de arma** (cañón, misiles y, en el espacio profundo, láser). Mayús + rueda: distancia de la cámara |
+| **Clic central** | Fijar como blanco la nave del marcador bajo el cursor (también un compañero: hay fuego amigo) |
 | B | Cámara: volver detrás de la nave (o mirar al frente en cabina) |
 | Z | Asistencia de vuelo (frenado y estabilización) |
 | **G** | **Modo del ratón**: cámara libre ↔ **vuelo con ratón** (retícula virtual: la nave gira hacia donde está el cursor respecto al centro, con zona muerta, sin arrastrar; la cámara sigue detrás y el botón derecho mira alrededor un momento). Las flechas y Q/E funcionan en los dos modos. Sensibilidad, zona muerta e invertir eje en Ajustes → Controles |
@@ -18,9 +21,13 @@ Texto para jugadores (lo usará la ventana de ayuda del juego). Las teclas son l
 | Flechas | Guiñada y cabeceo (con aceleración angular, sin giros bruscos) |
 | Mayús | Impulso (×4 la velocidad de maniobra) |
 | **P** | **Motor de pulso** (encender / apagar) |
-| F (mantener) | Cañón |
-| X | Fijar el siguiente enemigo (del más cercano al más lejano) |
-| R | Lanzar un misil al objetivo fijado |
+| F (mantener) | Cañón (con un blanco fijado, los montajes apuntan solos al punto de adelanto) |
+| X | Fijar el blanco más cercano a la retícula (al cursor en vuelo con ratón; si no, a la línea del morro) |
+| Y / U | Blanco siguiente / anterior (hostiles del más cercano al más lejano, luego otros Emperadores; nunca compañeros) |
+| V | Blanco más cercano |
+| O | **Fuego automático** del cañón (encender / apagar): dispara solo con el blanco a tiro y en arco |
+| 1 / 2 / 3 | Seleccionar cañón / misiles / láser de minería |
+| R | Lanzar un misil al blanco fijado |
 | T | Cámara: cabina (primera persona) o exterior (tercera) |
 | **J** | **Salto cuántico**: elegir destino (otra vez J o Esc cancela la carga) |
 | M | Mapa galáctico / volver a los mandos (durante un viaje: mapa / túnel) |
@@ -28,7 +35,17 @@ Texto para jugadores (lo usará la ventana de ayuda del juego). Las teclas son l
 | L (mantener) | Láser de minería (espacio profundo, apuntando a un asteroide) |
 | **N** | **Piloto automático**: lista de destinos (planetas, lunas, cinturones, anomalía, asteroides, naves); con él puesto, lo cancela |
 | **H** | **Seguir** la nave fijada (X) o la siguiente a la vista (primero los compañeros) |
-| Doble clic | Al pilotar: piloto automático hacia el planeta, la luna, la nave o el punto del plano del sistema bajo el cursor |
+| Doble clic | Al pilotar (con los motores encendidos y el ratón para combatir, **Alt + doble clic**): piloto automático hacia el planeta, la luna, la nave o el punto del plano del sistema bajo el cursor |
+
+## Asistencia de puntería
+
+Los blancos son pequeños (cazas de 20 m a kilómetros de distancia): la nave ayuda a apuntar.
+
+- **Marcadores** de todas las naves del sistema, aunque midan pocos píxeles: **rombo rojo** = hostil, **cuadrado ámbar** = otro Emperador, **círculo cian** = compañero, con la distancia. El blanco fijado lleva un recuadro mayor con nombre, escudo y casco, y una **flecha** en el borde de la pantalla si queda fuera.
+- **Punto de adelanto**: un círculo donde hay que disparar (velocidad del blanco, la tuya y la del proyectil); **verde** cuando el blanco está a tiro y en el arco de los montajes.
+- **Puntería automática**: con blanco fijado, los cañones giran solos hacia el punto de adelanto dentro de su arco (25° alrededor del morro, `AIM_ASSIST`); los misiles persiguen al blanco. Tú decides cuándo disparar, o activas el **fuego automático** (O).
+- **PvP y fuego amigo**: se puede atacar a cualquier Emperador; los disparos dañan a cualquier nave que toquen, compañeros incluidos. Al ciclar blancos no se fijan compañeros y el fuego automático nunca les dispara.
+- **Choques**: dos naves que se tocan acercándose se dañan según la velocidad del choque (`SHIP_COLLISION`) y rebotan.
 
 ## Piloto automático de crucero
 

@@ -10,7 +10,7 @@ Two Emperors are **companions** when **both have added each other**. You manage 
 
 Being companions means:
 
-- **You cannot damage each other** in [real-time combat](/wiki/combate#against-other-emperors); you are marked as "companion" on screen.
+- In [real-time combat](/wiki/combate#against-other-emperors-and-friendly-fire) **there is friendly fire**: your shots hurt each other if they hit. You are marked as "companion" on screen (cyan circle) and the aim assist does not lock you when cycling targets.
 - Your fleets **do not fight each other** and do not show up as [contacts](/wiki/guerra#contacts-and-interception).
 - With the "Only my companions" visibility, they can see where you are.
 

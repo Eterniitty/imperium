@@ -3,7 +3,8 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
 import type { I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, WeaponKind, WorldPosition } from "@imperium/shared";
 import { ARRIVAL_EDGE, deepLayout, defaultPark, moonOffset, parkedPosition, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
-import { resetSpace, shipName, spaceStore } from "../net/space";
+import { resetSpace, shipName, spaceStore, type SelectedWeapon } from "../net/space";
+import { TargetAssist, relationOf, type CannonAim } from "./TargetAssist";
 import { telemetry, type FlightTelemetry } from "./telemetry";
 import { connection, serverNow } from "../net/world";
 import { RemoteShips } from "./RemoteShips";
@@ -157,7 +158,14 @@ export class SystemView implements View {
   private engines: { state: "off" | "starting" | "on" | "stopping"; t: number; from: number } = { state: "off", t: 0, from: 0 };
   /** Para no repetir el aviso de «motores apagados» a cada fotograma. */
   private enginesHintAt = 0;
-  private targetRing: THREE.Sprite;
+  /** Asistencia de puntería: marcadores, fijar blanco, adelanto y puntería automática del cañón. */
+  private assist: TargetAssist;
+  /** Puntería del cañón al blanco fijado en este fotograma (null sin blanco). */
+  private cannonAim: CannonAim | null = null;
+  /** Botón izquierdo pulsado disparando el arma seleccionada (no mueve la cámara ni selecciona). */
+  private mouseFiring = false;
+  /** El último clic izquierdo fue un disparo: no selecciona planeta al soltarlo. */
+  private clickWasShot = false;
   /** Cadencia local del cañón: no se envían disparos que el servidor rechazaría. */
   private cannonReadyAt = 0;
   /** Flotas propias paradas y batallas de flotas en 3D (solo se dibujan). */
@@ -201,12 +209,6 @@ export class SystemView implements View {
     this.selectRing.visible = false;
     this.selectRing.renderOrder = 10;
 
-    this.targetRing = new THREE.Sprite(
-      new THREE.SpriteMaterial({ map: ringTexture(), color: 0xff5a5a, depthTest: false, sizeAttenuation: false, transparent: true }),
-    );
-    this.targetRing.scale.setScalar(0.06);
-    this.targetRing.visible = false;
-    this.targetRing.renderOrder = 11;
     this.cruiseMarker = new THREE.Sprite(
       new THREE.SpriteMaterial({ map: ringTexture(), color: 0x5fd3e6, depthTest: false, sizeAttenuation: false, transparent: true, opacity: 0.8 }),
     );
@@ -214,7 +216,11 @@ export class SystemView implements View {
     this.cruiseMarker.visible = false;
     this.cruiseMarker.renderOrder = 11;
     this.scene.add(this.cruiseMarker);
-    this.scene.add(this.backdrop.object, this.content, this.selectRing, this.remote.group, this.effects.group, this.targetRing, this.fleetScene.group, this.rifts.group, this.deep.group);
+    this.assist = new TargetAssist(dom);
+    dom.addEventListener("pointerdown", this.onCombatDown);
+    window.addEventListener("pointerup", this.onCombatUp);
+    dom.addEventListener("wheel", this.onCombatWheel, { passive: true });
+    this.scene.add(this.backdrop.object, this.content, this.selectRing, this.remote.group, this.effects.group, this.fleetScene.group, this.rifts.group, this.deep.group);
     this.scene.add(new THREE.AmbientLight(0x5a6688, 0.9));
     // Cabina en primera persona: cuelga de la cámara (por eso la cámara va en la escena).
     this.cockpit.visible = false;
@@ -409,7 +415,7 @@ export class SystemView implements View {
       const next = aim ? { index: aim.index, distance: Math.round(aim.distance / 10) * 10 } : null;
       if (prev?.index !== next?.index || prev?.distance !== next?.distance) spaceStore.setState({ aim: next });
     }
-    const pressed = this.keyboard.action("mine") && !this.flight.pulse && !this.quantum;
+    const pressed = (this.keyboard.action("mine") || (this.mouseFiring && spaceStore.getState().weapon === "laser")) && !this.flight.pulse && !this.quantum;
     // El láser se alimenta del reactor: con los motores apagados no hay minería.
     const wants = pressed && this.engines.state === "on";
     if (pressed && !wants && this.time - this.enginesHintAt > 4) {
@@ -804,7 +810,9 @@ export class SystemView implements View {
     resetSpace();
     this.remote.clear();
     this.effects.clear();
-    this.targetRing.visible = false;
+    this.assist.hideAll();
+    this.mouseFiring = false;
+    this.chase.armed = false;
     this.flight?.dispose();
     this.flight = null;
     this.content.remove(this.ship);
@@ -894,7 +902,7 @@ export class SystemView implements View {
   }
 
   /** Cambia un ajuste de pilotaje (asistencia, pilotaje con ratón) y lo avisa. */
-  private toggleFlightPref(key: "assist" | "mouseFlight", on: I18nKey, off: I18nKey): void {
+  private toggleFlightPref(key: "assist" | "mouseFlight" | "autoFire", on: I18nKey, off: I18nKey): void {
     const st = settingsStore.getState();
     const value = !st.prefs.flight[key];
     st.setPrefs({ flight: { ...st.prefs.flight, [key]: value } });
@@ -990,7 +998,20 @@ export class SystemView implements View {
 
   /** Mantener la tecla dispara el cañón a su cadencia, hacia donde apunta el morro. */
   private fireCannon(): void {
-    if (!this.keyboard.action("fireCannon") || this.flight?.pulse) return;
+    if (this.flight?.pulse) return;
+    const manual = this.keyboard.action("fireCannon") || (this.mouseFiring && spaceStore.getState().weapon === "cannon");
+    // Fuego automático: con el blanco fijado (no compañero) a tiro y dentro del arco de los montajes.
+    const aim = this.cannonAim;
+    const auto = settingsStore.getState().prefs.flight.autoFire && aim !== null && aim.relation !== "ally" && aim.inArc && aim.inRange;
+    if (!manual && !auto) return;
+    // Sin motores no hay armas.
+    if (this.engines.state !== "on") {
+      if (manual && this.time - this.enginesHintAt > 4) {
+        this.enginesHintAt = this.time;
+        this.events.notify("pilot.enginesOffShort", "engines");
+      }
+      return;
+    }
     // Sin proyectiles o sin energía, el servidor no dispararía: no se envía ni se dibuja.
     const { weapons, supplies } = spaceStore.getState();
     if (weapons.find((w) => w.kind === "cannon")?.ammo === 0) return;
@@ -1000,7 +1021,8 @@ export class SystemView implements View {
     const cannon = EMPEROR_FLAGSHIP.combat.weapons.find((w) => w.kind === "cannon");
     if (!cannon) return;
     this.cannonReadyAt = now + cannon.cooldownSec * 1000;
-    const f = this.forward();
+    // Puntería automática: los montajes giran hacia el punto de adelanto si cabe en su arco; si no, al frente.
+    const f = aim ? aim.dir.clone() : this.forward();
     connection.send({ t: "fire", weapon: "cannon", dir: [f.x, f.y, f.z] });
     // Se dibuja ya, desde la boca del cañón, con la velocidad de la nave sumada (como en el servidor).
     const muzzle = this.ownMuzzle("cannon", this.cannonIndex++);
@@ -1031,23 +1053,11 @@ export class SystemView implements View {
 
   /** Lanza un misil al objetivo fijado (el servidor comprueba alcance, ángulo y munición). */
   private fireMissile(): void {
+    if (this.engines.state !== "on") return this.events.notify("pilot.enginesOffShort", "engines");
     const target = spaceStore.getState().targetId;
     if (!target) return this.events.notify("combat.noMissileTarget", "lockTarget");
     const f = this.forward();
     connection.send({ t: "fire", weapon: "missile", dir: [f.x, f.y, f.z], target });
-  }
-
-  /** Fija el siguiente enemigo, del más cercano al más lejano. */
-  private cycleTarget(): void {
-    const { ships, targetId } = spaceStore.getState();
-    const me = this.ship!.position;
-    const enemies = Object.values(ships)
-      .filter((s) => !s.state.ally)
-      .map((s) => ({ id: s.state.id, d: this.remote.positionOf(s.state.id)?.distanceTo(me) ?? Infinity }))
-      .sort((a, b) => a.d - b.d);
-    if (enemies.length === 0) return spaceStore.setState({ targetId: null });
-    const i = enemies.findIndex((e) => e.id === targetId);
-    spaceStore.setState({ targetId: enemies[(i + 1) % enemies.length]!.id });
   }
 
   /** Disparos, explosiones y recuadro del objetivo. */
@@ -1066,9 +1076,90 @@ export class SystemView implements View {
     }
     const myId = worldStore.getState().myEmperorId;
     this.effects.update(dt, serverNow(), (id) => (id === myId ? (this.ship?.position ?? null) : this.remote.positionOf(id)));
-    const target = state.targetId ? this.remote.positionOf(state.targetId) : null;
-    this.targetRing.visible = target !== null;
-    if (target) this.targetRing.position.copy(target);
+    // Asistencia de puntería: el blanco fijado desaparece si se va; marcadores y punto de adelanto.
+    if (state.targetId && !state.ships[state.targetId]) spaceStore.setState({ targetId: null });
+    const ship = this.ship;
+    if (!ship || !this.flight) {
+      this.cannonAim = null;
+      this.assist.hideAll();
+      return;
+    }
+    const aim = this.assist.aim(this.remote, ship.position, this.flight.velocity, this.forward());
+    this.cannonAim = aim;
+    this.assist.update(this.camera, this.remote, ship.position, aim ? { point: aim.point, ready: aim.inArc && aim.inRange } : null);
+    this.chase.armed = this.weaponsArmed();
+  }
+
+  /** Motores encendidos y ratón para combatir: el clic izquierdo dispara y la rueda cambia de arma. */
+  private weaponsArmed(): boolean {
+    return !!this.ship && this.engines.state === "on" && !this.quantum && !this.arrival && settingsStore.getState().prefs.flight.mouseFire;
+  }
+
+  /** Armas seleccionables ahora (el láser de minería, solo en el espacio profundo). */
+  private weaponList(): SelectedWeapon[] {
+    return this.deepId ? ["cannon", "missile", "laser"] : ["cannon", "missile"];
+  }
+
+  private selectWeapon(w: SelectedWeapon): void {
+    if (w === "laser" && !this.deepId) return this.events.notify("combat.laserDeepOnly");
+    spaceStore.setState({ weapon: w });
+  }
+
+  /** Clic izquierdo: dispara el arma seleccionada (Alt + clic: seleccionar, como siempre). Clic central: fijar la nave del marcador. */
+  private onCombatDown = (e: PointerEvent) => {
+    if (!this.ship) return;
+    if (e.button === 1) {
+      e.preventDefault();
+      const r = this.dom.getBoundingClientRect();
+      const id = this.assist.pickAt(e.clientX - r.left, e.clientY - r.top);
+      if (id) this.onLocked(id);
+      return;
+    }
+    if (e.button !== 0) return;
+    this.clickWasShot = false;
+    if (e.altKey || !this.weaponsArmed()) return;
+    this.clickWasShot = true;
+    const weapon = spaceStore.getState().weapon;
+    if (weapon === "missile") this.fireMissile();
+    else this.mouseFiring = true;
+  };
+
+  private onCombatUp = (e: PointerEvent) => {
+    if (e.button === 0) this.mouseFiring = false;
+  };
+
+  /** Rueda: cambia de arma (con Mayús, la distancia de la cámara; lo hace ChaseCamera). */
+  private onCombatWheel = (e: WheelEvent) => {
+    if (e.shiftKey || !this.weaponsArmed() || e.deltaY === 0) return;
+    const list = this.weaponList();
+    const i = Math.max(0, list.indexOf(spaceStore.getState().weapon));
+    spaceStore.setState({ weapon: list[(i + (e.deltaY > 0 ? 1 : -1) + list.length) % list.length]! });
+  };
+
+  /** Tras fijar un blanco: aviso si es un compañero (hay fuego amigo). */
+  private onLocked(id: string | null): void {
+    if (!id) return this.events.notify("combat.noTargets");
+    const s = spaceStore.getState().ships[id];
+    if (s && relationOf(s.state) === "ally") this.events.notify("combat.allyLocked");
+  }
+
+  /** Fija el blanco más cercano a la retícula: el cursor en vuelo con ratón; si no, la línea del morro. */
+  private lockAtReticle(): void {
+    const ship = this.ship!;
+    const prefs = settingsStore.getState().prefs.flight;
+    const cursor = prefs.mouseFlight ? this.flight?.cursorNdc() : null;
+    let eye: THREE.Vector3;
+    let dir: THREE.Vector3;
+    if (cursor) {
+      this.raycaster.setFromCamera(new THREE.Vector2(cursor.x, cursor.y), this.camera);
+      eye = this.raycaster.ray.origin.clone();
+      dir = this.raycaster.ray.direction.clone();
+    } else {
+      eye = ship.position.clone();
+      dir = this.forward();
+    }
+    const id = this.assist.atReticle(this.remote, eye, dir) ?? this.assist.nearest(this.remote, ship.position);
+    this.onLocked(id);
   }
 
   /**
@@ -1271,6 +1362,8 @@ export class SystemView implements View {
     }
     // Asteroides del espacio profundo.
     if (this.deepId) this.deep.collide(ship.position, this.flight!.velocity, FLAGSHIP_HIT_RADIUS_M);
+    // Otras naves (el daño del choque lo calcula el servidor).
+    this.remote.collide(ship.position, this.flight!.velocity, FLAGSHIP_HIT_RADIUS_M);
   }
 
   // --- Piloto automático de crucero (ver `Autopilot.ts`) ---
@@ -1569,12 +1662,15 @@ export class SystemView implements View {
   }
 
   onClick(x: number, y: number): void {
+    // Pilotando con las armas a punto, el clic izquierdo fue un disparo (Alt + clic selecciona).
+    if (this.ship && this.clickWasShot) return;
     gameStore.getState().selectPlanet(this.pickPlanet(x, y));
   }
 
   onDoubleClick(x: number, y: number): void {
-    // Pilotando: doble clic en un cuerpo, una nave o el espacio = piloto automático hacia allí.
-    if (this.ship) return this.cruiseAtScreen(x, y);
+    // Pilotando: doble clic en un cuerpo, una nave o el espacio = piloto automático hacia allí
+    // (con las armas a punto, el clic izquierdo dispara: entonces Alt + doble clic).
+    if (this.ship) return this.clickWasShot ? undefined : this.cruiseAtScreen(x, y);
     const idx = this.pickPlanet(x, y);
     const p = this.planets.find((pl) => pl.index === idx);
     if (!p) return;
@@ -1609,7 +1705,14 @@ export class SystemView implements View {
       else if (isBound("cameraReset", code)) this.chase.reset();
       else if (isBound("flightAssist", code)) this.toggleFlightPref("assist", "pilot.assistOn", "pilot.assistOff");
       else if (isBound("mouseFlight", code)) this.toggleFlightPref("mouseFlight", "pilot.mouseFlightOn", "pilot.mouseFlightOff");
-      else if (isBound("lockTarget", code)) this.cycleTarget();
+      else if (isBound("lockTarget", code)) this.lockAtReticle();
+      else if (isBound("targetNext", code)) this.onLocked(this.assist.cycle(this.remote, this.ship.position, 1));
+      else if (isBound("targetPrev", code)) this.onLocked(this.assist.cycle(this.remote, this.ship.position, -1));
+      else if (isBound("targetNearest", code)) this.onLocked(this.assist.nearest(this.remote, this.ship.position));
+      else if (isBound("autoFire", code)) this.toggleFlightPref("autoFire", "combat.autoFireOn", "combat.autoFireOff");
+      else if (isBound("weaponCannon", code)) this.selectWeapon("cannon");
+      else if (isBound("weaponMissile", code)) this.selectWeapon("missile");
+      else if (isBound("weaponLaser", code)) this.selectWeapon("laser");
       else if (isBound("fireMissile", code)) this.fireMissile();
       return;
     }
@@ -1623,6 +1726,10 @@ export class SystemView implements View {
     this.clear();
     this.controls.dispose();
     this.chase.dispose();
+    this.dom.removeEventListener("pointerdown", this.onCombatDown);
+    window.removeEventListener("pointerup", this.onCombatUp);
+    this.dom.removeEventListener("wheel", this.onCombatWheel);
+    this.assist.dispose();
     this.deep.dispose();
   }
 }

@@ -458,3 +458,31 @@ export function fleetSpeedLyPerHour(classIds: readonly string[]): number {
   if (!Number.isFinite(speed)) throw new Error("Una flota sin naves no puede viajar");
   return speed;
 }
+
+/**
+ * Asistencia de puntería del combate en tiempo real (petición del usuario,
+ * 21-10-2026: «para atacar necesitaremos un aim casi automático»). Los
+ * cañones de la insignia van en montajes que giran solos hacia el punto de
+ * adelanto del blanco fijado, dentro de un cono alrededor del morro; el
+ * servidor rechaza los disparos fuera de ese cono.
+ */
+export const AIM_ASSIST = {
+  /** Ángulo máximo (grados) entre el morro y la dirección de un disparo de cañón. */
+  cannonGimbalDeg: 25,
+} as const;
+
+/**
+ * Choques entre naves en el combate en tiempo real (los resuelve el servidor):
+ * si dos naves se tocan (suma de sus radios de impacto) acercándose a más de
+ * `minClosingMps`, las dos reciben `damagePerMps` de daño por cada m/s de
+ * velocidad de acercamiento (hasta `maxDamage`), como mucho una vez cada
+ * `cooldownSec` por pareja. El cliente separa las naves y las hace rebotar.
+ */
+export const SHIP_COLLISION = {
+  minClosingMps: 10,
+  damagePerMps: 0.25,
+  maxDamage: 60,
+  cooldownSec: 1.5,
+  /** Parte de la velocidad de acercamiento que se devuelve al rebotar (0: se para, 1: rebote perfecto). */
+  restitution: 0.3,
+} as const;

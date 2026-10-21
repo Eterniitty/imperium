@@ -154,7 +154,7 @@ export interface ShipState extends ShipPose {
    */
   classId?: string;
   name: string;
-  /** Compañero del jugador que la recibe (no se le puede disparar). */
+  /** Compañero del jugador que la recibe (se dibuja distinto; con fuego amigo, también se le puede dañar). */
   ally: boolean;
   hull: number;
   hullMax: number;
@@ -170,8 +170,11 @@ export type ClientMessage =
   /** Deja de pilotar en el sistema (vuelve al mapa o sale al espacio interestelar). */
   | { t: "leave" }
   /**
-   * Disparo. Cañón: en la dirección `dir` (vector unitario). Misil: hacia la nave
-   * `target` (fijada), que tiene que estar a tiro y delante.
+   * Disparo. Cañón: en la dirección `dir` (vector unitario), dentro del cono de
+   * los montajes alrededor del morro (`AIM_ASSIST.cannonGimbalDeg`; la puntería
+   * automática apunta al punto de adelanto del blanco fijado). Misil: hacia la
+   * nave `target` (fijada; cualquiera salvo la propia: hay fuego amigo), que
+   * tiene que estar a tiro y delante.
    */
   | { t: "fire"; weapon: WeaponKind; dir: Vec3; target?: string }
   /**

@@ -4,6 +4,7 @@ import { shipName, spaceStore } from "../net/space";
 import { useGame, useT } from "../state/store";
 import { formatDistance } from "./FlightHud";
 import { useKeyLabels } from "./keys";
+import { useSettings } from "../state/settings";
 import { useServerNow } from "./useNow";
 
 type BarKind = "hull" | "shield" | "energy" | "fuel";
@@ -32,6 +33,10 @@ export function CombatHud() {
   const weapons = useStore(spaceStore, (s) => s.weapons);
   const supplies = useStore(spaceStore, (s) => s.supplies);
   const targetId = useStore(spaceStore, (s) => s.targetId);
+  const selected = useStore(spaceStore, (s) => s.weapon);
+  const deep = useStore(spaceStore, (s) => s.field !== null);
+  const mining = useStore(spaceStore, (s) => s.mining);
+  const autoFire = useSettings((s) => s.prefs.flight.autoFire);
   const target = useStore(spaceStore, (s) => (s.targetId ? s.ships[s.targetId]?.state : undefined));
   const now = useServerNow(250);
   if (view !== "system" || !flight || !self) return null;
@@ -79,7 +84,7 @@ export function CombatHud() {
       </div>
       <div className="combat-weapons panel">
         {cannon && (
-          <div className={now >= cannon.readyAt && cannon.ammo !== 0 && !noEnergy ? "weapon-slot ready" : "weapon-slot"}>
+          <div className={`${now >= cannon.readyAt && cannon.ammo !== 0 && !noEnergy ? "weapon-slot ready" : "weapon-slot"}${selected === "cannon" ? " selected" : ""}`} aria-current={selected === "cannon" || undefined}>
             <span className="stat-label">
               {t("combat.cannon")} <kbd>{keys.fireCannon}</kbd>
             </span>
@@ -90,7 +95,7 @@ export function CombatHud() {
           </div>
         )}
         {missile && (
-          <div className={missile.ammo && now >= missile.readyAt ? "weapon-slot ready" : "weapon-slot"}>
+          <div className={`${missile.ammo && now >= missile.readyAt ? "weapon-slot ready" : "weapon-slot"}${selected === "missile" ? " selected" : ""}`} aria-current={selected === "missile" || undefined}>
             <span className="stat-label">
               {t("combat.missiles")} <kbd>{keys.fireMissile}</kbd>
             </span>
@@ -103,6 +108,13 @@ export function CombatHud() {
             </span>
           </div>
         )}
+        {deep && (
+          <div className={`weapon-slot${mining ? " ready" : ""}${selected === "laser" ? " selected" : ""}`} aria-current={selected === "laser" || undefined}>
+            <span className="stat-label">
+              {t("combat.laser")} <kbd>{keys.weaponLaser}</kbd>
+            </span>
+          </div>
+        )}
       </div>
       <div className="combat-target panel">
         {target && dist !== null ? (
@@ -112,9 +124,17 @@ export function CombatHud() {
             <span className="mono small"> · {formatDistance(dist)}</span>
             <Bar value={target.shield} max={target.shieldMax} kind="shield" />
             <Bar value={target.hull} max={target.hullMax} kind="hull" />
+            {target.ally && <div className="combat-assist"><span className="hud-tag warn">{t("combat.ally")}</span></div>}
           </>
         ) : (
           <span className="muted small">{targetId ? "" : t("combat.noTarget", { key: keys.lockTarget })}</span>
+        )}
+        {autoFire && (
+          <div className="combat-assist">
+            <span className="hud-tag ok">
+              {t("combat.autoFire")} <kbd>{keys.autoFire}</kbd>
+            </span>
+          </div>
         )}
       </div>
     </>
