@@ -24,6 +24,8 @@ export interface EventPayloads {
   "battle.round": { battleId: string };
   /** Decisión de la IA alienígena en una región activa (Fase 11). */
   "ai.region": { regionKey: string };
+  /** Una partida de asalto de los Carroñeros (incursión a una ruta) se marcha. */
+  "ai.raidEnd": { fleetId: string };
   /** Decisión de un Emperador humano de la IA (Fase 11). */
   "ai.emperor": { emperorId: string };
   /** Resolución periódica de un asedio (Fase 9b). */

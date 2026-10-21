@@ -35,6 +35,12 @@ Los Carroñeros buscan botín con el menor riesgo:
 
 Al salir de la grieta en un sistema con Carroñeros, a veces (un 35 % de las llegadas) la manada **ya te está esperando** a pocos kilómetros del punto de llegada. Arranca motores y prepara las armas nada más llegar.
 
+### Incursiones a las rutas
+
+La Marea de Óxido vive de asaltar líneas de suministro. Cuando un convoy con **ruta automática** llega a un sistema fuera del Núcleo Humano, a veces le cae encima una **partida de asalto** de 2 a 4 naves y empieza una batalla de flotas. Si pierde, el convoy pierde su carga. Una **escolta armada** en la flota hace el asalto mucho menos probable. Si nadie la destruye, la partida se marcha al cabo de un par de horas.
+
+{{tabla:incursiones}}
+
 ## Peligro por zona
 
 Cuanto más lejos del Núcleo, más numerosos, más pesados y con mejor puntería. El anillo es la distancia al Núcleo en sectores (ver [Universo](/wiki/universo)).

@@ -335,6 +335,26 @@ export const PIRATE_AI = {
 } as const;
 
 /**
+ * Incursiones a las rutas (fase 2 del plan): los Carroñeros de la Marea de
+ * Óxido viven de asaltar líneas de suministro. Cuando un convoy con ruta
+ * automática llega a un sistema fuera del Núcleo, a veces le cae encima una
+ * partida de asalto, que se marcha al cabo de un rato si no la destruyen.
+ */
+export const ROUTE_RAID = {
+  factionId: "scavengers_rust_tide",
+  /** Anillo mínimo (el Núcleo Humano, anillos 0–1, es seguro). */
+  minRing: 2,
+  /** Probabilidad por llegada de un convoy sin naves armadas. */
+  chance: 0.12,
+  /** Probabilidad si lleva escolta armada (la escolta disuade). */
+  escortedChance: 0.04,
+  /** Naves de la partida [mín, máx]. */
+  ships: [2, 4] as const,
+  /** Horas de juego hasta que la partida se marcha (si no está combatiendo). */
+  leaveHours: 2,
+} as const;
+
+/**
  * Emboscadas en las salidas de salto (fase 2 del plan): al salir de la grieta
  * en un sistema con Carroñeros, a veces la manada ya está esperando cerca.
  */

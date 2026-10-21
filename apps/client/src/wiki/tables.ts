@@ -13,6 +13,7 @@ import {
   AI_PERSONALITIES,
   type AiPersonality,
   ALIEN_AI,
+  ROUTE_RAID,
   ALIEN_SHIP_CLASSES,
   ALIEN_SIEGE,
   INSTALLATION_DEFENSE,
@@ -712,6 +713,17 @@ export const GEN_TABLES: Record<string, Builder> = {
     };
   },
 
+  incursiones: (t, locale) => {
+    const R = ROUTE_RAID;
+    const pct = (x: number) => `${num(locale, Math.round(x * 100))} %`;
+    return kv(t, [
+      ["wiki.k.raidMinRing", num(locale, R.minRing)],
+      ["wiki.k.raidChance", pct(R.chance)],
+      ["wiki.k.raidEscorted", pct(R.escortedChance)],
+      ["wiki.k.raidShips", `${num(locale, R.ships[0])}–${num(locale, R.ships[1])}`],
+      ["wiki.k.raidLeave", t("colony.costHours", { h: num(locale, R.leaveHours) })],
+    ]);
+  },
   "ia-alienigena": (t, locale) => {
     const g = ALIEN_AI.grudge;
     const h = (n: number) => t("colony.costHours", { h: num(locale, n) });

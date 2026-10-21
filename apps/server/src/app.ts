@@ -272,13 +272,17 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     const war = owner ? await wars.onArrive(tx, fleetId) : null;
     // Fase 11: si llega a territorio alienígena, la región despierta y quizá responde.
     if (owner && !alien) await aliens.onFleetArrived(tx, fleetId);
+    // Incursión: a un convoy con ruta fuera del Núcleo le puede caer una partida de Carroñeros.
+    const raider = owner && !alien && !war?.inBattle ? await aliens.raidRoute(tx, fleetId) : null;
+    const raid = raider ? await wars.onArrive(tx, raider) : null;
     // Ruta automática: descarga, carga y sale hacia la otra colonia.
-    const step = owner && !war?.inBattle ? await logistics.onArrive(tx, fleetId) : null;
+    const step = owner && !war?.inBattle && !raid?.fx.fleets.has(fleetId) ? await logistics.onArrive(tx, fleetId) : null;
     return () => {
       if (owner && !alien) void hub.publishFleet(owner, fleetId);
       if (found) void hub.publishDiscovered(found.emperorId, found.systemIds);
       if (step) for (const id of step.colonyIds) void hub.publishColony(step.emperorId, id);
       if (war) hub.publishWar(war.fx);
+      if (raid) hub.publishWar(raid.fx);
     };
   });
   // Una ronda de una batalla de flotas: daños, naves destruidas y, quizá, el final.
@@ -370,6 +374,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
         );
   });
   worker.on("ai.region", async (tx, { regionKey }) => aliens.tick(tx, regionKey));
+  worker.on("ai.raidEnd", async (tx, { fleetId }) => aliens.raidEnd(tx, fleetId));
   worker.on("ai.emperor", async (tx, { emperorId }) => aiEmperors.tick(tx, emperorId));
   // El tesoro ya debería poder pagar un proyecto que tiene todos sus recursos.
   worker.on("humanity.fund", async (tx, { projectId }) => {

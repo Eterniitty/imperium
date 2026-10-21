@@ -35,6 +35,12 @@ Scavengers look for loot with the least risk:
 
 When you leave the rift in a system with Scavengers, sometimes (35 % of arrivals) the pack is **already waiting** a few kilometres from the arrival point. Start your engines and ready your weapons as soon as you arrive.
 
+### Raids on routes
+
+The Rust Tide lives off raiding supply lines. When a convoy on an **automatic route** reaches a system outside the Human Core, sometimes a **raiding party** of 2 to 4 ships jumps it and a fleet battle starts. If it loses, the convoy loses its cargo. An **armed escort** in the fleet makes raids much less likely. If nobody destroys it, the party leaves after a couple of hours.
+
+{{tabla:incursiones}}
+
 ## Danger by zone
 
 The farther from the Core, the more numerous, the heavier and the better their aim. The ring is the distance to the Core in sectors (see [Universe](/wiki/universo)).

@@ -2,6 +2,8 @@ import {
   ALIEN_AI,
   ALIEN_SIEGE,
   CRADLE_HUNTERS,
+  ROUTE_RAID,
+  getShipClass,
   effectiveTraits,
   FACTIONS,
   fleetComposition,
@@ -9,6 +11,7 @@ import {
   getFaction,
   getSpecies,
   type FactionDefinition,
+  type ShipClassId,
   type SpeciesDefinition,
   type StockId,
 } from "@imperium/content";
@@ -30,7 +33,7 @@ import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import type { ColonyService } from "../colony/service";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { alienFleets, alienRegions, alienStandings, colonies, emperors, emperorWallets, fleets, installations, marketOrders, resourceLedger, ships } from "../db/schema";
+import { alienFleets, alienRegions, alienStandings, colonies, emperors, emperorWallets, fleetRoutes, fleets, installations, marketOrders, resourceLedger, ships } from "../db/schema";
 import type { DiscoveryService } from "../discovery/service";
 import { findSystem, inHumanCore, placeFromRow, systemsInRange } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
@@ -405,6 +408,69 @@ export class AlienService {
     if (gameHours(f.createdAt.getTime(), this.now(), this.timeScale) < ALIEN_AI.noviceGraceHours) return [];
     if (this.random() > effectiveTraits(info.faction).aggression) return [];
     return this.respond(tx, region.key, region.factionId, system, info.species.ai.responders);
+  }
+
+  /**
+   * Incursión a una ruta (`ROUTE_RAID`): un convoy con ruta automática llega a
+   * un sistema fuera del Núcleo y quizá le cae encima una partida de asalto de
+   * los Carroñeros, creada allí mismo. Devuelve su flota (el que llama empieza
+   * la batalla) o null. Se marcha sola con el evento `ai.raidEnd`.
+   */
+  async raidRoute(tx: Tx, fleetId: string): Promise<string | null> {
+    await this.ensure();
+    const [f] = await tx
+      .select({ emperorId: fleets.emperorId, systemId: fleets.systemId, destSystemId: fleets.destSystemId, battleId: fleets.battleId, createdAt: emperors.createdAt })
+      .from(fleets)
+      .innerJoin(fleetRoutes, eq(fleetRoutes.fleetId, fleets.id))
+      .innerJoin(emperors, eq(emperors.id, fleets.emperorId))
+      .where(eq(fleets.id, fleetId))
+      .limit(1);
+    if (!f || f.destSystemId !== null || f.battleId || this.isActor(f.emperorId)) return null;
+    const system = findSystem(this.seed, f.systemId);
+    if (!system || coreRing(system.sector) < ROUTE_RAID.minRing) return null;
+    if (gameHours(f.createdAt.getTime(), this.now(), this.timeScale) < ALIEN_AI.noviceGraceHours) return null;
+    const info = this.speciesOf(ROUTE_RAID.factionId);
+    if (!info) return null;
+    const own = await tx.select({ classId: ships.classId }).from(ships).where(eq(ships.fleetId, fleetId));
+    const armed = own.some((s) => (getShipClass(s.classId as ShipClassId)?.attack ?? 0) > 0);
+    if (this.random() >= (armed ? ROUTE_RAID.escortedChance : ROUTE_RAID.chance)) return null;
+
+    const actorId = await this.actor(tx, ROUTE_RAID.factionId, system.id);
+    await tx.select({ id: emperors.id }).from(emperors).where(eq(emperors.id, actorId)).for("update");
+    const [{ n } = { n: 0 }] = await tx.select({ n: sql<number>`coalesce(max(${fleets.number}), 0)::int` }).from(fleets).where(eq(fleets.emperorId, actorId));
+    const [raider] = await tx.insert(fleets).values({ emperorId: actorId, number: n + 1, systemId: system.id }).returning({ id: fleets.id });
+    const [lo, hi] = ROUTE_RAID.ships;
+    const count = lo + Math.floor(this.random() * (hi - lo + 1));
+    const comp = fleetComposition(info.species.fleet, depthOf(coreRing(system.sector), info.species.territory.minCoreRing));
+    const total = comp.reduce((a, [, w]) => a + w, 0);
+    const rows = [];
+    for (let i = 0; i < count; i++) {
+      let roll = this.random() * total;
+      let classId = comp[0]![0];
+      for (const [id, w] of comp) {
+        roll -= w;
+        if (roll < 0) {
+          classId = id;
+          break;
+        }
+      }
+      rows.push({ fleetId: raider!.id, classId, hull: getAlienShipClass(classId)?.hull ?? 1 });
+    }
+    await tx.insert(ships).values(rows);
+    await tx.insert(alienFleets).values({ fleetId: raider!.id, regionKey: `raid:${system.id}` });
+    await schedule(tx, "ai.raidEnd", new Date(this.now() + this.ms(ROUTE_RAID.leaveHours)), { fleetId: raider!.id });
+    return raider!.id;
+  }
+
+  /** Manejador de `ai.raidEnd`: la partida de asalto se marcha (o espera a que acabe su batalla). */
+  async raidEnd(tx: Tx, fleetId: string): Promise<void> {
+    const [f] = await tx.select({ battleId: fleets.battleId }).from(fleets).where(eq(fleets.id, fleetId)).limit(1);
+    if (!f) return;
+    if (f.battleId) {
+      await schedule(tx, "ai.raidEnd", new Date(this.now() + this.ms(1)), { fleetId });
+      return;
+    }
+    await tx.delete(fleets).where(eq(fleets.id, fleetId));
   }
 
   /** Envía hasta `max` flotas paradas de la región (las más cercanas) a `target`. */
