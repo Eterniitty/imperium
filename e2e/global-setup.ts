@@ -66,7 +66,11 @@ export default async function globalSetup() {
       origins: [
         {
           origin: `http://localhost:${CLIENT_PORT}`,
-          localStorage: [{ name: "imperium.prefs", value: JSON.stringify({ quality: "low", uiScale: "auto", musicVolume: 0 }) }],
+          localStorage: [
+            { name: "imperium.prefs", value: JSON.stringify({ quality: "low", uiScale: "auto", musicVolume: 0 }) },
+            // El aviso de cookies ya visto: no tapa nada en las capturas.
+            { name: "imperium.cookieNotice", value: "1" },
+          ],
         },
       ],
     }),

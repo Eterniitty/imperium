@@ -11,6 +11,14 @@ test("aceptar los términos, descargar los datos y borrar la cuenta", async ({ p
 
   // Sin aceptar los términos no se puede pedir el enlace.
   await page.goto("/");
+  // Aviso de cookies (informativo): aparece la primera vez y se cierra.
+  await page.evaluate(() => localStorage.removeItem("imperium.cookieNotice"));
+  await page.reload();
+  const notice = page.getByRole("region", { name: "Aviso de cookies" });
+  await expect(notice).toContainText("cookies técnicas imprescindibles");
+  await page.screenshot({ path: `${SHOTS}/cuenta-0-cookies.png` });
+  await notice.getByRole("button", { name: "Entendido" }).click();
+  await expect(notice).toBeHidden();
   await page.getByLabel("Correo electrónico").fill(email);
   const send = page.getByRole("button", { name: "Enviar enlace de acceso" });
   await expect(send).toBeDisabled();

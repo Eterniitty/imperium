@@ -69,7 +69,7 @@ async function frames(page: Page): Promise<number> {
   return page.evaluate(() => (window as any).__imperium.engine.renderer.info.render.frame as number);
 }
 
-test("planetas y estrella de cerca, sin errores de shader", async ({ page }) => {
+test("planetas y estrella de cerca, sin errores de shader", { tag: "@lento" }, async ({ page }) => {
   // Con WebGL por software, un planeta que llena la pantalla tarda en dibujarse.
   test.setTimeout(600_000);
   const shaderErrors: string[] = [];

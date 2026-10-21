@@ -29,7 +29,10 @@ Idioma de trabajo: **español** (código y comentarios en español; identificado
 3. La generación procedural (`packages/procgen`) debe ser determinista: solo operaciones enteras y `+ - * / sqrt`. Nada de `Math.sin/pow/log` en lo que afecte al juego. Cambios que alteren el universo exigen subir `GENERATOR_VERSION`.
 4. Especies, facciones y naves son **datos** en `packages/content`, no lógica.
 5. Todo texto visible usa claves i18n (`packages/shared/src/i18n`), con español e inglés.
-6. No digas que algo funciona sin haberlo ejecutado. Para no perder tiempo (petición del usuario): con cada cambio, solo `pnpm typecheck` y `pnpm test` (rápidos). La batería completa (`pnpm build` y `pnpm e2e`, que tarda varios minutos) se pasa una vez al cerrar cada paso, antes de desplegar; mira las capturas si cambió la interfaz.
+6. No digas que algo funciona sin haberlo ejecutado. Para no perder tiempo (petición del usuario, que considera lentas las comprobaciones):
+   - Con cada cambio: solo `pnpm typecheck` y los tests de lo tocado (`pnpm exec vitest run <archivos>`); `pnpm test` entero (~40 s) antes de hacer commit.
+   - Antes de desplegar: `pnpm build` y `pnpm e2e:rapido` (~3 min: las pruebas sin la etiqueta `@lento`).
+   - `pnpm e2e` completo (~15 min: resoluciones, planetas, multijugador, colonias) solo al cerrar una fase o si se toca el motor 3D, la interfaz general o el multijugador; mejor en segundo plano mientras se sigue trabajando. Mira las capturas si cambió la interfaz.
 7. Nunca subas credenciales. `.env` está en `.gitignore`; las variables se documentan en `.env.example`.
 8. Commits en español, descriptivos.
 

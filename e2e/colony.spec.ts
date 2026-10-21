@@ -3,7 +3,7 @@ import { lastLoginLink } from "./mail";
 
 const SHOTS = "test-results/capturas";
 
-test("se reclama un planeta del sistema de inicio, se renombra y se construye una mina", async ({ page }) => {
+test("se reclama un planeta del sistema de inicio, se renombra y se construye una mina", { tag: "@lento" }, async ({ page }) => {
   test.setTimeout(180_000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));

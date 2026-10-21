@@ -48,7 +48,7 @@ const myEmperor = (page: Page) =>
 const select = (page: Page, s: StarSystemSummary) =>
   page.evaluate((sys) => (window as unknown as Debug).__imperium.store.getState().select(sys), s);
 
-test("dos jugadores se ven en el mismo universo y se ven moverse", async ({ browser }) => {
+test("dos jugadores se ven en el mismo universo y se ven moverse", { tag: "@lento" }, async ({ browser }) => {
   // Incluye un viaje real entre sistemas del Núcleo (hasta ~40 s a la velocidad de prueba).
   test.setTimeout(180_000);
   const ana = await newPlayer(browser, "ana@aeonarch.test", "Ana Prima");
