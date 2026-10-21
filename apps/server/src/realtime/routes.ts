@@ -22,6 +22,7 @@ import type { SpaceService } from "../space/service";
 import type { FlagshipService } from "../space/flagship";
 import type { WarService } from "../war/service";
 import type { HumanityService } from "../humanity/service";
+import type { ProbeService } from "../probe/service";
 import type { MarketService } from "../market/service";
 import type { AlienService } from "../ai/service";
 import type { SiegeService } from "../war/siege";
@@ -50,6 +51,8 @@ export interface RealtimeDeps {
   /** Fase 10: muerte y linaje (Cunas, Herederos, encarnación) y cómo difundir sus cambios. */
   lineage?: LineageService;
   onLineage?: (fx: LineageEffects) => void;
+  /** Sondas de exploración. */
+  probes?: ProbeService;
 }
 
 const MINUTE = 60_000;
@@ -58,7 +61,7 @@ const HEARTBEAT_MS = 30_000;
 const MAX_CONNECTIONS_PER_ACCOUNT = 5;
 const MAX_CONNECTIONS = 1_000;
 
-export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage }: RealtimeDeps) {
+export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage, probes }: RealtimeDeps) {
   const cookieName = sessionCookieName(config);
   const tickets = new TicketStore();
   const ticketsPerAccount = new RateLimiter(30, MINUTE);
@@ -322,6 +325,15 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     if (res.ok) {
                       await hub.publishFleet(res.emperorId, res.fleetId);
                       for (const id of res.colonyIds) await hub.publishColony(res.emperorId, id);
+                    }
+                    return res;
+                  }
+                  case "probe.launch": {
+                    if (!probes) return { ok: false, error: "invalid_command" } as const;
+                    const res = await probes.launch(owner.emperorId, msg.args.systemId);
+                    if (res.ok) {
+                      await hub.publishProbe(res.emperorId, res.probe.id, res.probe);
+                      await hub.publishWallet(res.emperorId);
                     }
                     return res;
                   }

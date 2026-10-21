@@ -19,6 +19,12 @@ Se descubre el sistema donde está la nave o flota **y todos los que alcanza su 
 
 Los datos completos de cada nave están en [Flotas](/wiki/flotas#naves). Por eso el **Explorador** es la mejor nave para abrir camino: es rápido y su escáner es el mayor.
 
+## Sondas de exploración
+
+Para ver un sistema sin ir hasta él, selecciónalo en el mapa y pulsa **Enviar sonda**. La sonda se paga con créditos y sale de tu nave (esté donde esté, también en pleno viaje cuántico) o de tu colonia más cercana al destino; vuela sola y, al llegar, descubre el sistema y los vecinos que cubre su escáner. Después se pierde. En el puente de mando ves las que tienes en vuelo y cuánto les falta.
+
+{{tabla:sondas}}
+
 ## Lo que ven los demás
 
 - Los descubrimientos son **tuyos**: otro jugador no ve el detalle de un sistema que solo has descubierto tú.

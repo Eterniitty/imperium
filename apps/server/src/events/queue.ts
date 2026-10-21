@@ -34,6 +34,8 @@ export interface EventPayloads {
   "heir.born": { heirId: string };
   /** Fase 10: decisión del gobernador (Heredero) de una colonia. */
   "heir.govern": { heirId: string };
+  /** Una sonda de exploración llega a su destino. */
+  "probe.arrive": { probeId: string };
 }
 export type EventKind = keyof EventPayloads;
 

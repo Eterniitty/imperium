@@ -162,6 +162,13 @@
       "when": 1792594863772,
       "tag": "0023_tactica_de_flota",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792596172413,
+      "tag": "0024_sondas",
+      "breakpoints": true
     }
   ]
 }

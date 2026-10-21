@@ -15,6 +15,7 @@ import {
   type I18nKey,
   type LineageStatus,
   type ServerMessage,
+  type Probe,
   type Siege,
   type Topic,
   type Wallet,
@@ -52,6 +53,8 @@ export interface WorldState {
   flagship: FlagshipStatus | null;
   /** Asedios propios y a colonias propias (en curso y acabados hace poco), por id (Fase 9b). */
   sieges: Record<string, Siege>;
+  /** Sondas de exploración propias en vuelo, por id. */
+  probes: Record<string, Probe>;
   /** Linaje propio (Fase 10): muerte y gestación, Cunas, Herederos. */
   lineage: LineageStatus | null;
   /** Escala del tiempo de juego del servidor (para estimar duraciones de viaje). */
@@ -72,6 +75,7 @@ export const worldStore = createStore<WorldState>()(() => ({
   wallet: null,
   flagship: null,
   sieges: {},
+  probes: {},
   lineage: null,
   timeScale: 1,
   myEmperorId: null,
@@ -118,7 +122,7 @@ class Connection {
     this.ws?.close(1000, "bye");
     this.ws = null;
     this.failPending();
-    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, battles: {}, wallet: null, flagship: null, sieges: {}, lineage: null, myEmperorId: null });
+    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, battles: {}, wallet: null, flagship: null, sieges: {}, probes: {}, lineage: null, myEmperorId: null });
     resetSpace();
   }
 
@@ -216,7 +220,9 @@ class Connection {
           for (const b of msg.data.battles) battles[b.id] = b;
           const sieges: Record<string, Siege> = {};
           for (const x of msg.data.sieges) sieges[x.id] = x;
-          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans, battles, wallet: msg.data.wallet, flagship: msg.data.flagship, sieges, lineage: msg.data.lineage });
+          const probes: Record<string, Probe> = {};
+          for (const p of msg.data.probes ?? []) probes[p.id] = p;
+          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans, battles, wallet: msg.data.wallet, flagship: msg.data.flagship, sieges, lineage: msg.data.lineage, probes });
         }
         return;
       }
@@ -238,11 +244,16 @@ class Connection {
         let flagship = state.flagship;
         let sieges = state.sieges;
         let lineage = state.lineage;
+        let probes = state.probes;
         for (const op of msg.ops) {
           const dot = op.path.indexOf(".");
-          const kind = op.path.slice(0, dot) as "emperors" | "fleets" | "discovered" | "colonies" | "humans" | "battles" | "wallet" | "flagship" | "sieges" | "lineage";
+          const kind = op.path.slice(0, dot) as "emperors" | "fleets" | "discovered" | "colonies" | "humans" | "battles" | "wallet" | "flagship" | "sieges" | "lineage" | "probes";
           const id = op.path.slice(dot + 1);
-          if (kind === "lineage") {
+          if (kind === "probes") {
+            probes = { ...probes };
+            if (op.v) probes[id] = op.v as Probe;
+            else delete probes[id];
+          } else if (kind === "lineage") {
             noticeLineage(lineage, op.v as LineageStatus);
             lineage = op.v as LineageStatus;
           } else if (kind === "sieges") {
@@ -275,7 +286,7 @@ class Connection {
             else delete fleets[id];
           }
         }
-        worldStore.setState({ emperors, fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage });
+        worldStore.setState({ emperors, fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes });
         this.syncOwn();
         return;
       }

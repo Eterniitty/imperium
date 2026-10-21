@@ -3,7 +3,7 @@
  * docs/arquitectura.md §8. Los esquemas Zod de lo que envía el cliente están en
  * `schemas.ts`.
  */
-import type { Battle, Cargo, Colony, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, FleetTactic, HeirDoctrineId, LineageStatus, OrderSide, Siege, Stock, StockId, Wallet } from "./api";
+import type { Battle, Cargo, Colony, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, FleetTactic, Probe, HeirDoctrineId, LineageStatus, OrderSide, Siege, Stock, StockId, Wallet } from "./api";
 import type { DeepRegionView } from "./deepspace";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
@@ -37,7 +37,7 @@ export interface TopicData {
   /** `wallet`: la cartera de créditos (economía de la humanidad). */
   /** `sieges`: asedios propios y a colonias propias (Fase 9b), en curso y acabados hace poco. */
   /** `lineage`: muerte, gestación, Cunas y Herederos (Fase 10). */
-  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans; battles: Battle[]; wallet: Wallet; flagship: FlagshipStatus | null; sieges: Siege[]; lineage: LineageStatus | null };
+  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans; battles: Battle[]; wallet: Wallet; flagship: FlagshipStatus | null; sieges: Siege[]; lineage: LineageStatus | null; probes: Probe[] };
 }
 
 /** Emperador visto por los demás jugadores: añade si está conectado. */
@@ -99,6 +99,8 @@ export interface CommandArgs {
   "fleet.route": FleetRoute & { fleetId: string };
   /** Quita la ruta automática de una flota (se queda donde esté). */
   "fleet.routeStop": { fleetId: string };
+  /** Lanza una sonda de exploración a un sistema sin descubrir (`PROBE`: cuesta créditos y tiene alcance). */
+  "probe.launch": { systemId: string };
   /** Pilota a distancia una nave de una flota propia parada (ni viajando ni en batalla); `leave` deja de pilotarla. */
   "fleet.pilot": { fleetId: string; shipId: string };
   /** Cambia la táctica de una flota propia en las batallas por rondas (desde cualquier sitio; en plena batalla vale desde la ronda siguiente). */
@@ -258,6 +260,10 @@ export type CommandError =
   | "in_battle"
   /** La nave no tiene armas (no se puede pilotar a distancia). */
   | "ship_unarmed"
+  /** Sonda: el destino está demasiado lejos de la nave y de todas las colonias. */
+  | "out_of_range"
+  /** Sonda: el sistema ya está descubierto. */
+  | "already_discovered"
   | "no_target"
   | "unknown_faction"
   | "no_diplomacy"
@@ -301,7 +307,8 @@ export type DeltaOp =
   /** Asedio propio o a una colonia propia: empieza, avanza o termina (null si deja de mostrarse). */
   | { path: `sieges.${string}`; v: Siege | null }
   /** Linaje del Emperador propio (Fase 10): muerte y gestación, Cunas, Herederos (el id es el suyo). */
-  | { path: `lineage.${string}`; v: LineageStatus };
+  | { path: `lineage.${string}`; v: LineageStatus }
+  | { path: `probes.${string}`; v: Probe | null };
 
 export type ServerMessage =
   /**

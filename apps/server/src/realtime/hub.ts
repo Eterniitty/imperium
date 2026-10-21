@@ -1,11 +1,12 @@
 import type { FastifyBaseLogger } from "fastify";
-import { PROTOCOL_VERSION, type CommandError, type DeltaOp, type Emperor, type EmperorView, type ServerMessage, type Topic } from "@imperium/shared";
+import { PROTOCOL_VERSION, type CommandError, type DeltaOp, type Emperor, type EmperorView, type Probe, type ServerMessage, type Topic } from "@imperium/shared";
 import type { ColonyService } from "../colony/service";
 import type { DiscoveryService } from "../discovery/service";
 import type { EmperorService } from "../emperor/service";
 import type { FleetService } from "../fleet/service";
 import type { HumanityService } from "../humanity/service";
 import type { LineageService } from "../lineage/service";
+import type { ProbeService } from "../probe/service";
 import type { FlagshipService } from "../space/flagship";
 import { canSee, type SocialService } from "../social/service";
 import type { WarEffects, WarService } from "../war/service";
@@ -67,6 +68,8 @@ export class Hub {
   flagships: FlagshipService | null = null;
   /** Fase 10: muerte y linaje para el tema `me`; lo pone `buildApp`. */
   lineage: LineageService | null = null;
+  /** Sondas de exploración en vuelo para el tema `me`; lo pone `buildApp`. */
+  probes: ProbeService | null = null;
   /**
    * Fase 10: lo que una batalla hizo a las naves de los Emperadores (casco,
    * muertes), para el espacio local; lo pone `buildApp`.
@@ -147,7 +150,7 @@ export class Hub {
         client.known = new Set(visible.map((e) => e.id));
         client.send({ t: "snap", topic, seq: this.emperorsSeq, serverTime: this.now(), data: { emperors: visible.map((e) => this.view(e)) } });
       } else {
-        const [fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage] = await Promise.all([
+        const [fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes] = await Promise.all([
           this.fleets.byEmperor(client.emperorId),
           this.discoveries.list(client.emperorId),
           this.colonies.list(client.emperorId),
@@ -157,6 +160,7 @@ export class Hub {
           this.flagships?.status(client.emperorId) ?? null,
           this.sieges ? this.sieges.list(client.emperorId) : Promise.resolve([]),
           this.lineage ? this.lineage.status(client.emperorId) : Promise.resolve(null),
+          this.probes ? this.probes.list(client.emperorId) : Promise.resolve([]),
         ]);
         if (!this.clients.has(client) || !humans || !wallet) return;
         client.send({
@@ -164,7 +168,7 @@ export class Hub {
           topic,
           seq: this.meSeq.get(client.emperorId) ?? 0,
           serverTime: this.now(),
-          data: { fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage },
+          data: { fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes },
         });
       }
       client.subscribed.add(topic);
@@ -268,6 +272,14 @@ export class Hub {
       const status = await this.lineage?.status(emperorId);
       if (!status) return;
       this.send("me", this.nextMeSeq(emperorId), [{ path: `lineage.${emperorId}`, v: status }], (c) => c.emperorId === emperorId);
+    });
+  }
+
+  /** Envía a su dueño una sonda en vuelo (o null: ya llegó). */
+  publishProbe(emperorId: string, probeId: string, probe: Probe | null): Promise<void> {
+    return this.enqueue(async () => {
+      if (!this.online.has(emperorId)) return;
+      this.send("me", this.nextMeSeq(emperorId), [{ path: `probes.${probeId}`, v: probe }], (c) => c.emperorId === emperorId);
     });
   }
 

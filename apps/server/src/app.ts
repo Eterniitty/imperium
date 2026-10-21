@@ -20,6 +20,7 @@ import { SocialService } from "./social/service";
 import { LogisticsService } from "./logistics/service";
 import { humanityRoutes } from "./humanity/routes";
 import { HumanityService } from "./humanity/service";
+import { ProbeService } from "./probe/service";
 import { MarketService } from "./market/service";
 import { inHumanCore } from "./emperor/world";
 import { FlagshipService } from "./space/flagship";
@@ -110,6 +111,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   const wars = new WarService(deps.db, config, fleets, colonies, logistics);
   // Economía de la humanidad (créditos, tesoro del Núcleo, proyectos comunes) y mercado global.
   const humanity = new HumanityService(deps.db, config, colonies);
+  // Sondas de exploración: se compran con créditos y descubren un sistema lejano.
+  const probes = new ProbeService(deps.db, config, emperors, humanity);
   // Niveles de los proyectos comunes: al arrancar (index.ts) o, si no, la primera vez que hagan falta.
   colonies.setBonuses(() => humanity.bonuses());
   wars.setShieldFactor((systemId) => (inHumanCore(systemId) ? humanity.bonuses().coreShield : 1));
@@ -159,6 +162,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   lineage.layoutOf = (systemId) => flagships.layout(systemId);
   lineage.inCombat = (emperorId) => space.inCombat(emperorId);
   hub.lineage = lineage;
+  hub.probes = probes;
   aiEmperors.lineage = lineage;
   /** Un Emperador cae: los demás dejan de verlo en el mapa y su dueño ve la gestación. */
   const announceDeath = (emperorId: string) => {
@@ -222,7 +226,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     for (const s of fx.sieges) hub.publishSiegeFx(s);
   };
   aliens.onSiege = (fx) => hub.publishSiegeFx(fx);
-  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage: announceLineage });
+  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage: announceLineage, probes });
   await app.register(humanityRoutes, { config, db: deps.db, emperors, humanity, market });
   await app.register(warRoutes, { config, db: deps.db, emperors, wars, aliens });
   await app.register(alienRoutes, { config, db: deps.db, emperors, discoveries, wars, aliens });
@@ -309,6 +313,14 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   worker.on("heir.born", async (tx, { heirId }) => {
     const fx = await lineage.born(tx, heirId);
     if (fx) return () => announceLineage(fx);
+  });
+  worker.on("probe.arrive", async (tx, { probeId }) => {
+    const done = await probes.arrive(tx, probeId);
+    if (done)
+      return () => {
+        void hub.publishProbe(done.emperorId, done.probeId, null);
+        if (done.systemIds.length) void hub.publishDiscovered(done.emperorId, done.systemIds);
+      };
   });
   worker.on("heir.govern", async (tx, { heirId }) => {
     const run = await lineage.govern(tx, heirId);

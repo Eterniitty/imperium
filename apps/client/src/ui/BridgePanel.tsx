@@ -1,8 +1,8 @@
-import type { Battle, Colony, Fleet, Siege } from "@imperium/shared";
+import type { Battle, Colony, Fleet, Probe, Siege } from "@imperium/shared";
 import { useWorld } from "../net/world";
-import { useT } from "../state/store";
+import { gameStore, useT } from "../state/store";
 import { fmtInt, livePopulation } from "./colonies";
-import { useServerNow } from "./useNow";
+import { formatDuration, useServerNow } from "./useNow";
 
 /**
  * Puente de mando durante el viaje cuántico: resumen del imperio (humanos a
@@ -18,6 +18,7 @@ export function BridgePanel() {
   const colonies = Object.values(useWorld((s) => s.colonies)) as Colony[];
   const battles = (Object.values(useWorld((s) => s.battles)) as Battle[]).filter((b) => b.outcome === "ongoing");
   const sieges = (Object.values(useWorld((s) => s.sieges)) as Siege[]).filter((s) => s.outcome === "ongoing");
+  const probes = Object.values(useWorld((s) => s.probes)) as Probe[];
 
   const aboard = humans ? Math.min(humans.capacity, humans.count + (humans.perHour * Math.max(0, now - humans.at)) / 3_600_000) : null;
   const moving = fleets.filter((f) => f.travel && f.travel.arriveAt > now).length;
@@ -45,9 +46,17 @@ export function BridgePanel() {
           {moving > 0 && <> · {t("bridge.moving", { n: moving })}</>}
         </li>
         <li>
+          <button className="link-btn small" onClick={() => colonies[0] && gameStore.getState().setColonyManager(colonies[0].id)}>
+            {t("colony.manage")}
+          </button>
+        </li>
+        <li>
           {t("bridge.colonies")}: <span className="mono">{colonies.length}</span> · {t("colony.population")}: <span className="mono">{fmtInt(population)}</span>
           {builds > 0 && <> · {t("colony.queue")}: {builds}</>}
         </li>
+        {probes.map((p) => (
+          <li key={p.id}>{t("probe.inFlight", { system: p.systemName, time: formatDuration(p.arriveAt - now) })}</li>
+        ))}
       </ul>
       {alerts.length > 0 ? (
         <ul className="bridge-alerts small">

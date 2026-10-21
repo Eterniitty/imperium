@@ -463,6 +463,20 @@ export const CONTACT_SENSORS = {
   colonyRangeLy: 10,
 } as const;
 
+/**
+ * Sondas de exploración (orden `probe.launch`): se compran con créditos y
+ * salen de la nave del Emperador (esté donde esté, también viajando) o de la
+ * colonia propia más cercana al destino; vuelan solas hasta un sistema a
+ * menos de `maxRangeLy`, descubren lo que cubre su escáner y se pierden.
+ */
+export const PROBE = {
+  costCredits: 120,
+  speedLyPerHour: 600,
+  maxRangeLy: 50,
+  maxActive: 3,
+  scannerRangeLy: 4,
+} as const;
+
 /** Naves con las que empieza cada Emperador nuevo, como su primera flota. */
 export const STARTING_FLEET: readonly ShipClassId[] = ["explorer"];
 

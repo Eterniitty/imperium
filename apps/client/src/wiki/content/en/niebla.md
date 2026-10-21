@@ -19,6 +19,12 @@ The system where a ship or fleet is **and every system within its scanner range*
 
 Full ship data is in [Fleets](/wiki/flotas#ships). That is why the **Explorer** is the best ship to scout ahead: it is fast and has the largest scanner.
 
+## Exploration probes
+
+To see a system without going there, select it on the map and press **Send probe**. The probe is paid with credits and leaves from your ship (wherever it is, even in the middle of a quantum trip) or from your colony nearest to the target; it flies on its own and, on arrival, discovers the system and the neighbours its scanner covers. Then it is lost. On the command bridge you see the ones in flight and how long they have left.
+
+{{tabla:sondas}}
+
 ## What others see
 
 - Discoveries are **yours**: another player cannot see the details of a system only you have discovered.

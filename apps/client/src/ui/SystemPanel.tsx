@@ -12,6 +12,7 @@ import { AlienPresence } from "./AlienPresence";
 import { factionName } from "./aliens";
 import { FleetLogistics } from "./FleetLogistics";
 import { TacticPicker } from "./TacticPicker";
+import { ProbeLauncher } from "./ProbeLauncher";
 import { PlanetColony } from "./PlanetColony";
 import { formatDuration, useServerNow } from "./useNow";
 import { companionsIn, useCompanionTrail } from "./companionTrail";
@@ -175,7 +176,12 @@ export function SystemPanel() {
           })()}
         </>
       ) : (
-        detailStatus === "unexplored" && <p className="muted small">{t("system.unexploredHint")}</p>
+        detailStatus === "unexplored" && (
+          <>
+            <p className="muted small">{t("system.unexploredHint")}</p>
+            <ProbeLauncher system={selected} />
+          </>
+        )
       )}
 
       {/* Fase 11: territorio, ruinas y flotas alienígenas (solo sistemas descubiertos). */}

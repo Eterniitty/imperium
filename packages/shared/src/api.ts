@@ -126,6 +126,17 @@ export interface Fleet {
   tactic: FleetTactic;
 }
 
+/** Sonda de exploración en vuelo (privada): a qué sistema va, desde dónde y cuándo llega. */
+export interface Probe {
+  id: string;
+  systemId: string;
+  systemName: string;
+  from: WorldPosition;
+  to: WorldPosition;
+  launchedAt: number;
+  arriveAt: number;
+}
+
 /** Táctica de una flota en las batallas por rondas (efectos en `FLEET_TACTICS` de `@imperium/content`). */
 export type FleetTactic = "balanced" | "aggressive" | "defensive" | "focus";
 

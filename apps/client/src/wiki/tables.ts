@@ -34,6 +34,7 @@ import {
   BODY_COLLISION,
   STAR_HEAT,
   FLEET_TACTICS,
+  PROBE,
   FLEET_TACTIC_IDS,
   STAR_HEAT_LETHAL_DPS,
   FLEET_BATTLE,
@@ -505,6 +506,15 @@ export const GEN_TABLES: Record<string, Builder> = {
     }),
     numeric: [1, 2],
   }),
+
+  sondas: (t, locale) =>
+    kv(t, [
+      ["wiki.k.probeCost", `₢${num(locale, PROBE.costCredits)}`],
+      ["wiki.k.probeSpeed", `${num(locale, PROBE.speedLyPerHour)} a.l./h`],
+      ["wiki.k.probeRange", `${num(locale, PROBE.maxRangeLy)} a.l.`],
+      ["wiki.k.probeScanner", `${num(locale, PROBE.scannerRangeLy)} a.l.`],
+      ["wiki.k.probeMax", num(locale, PROBE.maxActive)],
+    ]),
 
   tacticas: (t, locale) => ({
     head: [t("tactic.label"), t("wiki.col.attack"), t("wiki.col.battleShield"), t("wiki.col.targeting")],

@@ -171,6 +171,24 @@ export const emperors = pgTable("emperors", {
  * al aparcar y cada cierto tiempo mientras se pilota; al volver a ese sistema,
  * la nave llega ahí. Los compañeros pueden pedir llegar junto a ella.
  */
+/** Sondas de exploración en vuelo (orden `probe.launch`); se borran al llegar (evento `probe.arrive`). */
+export const probes = pgTable(
+  "probes",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    emperorId: uuid("emperor_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    systemId: text("system_id").notNull(),
+    fromX: doublePrecision("from_x").notNull(),
+    fromY: doublePrecision("from_y").notNull(),
+    fromZ: doublePrecision("from_z").notNull(),
+    launchedAt: timestamp("launched_at", { withTimezone: true }).notNull(),
+    arriveAt: timestamp("arrive_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("probes_emperor_id_idx").on(t.emperorId)],
+);
+
 export const systemParks = pgTable(
   "system_parks",
   {
