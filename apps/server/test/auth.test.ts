@@ -51,7 +51,7 @@ describe.skipIf(!TEST_DATABASE_URL)("acceso por enlace", () => {
   afterAll(() => database.close());
 
   const requestLink = (email: string, ip = "10.0.0.1") =>
-    app.inject({ method: "POST", url: "/api/auth/request", payload: { email, locale: "en" }, remoteAddress: ip });
+    app.inject({ method: "POST", url: "/api/auth/request", payload: { email, locale: "en", acceptTerms: true }, remoteAddress: ip });
 
   // El token va en el fragmento (#login=...), no en la consulta.
   const tokenFromLink = (link: string) => new URLSearchParams(new URL(link).hash.slice(1)).get(LOGIN_TOKEN_PARAM) ?? "";

@@ -65,7 +65,7 @@ describe.skipIf(!TEST_DATABASE_URL)("logística", () => {
 
   /** Jugador con colonias en A y B (llenas de recursos) y una flota con un carguero en A. */
   async function setup() {
-    await app.inject({ method: "POST", url: "/api/auth/request", payload: { email: "l@ejemplo.com" } });
+    await app.inject({ method: "POST", url: "/api/auth/request", payload: { email: "l@ejemplo.com", acceptTerms: true } });
     const token = new URLSearchParams(new URL(sent.at(-1)!).hash.slice(1)).get(LOGIN_TOKEN_PARAM);
     const login = await app.inject({ method: "POST", url: "/api/auth/verify", payload: { token } });
     const cookies = { [SESSION_COOKIE]: login.cookies.find((c) => c.name === SESSION_COOKIE)!.value };

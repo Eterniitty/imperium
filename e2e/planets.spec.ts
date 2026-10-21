@@ -81,6 +81,7 @@ test("planetas y estrella de cerca, sin errores de shader", async ({ page }) => 
 
   await page.goto("/");
   await page.getByLabel("Correo electrónico").fill("planetas@aeonarch.test");
+  await page.getByRole("checkbox", { name: /acepto los términos/ }).check();
   await page.getByRole("button", { name: "Enviar enlace de acceso" }).click();
   const link = await lastLoginLink("planetas@aeonarch.test");
   await page.goto("about:blank");

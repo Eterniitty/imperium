@@ -1,6 +1,7 @@
 import cookie from "@fastify/cookie";
 import Fastify from "fastify";
 import { GENERATOR_VERSION, type ApiError, type HealthResponse } from "@imperium/shared";
+import { accountRoutes } from "./account/routes";
 import { authRoutes } from "./auth/routes";
 import type { ServerConfig } from "./config";
 import type { Database } from "./db/client";
@@ -103,6 +104,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, colonies, logistics, space, hub });
   await app.register(socialRoutes, { config, db: deps.db, emperors, social, hub });
   await app.register(discoveryRoutes, { config, db: deps.db, emperors, discoveries });
+  await app.register(accountRoutes, { config, db: deps.db, hub, space });
   await app.register(colonyRoutes, { config, db: deps.db, emperors, discoveries, colonies });
 
   // Cola de eventos programados: llegadas de flotas y del Emperador (y, más adelante, construcciones…).

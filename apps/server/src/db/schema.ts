@@ -14,6 +14,9 @@ export const accounts = pgTable("accounts", {
   locale: text("locale").notNull().default("es"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  /** Versión de los términos y la privacidad aceptada (LEGAL_VERSION) y cuándo. */
+  termsVersion: text("terms_version"),
+  termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
 });
 
 /**
@@ -29,6 +32,8 @@ export const magicLinkTokens = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     usedAt: timestamp("used_at", { withTimezone: true }),
     requestIp: text("request_ip"),
+    /** Versión de los términos aceptada al pedir el enlace; pasa a la cuenta al canjearlo. */
+    termsVersion: text("terms_version"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("magic_link_tokens_expires_at_idx").on(t.expiresAt)],

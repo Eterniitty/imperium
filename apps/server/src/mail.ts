@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { isIP } from "node:net";
 import type { ConnectionOptions } from "node:tls";
 import nodemailer, { type Transporter } from "nodemailer";
-import { MAGIC_LINK_TTL_MINUTES, translate, type Locale } from "@imperium/shared";
+import { LEGAL_PAGES, MAGIC_LINK_TTL_MINUTES, translate, type Locale } from "@imperium/shared";
 import { maskEmail, maskEmailsIn } from "./auth/tokens";
 import { parseMailFrom, type ServerConfig } from "./config";
 
@@ -50,6 +50,14 @@ function escapeHtml(text: string): string {
 export function renderLoginEmail(link: string, locale: Locale): LoginEmail {
   const t = (key: Parameters<typeof translate>[1]) => translate(locale, key, { minutes: MAGIC_LINK_TTL_MINUTES });
   const subject = t("mail.login.subject");
+  // Enlaces a las páginas legales, en la misma dirección pública que el enlace de acceso.
+  const origin = new URL(link).origin;
+  const pages = LEGAL_PAGES[locale];
+  const legal = [
+    { label: t("legal.privacy"), url: origin + pages.privacy },
+    { label: t("legal.terms"), url: origin + pages.terms },
+    { label: t("legal.imprint"), url: origin + pages.imprint },
+  ];
   const text = [
     "AEONARCH",
     "",
@@ -63,6 +71,8 @@ export function renderLoginEmail(link: string, locale: Locale): LoginEmail {
     "",
     "-- ",
     t("mail.login.footer"),
+    t("mail.login.account"),
+    ...legal.map((l) => `${l.label}: ${l.url}`),
     "",
   ].join("\n");
 
@@ -86,7 +96,9 @@ export function renderLoginEmail(link: string, locale: Locale): LoginEmail {
 <p style="margin:0 0 12px;">${escapeHtml(t("mail.login.expires"))}</p>
 <p style="margin:0 0 24px;">${escapeHtml(t("mail.login.ignore"))}</p>
 <hr style="border:none;border-top:1px solid #d5d9e0;margin:0 0 16px;">
-<p style="margin:0;font-size:13px;${muted}">${escapeHtml(t("mail.login.footer"))}</p>
+<p style="margin:0 0 8px;font-size:13px;${muted}">${escapeHtml(t("mail.login.footer"))}</p>
+<p style="margin:0 0 8px;font-size:13px;${muted}">${escapeHtml(t("mail.login.account"))}</p>
+<p style="margin:0;font-size:13px;${muted}">${legal.map((l) => `<a href="${escapeHtml(l.url)}" style="color:#4a5260;">${escapeHtml(l.label)}</a>`).join(" · ")}</p>
 </div>
 </body>
 </html>

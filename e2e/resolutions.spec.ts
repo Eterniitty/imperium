@@ -32,6 +32,7 @@ test("la interfaz cabe en distintas resoluciones, pilotando y en el mapa", async
   test.setTimeout(420_000);
   await page.goto("/");
   await page.getByLabel("Correo electrónico").fill("pantallas@aeonarch.test");
+  await page.getByRole("checkbox", { name: /acepto los términos/ }).check();
   await page.getByRole("button", { name: "Enviar enlace de acceso" }).click();
   const link = await lastLoginLink("pantallas@aeonarch.test");
   await page.goto("about:blank");

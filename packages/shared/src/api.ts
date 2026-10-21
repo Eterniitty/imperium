@@ -27,6 +27,19 @@ export const MAGIC_LINK_TTL_MINUTES = 15;
  */
 export const LOGIN_TOKEN_PARAM = "login";
 
+/**
+ * Versión de los términos de uso y la política de privacidad (fecha de las
+ * páginas de `apps/client/public/legal/`). Al pedir un enlace hay que aceptarla;
+ * la cuenta guarda cuál aceptó y cuándo. Súbela al cambiar esos textos.
+ */
+export const LEGAL_VERSION = "2026-10-21";
+
+/** Páginas legales estáticas (servidas junto al cliente, sin iniciar sesión). */
+export const LEGAL_PAGES = {
+  es: { imprint: "/legal/aviso-legal.html", privacy: "/legal/privacidad.html", terms: "/legal/terminos.html" },
+  en: { imprint: "/legal/imprint.html", privacy: "/legal/privacy.html", terms: "/legal/terms.html" },
+} as const;
+
 /** Cuenta tal y como la ve su propietario. */
 export interface AuthAccount {
   id: string;

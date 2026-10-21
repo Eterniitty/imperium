@@ -1,0 +1,17 @@
+/* Páginas legales: estáticas, sin JavaScript, accesibles sin usuario ni contraseña. */
+:root { color-scheme: dark; --bg: #05070f; --fg: #d8dee9; --muted: #8a94a7; --gold: #e8b64c; --line: #1e2638; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 760px; margin: 0 auto; padding: 32px 20px 64px; }
+header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 24px; }
+.brand { font-weight: 700; letter-spacing: 0.3em; color: var(--gold); text-decoration: none; }
+nav a { color: var(--muted); margin-left: 12px; font-size: 14px; }
+h1 { font-size: 28px; margin: 0 0 4px; }
+h2 { font-size: 19px; margin: 32px 0 8px; color: #fff; }
+h3 { font-size: 16px; margin: 20px 0 6px; }
+.updated { color: var(--muted); font-size: 14px; margin-top: 0; }
+a { color: #7fd8ff; }
+.todo { background: #3a2a10; color: #ffd27a; padding: 0 4px; border-radius: 3px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+td, th { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+footer { margin-top: 48px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 12px; }

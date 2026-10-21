@@ -15,6 +15,8 @@ export interface Client {
   /** Emperadores que este cliente ve ahora: solo a ellos se les avisa de que dejan de verse. */
   known: Set<string>;
   send(msg: ServerMessage): void;
+  /** Cierra la conexión (el cierre la saca del centro y del espacio local). */
+  close(code: number, reason: string): void;
 }
 
 type Ack = Extract<ServerMessage, { t: "ack" }>;
@@ -95,6 +97,11 @@ export class Hub {
     if (n > 0) return void this.online.set(client.emperorId, n);
     this.online.delete(client.emperorId);
     void this.publish(client.emperorId);
+  }
+
+  /** Cierra todas las conexiones de una cuenta (p. ej. al borrarla). */
+  disconnectAccount(accountId: string, code: number, reason: string): void {
+    for (const c of [...this.clients]) if (c.accountId === accountId) c.close(code, reason);
   }
 
   /** Envía la instantánea de un tema y, desde ese momento, sus cambios. */

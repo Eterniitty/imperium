@@ -10,6 +10,7 @@ test("se reclama un planeta del sistema de inicio, se renombra y se construye un
 
   await page.goto("/");
   await page.getByLabel("Correo electrónico").fill("colona@aeonarch.test");
+  await page.getByRole("checkbox", { name: /acepto los términos/ }).check();
   await page.getByRole("button", { name: "Enviar enlace de acceso" }).click();
   const link = await lastLoginLink("colona@aeonarch.test");
   await page.goto("about:blank");

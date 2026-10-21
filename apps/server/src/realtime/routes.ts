@@ -109,6 +109,7 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
         send: (msg: ServerMessage) => {
           if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(msg));
         },
+        close: (code, reason) => socket.close(code, reason),
       };
       sockets.add(socket);
       alive.set(socket, true);

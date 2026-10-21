@@ -94,7 +94,7 @@ describe.skipIf(!TEST_DATABASE_URL)("colonias y economía", () => {
 
   /** Jugador cuyo Emperador y flota están en `home` (o donde diga `at`), que conoce. */
   async function player(email: string, name: string, at: StarSystemSummary | null = home.summary) {
-    await app.inject({ method: "POST", url: "/api/auth/request", payload: { email } });
+    await app.inject({ method: "POST", url: "/api/auth/request", payload: { email, acceptTerms: true } });
     const token = new URLSearchParams(new URL(sent.at(-1)!).hash.slice(1)).get(LOGIN_TOKEN_PARAM);
     const login = await app.inject({ method: "POST", url: "/api/auth/verify", payload: { token } });
     const cookies = { [SESSION_COOKIE]: login.cookies.find((c) => c.name === SESSION_COOKIE)!.value };

@@ -547,3 +547,17 @@ kbd {
 .route-form { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
 .route-carry { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .route-tag { color: #5fd3e6; }
+
+/* Páginas legales y cuenta */
+.legal-links { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.legal-links a, .accept-terms a { color: var(--cyan); }
+.legal-links a { color: var(--muted); }
+.legal-links a:hover { color: var(--text); }
+.accept-terms { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; line-height: 1.45; color: #c3cbd9; cursor: pointer; }
+.accept-terms input { margin-top: 2px; accent-color: var(--gold); flex: none; }
+.account-danger { border-top: 1px solid var(--panel-border); margin-top: 16px; padding-top: 12px; }
+.account-danger h3 { color: var(--danger); }
+.btn-danger { border-color: rgba(255, 90, 90, 0.6); color: #ffb4b4; }
+.btn-danger:hover { border-color: var(--danger); background: rgba(255, 90, 90, 0.18); }
+a.btn { display: inline-block; text-decoration: none; color: var(--text); margin-bottom: 4px; }
+.account .legal-links { justify-content: flex-start; }

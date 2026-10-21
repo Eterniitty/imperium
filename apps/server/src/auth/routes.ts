@@ -1,6 +1,7 @@
 import { and, eq, gt, isNull, lt, sql } from "drizzle-orm";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import {
+  LEGAL_VERSION,
   LOGIN_TOKEN_PARAM,
   MAGIC_LINK_TTL_MINUTES,
   type ApiError,
@@ -94,6 +95,7 @@ export async function authRoutes(app: FastifyInstance, { config, db, mailer }: A
       locale: parsed.data.locale,
       expiresAt: new Date(Date.now() + MAGIC_LINK_TTL_MINUTES * MINUTE),
       requestIp: req.ip,
+      termsVersion: LEGAL_VERSION,
     });
     // Limpieza de enlaces caducados hace más de un día (barata gracias al índice).
     await db.delete(magicLinkTokens).where(lt(magicLinkTokens.expiresAt, new Date(Date.now() - DAY)));
@@ -136,7 +138,7 @@ export async function authRoutes(app: FastifyInstance, { config, db, mailer }: A
         .update(magicLinkTokens)
         .set({ usedAt: sql`now()` })
         .where(usableLink(parsed.data.token))
-        .returning({ email: magicLinkTokens.email, locale: magicLinkTokens.locale });
+        .returning({ email: magicLinkTokens.email, locale: magicLinkTokens.locale, termsVersion: magicLinkTokens.termsVersion });
       if (!link) return null;
 
       // Al entrar, los demás enlaces pendientes de ese correo dejan de valer.
@@ -145,10 +147,12 @@ export async function authRoutes(app: FastifyInstance, { config, db, mailer }: A
         .set({ usedAt: sql`now()` })
         .where(and(eq(magicLinkTokens.email, link.email), isNull(magicLinkTokens.usedAt)));
 
+      // Se guarda qué versión de los términos aceptó al pedir el enlace, y cuándo.
+      const terms = link.termsVersion ? { termsVersion: link.termsVersion, termsAcceptedAt: sql`now()` } : {};
       const [acc] = await tx
         .insert(accounts)
-        .values({ email: link.email, locale: link.locale, lastLoginAt: sql`now()` })
-        .onConflictDoUpdate({ target: accounts.email, set: { lastLoginAt: sql`now()` } })
+        .values({ email: link.email, locale: link.locale, lastLoginAt: sql`now()`, ...terms })
+        .onConflictDoUpdate({ target: accounts.email, set: { lastLoginAt: sql`now()`, ...terms } })
         .returning({ id: accounts.id, email: accounts.email, locale: accounts.locale });
       if (!acc) throw new Error("No se pudo crear o leer la cuenta");
 

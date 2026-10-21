@@ -52,7 +52,7 @@ describe.skipIf(!TEST_DATABASE_URL)("Emperador persistente", () => {
 
   /** Inicia sesión con un correo y devuelve la cookie de sesión. */
   async function login(email: string): Promise<Record<string, string>> {
-    await app.inject({ method: "POST", url: "/api/auth/request", payload: { email } });
+    await app.inject({ method: "POST", url: "/api/auth/request", payload: { email, acceptTerms: true } });
     const token = new URLSearchParams(new URL(sent.at(-1)!).hash.slice(1)).get(LOGIN_TOKEN_PARAM);
     const res = await app.inject({ method: "POST", url: "/api/auth/verify", payload: { token } });
     const cookie = res.cookies.find((c) => c.name === SESSION_COOKIE);

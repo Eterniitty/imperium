@@ -1,10 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { EMPEROR_NAME_MAX, EMPEROR_NAME_MIN, MAGIC_LINK_TTL_MINUTES } from "@imperium/shared";
 import { music } from "../audio/music";
-import { authStore, useAuth } from "../state/auth";
+import { ACCOUNT_DELETED_FLAG, authStore, useAuth } from "../state/auth";
 import { settingsStore } from "../state/settings";
 import { findSystemSummary, gameStore, useGame, useT } from "../state/store";
 import { LanguageToggle } from "./LanguageToggle";
+import { AcceptTerms, LegalLinks } from "./Legal";
 
 /** Formulario de acceso o botón de entrada, según el estado de la sesión. */
 function AuthPanel() {
@@ -13,6 +14,7 @@ function AuthPanel() {
   const { status, account, emperor, sentTo, pending, busy, error } = useAuth((s) => s);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [accepted, setAccepted] = useState(false);
 
   const enter = (
     <button
@@ -164,12 +166,13 @@ function AuthPanel() {
             onChange={(e) => setEmail(e.target.value)}
             autoFocus
           />
+          <AcceptTerms checked={accepted} onChange={setAccepted} />
           {error && (
             <p className="auth-error" role="alert">
               {t(error)}
             </p>
           )}
-          <button className="btn btn-primary" type="submit" disabled={busy}>
+          <button className="btn btn-primary" type="submit" disabled={busy || !accepted} title={accepted ? undefined : t("legal.mustAccept")}>
             {t(busy ? "auth.sending" : "auth.send")}
           </button>
           <p className="start-hint">{t("auth.noPassword")}</p>
@@ -180,6 +183,12 @@ function AuthPanel() {
 
 export function StartScreen() {
   const t = useT();
+  // Aviso tras borrar la cuenta (la página se recarga al borrarla).
+  const [deleted] = useState(() => {
+    const flag = sessionStorage.getItem(ACCOUNT_DELETED_FLAG) !== null;
+    sessionStorage.removeItem(ACCOUNT_DELETED_FLAG);
+    return flag;
+  });
 
   useEffect(() => {
     void authStore.getState().init();
@@ -197,10 +206,16 @@ export function StartScreen() {
         </div>
         <h1 className="start-title">{t("app.title")}</h1>
         <p className="start-subtitle">{t("app.subtitle")}</p>
+        {deleted && (
+          <p className="start-hint" role="status">
+            {t("account.deleted")}
+          </p>
+        )}
         <AuthPanel />
       </div>
       <div className="start-footer">
         <span>{t("app.prototype")}</span>
+        <LegalLinks />
         <LanguageToggle />
       </div>
     </div>

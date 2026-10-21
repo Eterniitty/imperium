@@ -14,6 +14,8 @@ export const AuthRequestBodySchema = z.object({
   // Se recortan los espacios antes de validar: es habitual copiar el correo con ellos.
   email: z.string().trim().pipe(z.email().max(254)),
   locale: LocaleSchema.default("es"),
+  /** Aceptación de los términos de uso y la política de privacidad vigentes (obligatoria). */
+  acceptTerms: z.literal(true),
 });
 export type AuthRequestBody = z.input<typeof AuthRequestBodySchema>;
 
@@ -23,6 +25,10 @@ export const AuthVerifyBodySchema = z.object({
   token: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
 });
 export type AuthVerifyBody = z.input<typeof AuthVerifyBodySchema>;
+
+/** Cuerpo de `POST /api/account/delete`: confirmación explícita del borrado. */
+export const AccountDeleteBodySchema = z.object({ confirm: z.literal(true) });
+export type AccountDeleteBody = z.input<typeof AccountDeleteBodySchema>;
 
 /**
  * Nombre de Emperador: letras de cualquier alfabeto, cifras, espacios, guiones

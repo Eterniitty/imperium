@@ -41,6 +41,8 @@ export interface AuthState {
   cancelLogin(): void;
   reset(): void;
   logout(): Promise<void>;
+  /** Borra la cuenta y todos sus datos. Devuelve el error, si lo hay. */
+  deleteAccount(): Promise<I18nKey | null>;
   createEmperor(name: string): Promise<void>;
   /** Traslada al Emperador al sistema indicado. Devuelve el error, si lo hay. */
   moveEmperor(systemId: string): Promise<I18nKey | null>;
@@ -81,6 +83,9 @@ function takeLoginToken(): string | null {
   window.history.replaceState(null, "", window.location.pathname + window.location.search + (rest ? `#${rest}` : ""));
   return token;
 }
+
+/** Marca (en sessionStorage) para avisar en la portada de que la cuenta se borró. */
+export const ACCOUNT_DELETED_FLAG = "imperium.accountDeleted";
 
 let initialized = false;
 
@@ -144,7 +149,7 @@ export const authStore = createStore<AuthState>()((set, get) => ({
 
   requestLink: async (email, locale) => {
     set({ busy: true, error: null });
-    const res = await api<{ ok: true }>("POST", "/api/auth/request", { email: email.trim(), locale });
+    const res = await api<{ ok: true }>("POST", "/api/auth/request", { email: email.trim(), locale, acceptTerms: true });
     if (res.ok) set({ busy: false, status: "sent", sentTo: email.trim() });
     else set({ busy: false, error: res.error });
   },
@@ -155,6 +160,19 @@ export const authStore = createStore<AuthState>()((set, get) => ({
     set({ busy: true });
     await api("POST", "/api/auth/logout");
     set({ busy: false, status: "anonymous", account: null, emperor: null, sentTo: null, error: null });
+  },
+
+  deleteAccount: async () => {
+    set({ busy: true });
+    const res = await api("POST", "/api/account/delete", { confirm: true });
+    if (!res.ok) {
+      set({ busy: false });
+      return res.error;
+    }
+    // Se recarga la página: cierra la conexión y el motor y vuelve a la portada, que lo confirma.
+    sessionStorage.setItem(ACCOUNT_DELETED_FLAG, "1");
+    window.location.reload();
+    return null;
   },
 
   createEmperor: async (name) => {

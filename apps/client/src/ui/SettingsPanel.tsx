@@ -15,6 +15,7 @@ import {
 import { useAuth } from "../state/auth";
 import { useKeyLabels } from "./keys";
 import { SocialTab } from "./SocialTab";
+import { AccountTab } from "./AccountTab";
 import { LanguageToggle } from "./LanguageToggle";
 import { gameStore, useGame, useT } from "../state/store";
 
@@ -88,8 +89,9 @@ export function SettingsPanel() {
   const locale = useGame((s) => s.locale);
   const open = useGame((s) => s.settingsOpen);
   const bindings = useSettings((s) => s.bindings);
-  const [tab, setTab] = useState<"general" | "controls" | "social">("general");
+  const [tab, setTab] = useState<"general" | "controls" | "social" | "account">("general");
   const hasEmperor = useAuth((s) => s.emperor !== null);
+  const hasAccount = useAuth((s) => s.account !== null);
   const [capturing, setCapturing] = useState<{ action: Action; slot: number } | null>(null);
 
   // Captura la siguiente tecla pulsada para la acción elegida.
@@ -138,7 +140,7 @@ export function SettingsPanel() {
           </button>
         </div>
         <div className="tabs" role="tablist">
-          {(hasEmperor ? (["general", "controls", "social"] as const) : (["general", "controls"] as const)).map((id) => (
+          {(["general", "controls", ...(hasEmperor ? (["social"] as const) : []), ...(hasAccount ? (["account"] as const) : [])] as const).map((id) => (
             <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? "lang-btn active" : "lang-btn"} onClick={() => setTab(id)}>
               {t(`settings.tab.${id}`)}
             </button>
@@ -146,6 +148,7 @@ export function SettingsPanel() {
         </div>
         {tab === "general" && <GeneralTab />}
         {tab === "social" && <SocialTab />}
+        {tab === "account" && <AccountTab />}
         {tab === "controls" && (
           <>
         <h3>{t("settings.howToPlay")}</h3>

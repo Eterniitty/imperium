@@ -18,6 +18,7 @@ test("niebla de guerra: un sistema lejano sale sin explorar y, al llegar la flot
 
   await page.goto("/");
   await page.getByLabel("Correo electrónico").fill("exploradora@aeonarch.test");
+  await page.getByRole("checkbox", { name: /acepto los términos/ }).check();
   await page.getByRole("button", { name: "Enviar enlace de acceso" }).click();
   const link = await lastLoginLink("exploradora@aeonarch.test");
   await page.goto("about:blank");

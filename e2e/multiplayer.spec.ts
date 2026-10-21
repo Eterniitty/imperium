@@ -22,6 +22,7 @@ async function newPlayer(browser: Browser, email: string, name: string): Promise
   });
   await page.goto("/");
   await page.getByLabel("Correo electrónico").fill(email);
+  await page.getByRole("checkbox", { name: /acepto los términos/ }).check();
   await page.getByRole("button", { name: "Enviar enlace de acceso" }).click();
   await expect(page.getByText(`Te hemos enviado un enlace a ${email}`)).toBeVisible();
   const link = await lastLoginLink(email);

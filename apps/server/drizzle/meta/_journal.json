@@ -57,6 +57,13 @@
       "when": 1792536889870,
       "tag": "0007_amused_lady_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792544308327,
+      "tag": "0008_stiff_captain_marvel",
+      "breakpoints": true
     }
   ]
 }

@@ -13,6 +13,7 @@ test("la flota inicial aparece, se envía a otro sistema y llega", async ({ page
 
   await page.goto("/");
   await page.getByLabel("Correo electrónico").fill("almirante@aeonarch.test");
+  await page.getByRole("checkbox", { name: /acepto los términos/ }).check();
   await page.getByRole("button", { name: "Enviar enlace de acceso" }).click();
   const link = await lastLoginLink("almirante@aeonarch.test");
   await page.goto("about:blank");

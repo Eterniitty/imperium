@@ -10,6 +10,7 @@ const SEED = universeSeedFromString(process.env.VITE_UNIVERSE_SEED || "imperium-
 async function signIn(page: Page, email: string) {
   await page.goto("/");
   await page.getByLabel("Correo electrónico").fill(email);
+  await page.getByRole("checkbox", { name: /acepto los términos/ }).check();
   await page.getByRole("button", { name: "Enviar enlace de acceso" }).click();
   await expect(page.getByText(`Te hemos enviado un enlace a ${email}`)).toBeVisible();
   const link = await lastLoginLink(email);

@@ -159,6 +159,12 @@ describe("contenido del correo", () => {
     expect(en.subject).toBe("Your Aeonarch sign-in link");
     expect(en.text).toContain("15 minutes");
     expect(en.html).toContain('<html lang="en">');
+    // Pie legal: privacidad, términos y aviso legal en su idioma, y cómo borrar la cuenta.
+    const origin = new URL(LINK).origin;
+    expect(es.html).toContain(`href="${origin}/legal/privacidad.html"`);
+    expect(es.text).toContain(`${origin}/legal/aviso-legal.html`);
+    expect(es.text).toContain("Ajustes → Cuenta");
+    expect(en.html).toContain(`href="${origin}/legal/terms.html"`);
     // Sin imágenes ni recursos remotos.
     for (const mail of [es, en]) expect(mail.html).not.toMatch(/<img|src=|url\(/i);
   });
@@ -311,7 +317,7 @@ describe.skipIf(!TEST_DATABASE_URL)("petición de enlace con correo real", () =>
   }
 
   const request = (a: NonNullable<typeof app>, email: string, locale: Locale) =>
-    a.inject({ method: "POST", url: "/api/auth/request", payload: { email, locale }, remoteAddress: "10.0.0.1" });
+    a.inject({ method: "POST", url: "/api/auth/request", payload: { email, locale, acceptTerms: true }, remoteAddress: "10.0.0.1" });
 
   it("envía el correo con un enlace válido en el idioma pedido", async () => {
     const a = await appWithSmtp(smtp.port);
