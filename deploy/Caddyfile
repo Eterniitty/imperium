@@ -1,5 +1,5 @@
-# Configuración de Caddy de referencia (se copia a /etc/caddy/Caddyfile con USUARIO y
-# HASH_DE_LA_CONTRASEÑA sustituidos; el hash, de `caddy hash-password`).
+# Configuración de Caddy de referencia (se copia tal cual a /etc/caddy/Caddyfile; las
+# credenciales de la puerta de entrada van en el .env del servidor, no aquí).
 #
 # El juego se sirve en https://aeonarch.de a través de Cloudflare (proxy):
 # - Cloudflare -> servidor va cifrado con un certificado de origen de Cloudflare
@@ -14,11 +14,19 @@ aeonarch.de, www.aeonarch.de {
 	tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
 	encode zstd gzip
 
-	# Usuario y contraseña para todo salvo las páginas legales (la ley exige que
-	# cualquiera pueda leerlas). El usuario y el hash reales solo están en /etc.
-	@protected not path /legal/*
-	basicauth @protected {
-		USUARIO HASH_DE_LA_CONTRASEÑA
+	# Puerta de entrada propia (antes de abrir al público): su página y su API van
+	# sin protección; todo lo demás (salvo /legal/*, que la ley exige que sea
+	# público) solo con la cookie de la puerta, que comprueba el juego
+	# (apps/server/src/gate; variables GATE_* del .env).
+	@gate path /puerta/*
+	handle @gate {
+		reverse_proxy 127.0.0.1:3000 {
+			header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
+		}
+	}
+	@protected not path /legal/* /puerta/*
+	forward_auth @protected 127.0.0.1:3000 {
+		uri /puerta/check
 	}
 
 	# API y WebSocket: al servidor de juego, que solo escucha en la máquina local.
@@ -31,7 +39,7 @@ aeonarch.de, www.aeonarch.de {
 	}
 
 	# La Wiki (/wiki/, /wiki/<tema>/) son archivos del cliente compilado
-	# (wiki/<tema>/index.html): no necesita reglas propias y queda tras basicauth.
+	# (wiki/<tema>/index.html): no necesita reglas propias y queda tras la puerta de entrada.
 	# Todo lo demás: el cliente compilado. Los archivos con huella en el nombre
 	# (assets/*) no cambian nunca: caché larga en Cloudflare y en el navegador.
 	@assets path /assets/*
