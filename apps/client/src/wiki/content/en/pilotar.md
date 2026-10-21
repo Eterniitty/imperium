@@ -85,6 +85,15 @@ In the cockpit you see the **artificial horizon** (relative to the orbital plane
 - **Rounds and missiles**: limited. Only a small reserve is made on board.
 - **Resupply**: within 150 km of a planet with **one of your colonies**, the ship refills by itself from the colony's stock (volatiles for fuel, metal for rounds, alloys for missiles).
 
+## Remotely piloting your fleets' ships
+
+In the **Fleets** panel (also on the command bridge during a quantum trip), stationary fleets that are not in battle have a **Pilot** button: you take the controls of their biggest armed ship, in the system where the fleet is, even if your own ship is far away or travelling. Your Emperor's ship stays parked.
+
+- The ship fights in real time like any other (its weapons, shield and hull are those of its class), collides, burns near the star, and pirates attack it.
+- It makes no quantum jumps and does not leave the system: at the edge, or with [[M]], you go back to your ship (or to the tunnel, if you are travelling).
+- When you leave it, it returns to its fleet with whatever hull it has left. If it is destroyed, **the fleet loses it** (your Emperor does not die).
+- If the fleet sets off (travel order or interception), you stop piloting it.
+
 ## Parked ship
 
 When you leave the controls, your ship stays where it was and **orbits the star** like the planets. Others see it and can attack it; pirates only chase piloted ships. When you come back, you start from where it is.

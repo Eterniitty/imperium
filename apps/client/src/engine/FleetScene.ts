@@ -121,6 +121,18 @@ export class FleetScene {
   };
   private systemId: string | null = null;
   private layout: SystemLayout | null = null;
+  /** Nave que se pilota a distancia: no se dibuja con su flota (la dibuja el piloto). */
+  private hidden: { fleetId: string; classId: string } | null = null;
+
+  hide(fleetId: string | null, classId: string | null): void {
+    this.hidden = fleetId && classId ? { fleetId, classId } : null;
+  }
+
+  /** Dónde se dibuja una flota parada, o null si no está. */
+  fleetPosition(fleetId: string): THREE.Vector3 | null {
+    const g = this.fleets.get(fleetId);
+    return g ? g.root.position.clone() : null;
+  }
 
   constructor(
     /** Explosión en un punto (la de los efectos de combate). */
@@ -174,6 +186,8 @@ export class FleetScene {
       seen.add(f.id);
       const counts: ShipCounts = {};
       for (const s of f.ships) counts[s.classId] = (counts[s.classId] ?? 0) + 1;
+      const h = this.hidden;
+      if (h && h.fleetId === f.id && counts[h.classId]) counts[h.classId]! -= 1;
       const key = JSON.stringify(Object.entries(counts).sort());
       let g = this.fleets.get(f.id);
       if (g && g.key !== key) {

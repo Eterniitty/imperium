@@ -12,6 +12,16 @@ import type { WarEffects, WarService } from "../war/service";
 import type { SiegeEffects, SiegeService } from "../war/siege";
 
 /** Un jugador conectado por WebSocket. */
+/** Nave de una flota pilotada a distancia: de qué flota, en qué sistema y con qué casco empezó. */
+export interface RemotePilot {
+  shipId: string;
+  fleetId: string;
+  systemId: string;
+  classId: string;
+  hull: number;
+  name: string;
+}
+
 export interface Client {
   accountId: string;
   emperorId: string;
@@ -19,6 +29,8 @@ export interface Client {
   subscribed: Set<Topic>;
   /** Emperadores que este cliente ve ahora: solo a ellos se les avisa de que dejan de verse. */
   known: Set<string>;
+  /** Nave de una flota propia que pilota a distancia (orden `fleet.pilot`); sin ella, pilota su nave del Emperador. */
+  piloting?: RemotePilot | null;
   send(msg: ServerMessage): void;
   /** Cierra la conexión (el cierre la saca del centro y del espacio local). */
   close(code: number, reason: string): void;

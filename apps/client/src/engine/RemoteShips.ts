@@ -3,7 +3,7 @@ import { serverNow } from "../net/world";
 import { shipName, spaceStore, type PoseSample } from "../net/space";
 import { gameStore } from "../state/store";
 import type { WeaponKind } from "@imperium/shared";
-import { FLAGSHIP_HIT_RADIUS_M, getAlienShipClass, SHIP_COLLISION } from "@imperium/content";
+import { FLAGSHIP_HIT_RADIUS_M, getAnyShipClass, SHIP_COLLISION } from "@imperium/content";
 import { createFlagship, disposeShip, SHIP_SCALE, shipRig } from "./shipModel";
 import { createShipModel } from "./shipFactory";
 import { labelTexture } from "./textures";
@@ -172,7 +172,7 @@ export class RemoteShips {
     for (const [id, v] of this.visuals) {
       const s = ships[id]?.state;
       if (!s) continue;
-      const cls = s.classId ? getAlienShipClass(s.classId) : undefined;
+      const cls = s.classId ? getAnyShipClass(s.classId) : undefined;
       // Mismo radio que el servidor: la insignia, o según la eslora (mínimo 30 m).
       const other = cls ? Math.max(30, cls.model.lengthM * 0.45) : FLAGSHIP_HIT_RADIUS_M;
       const reach = radius + other;

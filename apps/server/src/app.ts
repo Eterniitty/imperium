@@ -143,6 +143,17 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   space.onFlagship = (emperorId) => void hub.publishFlagship(emperorId);
   // Espacio profundo: contenido secreto de las regiones y minería de sus asteroides.
   space.deep = new DeepSpaceService(deps.db, config);
+  // Naves de flota pilotadas a distancia: su casco vuelve a la flota; si caen, la flota la pierde.
+  space.fleetShips = {
+    saveHull: async (emperorId, fleetId, shipId, hull) => {
+      await fleets.setShipHull(fleetId, shipId, hull);
+      await hub.publishFleet(emperorId, fleetId);
+    },
+    destroyed: async (emperorId, fleetId, shipId) => {
+      await fleets.removeShip(fleetId, shipId);
+      await hub.publishFleet(emperorId, fleetId);
+    },
+  };
   // Fase 10: muerte y linaje (Cunas, gestación, Herederos y encarnación).
   const lineage = new LineageService(deps.db, config, colonies, app.log);
   lineage.layoutOf = (systemId) => flagships.layout(systemId);

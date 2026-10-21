@@ -1,9 +1,9 @@
-import { AIM_ASSIST, BODY_COLLISION, EMPEROR_FLAGSHIP, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, getAlienShipClass, MINING, PIRATE_AI } from "@imperium/content";
+import { AIM_ASSIST, BODY_COLLISION, EMPEROR_FLAGSHIP, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, getAlienShipClass, getShipClass, MINING, PIRATE_AI, type ShipClassId } from "@imperium/content";
 import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, isDeepId, type ServerMessage, type ShipPose, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
 import { addToHold, bodiesAt, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { EmperorService } from "../emperor/service";
-import type { Client } from "../realtime/hub";
+import type { Client, RemotePilot } from "../realtime/hub";
 import type { SocialService } from "../social/service";
 import type { FlagshipService } from "./flagship";
 import type { DeepSpaceService } from "./deep";
@@ -15,7 +15,12 @@ import { PendingArrivals, RIFT_ARRIVE_WINDOW_MS, riftNear, type RiftNotice } fro
 interface Member {
   /** Id del Emperador, o "pirate:<sistema>:<n>" para los piratas. */
   emperorId: string;
-  kind: "emperor" | "pirate";
+  kind: "emperor" | "pirate" | "fleet";
+  /** Solo naves de flota pilotadas a distancia: su Emperador, su clase, su flota y su nave (en la base de datos). */
+  owner?: string;
+  classId?: string;
+  fleetId?: string;
+  shipId?: string;
   /** Solo piratas: dónde viven, un valor fijo para variar su forma de rodear, su clase de nave y su puntería. */
   ai?: { home: Vec3; phase: number; classId: string; aimJitter: number };
   /** Radio de impacto (metros): las naves grandes son más fáciles de acertar. */
@@ -63,6 +68,9 @@ interface Member {
   /** Hasta cuándo no cuenta otro choque contra un cuerpo (`BODY_COLLISION.cooldownSec`). */
   bodyBumpUntil?: number;
 }
+
+/** Clave (e id de la nave en el espacio) de una nave de flota pilotada a distancia. */
+const fleetShipKey = (shipId: string) => `ship:${shipId}`;
 
 const TICK_MS = 100;
 /** Cada cuánto se difunde el escudo que se recarga (no hace falta a 10 Hz). */
@@ -121,6 +129,8 @@ export class SpaceService {
   private readonly deadPirates = new Map<string, number>();
   /** Espacio profundo: contenido de las regiones y minería (lo pone `buildApp`). */
   deep: DeepSpaceService | null = null;
+  /** Naves de flota pilotadas a distancia: guardar su casco al dejarlas y borrarlas si las destruyen (los pone el servidor). */
+  fleetShips: { saveHull(emperorId: string, fleetId: string, shipId: string, hull: number): Promise<void>; destroyed(emperorId: string, fleetId: string, shipId: string): Promise<void> } | null = null;
   /** Emperadores con la refinería de a bordo encendida (volátiles de la bodega → combustible). */
   private readonly refining = new Set<string>();
   /** Uniones en curso, para no validar dos veces a la vez la misma nave. */
@@ -246,12 +256,15 @@ export class SpaceService {
   }
 
   private stateFor(m: Member, viewer: Member | null): ShipState {
+    const owner = m.owner ?? m.emperorId;
+    const classId = m.ai?.classId ?? m.classId;
     return {
       id: m.emperorId,
       kind: m.kind,
-      ...(m.ai ? { classId: m.ai.classId } : {}),
+      ...(classId ? { classId } : {}),
       name: m.name,
-      ally: viewer !== null && viewer !== m && viewer.allies.has(m.emperorId),
+      // Compañeros, y las naves propias entre sí (la insignia aparcada y la nave de flota que se pilota).
+      ally: viewer !== null && viewer !== m && (viewer.allies.has(owner) || (viewer.owner ?? viewer.emperorId) === owner),
       ...m.pose,
       hull: Math.round(m.combat.hull),
       hullMax: m.combat.hullMax,
@@ -277,9 +290,9 @@ export class SpaceService {
 
   /** Posición recibida de un cliente que pilota en `systemId`. */
   async pose(client: Client, systemId: string, pose: ShipPose): Promise<void> {
-    let m: Member | null | undefined = this.members.get(client.emperorId);
+    let m: Member | null | undefined = this.members.get(this.keyOf(client));
     if (!m || m.systemId !== systemId) {
-      m = await this.join(client, systemId, pose);
+      m = client.piloting ? await this.joinFleetShip(client, systemId, pose) : await this.join(client, systemId, pose);
       if (!m) return;
     }
     if (m.park) {
@@ -358,6 +371,103 @@ export class SpaceService {
         reach: b.body.kind === "star" ? b.radius * 1.05 : b.radius + FLAGSHIP_LENGTH_M * 0.6,
       };
     }) as Array<{ center: Vec3; v: Vec3; reach: number }>;
+  }
+
+  // --- Naves de flota pilotadas a distancia (orden `fleet.pilot`) ---
+
+  /** Clave de la nave que pilota este cliente: la de su flota si pilota a distancia; si no, la de su Emperador. */
+  private keyOf(client: Client): string {
+    return client.piloting ? fleetShipKey(client.piloting.shipId) : client.emperorId;
+  }
+
+  /**
+   * Empieza a pilotar a distancia una nave de flota (ya validada: flota propia,
+   * parada y fuera de batalla). Si pilotaba su nave del Emperador, esta se
+   * queda aparcada. La nave entra en el espacio compartido con su primera posición.
+   */
+  startRemote(client: Client, pilot: RemotePilot): void {
+    if (client.piloting) this.endRemote(client, "left");
+    else this.leaveClient(client);
+    client.piloting = pilot;
+  }
+
+  /** Deja de pilotar a distancia: la nave vuelve a su flota con el casco que le quede. */
+  endRemote(client: Client, reason: "left" | "destroyed"): void {
+    const pilot = client.piloting;
+    if (!pilot) return;
+    client.piloting = null;
+    const key = fleetShipKey(pilot.shipId);
+    const m = this.members.get(key);
+    if (m) {
+      m.clients.delete(client);
+      if (m.clients.size === 0) {
+        const hull = Math.round(m.combat.hull);
+        this.leave(key, "left");
+        this.combatants.delete(key);
+        void this.fleetShips?.saveHull(m.owner!, m.fleetId!, m.shipId!, hull).catch((err: unknown) => this.log.error(err, "Error al guardar el casco de una nave de flota"));
+      }
+    }
+    if (reason === "destroyed") client.send({ t: "remoteEnded", reason });
+  }
+
+  /** La flota se va (orden de viaje o intercepción): quien pilotaba una de sus naves deja de hacerlo. */
+  releaseFleet(fleetId: string): void {
+    for (const m of [...this.members.values()]) {
+      if (m.kind !== "fleet" || m.fleetId !== fleetId) continue;
+      for (const c of [...m.clients]) {
+        this.endRemote(c, "left");
+        c.send({ t: "remoteEnded", reason: "left" });
+      }
+    }
+  }
+
+  /** Primera posición de una nave de flota pilotada: entra en la sala de su sistema (dentro del borde). */
+  private async joinFleetShip(client: Client, systemId: string, pose: ShipPose): Promise<Member | null> {
+    const pilot = client.piloting;
+    if (!pilot || pilot.systemId !== systemId) return null;
+    if (Math.hypot(...pose.p) > this.boundary(systemId) + BOUNDARY_SLACK) return null;
+    const cls = getShipClass(pilot.classId as ShipClassId);
+    if (!cls) return null;
+    const key = fleetShipKey(pilot.shipId);
+    const room = await this.ensureRoom(systemId);
+    const already = this.members.get(key);
+    if (already) {
+      already.clients.add(client);
+      return already;
+    }
+    // Mientras se preparaba la sala pudo dejar de pilotarla.
+    if (client.piloting !== pilot) return null;
+    const now = this.now();
+    const combat = new Combatant(cls.hull, cls.combat, now);
+    combat.hull = Math.max(1, Math.min(cls.hull, pilot.hull));
+    this.combatants.set(key, combat);
+    const m: Member = {
+      emperorId: key,
+      kind: "fleet",
+      owner: client.emperorId,
+      classId: cls.id,
+      fleetId: pilot.fleetId,
+      shipId: pilot.shipId,
+      radius: Math.max(HIT_RADIUS, cls.model.lengthM * 0.45),
+      name: pilot.name,
+      systemId,
+      clients: new Set([client]),
+      pose,
+      poseAt: now,
+      history: [{ t: now, p: pose.p }],
+      dirty: true,
+      allies: await this.social.mutualAllies(client.emperorId),
+      combat,
+      sentShield: -1,
+      park: null,
+    };
+    for (const o of room) this.sendTo(o, { t: "ship", ship: this.stateFor(m, o) });
+    room.add(m);
+    this.members.set(key, m);
+    client.send({ t: "space", systemId, serverTime: now, ships: [...room].filter((o) => o !== m).map((o) => this.stateFor(o, m)) });
+    client.send({ t: "ship", ship: this.stateFor(m, m) });
+    this.sendWeapons(m);
+    return m;
   }
 
   /**
@@ -506,7 +616,7 @@ export class SpaceService {
    * asteroide que se agota.
    */
   mine(client: Client, asteroid: number | null): void {
-    const m = this.members.get(client.emperorId);
+    const m = this.members.get(this.keyOf(client));
     const deep = this.deep;
     if (!m || m.park || !deep || !isDeepId(m.systemId)) return;
     const room = this.rooms.get(m.systemId);
@@ -612,6 +722,8 @@ export class SpaceService {
    * la nave (se guarda) y solo vale una vez tras tomar los mandos.
    */
   rift(client: Client, notice: RiftNotice): void {
+    // Las naves de flota no saltan.
+    if (client.piloting) return;
     const m = this.members.get(client.emperorId);
     const now = this.now();
     const piloting = !!m && !m.park && m.clients.has(client);
@@ -768,6 +880,7 @@ export class SpaceService {
 
   /** Una conexión se cierra o deja de pilotar: si era la última de su nave, la nave se queda aparcada. */
   leaveClient(client: Client): void {
+    if (client.piloting) return this.endRemote(client, "left");
     const m = this.members.get(client.emperorId);
     if (!m || !m.clients.delete(client)) return;
     if (m.clients.size > 0) return;
@@ -801,7 +914,7 @@ export class SpaceService {
 
   /** Disparo de la nave de este cliente. Lo que no cumple las reglas se ignora. */
   fire(client: Client, weapon: WeaponKind, dirIn: Vec3, targetId?: string): void {
-    const m = this.members.get(client.emperorId);
+    const m = this.members.get(this.keyOf(client));
     if (m) this.fireFrom(m, weapon, dirIn, targetId);
   }
 
@@ -836,8 +949,8 @@ export class SpaceService {
       if (d > def.rangeU || !to || to[0] * fwd[0] + to[1] * fwd[1] + to[2] * fwd[2] < MISSILE_LOCK_COS) return;
       hitDistance = d;
       dir = to;
-    } else if (m.kind === "emperor") {
-      // Cañón de una insignia: solo dentro del cono de los montajes.
+    } else if (m.kind !== "pirate") {
+      // Cañón de una nave pilotada: solo dentro del cono de los montajes.
       if (dir[0] * fwd[0] + dir[1] * fwd[1] + dir[2] * fwd[2] < CANNON_GIMBAL_COS) return;
     }
     const def = m.combat.tryFire(weapon, now);
@@ -920,6 +1033,21 @@ export class SpaceService {
    * o en el Núcleo Humano; la nave nueva se lee de la base de datos al renacer.
    */
   private async destroy(v: Member, by: string): Promise<void> {
+    if (v.kind === "fleet") {
+      const clients = [...v.clients];
+      this.leave(v.emperorId, "destroyed");
+      this.combatants.delete(v.emperorId);
+      for (const c of clients) {
+        c.piloting = null;
+        c.send({ t: "remoteEnded", reason: "destroyed" });
+      }
+      try {
+        await this.fleetShips?.destroyed(v.owner!, v.fleetId!, v.shipId!);
+      } catch (err) {
+        this.log.error(err, "Error al borrar una nave de flota destruida");
+      }
+      return;
+    }
     if (v.kind === "pirate") {
       this.leave(v.emperorId, "destroyed");
       this.combatants.delete(v.emperorId);
@@ -1000,7 +1128,7 @@ export class SpaceService {
         let best: number = PIRATE_AI.aggroRangeU;
         for (const o of room) {
           // Solo naves pilotadas: una nave aparcada, sin nadie a bordo, no les llama la atención.
-          if (o.kind !== "emperor" || o.clients.size === 0) continue;
+          if (o.kind === "pirate" || o.clients.size === 0) continue;
           const d = distance(m.pose.p, o.pose.p);
           if (d < best) {
             best = d;
@@ -1162,7 +1290,7 @@ export class SpaceService {
       const layout = this.layout(systemId);
       if (!layout?.starClass) continue;
       for (const m of room) {
-        if (m.kind !== "emperor" || m.park || m.combat.hull <= 0) continue;
+        if (m.kind === "pirate" || m.park || m.combat.hull <= 0) continue;
         const d = Math.hypot(...m.pose.p);
         if (insideEventHorizon(layout, d)) {
           m.combat.damage(m.combat.hull + m.combat.shield, now);

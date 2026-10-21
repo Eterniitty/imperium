@@ -71,24 +71,37 @@ export interface SpaceState {
   aim: { index: number; distance: number } | null;
   /** El láser de minería propio está encendido. */
   mining: boolean;
+  /** Nave de una flota propia que se pilota a distancia (`fleet.pilot`); null: la del Emperador. */
+  remote: { shipId: string; fleetId: string; classId: string; systemId: string } | null;
+  /** El servidor terminó el pilotaje a distancia (la nave cayó o la flota se fue), pendiente de atender. */
+  remoteEnded: "destroyed" | "left" | null;
 }
+
+/** Id en el espacio de una nave de flota pilotada a distancia (el mismo que usa el servidor). */
+export const fleetShipId = (shipId: string) => `ship:${shipId}`;
 
 /** Armas que se pueden seleccionar: cañón, misiles y láser de minería (solo en el espacio profundo). */
 export type SelectedWeapon = "cannon" | "missile" | "laser";
 
-const EMPTY: SpaceState = { systemId: null, ships: {}, correction: null, self: null, weapons: [], supplies: null, targetId: null, weapon: "cannon", shots: [], explosions: [], rifts: [], destroyed: null, field: null, beams: {}, hold: null, mineFail: null, aim: null, mining: false };
+const EMPTY: SpaceState = { systemId: null, ships: {}, correction: null, self: null, weapons: [], supplies: null, targetId: null, weapon: "cannon", shots: [], explosions: [], rifts: [], destroyed: null, field: null, beams: {}, hold: null, mineFail: null, aim: null, mining: false, remote: null, remoteEnded: null };
 
 export const spaceStore = createStore<SpaceState>()(() => ({ ...EMPTY }));
 
 /** Vacía el espacio local (al dejar de pilotar). Conserva un aviso de destrucción pendiente. */
 export function resetSpace(): void {
-  spaceStore.setState({ ...EMPTY, destroyed: spaceStore.getState().destroyed });
+  const { destroyed, remote, remoteEnded } = spaceStore.getState();
+  spaceStore.setState({ ...EMPTY, destroyed, remote, remoteEnded });
 }
 
 const MAX_SAMPLES = 8;
 
 /** Nombre visible de una nave: el del Emperador, o el de su tipo si es de la IA. */
 export function shipName(state: Pick<ShipState, "kind" | "name" | "classId">, locale: Locale): string {
+  // Nave de flota pilotada a distancia: «Emperador · Fragata».
+  if (state.kind === "fleet") {
+    const cls = state.classId ? contentDictionaries[locale][`ship.${state.classId}.name`] : undefined;
+    return cls ? `${state.name} · ${cls}` : state.name;
+  }
   if (state.kind !== "pirate") return state.name;
   // «Carroñero · Arponero»: el pueblo y su clase de nave.
   const cls = state.classId ? contentDictionaries[locale][`ship.${state.classId}.name`] : undefined;

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getShipClass, type ShipClassId } from "@imperium/content";
 import type { Fleet } from "@imperium/shared";
 import { engineRef } from "../engineRef";
 import { useWorld } from "../net/world";
@@ -9,6 +10,17 @@ import { cargoSummary } from "./FleetLogistics";
 import { contentText, shipCounts } from "./fleets";
 import { ShipThumb } from "./ShipThumb";
 import { formatDuration, useServerNow } from "./useNow";
+
+/** La nave armada más grande de una flota (la que se pilota a distancia), o undefined si no tiene. */
+function armedShip(f: Fleet): Fleet["ships"][number] | undefined {
+  let best: { ship: Fleet["ships"][number]; hull: number } | undefined;
+  for (const s of f.ships) {
+    const cls = getShipClass(s.classId as ShipClassId);
+    if (!cls || cls.combat.weapons.length === 0) continue;
+    if (!best || cls.hull > best.hull) best = { ship: s, hull: cls.hull };
+  }
+  return best?.ship;
+}
 
 /** Lista de las flotas propias: dónde están, a dónde van y con qué naves. Clic: centrar en la flota. */
 export function FleetsPanel() {
@@ -62,6 +74,12 @@ export function FleetsPanel() {
                   {f.route && <span className="small route-tag">{t("logistics.onRoute")}</span>}
                   {f.battleId && <span className="small battle-tag">{t("fleet.inBattle")}</span>}
                 </button>
+                {/* Pilotar a distancia una nave armada de la flota parada. */}
+                {!moving && !f.battleId && armedShip(f) && (
+                  <button className="link-btn small" title={t("remote.pilotTitle")} onClick={() => void engineRef.current?.pilotFleetShip(f.id, armedShip(f)!.id)}>
+                    {t("remote.pilot")}
+                  </button>
+                )}
               </li>
             );
           })}

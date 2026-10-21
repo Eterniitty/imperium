@@ -1,11 +1,12 @@
-import { anyFleetSpeedLyPerHour, FLEET_TACTICS, getAnyShipClass, SHIP_PASSENGERS, type ShipClassId } from "@imperium/content";
+import { anyFleetSpeedLyPerHour, FLEET_TACTICS, getAnyShipClass, getShipClass, SHIP_PASSENGERS, type ShipClassId } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import type { Cargo, CommandError, Fleet, FleetRoute, FleetTactic } from "@imperium/shared";
 import { isTravelling, travelDurationMs } from "@imperium/sim";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { fleetCargo, fleetRoutes, fleets, ships } from "../db/schema";
+import { emperors, fleetCargo, fleetRoutes, fleets, ships } from "../db/schema";
+import type { RemotePilot } from "../realtime/hub";
 import { findSystem, placeFromRow } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
 
@@ -99,6 +100,42 @@ export class FleetService {
         battleId: r.battleId,
         tactic: asTactic(r.tactic),
       };
+    });
+  }
+
+  /**
+   * Orden `fleet.pilot`: ¿se puede pilotar a distancia esta nave? La flota es
+   * propia, está parada (ni viajando ni en batalla) y la nave es suya y armada.
+   */
+  async pilotable(emperorId: string, fleetId: string, shipId: string): Promise<{ ok: true; pilot: RemotePilot } | { ok: false; error: CommandError }> {
+    const [f] = await this.db.select(columns).from(fleets).where(and(eq(fleets.id, fleetId), eq(fleets.emperorId, emperorId))).limit(1);
+    if (!f) return { ok: false, error: "no_fleet" };
+    if (f.destSystemId && f.arriveAt && f.arriveAt.getTime() > this.now()) return { ok: false, error: "in_transit" };
+    if (f.battleId) return { ok: false, error: "in_battle" };
+    const [s] = await this.db
+      .select({ id: ships.id, classId: ships.classId, hull: ships.hull })
+      .from(ships)
+      .where(and(eq(ships.id, shipId), eq(ships.fleetId, fleetId)))
+      .limit(1);
+    const cls = s ? getShipClass(s.classId as ShipClassId) : undefined;
+    if (!s || !cls) return { ok: false, error: "no_fleet" };
+    if (cls.combat.weapons.length === 0) return { ok: false, error: "ship_unarmed" };
+    const [{ name } = { name: "" }] = await this.db.select({ name: emperors.name }).from(emperors).where(eq(emperors.id, emperorId)).limit(1);
+    const systemId = f.destSystemId ?? f.systemId;
+    return { ok: true, pilot: { shipId: s.id, fleetId, systemId, classId: s.classId, hull: s.hull, name } };
+  }
+
+  /** Casco de una nave tras pilotarla a distancia. */
+  async setShipHull(fleetId: string, shipId: string, hull: number): Promise<void> {
+    await this.db.update(ships).set({ hull: Math.max(1, Math.round(hull)) }).where(and(eq(ships.id, shipId), eq(ships.fleetId, fleetId)));
+  }
+
+  /** Una nave pilotada a distancia ha caído: sale de su flota (y la flota, si se queda vacía, desaparece). */
+  async removeShip(fleetId: string, shipId: string): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx.delete(ships).where(and(eq(ships.id, shipId), eq(ships.fleetId, fleetId)));
+      const [left] = await tx.select({ id: ships.id }).from(ships).where(eq(ships.fleetId, fleetId)).limit(1);
+      if (!left) await tx.delete(fleets).where(eq(fleets.id, fleetId));
     });
   }
 

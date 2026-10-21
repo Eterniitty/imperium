@@ -97,6 +97,8 @@ export interface CommandArgs {
   "fleet.route": FleetRoute & { fleetId: string };
   /** Quita la ruta automática de una flota (se queda donde esté). */
   "fleet.routeStop": { fleetId: string };
+  /** Pilota a distancia una nave de una flota propia parada (ni viajando ni en batalla); `leave` deja de pilotarla. */
+  "fleet.pilot": { fleetId: string; shipId: string };
   /** Cambia la táctica de una flota propia en las batallas por rondas (desde cualquier sitio; en plena batalla vale desde la ronda siguiente). */
   "fleet.tactic": { fleetId: string; tactic: FleetTactic };
   /**
@@ -155,8 +157,8 @@ export interface ShipPose {
 export interface ShipState extends ShipPose {
   /** Id del Emperador (o de la nave de la IA). */
   id: string;
-  /** Nave de un Emperador o pirata de la IA (su nombre se traduce en el cliente). */
-  kind: "emperor" | "pirate";
+  /** Nave de un Emperador, pirata de la IA o nave de una flota pilotada a distancia (su nombre se traduce en el cliente). */
+  kind: "emperor" | "pirate" | "fleet";
   /**
    * Clase de nave de `@imperium/content` (las de la IA: p. ej. `scav_raider`),
    * para dibujar su modelo y su nombre. Sin ella, la nave de un Emperador.
@@ -252,6 +254,8 @@ export type CommandError =
   | "nothing_to_transfer"
   | "invalid_route"
   | "in_battle"
+  /** La nave no tiene armas (no se puede pilotar a distancia). */
+  | "ship_unarmed"
   | "no_target"
   | "unknown_faction"
   | "no_diplomacy"
@@ -328,6 +332,8 @@ export type ServerMessage =
    * gesta hasta `rebornAt` (hora del servidor) en `systemId` (una Cuna o el Núcleo Humano).
    */
   | { t: "destroyed"; by: string; systemId: string; rebornAt: number }
+  /** Se acabó el pilotaje a distancia de una nave de flota (`fleet.pilot`): la destruyeron o ya no se puede pilotar. */
+  | { t: "remoteEnded"; reason: "destroyed" | "left" }
   /** Estado de tus armas: munición restante y cuándo vuelven a estar listas (hora del servidor). */
   | { t: "weapons"; weapons: Array<{ kind: WeaponKind; ammo: number | null; ammoMax: number | null; readyAt: number }> }
   /**

@@ -245,6 +245,7 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                   case "fleet.move": {
                     const res = await fleets.move(owner.emperorId, msg.args.fleetId, msg.args.systemId);
                     if (res.ok) {
+                      space.releaseFleet(res.fleet.id);
                       // Una orden de viaje a mano saca a la flota de su ruta automática (y de su batalla: huye).
                       await logistics.clearRoute(owner.emperorId, res.fleet.id);
                       await hub.publishFleet(res.emperorId, res.fleet.id);
@@ -256,6 +257,7 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                   case "fleet.intercept": {
                     const res = await wars.intercept(owner.emperorId, msg.args.fleetId, msg.args.targetFleetId);
                     if (res.ok) {
+                      space.releaseFleet(res.fleet.id);
                       await logistics.clearRoute(owner.emperorId, res.fleet.id);
                       await hub.publishFleet(res.emperorId, res.fleet.id);
                       if (res.fledBattleId) await hub.publishBattle(res.fledBattleId);
@@ -322,6 +324,12 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                       for (const id of res.colonyIds) await hub.publishColony(res.emperorId, id);
                     }
                     return res;
+                  }
+                  case "fleet.pilot": {
+                    const res = await fleets.pilotable(owner.emperorId, msg.args.fleetId, msg.args.shipId);
+                    if (!res.ok) return res;
+                    space.startRemote(client, res.pilot);
+                    return { ok: true } as const;
                   }
                   case "fleet.tactic": {
                     const ok = await fleets.setTactic(owner.emperorId, msg.args.fleetId, msg.args.tactic);

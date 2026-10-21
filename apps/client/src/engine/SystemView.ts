@@ -9,6 +9,7 @@ import { telemetry, type FlightTelemetry } from "./telemetry";
 import { connection, serverNow } from "../net/world";
 import { RemoteShips } from "./RemoteShips";
 import { FleetScene } from "./FleetScene";
+import { createShipModel, shipLength } from "./shipFactory";
 import { Effects } from "./Effects";
 import { worldStore } from "../net/world";
 import { BODY_COLLISION, EMPEROR_FLAGSHIP, FLIGHT_MODEL, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_SUPPLIES, MINING, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC, QUANTUM_RIFT, SHIP_COLLISION, STAR_HEAT_LETHAL_DPS } from "@imperium/content";
@@ -151,6 +152,11 @@ export class SystemView implements View {
   private pendingEmerge = new Map<string, { at: THREE.Vector3; t: number }>();
   /** Sacudida de la cámara aplicada en el último fotograma (se deshace antes de colocarla). */
   private shakeQ = new THREE.Quaternion();
+  /** Eslora y radio de impacto de la nave propia (la insignia, o la nave de flota pilotada a distancia). */
+  private ownLength = FLAGSHIP_LENGTH_M;
+  private ownRadius = FLAGSHIP_HIT_RADIUS_M;
+  /** Se pilota a distancia una nave de flota (no salta, no aparca ni mina). */
+  private remotePiloting = false;
   /** Sacudida por un choque (0–1); se apaga en medio segundo. */
   private impactShake = 0;
   /**
@@ -547,6 +553,11 @@ export class SystemView implements View {
     return this.ship !== null;
   }
 
+  /** Se pilota a distancia una nave de flota (ver `Engine.pilotFleetShip`). */
+  get isRemote(): boolean {
+    return this.remotePiloting;
+  }
+
   /**
    * Órbita de aparcamiento de la nave propia en este sistema: la que dice el
    * servidor (tema `me`) o, si aún no ha llegado, la de por defecto.
@@ -562,12 +573,26 @@ export class SystemView implements View {
    * está aparcada (orbitando la estrella; tras un salto, en el borde del sistema),
    * mirando a la estrella.
    */
-  pilot(_from?: THREE.Vector3 | null): void {
+  pilot(_from?: THREE.Vector3 | null, remote?: { classId: string; fleetId: string }): void {
     this.stopPiloting();
     if (!this.layout) return;
-    const ship = createFlagship(0xc792ff);
-    ship.scale.setScalar(SHIP_SCALE);
-    ship.position.set(...parkedPosition(this.parkHere(), serverNow()));
+    let ship: THREE.Group;
+    if (remote) {
+      // Nave de una flota pilotada a distancia: sale de donde se dibuja su flota.
+      ship = createShipModel(remote.classId) ?? createFlagship(0xc792ff);
+      const length = shipLength(remote.classId) ?? FLAGSHIP_LENGTH_M;
+      this.ownLength = length;
+      this.ownRadius = Math.max(30, length * 0.45);
+      this.fleetScene.hide(remote.fleetId, remote.classId);
+      ship.position.copy(this.fleetScene.fleetPosition(remote.fleetId) ?? this.fleetScene.anchor(new THREE.Vector3())).add(new THREE.Vector3(0, length * 2, length * 4));
+    } else {
+      ship = createFlagship(0xc792ff);
+      ship.scale.setScalar(SHIP_SCALE);
+      this.ownLength = FLAGSHIP_LENGTH_M;
+      this.ownRadius = FLAGSHIP_HIT_RADIUS_M;
+      ship.position.set(...parkedPosition(this.parkHere(), serverNow()));
+    }
+    this.remotePiloting = !!remote;
     // Sin explorar, el sistema se dibuja sin planetas y su borde parece más cercano que el real:
     // la nave que llega de un salto (en el borde real) no debe salir nada más aparecer.
     this.boundary = Math.max(this.layout.boundary, ship.position.length() / ARRIVAL_EDGE + 1000);
@@ -805,7 +830,7 @@ export class SystemView implements View {
     connection.send({ t: "leave" });
     const flagship = worldStore.getState().flagship;
     // Solo si el servidor la tenía a los mandos (si no, su aparcamiento no ha cambiado).
-    if (flagship && flagship.systemId === this.systemId && spaceStore.getState().systemId === this.systemId) {
+    if (!this.remotePiloting && flagship && flagship.systemId === this.systemId && spaceStore.getState().systemId === this.systemId) {
       const p = this.ship.position;
       worldStore.setState({ flagship: { ...flagship, park: { p: [p.x, p.y, p.z], at: serverNow() } } });
     }
@@ -820,6 +845,8 @@ export class SystemView implements View {
     this.content.remove(this.ship);
     disposeShip(this.ship);
     this.ship = null;
+    this.remotePiloting = false;
+    this.fleetScene.hide(null, null);
     this.controls.enabled = true;
     this.cockpit.visible = false;
     this.dom.style.cursor = "";
@@ -1338,7 +1365,7 @@ export class SystemView implements View {
    * aparcamiento que diga (puede llegar después de empezar a pilotar).
    */
   private followParkUntilBoarded(): void {
-    if (!this.ship || spaceStore.getState().systemId === this.systemId) return;
+    if (!this.ship || this.remotePiloting || spaceStore.getState().systemId === this.systemId) return;
     const flagship = worldStore.getState().flagship;
     if (!flagship || flagship.systemId !== this.systemId) return;
     const at = new THREE.Vector3(...parkedPosition(flagship.park, serverNow()));
@@ -1375,7 +1402,7 @@ export class SystemView implements View {
     for (const b of this.bodies()) {
       // En un agujero negro no hay superficie: se cruza el horizonte (y el servidor destruye la nave).
       if (b.body.kind === "star" && this.layout?.starClass === "BH") continue;
-      const radius = b.body.kind === "star" ? b.radius * 1.05 : b.radius + FLAGSHIP_LENGTH_M * 0.6;
+      const radius = b.body.kind === "star" ? b.radius * 1.05 : b.radius + this.ownLength * 0.6;
       const d = ship.position.distanceTo(b.center);
       if (d >= radius || d === 0) continue;
       normal.copy(ship.position).sub(b.center).divideScalar(d);
@@ -1386,9 +1413,9 @@ export class SystemView implements View {
       hit = Math.max(hit, -inward - BODY_COLLISION.minImpactMps);
     }
     // Asteroides del espacio profundo.
-    if (this.deepId) hit = Math.max(hit, this.deep.collide(ship.position, this.flight!.velocity, FLAGSHIP_HIT_RADIUS_M) - BODY_COLLISION.minImpactMps);
+    if (this.deepId) hit = Math.max(hit, this.deep.collide(ship.position, this.flight!.velocity, this.ownRadius) - BODY_COLLISION.minImpactMps);
     // Otras naves.
-    hit = Math.max(hit, this.remote.collide(ship.position, this.flight!.velocity, FLAGSHIP_HIT_RADIUS_M) - SHIP_COLLISION.minClosingMps);
+    hit = Math.max(hit, this.remote.collide(ship.position, this.flight!.velocity, this.ownRadius) - SHIP_COLLISION.minClosingMps);
     // Sacudida según la fuerza del golpe (llena a partir de unos 200 m/s).
     if (hit > 0) this.impactShake = Math.max(this.impactShake, Math.min(1, 0.25 + hit / 200));
   }

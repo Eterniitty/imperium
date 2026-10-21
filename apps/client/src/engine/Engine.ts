@@ -4,7 +4,7 @@ import { naturalCause } from "../ui/deathCause";
 import { isTravelling, positionAt, quantumFuelCost, regenFuel } from "@imperium/sim";
 import { STAR_CLASSES } from "@imperium/procgen";
 import { spaceStore } from "../net/space";
-import { serverNow, worldStore } from "../net/world";
+import { connection, serverNow, worldStore } from "../net/world";
 import { authStore } from "../state/auth";
 import { unexploredDetail } from "../state/details";
 import { findSystemSummary, gameStore } from "../state/store";
@@ -125,6 +125,8 @@ export class Engine {
    */
   private onKey(code: string): void {
     if (isBound("toggleMap", code)) return this.toggleMap();
+    // Una nave de flota pilotada a distancia no salta.
+    if (isBound("jump", code) && this.system.isRemote) return this.notify("remote.cannotJump");
     if (isBound("dropOut", code) && this.jumping) return void this.dropOut();
     if (isBound("jump", code) && this.active === this.galaxy) return void this.jumpToSelected();
     if (isBound("jump", code) && this.active === this.system && this.system.isPiloting && !this.system.quantumActive) {
@@ -133,6 +135,60 @@ export class Engine {
     }
     if (code === "Escape" && gameStore.getState().quantumPanel) return gameStore.getState().setQuantumPanel(false);
     this.active.onKey(code);
+  }
+
+  // --- Pilotar a distancia naves de las flotas (orden `fleet.pilot`) ---
+
+  /**
+   * Toma los mandos de una nave armada de una flota propia parada, esté donde
+   * esté (también durante el viaje cuántico). La nave del Emperador se queda
+   * aparcada; M (o salir del sistema) devuelve a ella o al túnel.
+   */
+  async pilotFleetShip(fleetId: string, shipId: string): Promise<void> {
+    const fleet = worldStore.getState().fleets[fleetId];
+    const ship = fleet?.ships.find((s) => s.id === shipId);
+    if (!fleet || !ship) return;
+    // Una flota que ya llegó de un viaje está en su destino.
+    const at = fleet.travel && fleet.travel.arriveAt <= serverNow() ? fleet.travel.to : fleet.location;
+    const summary = findSystemSummary(at.systemId);
+    if (!summary) return;
+    // Primero se aparca la nave que se pilotaba (su `leave` llega al servidor antes que la orden).
+    const was = this.active === this.system && this.system.isPiloting && !this.system.isRemote;
+    if (this.active === this.system && this.system.isPiloting) this.system.stopPiloting();
+    const error = await connection.command("fleet.pilot", { fleetId, shipId });
+    if (error) {
+      this.notify(error);
+      if (was) this.pilot(null);
+      return;
+    }
+    spaceStore.setState({ remote: { shipId, fleetId, classId: ship.classId, systemId: summary.id }, remoteEnded: null });
+    this.galaxy.follow(null);
+    gameStore.getState().select(summary);
+    this.buildSystem(summary);
+    this.switchTo(this.system);
+    gameStore.getState().setView("system");
+    this.system.pilot(null, { classId: ship.classId, fleetId });
+    this.notify("remote.started", { key: keyLabel(settingsStore.getState().bindings.toggleMap[0] ?? "", gameStore.getState().locale) });
+  }
+
+  /** Deja la nave de flota: vuelve al túnel si el Emperador viaja; si no, a los mandos de su nave. */
+  endRemote(): void {
+    if (this.system.isRemote) this.system.stopPiloting();
+    spaceStore.setState({ remote: null, remoteEnded: null });
+    const emperor = this.emperor();
+    if (emperor?.travel && isTravelling(emperor, serverNow())) this.enterTunnel();
+    else if (!this.pilot(null)) this.exitSystem();
+  }
+
+  /** El servidor terminó el pilotaje a distancia (la nave cayó o la flota se fue). */
+  private checkRemote(): void {
+    const ended = spaceStore.getState().remoteEnded;
+    if (!ended) return;
+    spaceStore.setState({ remoteEnded: null });
+    if (!this.system.isRemote) return;
+    if (ended === "destroyed") this.system.explodeOwnShip();
+    this.notify(ended === "destroyed" ? "remote.destroyed" : "remote.ended");
+    this.endRemote();
   }
 
   /** Emperador propio con su viaje resuelto, o null si no hay sesión con Emperador. */
@@ -184,6 +240,7 @@ export class Engine {
    */
   toggleMap(): void {
     gameStore.getState().setQuantumPanel(false);
+    if (this.system.isRemote) return this.endRemote();
     if (this.active === this.tunnel) {
       this.showTravelOnMap();
     } else if (this.active === this.system) {
@@ -206,6 +263,8 @@ export class Engine {
 
   /** La nave cruzó el borde del sistema: espacio interestelar, con la estrella a la espalda. */
   private leaveSystem(direction: THREE.Vector3): void {
+    // Una nave de flota no sale del sistema: se deja de pilotar y vuelve a su flota.
+    if (this.system.isRemote) return this.endRemote();
     const star = gameStore.getState().selected;
     this.system.stopPiloting();
     this.switchTo(this.galaxy);
@@ -388,7 +447,7 @@ export class Engine {
       this.destroyedShown = false;
     }
     // Encarnación estando vivo: la nave aparece en otro sistema.
-    if (emperor && !emperor.travel && this.active === this.system && this.system.isPiloting && this.shown && this.shown.id !== emperor.location.systemId) {
+    if (emperor && !emperor.travel && this.active === this.system && this.system.isPiloting && !this.system.isRemote && this.shown && this.shown.id !== emperor.location.systemId) {
       this.system.stopPiloting();
       this.pilot(null);
     }
@@ -563,6 +622,7 @@ export class Engine {
     const dt = Math.min(this.timer.getDelta(), 0.1);
     this.checkArrival();
     this.checkDestroyed();
+    this.checkRemote();
     this.active.update(dt);
     const prefs = settingsStore.getState().prefs;
     const charge = this.active === this.system ? telemetry.quantumCharge : null;

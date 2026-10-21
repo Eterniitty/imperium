@@ -23,7 +23,7 @@ import {
 import { api, authStore } from "../state/auth";
 import { gameStore } from "../state/store";
 import { factionName } from "../ui/aliens";
-import { addSample, resetSpace, spaceStore, type RemoteShip } from "./space";
+import { addSample, fleetShipId, resetSpace, spaceStore, type RemoteShip } from "./space";
 
 /**
  * Estado del mundo compartido que llega por el WebSocket:
@@ -286,7 +286,9 @@ class Connection {
         return;
       }
       case "ship": {
-        if (msg.ship.id === worldStore.getState().myEmperorId) return spaceStore.setState({ self: msg.ship });
+        const remote = spaceStore.getState().remote;
+        const selfId = remote ? fleetShipId(remote.shipId) : worldStore.getState().myEmperorId;
+        if (msg.ship.id === selfId) return spaceStore.setState({ self: msg.ship });
         const ships = { ...spaceStore.getState().ships };
         const prev = ships[msg.ship.id];
         const ship: RemoteShip = { state: msg.ship, samples: prev?.samples ?? [] };
@@ -337,6 +339,9 @@ class Connection {
         return;
       case "destroyed":
         spaceStore.setState({ destroyed: { by: msg.by, systemId: msg.systemId, rebornAt: msg.rebornAt, at: Date.now() } });
+        return;
+      case "remoteEnded":
+        spaceStore.setState({ remoteEnded: msg.reason });
         return;
       // Espacio profundo y minería.
       case "field":

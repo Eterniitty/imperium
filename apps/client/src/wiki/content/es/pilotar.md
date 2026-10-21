@@ -85,6 +85,15 @@ En la cabina ves el **horizonte artificial** (respecto al plano de las órbitas)
 - **Proyectiles y misiles**: contados. A bordo solo se fabrica una pequeña reserva.
 - **Reponer**: a menos de 150 km de un planeta con **colonia propia**, la nave se repone sola con las existencias de la colonia (volátiles para el combustible, metal para los proyectiles, aleaciones para los misiles).
 
+## Pilotar naves de tus flotas a distancia
+
+En el panel de **Flotas** (también en el puente de mando, durante un viaje cuántico), las flotas paradas que no estén en batalla tienen el botón **Pilotar**: tomas los mandos de su nave armada más grande, en el sistema donde esté la flota, aunque tu nave esté lejos o viajando. Tu nave del Emperador se queda aparcada.
+
+- La nave combate en tiempo real como cualquier otra (sus armas, escudo y casco son los de su clase), choca, se quema cerca de la estrella y los piratas la atacan.
+- No hace saltos cuánticos ni sale del sistema: al llegar al borde, o con [[M]], vuelves a tu nave (o al túnel, si viajas).
+- Al dejarla vuelve a su flota con el casco que le quede. Si la destruyen, **la flota la pierde** (sin muerte del Emperador).
+- Si la flota se pone en marcha (orden de viaje o intercepción), dejas de pilotarla.
+
 ## Nave aparcada
 
 Al dejar los mandos, tu nave se queda donde estaba y **orbita la estrella** como los planetas. Los demás la ven y pueden atacarla; los piratas solo persiguen naves pilotadas. Al volver, sales desde donde está.
