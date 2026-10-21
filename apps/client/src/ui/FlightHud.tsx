@@ -21,6 +21,40 @@ export function speedParts(v: number): [string, "pilot.unitKm" | "pilot.unitM"] 
   return v >= 1000 ? [(v / 1000).toFixed(v >= 100_000 ? 0 : 1), "pilot.unitKm"] : [v.toFixed(0), "pilot.unitM"];
 }
 
+/** Etapas del arranque: se marcan al pasar su umbral de potencia. */
+const ENGINE_STAGES = [
+  ["pilot.engineStage.reactor", 0.15],
+  ["pilot.engineStage.pumps", 0.45],
+  ["pilot.engineStage.ignition", 0.75],
+  ["pilot.engineStage.systems", 0.98],
+] as const;
+
+/** Aviso central con los motores apagados (cómo arrancarlos) y progreso del arranque. */
+function EnginePanel({ state, power, engineKey }: { state: "off" | "starting" | "stopping"; power: number; engineKey: string }) {
+  const t = useT();
+  return (
+    <div className={`engine-panel panel ${state}`}>
+      {state === "off" && <div className="engine-title">{t("pilot.enginesOff", { key: engineKey })}</div>}
+      {state === "stopping" && <div className="engine-title">{t("pilot.enginesStopping")}</div>}
+      {state === "starting" && (
+        <>
+          <div className="engine-title">{t("pilot.enginesStarting", { pct: Math.round(power * 100) })}</div>
+          <div className="flight-bar">
+            <span style={{ width: `${Math.min(100, power * 100)}%` }} />
+          </div>
+          <ul className="engine-stages">
+            {ENGINE_STAGES.map(([key, at]) => (
+              <li key={key} className={power >= at ? "done" : power >= at - 0.3 ? "busy" : ""}>
+                {power >= at ? "■" : "□"} {t(key)}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
 /** Mira y velocímetro al volar: la cámara libre en el mapa o la nave al pilotar en un sistema. */
 export function FlightHud() {
   const t = useT();
@@ -38,8 +72,12 @@ export function FlightHud() {
   const [num, unit] = speedParts(speed);
   const [limitNum, limitUnit] = speedParts(tel.pulseLimit);
   const scale = pulse ? Math.log(1 + speed) / Math.log(1 + PULSE_MAX_SPEED) : speed / MAX_SPEED[view];
+  const engines = piloting ? tel.engines : "on";
+  // El HUD se enciende con los motores: apagado se ve tenue; durante el arranque, a medias.
+  const hudClass = engines === "on" ? "flight-hud" : engines === "off" ? "flight-hud hud-dark" : "flight-hud hud-booting";
   return (
-    <div className="flight-hud" aria-hidden>
+    <div className={hudClass} aria-hidden>
+      {piloting && engines !== "on" && <EnginePanel state={engines} power={tel.enginePower} engineKey={keys.engines} />}
       {piloting && <FlightInstruments />}
       {(!piloting || camera === "first") && (
         <svg className="crosshair" viewBox="0 0 46 46">
@@ -68,6 +106,7 @@ export function FlightHud() {
               {" "}
               · {t("pilot.assist")} {assist ? "ON" : "OFF"} ({keys.flightAssist})
             </span>
+            {engines === "on" && <span className="muted"> · {t("pilot.enginesStopHint", { key: keys.engines })}</span>}
             <div className="muted">
               {t(`pilot.region.${tel.gravity.region}`)}
               {tel.gravity.body && ` · ${tel.gravity.body}`}

@@ -47,6 +47,12 @@ export interface ShipRig {
   /** Enciende los propulsores de maniobra que producen ese movimiento (valores -1..1). */
   setManeuver(m: Maneuver): void;
   /**
+   * Potencia de la nave de 0 (motores apagados: toberas frías, sin llamas y solo
+   * las balizas) a 1 (encendidos; por defecto). Entre medias, el arranque: las
+   * luces de estado se encienden y las toberas se calientan.
+   */
+  setPower(k: number): void;
+  /**
    * Avanza las animaciones. `idle` (0–1) es cuánto está quieta: entonces se
    * balancea y deriva un poco, como si flotase. No cambia la posición real.
    */
@@ -303,6 +309,7 @@ export function assembleShip(t: Template, opts: AssembleOptions): THREE.Group {
 
   let thrust = 0;
   let pulse = false;
+  let power = 1;
   const want = new THREE.Vector3();
   const spin = new THREE.Vector3();
   const rcsLevel = new Float32Array(t.thrusters.length);
@@ -325,6 +332,9 @@ export function assembleShip(t: Template, opts: AssembleOptions): THREE.Group {
       thrust = Math.max(0, Math.min(1, k));
       pulse = p;
     },
+    setPower(k) {
+      power = Math.max(0, Math.min(1, k));
+    },
     setManeuver(m) {
       const c = (x: number | undefined) => Math.max(-1, Math.min(1, x ?? 0));
       // Ejes locales: x estribor, y arriba, -z morro. Giros: cabeceo +X, guiñada a la derecha -Y, alabeo a la derecha -Z.
@@ -333,16 +343,26 @@ export function assembleShip(t: Template, opts: AssembleOptions): THREE.Group {
     },
     tick(time, dt, idle) {
       const flicker = 0.9 + 0.1 * Math.sin(time * 37 + phase) * Math.sin(time * 23);
+      // Llamas desde el 70 % del arranque (el encendido); antes, solo se calientan las toberas.
+      const lit = Math.max(0, Math.min(1, (power - 0.7) / 0.3));
       if (flames) {
-        const len = (pulse ? 4.5 : 0.3 + thrust * 1.9) * flicker;
+        const len = (pulse ? 4.5 : 0.3 + thrust * 1.9) * flicker * lit;
         updateFlames(len, len * 0.55);
         flames.visible = cores!.visible = len > 0.05;
       }
-      engineMat.color.copy(engineBase).multiplyScalar(0.35 + thrust * 0.65 + (pulse ? 0.3 : 0));
-      for (const s of glows) s.scale.setScalar(s.userData.base * (0.45 + thrust * 0.7 + (pulse ? 0.6 : 0)) * flicker);
+      engineMat.color.copy(engineBase).multiplyScalar((0.35 + thrust * 0.65 + (pulse ? 0.3 : 0)) * Math.min(1, power * 1.2) + 0.03);
+      for (const s of glows) {
+        s.visible = lit > 0;
+        s.scale.setScalar(s.userData.base * (0.45 + thrust * 0.7 + (pulse ? 0.6 : 0)) * flicker * lit);
+      }
       // Propulsores: encendido suave hacia lo pedido.
       if (rcsColor) {
         const k = dt > 0 ? Math.min(1, dt * 14) : 1;
+        // Sin motores no hay propulsores de maniobra.
+        if (power < 1) {
+          want.set(0, 0, 0);
+          spin.set(0, 0, 0);
+        }
         t.thrusters.forEach((th, i) => {
           const target = Math.min(1, Math.max(0, th.force.dot(want)) + Math.max(0, th.torque.dot(spin)));
           rcsLevel[i]! += (target - rcsLevel[i]!) * k;
@@ -352,7 +372,9 @@ export function assembleShip(t: Template, opts: AssembleOptions): THREE.Group {
         rcsColor.needsUpdate = true;
       }
       // Destellos blancos breves; balizas rojas lentas.
-      if (lightPoints.strobe) lightPoints.strobe.visible = (time + phase) % 1.6 < 0.07 || ((time + phase) % 1.6 > 0.2 && (time + phase) % 1.6 < 0.26);
+      // Luces de estado: se encienden durante el arranque (las fijas primero, los destellos al final).
+      if (lightPoints.steady) lightPoints.steady.visible = power >= 0.25 || (power > 0.1 && Math.sin(time * 40) > 0);
+      if (lightPoints.strobe) lightPoints.strobe.visible = power >= 0.85 && ((time + phase) % 1.6 < 0.07 || ((time + phase) % 1.6 > 0.2 && (time + phase) % 1.6 < 0.26));
       if (lightPoints.beacon) lightPoints.beacon.visible = (time + phase * 0.5) % 2.0 < 1.0;
       body.position.set(Math.sin(time * 0.31 + phase) * (L / unit) * 0.0012 * idle, Math.sin(time * 0.47 + phase) * (L / unit) * 0.004 * idle, 0);
       body.rotation.set(Math.sin(time * 0.37 + phase) * 0.02 * idle, 0, Math.sin(time * 0.29 + 1 + phase) * 0.03 * idle);

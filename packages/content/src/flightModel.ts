@@ -35,4 +35,10 @@ export const FLIGHT_MODEL = {
   substep: 1 / 120,
   /** Al apagar el pulso, la velocidad sobrante se pierde con esta rapidez (1/s). */
   pulseDumpRate: 2,
+  /**
+   * Arranque de los motores (s): al tomar los mandos están apagados; sin ellos
+   * no hay empuje, giros ni pulso. Apagarlos tarda `engineStopSec`.
+   */
+  engineStartSec: 4,
+  engineStopSec: 1.5,
 } as const;

@@ -53,6 +53,11 @@ export class ShipController {
   /** Lo que piden los mandos ahora (para los propulsores de maniobra del modelo). */
   readonly maneuver: Maneuver = { x: 0, y: 0, z: 0, pitch: 0, yaw: 0, roll: 0 };
   pulseLimit = 0;
+  /**
+   * Motores encendidos. Apagados (o arrancando) no hay empuje, giros ni pulso:
+   * la nave solo sigue con su inercia y la gravedad.
+   */
+  powered = true;
   private pulseOn = false;
   private pulseSpeed = 0;
   private mouse: { x: number; y: number; ox: number; oy: number } | null = null;
@@ -119,10 +124,12 @@ export class ShipController {
     const kb = this.keyboard;
     const prefs = settingsStore.getState().prefs.flight;
     const M = FLIGHT_MODEL;
+    if (!this.powered) this.pulseOn = false;
+    const live = this.enabled && this.powered;
 
     // Mandos de giro (−1 a 1 por eje).
     const turn = this.turn.set(0, 0, 0);
-    if (this.enabled) {
+    if (live) {
       if (kb.action("pitchUp")) turn.x += 1;
       if (kb.action("pitchDown")) turn.x -= 1;
       if (kb.action("turnLeft")) turn.y += 1;
@@ -138,7 +145,7 @@ export class ShipController {
     }
     // Mandos de traslación, en ejes de la nave (−Z es delante).
     const input = this.input.set(0, 0, 0);
-    if (this.enabled) {
+    if (live) {
       if (kb.action("forward")) input.z -= 1;
       if (kb.action("back")) input.z += 1;
       if (kb.action("strafeLeft")) input.x -= 1;
@@ -146,7 +153,7 @@ export class ShipController {
       if (kb.action("up")) input.y += 1;
       if (kb.action("down")) input.y -= 1;
     }
-    const boost = this.enabled && kb.action("boost");
+    const boost = live && kb.action("boost");
     Object.assign(this.maneuver, { x: input.x, y: input.y, z: input.z, pitch: turn.x, yaw: turn.y, roll: turn.z });
 
     const accelK = prefs.accel;
@@ -175,7 +182,7 @@ export class ShipController {
         this.pulseSpeed = stepPulseSpeed(this.pulseSpeed, this.pulseLimit, h);
         this.velocity.set(0, 0, -1).applyQuaternion(this.ship.quaternion).multiplyScalar(this.pulseSpeed);
       } else {
-        this.stepThrust(input, prefs.assist, maxSpeed, accelK * (boost ? M.boostAccelFactor : 1), prefs.inertia, h);
+        if (this.powered) this.stepThrust(input, prefs.assist, maxSpeed, accelK * (boost ? M.boostAccelFactor : 1), prefs.inertia, h);
         if (this.gravity) this.gravity(this.ship.position, this.external);
         else this.external.set(0, 0, 0);
         this.velocity.addScaledVector(this.external, h);
@@ -183,7 +190,7 @@ export class ShipController {
       // Semi-implícito: primero la velocidad, luego la posición con la velocidad nueva.
       this.ship.position.addScaledVector(this.velocity, h);
     }
-    const target = this.pulseOn ? 1 : input.lengthSq() > 0 ? (boost ? 1 : 0.55) : 0.08;
+    const target = !this.powered ? 0 : this.pulseOn ? 1 : input.lengthSq() > 0 ? (boost ? 1 : 0.55) : 0.08;
     this.thrust += (target - this.thrust) * Math.min(1, dt * 4);
     return this.ship.position.clone().sub(start);
   }

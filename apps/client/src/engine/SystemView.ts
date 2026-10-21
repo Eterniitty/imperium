@@ -10,8 +10,9 @@ import { RemoteShips } from "./RemoteShips";
 import { FleetScene } from "./FleetScene";
 import { Effects } from "./Effects";
 import { worldStore } from "../net/world";
-import { EMPEROR_FLAGSHIP, FLAGSHIP_LENGTH_M, FLAGSHIP_SUPPLIES, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC, QUANTUM_RIFT } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, FLIGHT_MODEL, FLAGSHIP_LENGTH_M, FLAGSHIP_SUPPLIES, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC, QUANTUM_RIFT } from "@imperium/content";
 import { playQuantumCharge, playQuantumTear, stopQuantumCharge } from "../audio/quantumSfx";
+import { playEngineStart, playEngineStop, stopEngineSound } from "../audio/engineSfx";
 import { RiftField } from "./fx/riftPortal";
 import { distanceGain, playCannon, playExplosion, playHit, playMissile } from "../audio/combatSfx";
 import { isBound, settingsStore, type Action } from "../state/settings";
@@ -121,6 +122,13 @@ export class SystemView implements View {
   private arrival: { t: number; spawn: THREE.Vector3; dir: THREE.Vector3; q: THREE.Quaternion } | null = null;
   /** Grietas del salto cuántico (la propia y las de otras naves), en el mundo. */
   readonly rifts = new RiftField();
+  /**
+   * Motores de la nave propia: al tomar los mandos están apagados y hay que
+   * arrancarlos (tecla «engines»); `t` es el tiempo en el estado actual.
+   */
+  private engines: { state: "off" | "starting" | "on" | "stopping"; t: number; from: number } = { state: "off", t: 0, from: 0 };
+  /** Para no repetir el aviso de «motores apagados» a cada fotograma. */
+  private enginesHintAt = 0;
   private targetRing: THREE.Sprite;
   /** Cadencia local del cañón: no se envían disparos que el servidor rechazaría. */
   private cannonReadyAt = 0;
@@ -410,6 +418,9 @@ export class SystemView implements View {
       out.set(g.acc[0], g.acc[1], g.acc[2]);
     };
     this.flight = flight;
+    // Al tomar los mandos, los motores están apagados (salvo al llegar de un salto: ver `arriveFromJump`).
+    this.engines = { state: "off", t: 0, from: 0 };
+    flight.powered = false;
     this.leaving = false;
     this.controls.enabled = false;
     this.chase.reset();
@@ -428,6 +439,9 @@ export class SystemView implements View {
     const ship = this.ship;
     if (!ship) return;
     const dir = this.forward();
+    // Llega del túnel con los motores en marcha.
+    this.engines = { state: "on", t: 0, from: 1 };
+    if (this.flight) this.flight.powered = true;
     this.arrival = { t: 0, spawn: ship.position.clone(), dir, q: ship.quaternion.clone() };
     const reduce = settingsStore.getState().prefs.reduceEffects;
     this.rifts.open("self:arrive", ship.position, ship.quaternion, reduce).arrive();
@@ -508,6 +522,11 @@ export class SystemView implements View {
     // Mientras tanto la nave se detiene y no responde a los mandos.
     this.flight.stop();
     const fwd = this.forward();
+    if (q.phase === "align" && this.engines.state !== "on") {
+      // Sin motores no hay salto: se arrancan solos y luego se alinea.
+      if (this.engines.state !== "starting") this.startEngines();
+      return;
+    }
     if (q.phase === "align") {
       const target = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), q.dir);
       ship.quaternion.rotateTowards(target, QUANTUM_ALIGN_RAD_PER_SEC * dt);
@@ -571,6 +590,7 @@ export class SystemView implements View {
   stopPiloting(): void {
     if (!this.ship) return;
     this.cancelQuantum();
+    stopEngineSound();
     // Deja de pilotar: la nave se queda aparcada aquí, orbitando (el servidor lo confirma por el tema `me`).
     connection.send({ t: "leave" });
     const flagship = worldStore.getState().flagship;
@@ -613,8 +633,61 @@ export class SystemView implements View {
   private togglePulse(): void {
     const flight = this.flight;
     if (!flight) return;
+    if (this.engines.state !== "on") return this.events.notify("pilot.enginesOffShort", "engines");
     if (!flight.pulse && this.outOfFuel()) return this.events.notify("pilot.noFuel");
     flight.pulse = !flight.pulse;
+  }
+
+  /** Potencia de los motores (0–1) según su estado. */
+  private enginePower(): number {
+    const e = this.engines;
+    const M = FLIGHT_MODEL;
+    if (e.state === "on") return 1;
+    if (e.state === "off") return 0;
+    if (e.state === "starting") return Math.min(1, e.from + e.t / M.engineStartSec);
+    return Math.max(0, e.from - e.t / M.engineStopSec);
+  }
+
+  /** Arranca los motores (desde apagados o mientras se apagan). */
+  private startEngines(): void {
+    if (this.engines.state === "on" || this.engines.state === "starting") return;
+    const from = this.enginePower();
+    this.engines = { state: "starting", t: 0, from };
+    playEngineStart(FLIGHT_MODEL.engineStartSec * (1 - from));
+  }
+
+  /** Tecla de los motores: arrancar o apagar. */
+  private toggleEngines(): void {
+    if (this.engines.state === "off" || this.engines.state === "stopping") return this.startEngines();
+    const from = this.enginePower();
+    if (this.flight) this.flight.pulse = false;
+    this.engines = { state: "stopping", t: 0, from };
+    playEngineStop(FLIGHT_MODEL.engineStopSec);
+  }
+
+  /** Avanza el arranque o el apagado y lo aplica a los mandos, el modelo y el HUD. */
+  private updateEngines(dt: number): void {
+    const e = this.engines;
+    e.t += dt;
+    const power = this.enginePower();
+    if (e.state === "starting" && power >= 1) this.engines = { state: "on", t: 0, from: 1 };
+    else if (e.state === "stopping" && power <= 0) this.engines = { state: "off", t: 0, from: 0 };
+    const on = this.engines.state === "on";
+    if (this.flight) this.flight.powered = on;
+    telemetry.engines = this.engines.state;
+    telemetry.enginePower = power;
+    if (this.ship) {
+      // Durante el arranque, la potencia titubea un poco (bombas y encendido).
+      const jitter = this.engines.state === "starting" && power > 0.2 && power < 0.95 ? 0.85 + 0.15 * Math.sin(this.time * 31) : 1;
+      shipRig(this.ship).setPower(power * jitter);
+    }
+    // Se intenta mover la nave con los motores apagados: se recuerda cómo arrancarlos.
+    if (!on && this.engines.state !== "starting" && !this.quantum && !this.arrival && (["forward", "back", "boost", "pitchUp", "pitchDown", "turnLeft", "turnRight"] as const).some((a) => this.keyboard.action(a))) {
+      if (this.time - this.enginesHintAt > 4) {
+        this.enginesHintAt = this.time;
+        this.events.notify("pilot.enginesOffShort", "engines");
+      }
+    }
   }
 
   /** Cambia un ajuste de pilotaje (asistencia, pilotaje con ratón) y lo avisa. */
@@ -984,6 +1057,7 @@ export class SystemView implements View {
       }
       this.updateNavigation();
       const departing = this.quantum?.phase === "depart";
+      this.updateEngines(dt);
       if (this.quantum) this.updateQuantum(dt);
       else if (this.arrival) this.updateArrival(dt);
       else this.flight.update(dt);
@@ -997,7 +1071,7 @@ export class SystemView implements View {
       this.updateRemoteRifts();
       this.remote.update(dt, this.time);
       const rig = shipRig(this.ship);
-      rig.setThrust(this.flight.thrust, this.flight.pulse);
+      if (!this.quantum && !this.arrival) rig.setThrust(this.flight.thrust, this.flight.pulse);
       // Propulsores de maniobra del modelo, si los tiene (lo expone el generador de naves).
       (rig as { setManeuver?: (m: Maneuver) => void }).setManeuver?.(this.flight.maneuver);
       rig.tick(this.time, dt, this.quantum || this.arrival ? 0 : Math.max(0, 1 - this.flight.speed / 20));
@@ -1073,6 +1147,7 @@ export class SystemView implements View {
         if (this.quantum.phase === "align" || this.quantum.phase === "charge") this.cancelQuantum();
       }
       else if (this.quantum) return;
+      else if (isBound("engines", code)) this.toggleEngines();
       else if (isBound("pulse", code)) this.togglePulse();
       else if (isBound("cameraReset", code)) this.chase.reset();
       else if (isBound("flightAssist", code)) this.toggleFlightPref("assist", "pilot.assistOn", "pilot.assistOff");

@@ -10,6 +10,8 @@ Every key can be changed in **Settings → Controls** (up to two per action). Th
 
 {{tabla:teclas-vuelo}}
 
+**Starting the engines.** When you take the controls, the ship's engines are off: the HUD is dimmed and reminds you of the key in the centre. Press [[I]] to start them (a few seconds): reactor, pumps and status lights come on, the turbine spools up, the nozzles ignite and the HUD powers up. Without engines there is no thrust, no turning and no pulse drive (the ship only keeps its momentum and feels gravity). The same key shuts them down. If you order a quantum jump with the engines off, they start by themselves before the ship aligns; when you arrive from a jump they are already running.
+
 **The camera and the ship are separate.** Dragging with the mouse **moves the camera around the ship** (above, below, to the sides, in front) without turning it; the wheel zooms the camera and [[B]] brings it back behind the ship. The ship only changes its orientation with the flight controls: arrows (pitch and yaw) and [[Q]]/[[E]] (roll). If you prefer, **mouse flight** ([[G]] or in Settings) makes a left-button drag turn the ship like a stick (the further from the point you pressed, the faster); the right button still moves the camera. In the cockpit, the mouse looks around.
 
 ### Inertia and flight assist

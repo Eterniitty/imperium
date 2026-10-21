@@ -6,6 +6,7 @@ Texto para jugadores (lo usará la ventana de ayuda del juego). Las teclas son l
 
 | Tecla | Qué hace |
 |---|---|
+| **I** | **Motores**: arrancar (unos 4 s) o apagar. Al tomar los mandos están apagados: sin ellos no hay empuje, giros ni pulso |
 | Arrastrar con el ratón | Mover la cámara alrededor de la nave (no la gira); rueda: distancia |
 | B | Cámara: volver detrás de la nave (o mirar al frente en cabina) |
 | Z | Asistencia de vuelo (frenado y estabilización) |

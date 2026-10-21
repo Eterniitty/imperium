@@ -27,6 +27,9 @@ export interface FlightTelemetry {
   quantumAlign: number | null;
   /** La cámara exterior está fuera de la vista de seguimiento (orbitando la nave). */
   freeCam: boolean;
+  /** Motores: apagados, arrancando, encendidos o apagándose; y potencia (0–1, la del arranque). */
+  engines: "off" | "starting" | "on" | "stopping";
+  enginePower: number;
   /** Gravedad que siente la nave (m/s²; 0 con el pulso), región y cuerpo dominante. */
   gravity: { g: number; region: "deep" | "approach" | "surface"; body: string | null };
 }
@@ -44,6 +47,8 @@ export const telemetry: FlightTelemetry = {
   quantumCharge: null,
   quantumAlign: null,
   freeCam: false,
+  engines: "on",
+  enginePower: 1,
   gravity: { g: 0, region: "deep", body: null },
 };
 

@@ -465,6 +465,20 @@ a.btn-link { color: inherit; text-decoration: none; }
 .mode kbd { margin-left: 4px; font-size: 10px; padding: 0 3px; }
 
 .flight-hud { position: absolute; inset: 0; pointer-events: none !important; }
+/* Motores apagados: instrumentos tenues; arrancando, se van encendiendo. */
+.flight-hud > :not(.engine-panel) { transition: opacity 0.6s ease, filter 0.6s ease; }
+.flight-hud.hud-dark > :not(.engine-panel) { opacity: 0.28; filter: grayscale(1); }
+.flight-hud.hud-booting > :not(.engine-panel) { opacity: 0.65; filter: grayscale(0.5); animation: hud-boot 0.5s steps(2) infinite; }
+@keyframes hud-boot { 50% { opacity: 0.45; } }
+.engine-panel { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); min-width: 300px; max-width: calc(100vw - 32px); padding: 12px 16px; text-align: center; }
+.engine-panel .engine-title { font-weight: 600; letter-spacing: 0.02em; }
+.engine-panel.off .engine-title { color: #ffcf6a; animation: engine-blink 1.6s ease-in-out infinite; }
+@keyframes engine-blink { 50% { opacity: 0.55; } }
+.engine-panel .flight-bar { margin: 8px 0 6px; }
+.engine-stages { list-style: none; margin: 0; padding: 0; text-align: left; font-size: 0.85em; opacity: 0.85; }
+.engine-stages li.done { color: #7fe3a0; }
+.engine-stages li.busy { color: #ffcf6a; }
+@media (prefers-reduced-motion: reduce) { .flight-hud.hud-booting > :not(.engine-panel), .engine-panel.off .engine-title { animation: none; } }
 .crosshair {
   position: absolute;
   left: 50%;

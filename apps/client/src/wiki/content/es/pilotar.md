@@ -10,6 +10,8 @@ Todas las teclas se pueden cambiar en **Ajustes → Controles** (hasta dos por a
 
 {{tabla:teclas-vuelo}}
 
+**Arrancar los motores.** Al tomar los mandos, la nave está con los motores apagados: el HUD se ve tenue y en el centro te recuerda la tecla. Pulsa [[I]] y empieza el arranque (unos segundos): se encienden el reactor, las bombas y las luces de estado, suena la turbina, las toberas se encienden y el HUD se activa. Sin motores no hay empuje, giros ni motor de pulso (la nave solo sigue con su inercia y la gravedad). La misma tecla los apaga. Si das la orden de salto cuántico con los motores apagados, arrancan solos antes de alinear la nave; al llegar de un salto ya están en marcha.
+
 **La cámara y la nave van por separado.** Arrastrar con el ratón **mueve la cámara alrededor de la nave** (arriba, abajo, a los lados, por delante) sin girarla; la rueda acerca o aleja la cámara y [[B]] la devuelve detrás de la nave. La nave solo cambia de orientación con los mandos de vuelo: flechas (cabeceo y guiñada) y [[Q]]/[[E]] (alabeo). Si lo prefieres, el **pilotaje con ratón** ([[G]] o en Ajustes) hace que arrastrar con el botón izquierdo gire la nave como una palanca (cuanto más lejos del punto pulsado, más rápido); con el botón derecho sigues moviendo la cámara. En cabina, el ratón mira alrededor.
 
 ### Inercia y asistencia de vuelo
