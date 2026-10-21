@@ -4,6 +4,10 @@
  * cambia un número en el código, la Wiki cambia con él. Los artículos las
  * insertan con `{{tabla:<id>}}`.
  */
+import { FLIGHT_MODEL, PLANET_BODIES, WORLD_SCALE } from "@imperium/content";
+import { rockyBody, starBody } from "@imperium/sim";
+/** Radios del generador por tipo (radios terrestres; packages/procgen system.ts). */
+const PLANET_RADIUS_RANGE: Record<string, [number, number]> = { gas_giant: [6, 12], ice_giant: [3, 5], lava: [0.2, 1.2], barren: [0.2, 1.2], rocky: [0.4, 1.8], desert: [0.4, 1.8], ocean: [0.4, 1.8], toxic: [0.4, 1.8], ice: [0.4, 1.8] };
 import {
   AI_EMPERORS,
   AI_PERSONALITIES,
@@ -456,6 +460,44 @@ export const GEN_TABLES: Record<string, Builder> = {
       numeric: [1, 4],
     };
   },
+
+  // --- Escala astronómica, cuerpos y gravedad (packages/content bodies.ts) ---
+
+  "escala-estrellas": (t, locale) => ({
+    head: [t("system.class"), t("wiki.col.radius"), t("wiki.col.gravity")],
+    rows: STAR_ORDER.map((c) => {
+      const b = starBody(c);
+      return [t(`star.${c}`), `${num(locale, b.radius / 1000)} km`, `${num(locale, b.surfaceGravityG, 1)} g (${num(locale, b.surfaceGravity, 1)} m/s²)`];
+    }),
+    numeric: [1, 2],
+  }),
+
+  cuerpos: (t, locale) => ({
+    head: [t("wiki.col.planetType"), t("wiki.col.radius"), t("wiki.col.gravity"), t("wiki.col.atmosphere"), t("wiki.col.landable")],
+    rows: PLANET_TYPES.map((p) => {
+      const [lo, hi] = PLANET_RADIUS_RANGE[p]!;
+      const a = rockyBody("a", "planet", "star", p, lo);
+      const b = rockyBody("b", "planet", "star", p, hi);
+      const info = PLANET_BODIES[p];
+      return [
+        t(`planet.${p}`),
+        `${num(locale, a.radius / 1000)}–${num(locale, b.radius / 1000)} km`,
+        `${num(locale, a.surfaceGravityG, 2)}–${num(locale, b.surfaceGravityG, 2)} g`,
+        info.atmosphere ? `${num(locale, info.atmosphere.heightFraction * 100, 1)} % R` : "—",
+        t(info.landable ? "wiki.v.yes" : "wiki.v.no"),
+      ];
+    }),
+    numeric: [1, 2],
+  }),
+
+  "modelo-vuelo": (t, locale) =>
+    kv(t, [
+      ["wiki.k.mainAccel", `${num(locale, FLIGHT_MODEL.mainAccel)} m/s²`],
+      ["wiki.k.lateralAccel", `${num(locale, FLIGHT_MODEL.lateralAccel)} m/s²`],
+      ["wiki.k.turnRates", `${num(locale, (FLIGHT_MODEL.pitchRate * 180) / Math.PI, 0)}° / ${num(locale, (FLIGHT_MODEL.yawRate * 180) / Math.PI, 0)}° / ${num(locale, (FLIGHT_MODEL.rollRate * 180) / Math.PI, 0)}° /s`],
+      ["wiki.k.earthRadius", `${num(locale, WORLD_SCALE.earthRadiusM / 1000)} km`],
+      ["wiki.k.maxSimGravity", `${num(locale, WORLD_SCALE.maxSimGravity)} m/s²`],
+    ]),
 
   depositos: (t, locale) => ({
     head: [t("wiki.col.planetType"), t("resource.metal"), t("resource.volatiles")],

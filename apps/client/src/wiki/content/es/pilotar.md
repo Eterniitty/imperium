@@ -10,7 +10,17 @@ Todas las teclas se pueden cambiar en **Ajustes → Controles** (hasta dos por a
 
 {{tabla:teclas-vuelo}}
 
-Además, **arrastrar con el ratón** orienta la nave (el cursor sigue libre para seleccionar cosas). La nave tiene inercia: la velocidad no cambia de golpe, se acerca poco a poco a la que pides.
+**La cámara y la nave van por separado.** Arrastrar con el ratón **mueve la cámara alrededor de la nave** (arriba, abajo, a los lados, por delante) sin girarla; la rueda acerca o aleja la cámara y [[B]] la devuelve detrás de la nave. La nave solo cambia de orientación con los mandos de vuelo: flechas (cabeceo y guiñada) y [[Q]]/[[E]] (alabeo). Si lo prefieres, el **pilotaje con ratón** ([[G]] o en Ajustes) hace que arrastrar con el botón izquierdo gire la nave como una palanca (cuanto más lejos del punto pulsado, más rápido); con el botón derecho sigues moviendo la cámara. En cabina, el ratón mira alrededor.
+
+### Inercia y asistencia de vuelo
+
+La nave se mueve con propulsores: el principal empuja hacia delante, otros más débiles frenan y la mueven a los lados y arriba o abajo, y los de maniobra la hacen girar (los giros aceleran y frenan con suavidad, nunca de golpe).
+
+- Con la **asistencia de vuelo** encendida (por defecto; [[Z]] la cambia), los propulsores llevan la nave a la velocidad que pides y, sin teclas, la frenan hasta pararla.
+- Apagada, la nave **conserva su velocidad** (inercia pura): para frenar hay que empujar al revés.
+- En **Ajustes → Controles** puedes cambiar la aceleración, la inercia y la velocidad máxima de maniobra, e invertir el eje vertical de la cámara.
+
+{{tabla:modelo-vuelo}}
 
 ### Mapa galáctico
 
@@ -37,6 +47,18 @@ El motor de pulso ([[P]], encender y apagar) es un **supercrucero** para cruzar 
 - Acelera y frena **de forma suave**. El panel de abajo muestra el límite actual y el **tiempo estimado** hasta el planeta seleccionado, la nave fijada o el cuerpo que tienes de frente.
 - Gasta **combustible** y algo de **energía**: sin combustible no funciona.
 
+## Gravedad
+
+Los planetas, las lunas y la estrella **atraen la nave**, pero solo dentro de su **esfera de influencia** (unas ocho veces su radio, más si tiene lunas): en el espacio entre planetas no hay gravedad y no caes hacia nada. El HUD muestra la región en la que estás:
+
+- **Espacio profundo**: fuera de toda esfera, sin gravedad.
+- **Aproximación orbital**: dentro de la esfera de un cuerpo; la atracción crece al acercarte (como 1/r²).
+- **Proximidad a la superficie**: muy cerca del suelo o dentro de la atmósfera.
+
+Sin asistencia de vuelo, caes hacia el cuerpo; con ella, los propulsores compensan la atracción, aunque no del todo (la nave cede despacio, más junto a los gigantes). Con la velocidad adecuada se puede orbitar. El motor de pulso ignora la gravedad. La gravedad de cada tipo de cuerpo está en [Universo](/wiki/universo#dentro-de-un-sistema).
+
+> [!dev] La asistencia gravitatoria (efecto honda) no existe aún, y la gravedad de las estrellas está recortada para que siempre se pueda escapar con los propulsores.
+
 ## Instrumentos y recursos de la nave
 
 En la cabina ves el **horizonte artificial** (respecto al plano de las órbitas) y, siempre, el **rumbo** (0° = hacia la estrella), la **velocidad** y la **altitud** (distancia a la superficie del cuerpo más cercano). Abajo, a la izquierda, **escudo**, **casco**, **energía** y **combustible**; a la derecha, los **proyectiles** del cañón, los **misiles** y el objetivo con su distancia.
@@ -52,11 +74,11 @@ Al dejar los mandos, tu nave se queda donde estaba y **orbita la estrella** como
 
 ## Cámaras
 
-[[T]] alterna entre la cámara **exterior** (tercera persona, por defecto) y la de **cabina** (primera persona).
+[[T]] alterna entre la cámara **exterior** (tercera persona, por defecto) y la de **cabina** (primera persona). En las dos, el ratón mueve la cámara, no la nave; [[B]] vuelve a la vista de seguimiento (o a mirar al frente).
 
 ## Salir del sistema
 
-Vuela hasta el **borde del sistema** (unos cientos de kilómetros más allá del último planeta) para salir al **espacio interestelar**: pasas al mapa galáctico con la estrella a tu espalda.
+Vuela hasta el **borde del sistema** (unos miles de kilómetros más allá del último planeta) para salir al **espacio interestelar**: pasas al mapa galáctico con la estrella a tu espalda.
 
 ## Viaje cuántico a otra estrella
 

@@ -10,7 +10,17 @@ Every key can be changed in **Settings → Controls** (up to two per action). Th
 
 {{tabla:teclas-vuelo}}
 
-Also, **dragging with the mouse** aims the ship (the cursor stays free to select things). The ship has inertia: its speed does not change at once, it approaches the one you ask for.
+**The camera and the ship are separate.** Dragging with the mouse **moves the camera around the ship** (above, below, to the sides, in front) without turning it; the wheel zooms the camera and [[B]] brings it back behind the ship. The ship only changes its orientation with the flight controls: arrows (pitch and yaw) and [[Q]]/[[E]] (roll). If you prefer, **mouse flight** ([[G]] or in Settings) makes a left-button drag turn the ship like a stick (the further from the point you pressed, the faster); the right button still moves the camera. In the cockpit, the mouse looks around.
+
+### Inertia and flight assist
+
+The ship moves with thrusters: the main one pushes forward, weaker ones brake and move it sideways and up or down, and the manoeuvring thrusters turn it (turns speed up and slow down smoothly, never at once).
+
+- With **flight assist** on (default; [[Z]] toggles it), the thrusters bring the ship to the speed you ask for and, with no keys pressed, brake it to a stop.
+- With it off, the ship **keeps its velocity** (pure inertia): to brake you have to thrust the other way.
+- In **Settings → Controls** you can change the acceleration, the inertia and the maximum manoeuvring speed, and invert the camera's vertical axis.
+
+{{tabla:modelo-vuelo}}
 
 ### Galaxy map
 
@@ -37,6 +47,18 @@ The pulse drive ([[P]], on and off) is a **supercruise** to cross the system fro
 - It speeds up and slows down **smoothly**. The bottom panel shows the current limit and the **estimated time** to the selected planet, the locked ship or the body ahead.
 - It uses **fuel** and some **energy**: without fuel it does not work.
 
+## Gravity
+
+Planets, moons and the star **pull the ship**, but only inside their **sphere of influence** (about eight times their radius, more if they have moons): in the space between planets there is no gravity and you do not fall towards anything. The HUD shows the region you are in:
+
+- **Deep space**: outside every sphere, no gravity.
+- **Orbital approach**: inside a body's sphere; the pull grows as you get closer (as 1/r²).
+- **Surface proximity**: very close to the ground or inside the atmosphere.
+
+Without flight assist you fall towards the body; with it, the thrusters compensate the pull, though not entirely (the ship slowly gives way, more so near giants). With the right speed you can orbit. The pulse drive ignores gravity. Each body type's gravity is in [Universe](/wiki/universo#inside-a-system).
+
+> [!dev] Gravity assist (slingshot) does not exist yet, and the stars' gravity is capped so that you can always escape with your thrusters.
+
 ## Instruments and ship resources
 
 In the cockpit you see the **artificial horizon** (relative to the orbital plane) and, always, the **heading** (0° = towards the star), the **speed** and the **altitude** (distance to the surface of the nearest body). Bottom left: **shield**, **hull**, **energy** and **fuel**; bottom right: cannon **rounds**, **missiles** and the target with its distance.
@@ -52,11 +74,11 @@ When you leave the controls, your ship stays where it was and **orbits the star*
 
 ## Cameras
 
-[[T]] switches between the **chase** camera (third person, the default) and the **cockpit** camera (first person).
+[[T]] switches between the **chase** camera (third person, the default) and the **cockpit** camera (first person). In both, the mouse moves the camera, not the ship; [[B]] returns to the chase view (or to looking ahead).
 
 ## Leaving the system
 
-Fly to the **edge of the system** (a few hundred kilometres beyond the outermost planet) to reach **interstellar space**: you switch to the galaxy map with the star behind you.
+Fly to the **edge of the system** (a few thousand kilometres beyond the outermost planet) to reach **interstellar space**: you switch to the galaxy map with the star behind you.
 
 ## Quantum travel to another star
 
