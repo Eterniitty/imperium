@@ -51,6 +51,14 @@ Each body has **a single radius**: the one drawn is the same one used for collis
 
 The stars' simulated gravity is capped (see [Piloting](/wiki/pilotar#gravity)).
 
+### Stellar heat
+
+Near a star it gets **hot**: inside its zone, the ship takes damage every second, little at the edge and **faster and faster** as you get closer (it grows with the square of how deep you are). **Shields** go first, and they do not recharge while you are burning, then the **hull**. The HUD warns you with the damage per second; from the damage per second in the table's last row, the zone is **lethal**: the warning blinks and the **pulse cuts out** while you head toward the star (heading away it still works). The zones always lie inside the planets' orbits and where ships park. If you die this way, the cause is "stellar heat".
+
+A **black hole** has no surface to crash into: the radius in the table is the **event horizon**, and crossing it destroys the ship for good. Its disk burns too.
+
+{{tabla:calor}}
+
 ### Planets and moons
 
 {{tabla:cuerpos}}

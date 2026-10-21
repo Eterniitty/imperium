@@ -108,6 +108,32 @@ export const STAR_BODIES: Record<StarClass, StarBody> = {
   BH: { radiusSolar: 0.012, massSolar: 10 },
 };
 
+/**
+ * Calor de las estrellas: hasta `zoneRadii` radios estelares desde el centro,
+ * la nave recibe daño cada segundo; `surfaceDps` en la superficie y cada vez
+ * menos hacia fuera (con el cuadrado de la profundidad en la zona: crece cada
+ * vez más rápido al acercarse). Gasta primero los escudos, que no se recargan
+ * mientras se recibe daño, y después el casco. Siempre por dentro de la esfera
+ * de influencia (6 radios), donde no hay planetas ni naves aparcadas.
+ * En un agujero negro el radio es el horizonte de sucesos: cruzarlo destruye la nave.
+ */
+export const STAR_HEAT: Record<StarClass, { zoneRadii: number; surfaceDps: number }> = {
+  O: { zoneRadii: 5, surfaceDps: 400 },
+  B: { zoneRadii: 4.5, surfaceDps: 250 },
+  A: { zoneRadii: 4, surfaceDps: 150 },
+  F: { zoneRadii: 3.5, surfaceDps: 100 },
+  G: { zoneRadii: 3, surfaceDps: 80 },
+  K: { zoneRadii: 2.8, surfaceDps: 60 },
+  M: { zoneRadii: 2.5, surfaceDps: 40 },
+  RG: { zoneRadii: 2, surfaceDps: 30 },
+  WD: { zoneRadii: 4, surfaceDps: 120 },
+  NS: { zoneRadii: 5, surfaceDps: 500 },
+  BH: { zoneRadii: 4, surfaceDps: 200 },
+};
+
+/** Calor por encima del cual la zona es mortal: el HUD lo avisa en rojo y el pulso se corta si vas hacia la estrella. */
+export const STAR_HEAT_LETHAL_DPS = 40;
+
 export type SurfaceKind = "rock" | "dust" | "ice" | "lava" | "ocean" | "sand" | "toxic" | "gas";
 /** Cómo es la entrada en la atmósfera (o el descenso sin ella) para un aterrizaje futuro. */
 export type EntryKind = "vacuum" | "gentle" | "turbulent" | "hot" | "crushing";

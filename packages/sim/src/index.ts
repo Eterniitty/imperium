@@ -13,3 +13,4 @@ export * from "./bodies";
 export * from "./gravity";
 export * from "./deepspace";
 export * from "./aim";
+export * from "./heat";

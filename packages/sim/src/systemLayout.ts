@@ -15,7 +15,7 @@
  */
 import { WORLD_SCALE } from "@imperium/content";
 import { hashString, Rng } from "@imperium/procgen";
-import type { PlanetType, StarSystemDetail } from "@imperium/shared";
+import type { PlanetType, StarClass, StarSystemDetail } from "@imperium/shared";
 import { moonRadiusEarth, rockyBody, starBody, type CelestialBody } from "./bodies";
 import type { PulseBody } from "./flight";
 
@@ -60,6 +60,8 @@ export interface SystemLayout {
   boundary: number;
   /** Distancia mínima a la estrella de una nave aparcada (su esfera de influencia). */
   parkMinRadius: number;
+  /** Clase de la estrella (calor, horizonte de sucesos); sin ella (espacio profundo), no hay estrella. */
+  starClass?: StarClass;
 }
 
 /** Número en [0, 1) estable para una clave. */
@@ -152,7 +154,7 @@ export function systemLayout(detail: StarSystemDetail): SystemLayout {
     });
     edge = radius + body.influenceRadius;
   }
-  return { starRadius, star, planets, belts, boundary: Math.max(edge, starRadius * 6) + S.boundaryMarginM, parkMinRadius: star.influenceRadius };
+  return { starRadius, star, planets, belts, boundary: Math.max(edge, starRadius * 6) + S.boundaryMarginM, parkMinRadius: star.influenceRadius, starClass: summary.starClass };
 }
 
 /** Ángulo orbital de un planeta a la hora `serverTimeMs` (milisegundos del servidor). */

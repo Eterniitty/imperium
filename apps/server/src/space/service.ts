@@ -1,6 +1,6 @@
 import { AIM_ASSIST, BODY_COLLISION, EMPEROR_FLAGSHIP, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, getAlienShipClass, MINING, PIRATE_AI } from "@imperium/content";
-import { IMPACT_CAUSE, isDeepId, type ServerMessage, type ShipPose, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
-import { addToHold, bodiesAt, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
+import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, isDeepId, type ServerMessage, type ShipPose, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
+import { addToHold, bodiesAt, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { EmperorService } from "../emperor/service";
 import type { Client } from "../realtime/hub";
@@ -345,7 +345,10 @@ export class SpaceService {
     if (!layout) return [];
     const at = bodiesAt(layout, now);
     const before = bodiesAt(layout, now - 500);
-    return at.map((b, i) => {
+    // Un agujero negro no tiene superficie: lo que lo cruza no vuelve (`heatShips`).
+    const solid = (b: (typeof at)[number]) => !(b.body.kind === "star" && layout.starClass === "BH");
+    return at.flatMap((b, i) => {
+      if (!solid(b)) return [];
       const [x = 0, y = 0, z = 0] = b.center;
       const [px = 0, py = 0, pz = 0] = before[i]!.center;
       return {
@@ -354,7 +357,7 @@ export class SpaceService {
         // El mismo contacto que el cliente (`SystemView.collide`).
         reach: b.body.kind === "star" ? b.radius * 1.05 : b.radius + FLAGSHIP_LENGTH_M * 0.6,
       };
-    });
+    }) as Array<{ center: Vec3; v: Vec3; reach: number }>;
   }
 
   /**
@@ -1148,11 +1151,37 @@ export class SpaceService {
     if (this.bumps.size > 256) for (const [key, until] of this.bumps) if (until < now) this.bumps.delete(key);
   }
 
+  /**
+   * Calor de las estrellas (`STAR_HEAT`) sobre las naves pilotadas, y el
+   * horizonte de sucesos de los agujeros negros, que las destruye al cruzarlo.
+   * Las aparcadas orbitan fuera de la zona; los piratas no se acercan.
+   */
+  private heatShips(now: number): void {
+    for (const [systemId, room] of this.rooms) {
+      if (isDeepId(systemId)) continue;
+      const layout = this.layout(systemId);
+      if (!layout?.starClass) continue;
+      for (const m of room) {
+        if (m.kind !== "emperor" || m.park || m.combat.hull <= 0) continue;
+        const d = Math.hypot(...m.pose.p);
+        if (insideEventHorizon(layout, d)) {
+          m.combat.damage(m.combat.hull + m.combat.shield, now);
+          void this.destroy(m, HORIZON_CAUSE);
+          continue;
+        }
+        const dps = starHeatDps(layout, d);
+        // El estado se difunde con la recarga de escudos (`tick`).
+        if (dps > 0 && m.combat.damage((dps * TICK_MS) / 1000, now)) void this.destroy(m, HEAT_CAUSE);
+      }
+    }
+  }
+
   private tick(): void {
     const now = this.now();
     this.stepPirates(now);
     this.stepParked(now);
     this.collideShips(now);
+    this.heatShips(now);
     if (now - this.lastSuppliesSend >= SUPPLIES_SEND_MS) {
       this.lastSuppliesSend = now;
       for (const m of this.members.values()) if (m.kind === "emperor") this.sendSupplies(m, now);

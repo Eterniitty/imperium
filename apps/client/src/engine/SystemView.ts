@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
 import type { I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, WeaponKind, WorldPosition } from "@imperium/shared";
-import { ARRIVAL_EDGE, deepLayout, defaultPark, moonOffset, parkedPosition, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
+import { ARRIVAL_EDGE, deepLayout, starHeatDps, defaultPark, moonOffset, parkedPosition, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
 import { resetSpace, shipName, spaceStore, type SelectedWeapon } from "../net/space";
 import { TargetAssist, relationOf, type CannonAim } from "./TargetAssist";
 import { telemetry, type FlightTelemetry } from "./telemetry";
@@ -11,7 +11,7 @@ import { RemoteShips } from "./RemoteShips";
 import { FleetScene } from "./FleetScene";
 import { Effects } from "./Effects";
 import { worldStore } from "../net/world";
-import { BODY_COLLISION, EMPEROR_FLAGSHIP, FLIGHT_MODEL, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_SUPPLIES, MINING, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC, QUANTUM_RIFT, SHIP_COLLISION } from "@imperium/content";
+import { BODY_COLLISION, EMPEROR_FLAGSHIP, FLIGHT_MODEL, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_SUPPLIES, MINING, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC, QUANTUM_RIFT, SHIP_COLLISION, STAR_HEAT_LETHAL_DPS } from "@imperium/content";
 import { playQuantumCharge, playQuantumTear, stopQuantumCharge } from "../audio/quantumSfx";
 import { playEngineStart, playEngineStop, stopEngineSound } from "../audio/engineSfx";
 import { RiftField } from "./fx/riftPortal";
@@ -848,7 +848,13 @@ export class SystemView implements View {
     if (!flight) return;
     if (this.engines.state !== "on") return this.events.notify("pilot.enginesOffShort", "engines");
     if (!flight.pulse && this.outOfFuel()) return this.events.notify("pilot.noFuel");
+    if (!flight.pulse && telemetry.heat.lethal && this.headingToStar()) return this.events.notify("pilot.heatPulseOff");
     flight.pulse = !flight.pulse;
+  }
+
+  /** ¿Apunta el morro hacia la estrella (está en el origen del sistema)? */
+  private headingToStar(): boolean {
+    return this.forward().dot(this.ship!.position.clone().negate()) > 0;
   }
 
   /** Potencia de los motores (0–1) según su estado. */
@@ -952,6 +958,14 @@ export class SystemView implements View {
       body: grav.dominant ? (bodies.find((b) => b.body === grav.dominant)?.name ?? null) : null,
     };
     const heading = [fwd.x, fwd.y, fwd.z];
+    // Calor de la estrella (el daño lo pone el servidor): en la zona mortal, el pulso se corta si se va hacia ella.
+    const heat = this.layout && !this.deepId ? starHeatDps(this.layout, pos.length()) : 0;
+    const lethal = heat >= STAR_HEAT_LETHAL_DPS;
+    telemetry.heat = { dps: heat, lethal, blackHole: this.layout?.starClass === "BH" };
+    if (lethal && flight.pulse && this.headingToStar()) {
+      flight.pulse = false;
+      this.events.notify("pilot.heatPulseOff");
+    }
     flight.pulseLimit = pulseLimitAt([pos.x, pos.y, pos.z], heading, bodies.map((b) => ({ center: [b.center.x, b.center.y, b.center.z], radius: b.radius })));
 
     let nearest: FlightTelemetry["nearest"] = null;
@@ -1359,6 +1373,8 @@ export class SystemView implements View {
     const normal = new THREE.Vector3();
     let hit = 0;
     for (const b of this.bodies()) {
+      // En un agujero negro no hay superficie: se cruza el horizonte (y el servidor destruye la nave).
+      if (b.body.kind === "star" && this.layout?.starClass === "BH") continue;
       const radius = b.body.kind === "star" ? b.radius * 1.05 : b.radius + FLAGSHIP_LENGTH_M * 0.6;
       const d = ship.position.distanceTo(b.center);
       if (d >= radius || d === 0) continue;

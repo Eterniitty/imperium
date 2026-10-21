@@ -32,6 +32,8 @@ import {
   AIM_ASSIST,
   SHIP_COLLISION,
   BODY_COLLISION,
+  STAR_HEAT,
+  STAR_HEAT_LETHAL_DPS,
   FLEET_BATTLE,
   FLAGSHIP_BATTLE,
   FLAGSHIP_REPAIR,
@@ -499,6 +501,16 @@ export const GEN_TABLES: Record<string, Builder> = {
       const b = starBody(c);
       return [t(`star.${c}`), `${num(locale, b.radius / 1000)} km`, `${num(locale, b.surfaceGravityG, 1)} g (${num(locale, b.surfaceGravity, 1)} m/s²)`];
     }),
+    numeric: [1, 2],
+  }),
+
+  calor: (t, locale) => ({
+    head: [t("system.class"), t("wiki.col.heatZone"), t("wiki.col.heatSurface")],
+    rows: STAR_ORDER.map((c) => {
+      const h = STAR_HEAT[c];
+      const r = starBody(c).radius;
+      return [t(`star.${c}`), `${num(locale, h.zoneRadii)} × (${num(locale, (r * h.zoneRadii) / 1000)} km)`, `${num(locale, h.surfaceDps)}/s`];
+    }).concat([[t("wiki.k.heatLethal"), "—", `${num(locale, STAR_HEAT_LETHAL_DPS)}/s`]]),
     numeric: [1, 2],
   }),
 

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { HEIR_DOCTRINES, HEIRS, STOCK_IDS } from "@imperium/content";
-import { IMPACT_CAUSE, type Colony, type HeirDoctrineId, type HeirView, type I18nKey, type LineageStatus } from "@imperium/shared";
+import type { Colony, HeirDoctrineId, HeirView, I18nKey, LineageStatus } from "@imperium/shared";
 import { connection, useWorld } from "../net/world";
 import { gameStore, useGame, useT } from "../state/store";
 import { fmtInt } from "./colonies";
+import { naturalCause } from "./deathCause";
 import { formatDuration, useServerNow } from "./useNow";
 
 type Run = (op: Promise<I18nKey | null>) => void;
@@ -153,7 +154,7 @@ function LineageBody({ lineage }: { lineage: LineageStatus }) {
                 <td>
                   {d.systemName} <span className="muted small">({t(d.cause === "battle" ? "lineage.cause.battle" : "lineage.cause.combat")})</span>
                 </td>
-                <td>{d.by === null ? "—" : d.by === IMPACT_CAUSE ? t("lineage.cause.impact") : d.by || t("npc.pirate")}</td>
+                <td>{d.by === null ? "—" : naturalCause(d.by) ? t(naturalCause(d.by)!.short) : d.by || t("npc.pirate")}</td>
                 <td className="mono">{d.streak}</td>
                 <td>{d.rebirthKind ? t(`lineage.kind.${d.rebirthKind}`) : t("lineage.kind.pending")}</td>
               </tr>

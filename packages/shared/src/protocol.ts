@@ -14,6 +14,10 @@ export const PROTOCOL_VERSION = 15;
 
 /** Causa de muerte (`destroyed.by`, `LineageDeath.by`) cuando la nave se estrella contra un cuerpo y no la derriba nadie. */
 export const IMPACT_CAUSE = "@impact";
+/** Causa de muerte por el calor de una estrella. */
+export const HEAT_CAUSE = "@heat";
+/** Causa de muerte al cruzar el horizonte de sucesos de un agujero negro. */
+export const HORIZON_CAUSE = "@horizon";
 
 /** Tamaño máximo de un mensaje del cliente, en bytes. */
 export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;

@@ -1,11 +1,11 @@
 import { useStore } from "zustand";
 import { LINEAGE } from "@imperium/content";
-import { IMPACT_CAUSE } from "@imperium/shared";
 import { engineRef } from "../engineRef";
 import { spaceStore } from "../net/space";
 import { connection, useWorld } from "../net/world";
 import { gameStore, useGame, useT } from "../state/store";
 import { Meter } from "./common";
+import { naturalCause } from "./deathCause";
 import { formatDuration, useServerNow } from "./useNow";
 
 /**
@@ -38,7 +38,7 @@ export function DeathScreen() {
       <div className="death-card panel">
         <h2 id="death-title">{t("lineage.dead.title")}</h2>
         <p className="death-law">{t("lineage.dead.law")}</p>
-        {by !== null && <p>{by === IMPACT_CAUSE ? t("lineage.dead.impact") : t("lineage.dead.by", { by: by || t("npc.pirate") })}</p>}
+        {by !== null && <p>{naturalCause(by) ? t(naturalCause(by)!.dead) : t("lineage.dead.by", { by: by || t("npc.pirate") })}</p>}
         <p>{place}</p>
         <div className="death-timer">
           <span className="stat-label">{t("lineage.dead.gestation")}</span>

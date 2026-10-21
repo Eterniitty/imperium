@@ -51,6 +51,14 @@ Cada cuerpo tiene **un solo radio**: el que se dibuja es el mismo de las colisio
 
 La gravedad simulada de las estrellas está recortada (ver [Pilotar](/wiki/pilotar#gravedad)).
 
+### Calor de las estrellas
+
+Cerca de una estrella hace **calor**: dentro de su zona, la nave recibe daño cada segundo, poco en el borde y **cada vez más deprisa** al acercarse (crece con el cuadrado de lo que te has metido). Primero se gastan los **escudos**, que no se recargan mientras te estés quemando, y después el **casco**. El HUD lo avisa con el daño por segundo; a partir del daño por segundo de la última fila de la tabla, la zona es **mortal**: el aviso parpadea y el **pulso se corta** mientras vayas hacia la estrella (alejándote sí funciona). Las zonas quedan siempre por dentro de la órbita de los planetas y de donde se aparcan las naves. Si mueres así, la causa es «calor estelar».
+
+En un **agujero negro** no hay superficie contra la que chocar: el radio de la tabla es el **horizonte de sucesos**, y cruzarlo destruye la nave sin remedio. Su disco también quema.
+
+{{tabla:calor}}
+
 ### Planetas y lunas
 
 {{tabla:cuerpos}}

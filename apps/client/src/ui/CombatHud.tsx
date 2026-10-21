@@ -6,6 +6,7 @@ import { formatDistance } from "./FlightHud";
 import { useKeyLabels } from "./keys";
 import { useSettings } from "../state/settings";
 import { useServerNow } from "./useNow";
+import { useTelemetry } from "../engine/telemetry";
 
 type BarKind = "hull" | "shield" | "energy" | "fuel";
 
@@ -39,6 +40,7 @@ export function CombatHud() {
   const autoFire = useSettings((s) => s.prefs.flight.autoFire);
   const target = useStore(spaceStore, (s) => (s.targetId ? s.ships[s.targetId]?.state : undefined));
   const now = useServerNow(250);
+  const { heat } = useTelemetry(250);
   if (view !== "system" || !flight || !self) return null;
 
   const cannon = weapons.find((w) => w.kind === "cannon");
@@ -60,6 +62,13 @@ export function CombatHud() {
           <Bar value={self.hull} max={self.hullMax} kind="hull" />
           <span className="mono small">{self.hull}</span>
         </div>
+        {heat.dps > 0 && (
+          <div className="combat-alerts" role="status">
+            <span className={heat.lethal ? "hud-tag warn" : "hud-tag"}>
+              {t(heat.lethal ? (heat.blackHole ? "hud.heatLethalBlackHole" : "hud.heatLethal") : "hud.heat", { dps: Math.round(heat.dps) })}
+            </span>
+          </div>
+        )}
         {supplies && (
           <>
             <div className={noEnergy ? "combat-row warn" : "combat-row"}>
