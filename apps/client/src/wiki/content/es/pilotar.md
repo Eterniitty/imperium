@@ -92,6 +92,7 @@ Cuando tomas los mandos en un sistema donde tienes flotas paradas (fuera de bata
 - Las escoltas son naves de verdad de tu flota: si las destruyen, **la flota las pierde**; al aparcar, saltar o dejar el sistema vuelven a su flota con el casco que les quede.
 - Los Carroñeros también las atacan, y las demás naves las ven con tu nombre.
 - Si pilotas a distancia una de ellas, deja de escoltarte y pasa a tus mandos.
+- **Órdenes**: abajo a la derecha tienes **Seguir** (lo normal), **Atacar blanco** (van a por la nave que tengas fijada, también otro jugador, y después vuelven), **Mantener** (se quedan donde están y defienden ese punto) y **Replegar** (vuelven a tu lado sin combatir).
 
 {{tabla:escoltas}}
 

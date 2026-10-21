@@ -13,6 +13,7 @@ import { MiningHud } from "./MiningHud";
 import { ColoniesPanel } from "./ColoniesPanel";
 import { BridgePanel } from "./BridgePanel";
 import { ColonyManager } from "./ColonyManager";
+import { EscortHud } from "./EscortHud";
 import { FleetsPanel } from "./FleetsPanel";
 import { WarPanel } from "./WarPanel";
 import { Notice } from "./Notice";
@@ -113,6 +114,7 @@ export function App() {
           <>
             <FlightHud />
             <CombatHud />
+            <EscortHud />
             <MiningHud />
             <QuantumHud />
             <CruiseHud />

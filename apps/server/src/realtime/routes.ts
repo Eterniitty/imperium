@@ -329,6 +329,10 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     }
                     return res;
                   }
+                  case "escort.order": {
+                    const error = space.orderEscorts(client, msg.args.order, msg.args.targetId ?? null);
+                    return error ? ({ ok: false, error } as const) : ({ ok: true } as const);
+                  }
                   case "flagship.dock": {
                     const systemId = space.pilotingIn(client);
                     if (!systemId) return { ok: false, error: "too_far" } as const;

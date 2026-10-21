@@ -92,6 +92,7 @@ When you take the controls in a system where you have stationary fleets (not in 
 - Escorts are real ships of your fleet: if they are destroyed, **the fleet loses them**; when you park, jump or leave the system they return to their fleet with whatever hull they have left.
 - Scavengers attack them too, and other ships see them with your name.
 - If you remotely pilot one of them, it stops escorting you and comes under your control.
+- **Orders**: at the bottom right you have **Follow** (the default), **Attack target** (they go after your locked ship, another player too, and then come back), **Hold** (they stay where they are and defend that spot) and **Fall back** (they return to your side without fighting).
 
 {{tabla:escoltas}}
 

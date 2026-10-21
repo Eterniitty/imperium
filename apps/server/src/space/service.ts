@@ -1,5 +1,5 @@
 import { AIM_ASSIST, BODY_COLLISION, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, getAlienShipClass, getShipClass, MINING, PIRATE_AI, type ShipClassId } from "@imperium/content";
-import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, isDeepId, type CommandError, type ServerMessage, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
+import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
 import { addToHold, arriveVelocity, avoidObstacles, escortSlot, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { EmperorService } from "../emperor/service";
@@ -19,7 +19,7 @@ interface Member {
   /** Solo naves de flota (pilotadas a distancia o escoltas): su Emperador, su clase, su flota y su nave (en la base de datos). */
   owner?: string;
   /** Solo escoltas de la IA (Fase 9d): a quién escoltan, su sitio en la formación y su modo. */
-  escort?: { leader: string; slot: number; mode: PirateMode };
+  escort?: { leader: string; slot: number; mode: PirateMode; holdAt?: Vec3 };
   classId?: string;
   fleetId?: string;
   shipId?: string;
@@ -69,6 +69,8 @@ interface Member {
   refinePending?: boolean;
   /** Hasta cuándo no cuenta otro choque contra un cuerpo (`BODY_COLLISION.cooldownSec`). */
   bodyBumpUntil?: number;
+  /** Solo la nave del Emperador: orden a sus escoltas (por defecto, seguir) y su blanco si es «atacar». */
+  escortOrder?: { order: EscortOrder; targetId: string | null };
   /** Solo la nave del Emperador: acoplada en la nave nodriza de esta flota, que espera en `at` (punto del sistema). */
   dock?: { fleetId: string; slot: number; colonyPlanet: number | null; reach: number } | null;
 }
@@ -521,6 +523,18 @@ export class SpaceService {
     });
   }
 
+  /** Orden a las escoltas de la nave que pilota este cliente. */
+  orderEscorts(client: Client, order: EscortOrder, targetId: string | null): CommandError | null {
+    const m = client.piloting ? null : this.members.get(client.emperorId);
+    if (!m || m.park || !m.clients.has(client)) return "not_present";
+    if (order === "attack") {
+      const t = targetId ? this.members.get(targetId) : undefined;
+      if (!t || t.systemId !== m.systemId || (t.owner ?? t.emperorId) === m.emperorId) return "no_target";
+    }
+    m.escortOrder = { order, targetId: order === "attack" ? targetId : null };
+    return null;
+  }
+
   /** Una escolta vuelve a su flota con el casco que le quede. */
   private dismissEscort(m: Member): void {
     const hull = Math.round(m.combat.hull);
@@ -552,18 +566,31 @@ export class SpaceService {
           this.dismissEscort(m);
           continue;
         }
+        const order = leader.escortOrder ?? { order: "follow" as const, targetId: null };
         let target: Member | null = null;
-        let best: number = ESCORT.engageRangeU;
-        for (const o of pirates) {
-          const d = distance(leader.pose.p, o.pose.p);
-          if (d < best) {
-            best = d;
-            target = o;
+        if (order.order === "attack") {
+          // El blanco que fijó el Emperador (cualquier nave ajena: también otros jugadores).
+          const t = order.targetId ? this.members.get(order.targetId) : undefined;
+          if (t && t.systemId === m.systemId && t.combat.hull > 0) target = t;
+          else leader.escortOrder = { order: "follow", targetId: null };
+        } else if (order.order !== "recall") {
+          // Seguir: los Carroñeros cerca del Emperador; mantener: los que se acerquen a la escolta.
+          const center = order.order === "hold" ? m.pose.p : leader.pose.p;
+          let best: number = ESCORT.engageRangeU;
+          for (const o of pirates) {
+            const d = distance(center, o.pose.p);
+            if (d < best) {
+              best = d;
+              target = o;
+            }
           }
         }
-        const slot = escortSlot(leader.pose.p, leader.pose.q, e.slot);
+        // Mantener posición: su sitio es donde estaba al recibir la orden (quieta).
+        if (order.order === "hold") e.holdAt ??= m.pose.p;
+        else e.holdAt = undefined;
+        const slot = e.holdAt ?? escortSlot(leader.pose.p, leader.pose.q, e.slot);
         let step: { p: Vec3; v: Vec3; q: Quat };
-        if (!target && distance(m.pose.p, slot) > ESCORT.catchUpM) {
+        if (!target && !e.holdAt && distance(m.pose.p, slot) > ESCORT.catchUpM) {
           // Se quedó atrás (el Emperador va con el pulso): se reúne con él.
           step = { p: slot, v: leader.pose.v, q: leader.pose.q };
         } else if (target) {
@@ -576,7 +603,7 @@ export class SpaceService {
             jink: underFire && toward ? jinkVector(toward, (e.slot * 0.37) % 1, now / 1000, ESCORT.speedU) : null,
           });
         } else {
-          const want = arriveVelocity(m.pose.p, slot, leader.pose.v, Math.max(ESCORT.speedU, Math.hypot(...leader.pose.v) * 1.2));
+          const want = arriveVelocity(m.pose.p, slot, e.holdAt ? [0, 0, 0] : leader.pose.v, Math.max(ESCORT.speedU, Math.hypot(...leader.pose.v) * 1.2));
           const avoid = avoidObstacles(m.pose.p, m.pose.v, obstacles, ESCORT.speedU);
           const k = 1 - Math.exp(-dt * 2);
           const v: Vec3 = [m.pose.v[0] + (want[0] + avoid[0] - m.pose.v[0]) * k, m.pose.v[1] + (want[1] + avoid[1] - m.pose.v[1]) * k, m.pose.v[2] + (want[2] + avoid[2] - m.pose.v[2]) * k];

@@ -420,6 +420,8 @@ a.btn-link { color: inherit; text-decoration: none; }
 .colony-manager-list .fleet-row.active { outline: 1px solid var(--gold); }
 .colony-manager-detail { max-height: 70vh; overflow-y: auto; }
 @media (max-width: 720px) { .colony-manager-body { grid-template-columns: 1fr; } }
+.escort-hud { position: absolute; right: 244px; bottom: 12px; padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; max-width: calc(100vw - 24px); }
+.escort-orders { display: flex; flex-wrap: wrap; gap: 4px; }
 .tactic-picker { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
 .tactic-picker select { font: inherit; background: rgba(10, 16, 28, 0.85); color: inherit; border: 1px solid rgba(143, 220, 255, 0.3); border-radius: 4px; padding: 1px 4px; }
 .bridge-stats, .bridge-alerts { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }

@@ -99,6 +99,11 @@ export interface CommandArgs {
   "fleet.route": FleetRoute & { fleetId: string };
   /** Quita la ruta automática de una flota (se queda donde esté). */
   "fleet.routeStop": { fleetId: string };
+  /**
+   * Orden a las escoltas de la nave del Emperador que se pilota: seguir (y
+   * defender), atacar el blanco fijado, mantener la posición o replegarse sin combatir.
+   */
+  "escort.order": { order: EscortOrder; targetId?: string };
   /** Acopla la nave del Emperador (pilotada, cerca) en la nave nodriza de una flota propia parada en el mismo sistema. */
   "flagship.dock": { fleetId: string };
   /** Desacopla la nave del Emperador de su nave nodriza. */
@@ -145,6 +150,9 @@ export interface CommandArgs {
   "heir.incarnate": { heirId: string };
 }
 export type CommandOp = keyof CommandArgs;
+
+/** Órdenes a las escoltas (Fase 9d, `docs/ia-naves.md` §5). */
+export type EscortOrder = "follow" | "attack" | "hold" | "recall";
 
 // --- Espacio local: naves volando dentro de un sistema (tiempo real) ---
 
