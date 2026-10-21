@@ -35,7 +35,8 @@ Un asteroide **se agota** al minarlo (se ve más pequeño y apagado) y **se rege
 
 ## Refinar y descargar
 
-- **Refinar combustible**: en el panel de la bodega, el botón **Refinar combustible** convierte despacio los volátiles de la bodega en combustible para el depósito. Rinde menos que reponer en una colonia, pero te permite seguir viajando sin volver a casa.
+- **Refinar combustible**: en el panel de la bodega, el botón **Refinar combustible** convierte despacio los volátiles de la bodega en combustible para el depósito. Rinde menos que reponer en una colonia, pero te permite seguir viajando sin volver a casa. Solo funciona con **volátiles** (de los asteroides helados).
+- **Tirar carga**: si la bodega está llena de lo que no necesitas, el botón ✕ junto a cada recurso lo tira por la borda (se pierde) para hacer sitio.
 - **Descargar**: en un sistema con una colonia tuya, abre su planeta y pulsa **Descargar la bodega aquí**. Lo minado pasa a sus existencias (lo que no quepa en el almacén se queda a bordo) y queda asentado en el [libro de recursos](/wiki/economia#libro-de-recursos).
 - Los **metales raros** y la **materia exótica** solo se consiguen así o en el [mercado](/wiki/mercado). Los piden las naves capitales (ver [Naves](/wiki/naves)) y se pueden vender a otros Emperadores; los Nómadas compran metales raros.
 

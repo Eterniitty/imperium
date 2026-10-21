@@ -35,7 +35,8 @@ An asteroid **is depleted** as you mine it (it looks smaller and duller) and **r
 
 ## Refining and unloading
 
-- **Refine fuel**: in the hold panel, the **Refine fuel** button slowly turns the volatiles in the hold into fuel for the tank. It yields less than refuelling at a colony, but lets you keep travelling without going home.
+- **Refine fuel**: in the hold panel, the **Refine fuel** button slowly turns the volatiles in the hold into fuel for the tank. It yields less than refuelling at a colony, but lets you keep travelling without going home. It only works with **volatiles** (from icy asteroids).
+- **Jettison cargo**: if the hold is full of things you don't need, the ✕ button next to each resource throws it overboard (it is lost) to make room.
 - **Unload**: in a system with one of your colonies, open its planet and press **Unload the hold here**. What you mined goes into its stock (whatever does not fit in storage stays aboard) and is recorded in the [resource ledger](/wiki/economia#resource-ledger).
 - **Rare metals** and **exotic matter** can only be obtained this way or on the [market](/wiki/mercado). Capital ships need them (see [Ships](/wiki/naves)) and you can sell them to other Emperors; the Nomads buy rare metals.
 

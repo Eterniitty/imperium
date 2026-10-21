@@ -7,7 +7,10 @@ Texto para jugadores (lo usará la ventana de ayuda del juego). Las teclas son l
 | Tecla | Qué hace |
 |---|---|
 | **I** | **Motores**: arrancar (unos 4 s) o apagar. Al tomar los mandos están apagados: sin ellos no hay empuje, giros ni pulso |
-| Ratón en **cámara libre** | Arrastrar mueve la cámara alrededor de la nave (no la gira); rueda: distancia |
+| Ratón en **cámara libre** | Arrastrar mueve la cámara alrededor de la nave (no la gira); rueda: distancia. **Con los motores encendidos** (ratón para combatir): arrastrar con el botón derecho (o Alt + izquierdo) y Mayús + rueda |
+| **Clic izquierdo** | Con los motores encendidos: **disparar el arma seleccionada** (mantener para el cañón y el láser). Alt + clic: seleccionar un planeta, como antes. Se desactiva en Ajustes → Controles («Ratón para combatir») |
+| **Rueda** | Con los motores encendidos: **cambiar de arma** (cañón, misiles y, en el espacio profundo, láser). Mayús + rueda: distancia de la cámara |
+| **Clic central** | Fijar como blanco la nave del marcador bajo el cursor (también un compañero: hay fuego amigo) |
 | B | Cámara: volver detrás de la nave (o mirar al frente en cabina) |
 | Z | Asistencia de vuelo (frenado y estabilización) |
 | **G** | **Modo del ratón**: cámara libre ↔ **vuelo con ratón** (retícula virtual: la nave gira hacia donde está el cursor respecto al centro, con zona muerta, sin arrastrar; la cámara sigue detrás y el botón derecho mira alrededor un momento). Las flechas y Q/E funcionan en los dos modos. Sensibilidad, zona muerta e invertir eje en Ajustes → Controles |
@@ -18,14 +21,40 @@ Texto para jugadores (lo usará la ventana de ayuda del juego). Las teclas son l
 | Flechas | Guiñada y cabeceo (con aceleración angular, sin giros bruscos) |
 | Mayús | Impulso (×4 la velocidad de maniobra) |
 | **P** | **Motor de pulso** (encender / apagar) |
-| F (mantener) | Cañón |
-| X | Fijar el siguiente enemigo (del más cercano al más lejano) |
-| R | Lanzar un misil al objetivo fijado |
+| F (mantener) | Cañón (con un blanco fijado, los montajes apuntan solos al punto de adelanto) |
+| X | Fijar el blanco más cercano a la retícula (al cursor en vuelo con ratón; si no, a la línea del morro) |
+| Y / U | Blanco siguiente / anterior (hostiles del más cercano al más lejano, luego otros Emperadores; nunca compañeros) |
+| V | Blanco más cercano |
+| O | **Fuego automático** del cañón (encender / apagar): dispara solo con el blanco a tiro y en arco |
+| 1 / 2 / 3 | Seleccionar cañón / misiles / láser de minería |
+| R | Lanzar un misil al blanco fijado |
 | T | Cámara: cabina (primera persona) o exterior (tercera) |
 | **J** | **Salto cuántico**: elegir destino (otra vez J o Esc cancela la carga) |
 | M | Mapa galáctico / volver a los mandos (durante un viaje: mapa / túnel) |
 | K | Durante un viaje: **salir del túnel** y quedarse en el espacio profundo |
 | L (mantener) | Láser de minería (espacio profundo, apuntando a un asteroide) |
+| **N** | **Piloto automático**: lista de destinos (planetas, lunas, cinturones, anomalía, asteroides, naves); con él puesto, lo cancela |
+| **H** | **Seguir** la nave fijada (X) o la siguiente a la vista (primero los compañeros) |
+| Doble clic | Al pilotar (con los motores encendidos y el ratón para combatir, **Alt + doble clic**): piloto automático hacia el planeta, la luna, la nave o el punto del plano del sistema bajo el cursor |
+
+## Asistencia de puntería
+
+Los blancos son pequeños (cazas de 20 m a kilómetros de distancia): la nave ayuda a apuntar.
+
+- **Marcadores** de todas las naves del sistema, aunque midan pocos píxeles: **rombo rojo** = hostil, **cuadrado ámbar** = otro Emperador, **círculo cian** = compañero, con la distancia. El blanco fijado lleva un recuadro mayor con nombre, escudo y casco, y una **flecha** en el borde de la pantalla si queda fuera.
+- **Punto de adelanto**: un círculo donde hay que disparar (velocidad del blanco, la tuya y la del proyectil); **verde** cuando el blanco está a tiro y en el arco de los montajes.
+- **Puntería automática**: con blanco fijado, los cañones giran solos hacia el punto de adelanto dentro de su arco (25° alrededor del morro, `AIM_ASSIST`); los misiles persiguen al blanco. Tú decides cuándo disparar, o activas el **fuego automático** (O).
+- **PvP y fuego amigo**: se puede atacar a cualquier Emperador; los disparos dañan a cualquier nave que toquen, compañeros incluidos. Al ciclar blancos no se fijan compañeros y el fuego automático nunca les dispara.
+- **Choques**: dos naves que se tocan acercándose se dañan según la velocidad del choque (`SHIP_COLLISION`) y rebotan.
+
+## Piloto automático de crucero
+
+Dentro del sistema (o en el espacio profundo), la nave puede ir sola:
+
+- **Ir a un sitio** (N, «Crucero hasta aquí» en el panel del planeta, o doble clic en la vista): se orienta, enciende el pulso si está lejos (moderado para frenar a tiempo), lo apaga a unos 12 km y termina con los propulsores hasta pararse a una distancia segura (planetas y lunas: a la mitad de su radio de altura, entre 5 y 120 km; asteroides: a tiro del láser). Rodea la estrella, los planetas y las lunas que se crucen. Al llegar se desactiva.
+- **Seguir una nave** (H, o elegirla en la lista): en formación detrás y a un lado, igualando su velocidad (con pulso si ella lo lleva). Si salta fuera del sistema o deja de verse, se desactiva con aviso.
+- **Cancelar**: N, Esc o cualquier mando de pilotaje (moverse, girar, impulso, pulso, motores; en vuelo con ratón, sacar el cursor de la zona muerta). El HUD muestra el modo, el destino, la distancia y la tecla.
+- Usa los mismos mandos que el piloto (con la asistencia de vuelo puesta): mismas velocidades, mismas posiciones al servidor. Arranca los motores si están apagados.
 
 ## Velocidades
 
@@ -87,7 +116,7 @@ Cuando dejas de pilotar (mapa, cerrar el juego), la nave **se queda donde estaba
 2. La nave se **alinea** sola con el destino y **carga el motor** cuántico (5 s, con su sonido). J o Esc cancelan. Delante del morro se abre una **grieta en el espacio** (un objeto del mundo: la ven los demás pilotos del sistema); al saltar, la nave se estira hacia ella (espaguetización, ~0,5 s) y desaparece dentro; al llegar, un rayo de luz sale de otra grieta en el destino y se contrae en la nave.
 3. Al saltar, ves el **túnel cuántico** con el destino, el **tiempo restante** y el progreso. Con **M** miras el mapa (la cámara sigue a tu nave) y vuelves al túnel.
 4. Con **K** (o el botón del túnel) puedes **salir a mitad de viaje**: quedas en una región de espacio profundo, pagas solo el combustible recorrido y desde allí vuelves a saltar con J. Puede haber asteroides que minar con **L** (bodega, refinería de a bordo y descarga en tus colonias; ver la Wiki «Espacio profundo y minería»).
-5. Al llegar apareces en el **borde del sistema de destino**, del lado por el que llegas, a los mandos. El sistema queda descubierto (lo que cubre tu escáner).
+5. Al llegar apareces a los mandos donde estuviste la última vez en ese sistema o, si es la primera vez, en el **borde del sistema de destino**, del lado por el que llegas (o junto a un compañero, si lo elegiste con «Junto a …»). El sistema queda descubierto (lo que cubre tu escáner). El salto sigue aunque cambies de pestaña o de ventana.
 
 Duración: unos **200 años luz por hora** — un vecino a 10 a.l. son 3 minutos; el salto más largo con el depósito lleno (unos **133 a.l.**) dura unos **40 minutos**. El alcance lo marca el combustible: para ir más lejos, salta por etapas y reposta en tus colonias.
 

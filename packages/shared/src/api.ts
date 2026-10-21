@@ -166,6 +166,21 @@ export interface SocialResponse {
   requests: AllyEntry[];
 }
 
+/** Dónde está o estuvo un compañero, para saltar junto a él (memoria de posición). */
+export interface CompanionTrail {
+  id: string;
+  name: string;
+  /** Sistema donde está ahora (o al que viaja); null si está en el espacio profundo o caído. */
+  at: string | null;
+  /** Sistemas donde se recuerda su última posición. */
+  systems: string[];
+}
+
+/** Respuesta de `GET /api/social/trail`: compañeros que no se ocultan, con dónde están y dónde estuvieron. */
+export interface CompanionTrailResponse {
+  companions: CompanionTrail[];
+}
+
 /**
  * Alta con compañero: horas que una solicitud sin respuesta sigue viva. Pasado
  * ese tiempo, el compañero deja de verla y quien la envió puede empezar solo.

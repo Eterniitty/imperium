@@ -9,6 +9,7 @@ import type { Database } from "../db/client";
 import { colonies, emperors } from "../db/schema";
 import { findSystem, placeFromRow } from "../emperor/world";
 import type { StoredSupplies } from "./combat";
+import { rememberPosition } from "./memory";
 
 /** Disposición común de las regiones de espacio profundo. */
 const DEEP_LAYOUT = deepLayout();
@@ -233,6 +234,11 @@ export class FlagshipService {
   /** Guarda dónde queda aparcada la nave (al dejar de pilotarla). */
   async savePark(emperorId: string, park: ParkedOrbit | null): Promise<void> {
     await this.db.update(emperors).set(parkColumns(park)).where(eq(emperors.id, emperorId));
+  }
+
+  /** Memoria de posición: el último punto de la nave en un sistema (ver `memory.ts`). */
+  async rememberPosition(emperorId: string, systemId: string, p: readonly number[]): Promise<void> {
+    await rememberPosition(this.db, emperorId, systemId, p);
   }
 
   /** Emperadores que están (no de viaje ni muertos) en un sistema, con su órbita de aparcamiento y sus recursos. */

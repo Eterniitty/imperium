@@ -413,6 +413,9 @@ export const QUANTUM_RIFT = {
   arriveShipSec: 1.4,
 } as const;
 
+/** Salto junto a un compañero: a cuántos metros de su nave aparece la propia (de lado; la grieta no la toca). */
+export const COMPANION_ARRIVAL_OFFSET_M = 3000;
+
 /** Velocidad con la que la nave se alinea sola con el destino del salto (radianes por segundo). */
 export const QUANTUM_ALIGN_RAD_PER_SEC = 1.4;
 

@@ -191,7 +191,13 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                   case "emperor.move": {
                     // El salto gasta combustible: primero se guarda el que lleva la nave en memoria.
                     await space.flushSupplies(owner.emperorId);
-                    const res = await emperors.move(owner.accountId, msg.args.systemId);
+                    // Memoria de posición: dónde está ahora la nave (y el compañero junto al que se quiere llegar), en vivo.
+                    const near = msg.args.near ?? null;
+                    const res = await emperors.move(owner.accountId, msg.args.systemId, {
+                      here: space.positionOf(owner.emperorId),
+                      near,
+                      nearLive: near ? space.positionOf(near) : null,
+                    });
                     if (res.ok) {
                       // Al saltar, la nave deja el sistema en el que volaba (y su combustible cambió en la base de datos).
                       space.leave(res.emperor.id, "jump");
@@ -223,6 +229,14 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                       await hub.publishColony(owner.emperorId, msg.args.colonyId);
                     }
                     return res.ok ? ({ ok: true } as const) : res;
+                  }
+                  case "flagship.jettison": {
+                    const r = msg.args.resource;
+                    const res = await flagships.updateHold(owner.emperorId, (hold) => ((hold[r] ?? 0) > 1e-6 ? { hold: { ...hold, [r]: 0 }, result: true } : null));
+                    if (!res) return { ok: false, error: "hold_empty" } as const;
+                    space.holdChanged(owner.emperorId);
+                    await hub.publishFlagship(owner.emperorId);
+                    return { ok: true } as const;
                   }
                   case "flagship.refine": {
                     await space.setRefining(owner.emperorId, msg.args.on);

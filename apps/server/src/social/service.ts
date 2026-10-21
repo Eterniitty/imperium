@@ -1,7 +1,7 @@
-import type { AllyEntry, SocialResponse, Visibility } from "@imperium/shared";
+import { isDeepId, type AllyEntry, type CompanionTrailResponse, type SocialResponse, type Visibility } from "@imperium/shared";
 import { and, eq, inArray, or } from "drizzle-orm";
 import type { Database } from "../db/client";
-import { emperorAllies, emperors } from "../db/schema";
+import { emperorAllies, emperors, systemParks } from "../db/schema";
 import { nameKey } from "../emperor/world";
 
 export type AddAllyResult = { ok: true; allyId: string } | { ok: false; error: "unknown_emperor" | "cannot_ally_self" };
@@ -82,6 +82,34 @@ export class SocialService {
       allies: [...added].filter((id) => addedMe.has(id)).map(entry).sort(byName),
       pending: [...added].filter((id) => !addedMe.has(id)).map(entry).sort(byName),
       requests: [...addedMe].filter((id) => !added.has(id)).map(entry).sort(byName),
+    };
+  }
+
+  /**
+   * Memoria de posición: dónde están y dónde estuvieron los compañeros (salvo
+   * los que se ocultan a todos), para poder saltar junto a ellos.
+   */
+  async trail(emperorId: string): Promise<CompanionTrailResponse> {
+    const ids = [...(await this.mutualAllies(emperorId))];
+    if (ids.length === 0) return { companions: [] };
+    const rows = await this.db
+      .select({ id: emperors.id, name: emperors.name, visibility: emperors.visibility, systemId: emperors.systemId, destSystemId: emperors.destSystemId, deadAt: emperors.deadAt })
+      .from(emperors)
+      .where(inArray(emperors.id, ids));
+    const shown = rows.filter((r) => r.visibility !== "hidden");
+    if (shown.length === 0) return { companions: [] };
+    const parks = await this.db
+      .select({ emperorId: systemParks.emperorId, systemId: systemParks.systemId })
+      .from(systemParks)
+      .where(inArray(systemParks.emperorId, shown.map((r) => r.id)));
+    return {
+      companions: shown
+        .map((r) => {
+          // Si viaja (o ya llegó sin resolverse la fila), el destino.
+          const at = r.deadAt ? null : (r.destSystemId ?? r.systemId);
+          return { id: r.id, name: r.name, at: at && !isDeepId(at) ? at : null, systems: parks.filter((p) => p.emperorId === r.id).map((p) => p.systemId) };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name)),
     };
   }
 }

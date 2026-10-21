@@ -3,6 +3,7 @@ import { serverNow } from "../net/world";
 import { shipName, spaceStore, type PoseSample } from "../net/space";
 import { gameStore } from "../state/store";
 import type { WeaponKind } from "@imperium/shared";
+import { FLAGSHIP_HIT_RADIUS_M, getAlienShipClass, SHIP_COLLISION } from "@imperium/content";
 import { createFlagship, disposeShip, SHIP_SCALE, shipRig } from "./shipModel";
 import { createShipModel } from "./shipFactory";
 import { labelTexture } from "./textures";
@@ -157,6 +158,31 @@ export class RemoteShips {
       return out.set((last.p[0] - prev.p[0]) * k, (last.p[1] - prev.p[1]) * k, (last.p[2] - prev.p[2]) * k);
     }
     return this.visuals.has(id) ? out.set(0, 0, 0) : null;
+  }
+
+  /**
+   * Choques de la nave propia contra las demás (el daño lo pone el servidor):
+   * si se tocan (suma de los radios de impacto, como en el servidor), la nave
+   * propia se aparta y rebota (`SHIP_COLLISION.restitution`).
+   */
+  collide(pos: THREE.Vector3, vel: THREE.Vector3, radius: number): void {
+    const { ships } = spaceStore.getState();
+    for (const [id, v] of this.visuals) {
+      const s = ships[id]?.state;
+      if (!s) continue;
+      const cls = s.classId ? getAlienShipClass(s.classId) : undefined;
+      // Mismo radio que el servidor: la insignia, o según la eslora (mínimo 30 m).
+      const other = cls ? Math.max(30, cls.model.lengthM * 0.45) : FLAGSHIP_HIT_RADIUS_M;
+      const reach = radius + other;
+      const n = pos.clone().sub(v.ship.position);
+      const d = n.length();
+      if (d >= reach || d < 1e-3) continue;
+      n.divideScalar(d);
+      pos.copy(v.ship.position).addScaledVector(n, reach);
+      const otherV = this.velocityOf(id) ?? new THREE.Vector3();
+      const closing = vel.clone().sub(otherV).dot(n);
+      if (closing < 0) vel.addScaledVector(n, -closing * (1 + SHIP_COLLISION.restitution));
+    }
   }
 
   /** Retraso con que se dibujan las naves ajenas (s): para adelantar su posición al apuntar. */

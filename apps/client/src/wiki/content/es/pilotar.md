@@ -54,6 +54,16 @@ El motor de pulso ([[P]], encender y apagar) es un **supercrucero** para cruzar 
 - Acelera y frena **de forma suave**. El panel de abajo muestra el límite actual y el **tiempo estimado** hasta el planeta seleccionado, la nave fijada o el cuerpo que tienes de frente.
 - Gasta **combustible** y algo de **energía**: sin combustible no funciona.
 
+## Piloto automático de crucero
+
+Dentro de un sistema (o de una región de espacio profundo) la nave puede ir sola a un sitio o seguir a otra nave. Mueve los mismos mandos que tú —giros, propulsores, impulso y pulso—, así que va a las mismas velocidades y los demás la ven volar con normalidad.
+
+- **Elegir destino**: [[N]] abre la lista con los planetas, las lunas, los cinturones de asteroides, la anomalía del sistema y, en el espacio profundo, los asteroides más cercanos, además de las naves a la vista (primero tus [compañeros](/wiki/companeros)). También puedes pulsar **Crucero hasta aquí** en el panel del planeta seleccionado o hacer **doble clic** en la vista sobre un planeta, una luna, una nave o un punto vacío del plano del sistema (un punto marcado).
+- **Ir a un sitio**: la nave se orienta, enciende el pulso si el destino está lejos (y lo modera para frenar a tiempo), lo apaga cerca y termina con los propulsores hasta **detenerse a una distancia segura** (sobre un planeta o una luna, a la mitad de su radio de altura, entre 5 y 120 km; junto a un asteroide, a tiro del láser de minería). Rodea la estrella, los planetas y las lunas que se crucen en el camino. Al llegar se desactiva y te avisa.
+- **Seguir una nave**: [[H]] sigue a la nave fijada ([[X]]) o, si no hay, a la nave a la vista más cercana (primero los compañeros); pulsarla otra vez pasa a la siguiente. La tuya se pone en formación detrás y a un lado, igualando su velocidad (con pulso si ella lo lleva). Si salta fuera del sistema o deja de verse, el piloto automático se desactiva con un aviso.
+- **Cancelar**: [[N]], Esc o **cualquier mando de pilotaje** (moverse, girar, impulso, pulso, motores; en vuelo con ratón, mover el cursor fuera de la zona muerta). Un aviso en el HUD muestra el modo, el destino, la distancia y la tecla para cancelar.
+- Si los motores están apagados, se arrancan solos. Sin combustible, va solo con los propulsores (mucho más despacio). Disparar y minar no lo cancelan.
+
 ## Gravedad
 
 Los planetas, las lunas y la estrella **atraen la nave**, pero solo dentro de su **esfera de influencia** (unas ocho veces su radio, más si tiene lunas): en el espacio entre planetas no hay gravedad y no caes hacia nada. El HUD muestra la región en la que estás:
@@ -91,11 +101,14 @@ Vuela hasta el **borde del sistema** (unos miles de kilómetros más allá del �
 
 1. A los mandos, pulsa [[J]]: verás los sistemas **al alcance de tu combustible**, con la distancia, la duración y el combustible del salto. También puedes **seleccionar una estrella en el mapa** y pulsar [[J]] o **Saltar aquí**.
 2. La nave se **alinea** sola con el destino y **carga el motor cuántico** (unos segundos). [[J]] o Esc cancelan. Mientras carga, se abre una **grieta en el espacio** delante del morro: una costura de luz que se alarga, se agrieta y curva el fondo a su alrededor. Al saltar se abre del todo y la nave, acelerando casi a la velocidad de la luz, **se estira hacia ella** hasta ser un hilo de luz y desaparece dentro en medio segundo; al llegar, se abre otra en el destino, **un rayo de luz sale disparado de ella** y se contrae en tu nave con un destello. La cámara acompaña: se abre un poco y tiembla levemente. La grieta está en el espacio, no en tu pantalla: **los demás pilotos del sistema la ven** (cargar, entrar y salir). Si te molestan los destellos, activa **Reducir efectos visuales** en Ajustes: los destellos y el rayo serán más tenues y la cámara no temblará.
-3. Durante el viaje ves el **túnel cuántico** con el tiempo restante; [[M]] alterna entre el túnel y el mapa. Al llegar apareces **en el borde del sistema de destino**, a los mandos.
+3. Durante el viaje ves el **túnel cuántico** con el tiempo restante; [[M]] alterna entre el túnel y el mapa. Al llegar apareces a los mandos **donde estuviste la última vez en ese sistema**; si es la primera vez, **en su borde**, del lado por el que llegas.
 
 - La velocidad de salto está en la tabla de arriba: unos minutos a las estrellas cercanas y hasta unos **40 minutos** el salto más largo. El **alcance** lo marca el combustible: para ir más lejos, salta por etapas y reposta en tus colonias.
 - Al llegar, tu escáner [descubre](/wiki/niebla) el sistema y los que tenga al alcance.
 - Se puede saltar a cualquier estrella al alcance, descubierta o no.
+- **El salto no necesita que mires la pantalla.** Puedes elegir el destino y cambiar de pestaña o de ventana: el salto se da igual (sin la animación) y el viaje y la llegada los lleva el servidor. Al volver, ves el túnel si aún viajas o tu nave ya en el destino.
+- **Memoria de posición:** el juego recuerda dónde estaba tu nave en cada sistema (al saltar fuera, al aparcarla y cada minuto mientras vuelas). Al volver a un sistema, llegas ahí y allí se abre la grieta.
+- **Junto a un compañero:** si un [compañero](/wiki/companeros) está o estuvo en un sistema, en el selector de salto ([[J]]) y en el panel del sistema en el mapa aparece **«Junto a …»**: llegas a su lado, donde está ahora o donde estuvo la última vez.
 
 ### Salir del túnel a mitad de viaje
 

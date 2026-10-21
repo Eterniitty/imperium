@@ -20,6 +20,7 @@ import { Legend } from "./Legend";
 import { PlanetPanel } from "./PlanetPanel";
 import { QuantumHud } from "./QuantumHud";
 import { QuantumPanel } from "./QuantumPanel";
+import { CruiseHud, CruisePanel } from "./CruisePanel";
 import { StartScreen } from "./StartScreen";
 import { SystemPanel } from "./SystemPanel";
 import { TopBar } from "./TopBar";
@@ -46,6 +47,7 @@ export function App() {
   // Con un sistema seleccionado, su panel ya dice la clase de la estrella y necesita el sitio de la leyenda.
   const hasSelection = useGame((s) => s.selected !== null);
   const quantumPanel = useGame((s) => s.quantumPanel);
+  const cruisePanel = useGame((s) => s.cruisePanel);
   const containerRef = useRef<HTMLDivElement>(null);
   const uiScale = useUiScale();
 
@@ -102,7 +104,8 @@ export function App() {
             <CombatHud />
             <MiningHud />
             <QuantumHud />
-            {quantumPanel ? <QuantumPanel /> : <PlanetPanel />}
+            <CruiseHud />
+            {quantumPanel ? <QuantumPanel /> : cruisePanel ? <CruisePanel /> : <PlanetPanel />}
           </>
         )}
         <DeathScreen />

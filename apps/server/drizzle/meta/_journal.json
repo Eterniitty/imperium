@@ -148,6 +148,13 @@
       "when": 1792589652227,
       "tag": "0021_alta_con_companero",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792590957502,
+      "tag": "0022_posicion_por_sistema",
+      "breakpoints": true
     }
   ]
 }

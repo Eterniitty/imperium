@@ -32,6 +32,12 @@ import { bodyDetailFor, bodySegments, planetLook } from "./planetLook";
 import { claimsStore } from "../state/claims";
 import { ownColonyAt, planetLabel } from "../ui/colonies";
 import type { View } from "./View";
+import { Autopilot, cruiseCatalog, type CruiseObstacle, type CruiseSources, type CruiseSpot } from "./Autopilot";
+import { keyLabel } from "../state/settings";
+import { translate, type AnomalyType } from "@imperium/shared";
+
+/** Mandos manuales que desactivan el piloto automático. */
+const MANUAL_ACTIONS: Action[] = ["forward", "back", "strafeLeft", "strafeRight", "up", "down", "rollLeft", "rollRight", "turnLeft", "turnRight", "pitchUp", "pitchDown", "boost"];
 
 interface PlanetVisual {
   index: number;
@@ -52,7 +58,7 @@ export interface SystemViewEvents {
   /** Esc en modo observar: volver al mapa. */
   onExit(): void;
   /** El motor cuántico terminó de cargar: hay que dar la orden de salto. */
-  onQuantumJump(target: StarSystemSummary): void;
+  onQuantumJump(target: StarSystemSummary, near: string | null): void;
   /** La nave cruzó el borde del sistema: pasar al espacio interestelar. `direction` es hacia dónde salió. */
   onLeave(direction: THREE.Vector3): void;
   /** Aviso breve; `keyAction` añade como parámetro `key` la tecla de esa acción. */
@@ -124,7 +130,16 @@ export class SystemView implements View {
    * Salto cuántico en preparación: la nave se alinea con el destino (`align`),
    * carga el motor (`charge`) y espera la confirmación del servidor (`sent`).
    */
-  private quantum: { target: StarSystemSummary; dir: THREE.Vector3; phase: "align" | "charge" | "sent" | "depart"; t: number; riftSent: boolean; onDeparted?: () => void } | null = null;
+  private quantum: {
+    target: StarSystemSummary;
+    /** Compañero junto al que se quiere llegar (memoria de posición), o null. */
+    near: string | null;
+    dir: THREE.Vector3;
+    phase: "align" | "charge" | "sent" | "depart";
+    t: number;
+    riftSent: boolean;
+    onDeparted?: () => void;
+  } | null = null;
   /**
    * Llegada de un salto: la nave sale de una grieta abierta en `spawn` (donde
    * aparece), desde `L` esloras por detrás; los mandos esperan a que salga.
@@ -165,6 +180,13 @@ export class SystemView implements View {
   private mineTimer = 0;
   private aimTimer = 0;
   private outOfRangeWarned = false;
+  /** Piloto automático de crucero (ir a un sitio o seguir a otra nave) y su marcador en el destino. */
+  private autopilot = new Autopilot();
+  private cruiseMarker: THREE.Sprite;
+  /** Cursor al activar el piloto automático (en vuelo con ratón, moverlo lo cancela). */
+  private cruiseCursor: { x: number; y: number } | null = null;
+  /** Anomalía del sistema (destino del crucero). */
+  private anomaly: { type: AnomalyType; at: THREE.Vector3 } | null = null;
 
   constructor(
     dom: HTMLElement,
@@ -187,6 +209,13 @@ export class SystemView implements View {
     this.selectRing.visible = false;
     this.selectRing.renderOrder = 10;
 
+    this.cruiseMarker = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: ringTexture(), color: 0x5fd3e6, depthTest: false, sizeAttenuation: false, transparent: true, opacity: 0.8 }),
+    );
+    this.cruiseMarker.scale.setScalar(0.045);
+    this.cruiseMarker.visible = false;
+    this.cruiseMarker.renderOrder = 11;
+    this.scene.add(this.cruiseMarker);
     this.assist = new TargetAssist(dom);
     dom.addEventListener("pointerdown", this.onCombatDown);
     window.addEventListener("pointerup", this.onCombatUp);
@@ -322,6 +351,7 @@ export class SystemView implements View {
       anomaly.scale.setScalar(400_000);
       anomaly.userData.anomaly = true;
       this.content.add(anomaly);
+      this.anomaly = { type: detail.anomaly, at: anomaly.position };
     }
 
     // Cámara inicial: ver todo el sistema en diagonal.
@@ -506,6 +536,7 @@ export class SystemView implements View {
     this.lodBodies = [];
     this.content.clear();
     this.planets = [];
+    this.anomaly = null;
     this.selectRing.visible = false;
     this.hoveredPlanet = null;
   }
@@ -620,12 +651,13 @@ export class SystemView implements View {
    * `from` (coordenadas de la galaxia, que en la vista de sistema se usan como
    * direcciones): alinear la nave, cargar el motor y saltar.
    */
-  startQuantum(target: StarSystemSummary, from: WorldPosition): void {
+  startQuantum(target: StarSystemSummary, from: WorldPosition, near: string | null = null): void {
     if (!this.ship || !this.flight) return;
     this.cancelQuantum();
+    this.cancelCruise();
     const dir = new THREE.Vector3(target.position.x - from.x, target.position.y - from.y, target.position.z - from.z).normalize();
     this.flight.pulse = false;
-    this.quantum = { target, dir, phase: "align", t: 0, riftSent: false };
+    this.quantum = { target, near, dir, phase: "align", t: 0, riftSent: false };
     gameStore.getState().setQuantumTarget(target);
   }
 
@@ -690,7 +722,7 @@ export class SystemView implements View {
       shipRig(ship).setThrust(0.3 + 0.7 * k, k > 0.5);
       if (k >= 1) {
         q.phase = "sent";
-        this.events.onQuantumJump(q.target);
+        this.events.onQuantumJump(q.target, q.near);
       }
     } else if (q.phase === "depart") {
       q.t += dt;
@@ -701,6 +733,36 @@ export class SystemView implements View {
         q.onDeparted = undefined;
         done();
       }
+    }
+  }
+
+  /**
+   * Pestaña en segundo plano (el navegador no da fotogramas): la secuencia del
+   * salto no puede depender de la animación. Se salta lo que falte: si aún se
+   * alineaba o cargaba, se da ya la orden de salto (con la grieta anunciada a
+   * los demás); si ya se entraba en la grieta, se pasa al túnel. El servidor
+   * lleva el viaje por su cuenta y, al volver, se dibuja el estado real.
+   */
+  skipQuantumAhead(): void {
+    const q = this.quantum;
+    const ship = this.ship;
+    if (!q) return;
+    if (q.phase === "align" || q.phase === "charge") {
+      if (!q.riftSent && ship) {
+        const at = RiftField.ahead(ship.position, ship.quaternion);
+        const r = ship.quaternion;
+        connection.send({ t: "rift", phase: "charge", at: [at.x, at.y, at.z], q: [r.x, r.y, r.z, r.w] });
+        q.riftSent = true;
+      }
+      stopQuantumCharge();
+      telemetry.quantumAlign = null;
+      telemetry.quantumCharge = null;
+      q.phase = "sent";
+      this.events.onQuantumJump(q.target, q.near);
+    } else if (q.phase === "depart" && q.onDeparted) {
+      const done = q.onDeparted;
+      q.onDeparted = undefined;
+      done();
     }
   }
 
@@ -727,6 +789,7 @@ export class SystemView implements View {
   stopPiloting(): void {
     if (!this.ship) return;
     this.cancelQuantum();
+    this.cancelCruise();
     this.undoShake();
     this.pendingEmerge.clear();
     if (this.camera.fov !== BASE_FOV) {
@@ -1299,6 +1362,178 @@ export class SystemView implements View {
     }
     // Asteroides del espacio profundo.
     if (this.deepId) this.deep.collide(ship.position, this.flight!.velocity, FLAGSHIP_HIT_RADIUS_M);
+    // Otras naves (el daño del choque lo calcula el servidor).
+    this.remote.collide(ship.position, this.flight!.velocity, FLAGSHIP_HIT_RADIUS_M);
+  }
+
+  // --- Piloto automático de crucero (ver `Autopilot.ts`) ---
+
+  /** Destinos posibles ahora y cuerpos que rodear. */
+  private cruiseWorld(): { spots: CruiseSpot[]; obstacles: CruiseObstacle[] } {
+    if (!this.ship || !this.layout) return { spots: [], obstacles: [] };
+    const locale = gameStore.getState().locale;
+    const colonies = worldStore.getState().colonies;
+    const bodies: CruiseSources["bodies"] = [];
+    for (const p of this.planets) {
+      const own = this.systemId ? ownColonyAt(colonies, this.systemId, p.index) !== undefined : false;
+      bodies.push({ id: `planet:${p.index}`, kind: "planet", name: p.label ? p.label.key.split("|")[0]! : p.designation, center: p.mesh.getWorldPosition(new THREE.Vector3()), radius: p.layout.size, own });
+      for (const m of p.moons) bodies.push({ id: `moon:${p.index}:${m.layout.index}`, kind: "moon", name: m.name, center: m.mesh.position.clone(), radius: m.layout.body.radius });
+    }
+    const ships: CruiseSources["ships"] = [];
+    for (const s of Object.values(spaceStore.getState().ships)) {
+      const model = this.remote.shipOf(s.state.id);
+      if (model) ships.push({ id: s.state.id, name: shipName(s.state, locale), ally: s.state.ally, pirate: s.state.kind === "pirate", at: model.position.clone(), q: model.quaternion.clone() });
+    }
+    const target = this.autopilot.target;
+    const spots = cruiseCatalog({
+      locale,
+      shipPos: this.ship.position,
+      bodies,
+      belts: this.deepId ? [] : this.layout.belts,
+      anomaly: this.anomaly,
+      field: this.deepId ? spaceStore.getState().field : null,
+      ships,
+      point: target?.id === "point" ? (target.point ?? null) : null,
+    });
+    const obstacles: CruiseObstacle[] = bodies.map((b) => ({ id: b.id, center: b.center, radius: b.radius, star: false }));
+    if (this.layout.starRadius > 0) obstacles.push({ id: "star", center: new THREE.Vector3(), radius: this.layout.starRadius, star: true });
+    return { spots, obstacles };
+  }
+
+  /** Destinos para el panel de crucero, del más cercano al más lejano. */
+  cruiseOptions(): Array<{ id: string; kind: CruiseSpot["kind"]; name: string; distance: number; ally?: boolean; pirate?: boolean; own?: boolean }> {
+    const ship = this.ship;
+    if (!ship) return [];
+    return this.cruiseWorld()
+      .spots.filter((s) => s.kind !== "point")
+      .map((s) => ({ id: s.id, kind: s.kind, name: s.name, distance: Math.max(0, s.center.distanceTo(ship.position) - s.radius), ally: s.ally, pirate: s.pirate, own: s.own }))
+      .sort((a, b) => a.distance - b.distance);
+  }
+
+  /** Destino del piloto automático en curso, o null. */
+  get cruiseTarget(): { id: string; mode: "goto" | "follow"; name: string } | null {
+    return this.autopilot.target;
+  }
+
+  /** Activa el piloto automático hacia un destino del catálogo (`ship:<id>` = seguir esa nave) o un punto del espacio. */
+  cruiseTo(id: string, point?: THREE.Vector3): void {
+    const ship = this.ship;
+    if (!ship || !this.flight || this.quantum || this.arrival) return;
+    const spot = id === "point" ? null : this.cruiseWorld().spots.find((s) => s.id === id);
+    if (id !== "point" && !spot) return;
+    const name = spot?.name ?? translate(gameStore.getState().locale, "cruise.point");
+    const mode = spot?.kind === "ship" ? "follow" : "goto";
+    this.autopilot.engage(id, mode, name, point);
+    this.cruiseCursor = this.flight.cursorAt;
+    gameStore.getState().setCruisePanel(false);
+    // Sin motores no hay crucero: se arrancan solos.
+    if (this.engines.state === "off" || this.engines.state === "stopping") this.startEngines();
+    this.cruiseNotice(mode === "follow" ? "cruise.following" : "cruise.engaged", { name });
+  }
+
+  /** Desactiva el piloto automático (con un aviso si se da el motivo). */
+  cancelCruise(reason?: I18nKey): void {
+    const target = this.autopilot.target;
+    this.autopilot.cancel();
+    if (this.flight) {
+      this.flight.autopilot = null;
+      // El pulso que encendió el piloto automático se apaga con él.
+      if (target && this.flight.pulse) this.flight.pulse = false;
+    }
+    this.cruiseMarker.visible = false;
+    telemetry.cruise = null;
+    if (gameStore.getState().cruisePanel) gameStore.getState().setCruisePanel(false);
+    if (target && reason) this.cruiseNotice(reason, { name: target.name });
+  }
+
+  private cruiseNotice(key: I18nKey, params: Record<string, string | number>): void {
+    const st = gameStore.getState();
+    const code = settingsStore.getState().bindings.cruise[0];
+    st.notify(key, { ...params, key: code ? keyLabel(code, st.locale) : "—" });
+  }
+
+  /** Tecla del crucero: con el piloto automático puesto, lo quita; si no, abre o cierra la lista de destinos. */
+  private cruiseKey(): void {
+    if (this.autopilot.active) return this.cancelCruise("cruise.cancelled");
+    const st = gameStore.getState();
+    st.setCruisePanel(!st.cruisePanel);
+  }
+
+  /**
+   * Tecla de seguir: la nave fijada (X) o, si no hay, la siguiente nave
+   * visible (primero los compañeros, de la más cercana a la más lejana).
+   */
+  private followKey(): void {
+    const ship = this.ship;
+    if (!ship) return;
+    const ships = this.cruiseWorld().spots.filter((s) => s.kind === "ship");
+    if (ships.length === 0) return this.cruiseNotice("cruise.noShips", {});
+    const current = this.autopilot.target?.id;
+    const locked = spaceStore.getState().targetId;
+    if (locked && current !== `ship:${locked}` && ships.some((s) => s.id === `ship:${locked}`)) return this.cruiseTo(`ship:${locked}`);
+    const rank = (s: CruiseSpot) => (s.ally ? 0 : s.pirate ? 2 : 1);
+    ships.sort((a, b) => rank(a) - rank(b) || a.center.distanceTo(ship.position) - b.center.distanceTo(ship.position));
+    const i = ships.findIndex((s) => s.id === current);
+    this.cruiseTo(ships[(i + 1) % ships.length]!.id);
+  }
+
+  /**
+   * Doble clic al pilotar: el cuerpo o la nave más cercana al cursor en la
+   * pantalla; si no hay ninguno, el punto del plano del sistema bajo el cursor.
+   */
+  private cruiseAtScreen(x: number, y: number): void {
+    if (!this.ship) return;
+    const tanHalf = Math.tan(((this.camera.fov / 2) * Math.PI) / 180);
+    let best: { id: string; d: number } | null = null;
+    const p = new THREE.Vector3();
+    for (const s of this.cruiseWorld().spots) {
+      if (s.kind === "belt" || s.kind === "point") continue;
+      p.copy(s.center).project(this.camera);
+      if (p.z > 1 || p.z < -1) continue;
+      // Distancia en pantalla (en medias alturas) y tamaño aparente del objeto.
+      const d = Math.hypot((p.x - x) * this.camera.aspect, p.y - y);
+      const size = s.radius / Math.max(1, s.center.distanceTo(this.camera.position)) / tanHalf;
+      if (d <= Math.max(0.05, size) && (!best || d < best.d)) best = { id: s.id, d };
+    }
+    if (best) return this.cruiseTo(best.id);
+    this.raycaster.setFromCamera(new THREE.Vector2(x, y), this.camera);
+    const hit = this.raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), new THREE.Vector3());
+    if (!hit || hit.length() > this.boundary * 0.95) return this.cruiseNotice("cruise.noPoint", {});
+    this.cruiseTo("point", hit);
+  }
+
+  /** Un paso del piloto automático: sus mandos para `ShipController`, el marcador y el HUD. */
+  private updateCruise(dt: number): void {
+    const flight = this.flight!;
+    const ship = this.ship!;
+    const ap = this.autopilot;
+    const target = ap.target;
+    if (!target) {
+      flight.autopilot = null;
+      return;
+    }
+    // Cualquier mando manual lo desactiva (en vuelo con ratón, también llevar el cursor fuera de la zona muerta).
+    const cursor = flight.cursorAt;
+    const moved = cursor !== null && (!this.cruiseCursor || Math.hypot(cursor.x - this.cruiseCursor.x, cursor.y - this.cruiseCursor.y) > 0.15);
+    if (MANUAL_ACTIONS.some((a) => this.keyboard.action(a)) || (flight.mouseSteering && moved)) return this.cancelCruise("cruise.manual");
+    const { spots, obstacles } = this.cruiseWorld();
+    const spot = spots.find((s) => s.id === target.id) ?? null;
+    if (!spot) {
+      // La nave seguida se fue: si saltó, su grieta está en la cola de eventos (aún sin dibujar en este fotograma).
+      const shipId = target.id.startsWith("ship:") ? target.id.slice(5) : null;
+      const jumped = shipId !== null && spaceStore.getState().rifts.some((r) => r.id === shipId && r.phase === "jump");
+      return this.cancelCruise(jumped ? "cruise.lostJump" : "cruise.lost");
+    }
+    if (this.engines.state === "off" || this.engines.state === "stopping") this.startEngines();
+    const status = ap.step(dt, { ship, velocity: flight.velocity, pulseOn: flight.pulse, powered: flight.powered, canPulse: !this.outOfFuel(), spot, obstacles });
+    if (status === "arrived") return this.cancelCruise("cruise.arrived");
+    if (status === "lost") return this.cancelCruise("cruise.lost");
+    const cmd = ap.command;
+    if (cmd.pulse !== flight.pulse) flight.pulse = cmd.pulse && this.engines.state === "on";
+    flight.autopilot = cmd;
+    this.cruiseMarker.position.copy(spot.center);
+    this.cruiseMarker.visible = true;
+    telemetry.cruise = { mode: target.mode, name: target.name, phase: ap.phase, distance: ap.distance, seconds: ap.closing > 1 && target.mode === "goto" ? ap.distance / ap.closing : null };
   }
 
   activate(): void {
@@ -1355,7 +1590,10 @@ export class SystemView implements View {
       this.updateEngines(dt);
       if (this.quantum) this.updateQuantum(dt);
       else if (this.arrival) this.updateArrival(dt);
-      else this.flight.update(dt);
+      else {
+        this.updateCruise(dt);
+        this.flight.update(dt);
+      }
       if (!departing) {
         this.collide();
         this.applyCorrection();
@@ -1430,6 +1668,9 @@ export class SystemView implements View {
   }
 
   onDoubleClick(x: number, y: number): void {
+    // Pilotando: doble clic en un cuerpo, una nave o el espacio = piloto automático hacia allí
+    // (con las armas a punto, el clic izquierdo dispara: entonces Alt + doble clic).
+    if (this.ship) return this.clickWasShot ? undefined : this.cruiseAtScreen(x, y);
     const idx = this.pickPlanet(x, y);
     const p = this.planets.find((pl) => pl.index === idx);
     if (!p) return;
@@ -1447,12 +1688,18 @@ export class SystemView implements View {
 
   onKey(code: string): void {
     if (this.ship) {
+      // Encender o apagar a mano el pulso o los motores es pilotar: el piloto automático se desactiva.
+      if (this.autopilot.active && !this.quantum && (isBound("pulse", code) || isBound("engines", code))) this.cancelCruise("cruise.manual");
       if (isBound("cameraView", code)) gameStore.getState().toggleCameraView();
       else if (this.quantum && (code === "Escape" || isBound("jump", code))) {
         // Una vez dada la orden de salto ya no se puede cancelar (el servidor la tiene).
         if (this.quantum.phase === "align" || this.quantum.phase === "charge") this.cancelQuantum();
       }
       else if (this.quantum) return;
+      else if (isBound("cruise", code)) this.cruiseKey();
+      else if (isBound("follow", code)) this.followKey();
+      else if (code === "Escape" && gameStore.getState().cruisePanel) gameStore.getState().setCruisePanel(false);
+      else if (code === "Escape" && this.autopilot.active) this.cancelCruise("cruise.cancelled");
       else if (isBound("engines", code)) this.toggleEngines();
       else if (isBound("pulse", code)) this.togglePulse();
       else if (isBound("cameraReset", code)) this.chase.reset();

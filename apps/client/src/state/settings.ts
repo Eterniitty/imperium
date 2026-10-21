@@ -8,7 +8,7 @@ import { useStore } from "zustand";
  */
 export const ACTIONS = {
   // Pilotar la nave (y el vuelo libre de cámara en el mapa).
-  flight: ["forward", "back", "strafeLeft", "strafeRight", "up", "down", "rollLeft", "rollRight", "turnLeft", "turnRight", "pitchUp", "pitchDown", "boost", "cameraView", "fireCannon", "fireMissile", "lockTarget", "targetNext", "targetPrev", "targetNearest", "autoFire", "weaponCannon", "weaponMissile", "weaponLaser", "pulse", "flightAssist", "mouseFlight", "cameraReset", "engines", "mine"],
+  flight: ["forward", "back", "strafeLeft", "strafeRight", "up", "down", "rollLeft", "rollRight", "turnLeft", "turnRight", "pitchUp", "pitchDown", "boost", "cameraView", "fireCannon", "fireMissile", "lockTarget", "targetNext", "targetPrev", "targetNearest", "autoFire", "weaponCannon", "weaponMissile", "weaponLaser", "pulse", "flightAssist", "mouseFlight", "cameraReset", "engines", "mine", "cruise", "follow"],
   // Mover la cámara por el mapa galáctico.
   map: ["mapForward", "mapBack", "mapLeft", "mapRight", "mapUp", "mapDown", "mapBoost", "flightMode", "focus", "enter", "deselect"],
   // En cualquier momento.
@@ -40,9 +40,9 @@ export const DEFAULT_BINDINGS: Bindings = {
   fireMissile: ["KeyR"],
   // Asistencia de puntería: fijar en la retícula (X), siguiente / anterior / más cercano, fuego automático y elegir arma.
   lockTarget: ["KeyX"],
-  targetNext: ["KeyN"],
-  targetPrev: ["KeyH"],
-  targetNearest: ["KeyU"],
+  targetNext: ["KeyY"],
+  targetPrev: ["KeyU"],
+  targetNearest: ["KeyV"],
   autoFire: ["KeyO"],
   weaponCannon: ["Digit1"],
   weaponMissile: ["Digit2"],
@@ -54,6 +54,9 @@ export const DEFAULT_BINDINGS: Bindings = {
   engines: ["KeyI"],
   // Espacio profundo: láser de minería (mantener) y salir del túnel cuántico.
   mine: ["KeyL"],
+  // Piloto automático: lista de destinos (o cancelar) y seguir a otra nave.
+  cruise: ["KeyN"],
+  follow: ["KeyH"],
   mapForward: ["KeyW", "ArrowUp"],
   mapBack: ["KeyS", "ArrowDown"],
   mapLeft: ["KeyA", "ArrowLeft"],

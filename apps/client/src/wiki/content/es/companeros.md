@@ -26,6 +26,12 @@ Al **nombrar a tu Emperador** (solo al darte de alta) puedes pedir aparecer cerc
 
 El nombre de tu Emperador no queda reservado mientras esperas: si alguien lo coge antes, tendrás que elegir otro (la solicitud aceptada se conserva).
 
+## Saltar junto a un compañero
+
+Si un compañero **está** en un sistema, o **estuvo** en él, al saltar allí puedes llegar **a su lado**: en el selector de salto ([[J]]) o en el panel del sistema en el mapa, elige **«Junto a …»**. Llegas junto a su nave (si sigue allí) o al último sitio donde estuvo. Sin esa opción, llegas a donde estuviste tú la última vez en ese sistema (o a su borde). Ver [Pilotar la nave](/wiki/pilotar).
+
+- Solo entre compañeros (os habéis añadido los dos), y no con quien eligió que **nadie** vea dónde está.
+
 ## Quién ve dónde estás
 
 En **Ajustes → Compañeros → Quién ve dónde estás** eliges quién ve la posición de tu Emperador en el mapa (dónde está y adónde viaja):
@@ -39,5 +45,6 @@ En **Ajustes → Compañeros → Quién ve dónde estás** eliges quién ve la p
 - El filtro se aplica **en el servidor**: a quien no puede verte, tu posición **ni siquiera se le envía**.
 - **Tus flotas solo las ves tú.**
 - Si vuelas en el mismo sistema que otro jugador, os veis las naves: estáis en el mismo sitio.
+- Para volar junto a un compañero dentro del sistema, el **piloto automático** sigue su nave en formación ([[H]]; ver [Pilotar la nave](/wiki/pilotar)).
 
 > [!dev] Un futuro escáner podrá detectar a quien esté cerca. Las **organizaciones** (con descubrimientos compartidos) llegarán en la fase 12.

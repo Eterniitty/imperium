@@ -14,11 +14,11 @@ Inside a system you fight in real time, at the controls. The **server is the aut
 Enemy ships are a few metres long and look like a dot: your ship helps you aim.
 
 - **Markers**: every ship in the system has a marker even if you cannot see it, with its distance. Shape and colour tell who it is: **red diamond** = hostile (pirates), **amber square** = another Emperor, **cyan circle** = companion. The **locked target** gets a larger box with its name, shield and hull; if it is off screen, an **arrow** at the edge points to it.
-- **Locking**: [[X]] locks the ship closest to the reticle (the cursor in mouse flight; otherwise the line of the nose). [[N]] and [[H]]: next and previous (hostiles first, nearest to farthest; then other Emperors). [[U]]: the nearest. **Middle click** on a marker: lock that ship. Cycling **never locks companions**; middle click does (with a warning: friendly fire is on).
+- **Locking**: [[X]] locks the ship closest to the reticle (the cursor in mouse flight; otherwise the line of the nose). [[Y]] and [[U]]: next and previous (hostiles first, nearest to farthest; then other Emperors). [[V]]: the nearest. **Middle click** on a marker: lock that ship. Cycling **never locks companions**; middle click does (with a warning: friendly fire is on).
 - **Lead point**: a circle where you must shoot given the target's speed, yours and the projectile's. It turns **green** when the target is in range and inside the mounts' arc.
 - **Automatic aiming**: with a locked target, the cannons aim at that point by themselves; you decide when to fire. Missiles already chase the target by themselves.
 - **Auto-fire** ([[O]], also in Settings → Controls): the cannon fires by itself while the locked target is in range and in arc. It never fires by itself at a companion.
-- **Mouse**: with engines on, **left click** fires the selected weapon and the **wheel** switches weapon ([[1]] cannon, [[2]] missiles, [[3]] laser). Camera distance moves to **Shift + wheel**, moving the camera to the **right button** (or Alt + drag) and selecting a planet to **Alt + click**. It can be turned off in Settings → Controls ("Mouse for combat"). All keys can be rebound.
+- **Mouse**: with engines on, **left click** fires the selected weapon and the **wheel** switches weapon ([[1]] cannon, [[2]] missiles, [[3]] laser). Camera distance moves to **Shift + wheel**, moving the camera to the **right button** (or Alt + drag), selecting a planet to **Alt + click** and autopilot by double click to **Alt + double click**. It can be turned off in Settings → Controls ("Mouse for combat"). All keys can be rebound.
 
 {{tabla:punteria}}
 

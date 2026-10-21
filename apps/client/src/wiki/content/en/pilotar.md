@@ -54,6 +54,16 @@ The pulse drive ([[P]], on and off) is a **supercruise** to cross the system fro
 - It speeds up and slows down **smoothly**. The bottom panel shows the current limit and the **estimated time** to the selected planet, the locked ship or the body ahead.
 - It uses **fuel** and some **energy**: without fuel it does not work.
 
+## Cruise autopilot
+
+Inside a system (or a deep-space region) the ship can fly itself to a place or follow another ship. It works the same controls you do —turning, thrusters, boost and pulse drive—, so it flies at the same speeds and other players see it fly normally.
+
+- **Choose a destination**: [[N]] opens the list of planets, moons, asteroid belts, the system's anomaly and, in deep space, the nearest asteroids, plus the ships in sight (your [companions](/wiki/companeros) first). You can also press **Cruise here** in the panel of the selected planet, or **double-click** a planet, moon, ship or an empty point of the system plane (a marked point) in the view.
+- **Go to a place**: the ship turns, engages the pulse drive if the destination is far (throttling it to brake in time), drops it when close and finishes on thrusters until it **stops at a safe distance** (above a planet or moon, at half its radius of altitude, between 5 and 120 km; next to an asteroid, within mining-laser range). It flies around the star, planets and moons in the way. On arrival it disengages and tells you.
+- **Follow a ship**: [[H]] follows the locked ship ([[X]]) or, if there is none, the nearest ship in sight (companions first); press it again to switch to the next one. Your ship takes up formation behind and to one side, matching its speed (with the pulse drive if it uses it). If it jumps out of the system or goes out of sight, the autopilot disengages with a notice.
+- **Cancel**: [[N]], Esc or **any flight control** (move, turn, boost, pulse, engines; in mouse flight, moving the cursor out of the dead zone). A HUD notice shows the mode, destination, distance and the key to cancel.
+- If the engines are off, they start on their own. Without fuel it uses thrusters only (much slower). Firing and mining do not cancel it.
+
 ## Gravity
 
 Planets, moons and the star **pull the ship**, but only inside their **sphere of influence** (about eight times their radius, more if they have moons): in the space between planets there is no gravity and you do not fall towards anything. The HUD shows the region you are in:
@@ -91,11 +101,14 @@ Fly to the **edge of the system** (a few thousand kilometres beyond the outermos
 
 1. At the controls, press [[J]]: you see the systems **within range of your fuel**, with distance, duration and the fuel the jump uses. You can also **select a star on the map** and press [[J]] or **Jump here**.
 2. The ship **aligns** with the destination by itself and **charges the quantum drive** (a few seconds). [[J]] or Esc cancel. While it charges, a **rift in space** opens ahead of the nose: a seam of light that grows, cracks and bends the background around it. When you jump it opens fully and the ship, accelerating to nearly the speed of light, **stretches towards it** into a thread of light and vanishes inside in half a second; on arrival another one opens at the destination, **a beam of light shoots out of it** and collapses into your ship with a flash. The camera follows: it widens a little and shakes slightly. The rift is in space, not on your screen: **other pilots in the system see it** (charging, entering and leaving). If flashes bother you, turn on **Reduce visual effects** in Settings: flashes and the beam are dimmer and the camera does not shake.
-3. During the trip you see the **quantum tunnel** with the time left; [[M]] switches between the tunnel and the map. On arrival you appear **at the edge of the destination system**, at the controls.
+3. During the trip you see the **quantum tunnel** with the time left; [[M]] switches between the tunnel and the map. On arrival you appear at the controls **where you last were in that system**; the first time, **at its edge**, on the side you come from.
 
 - Jump speed is in the table above: a few minutes to nearby stars and up to about **40 minutes** for the longest jump. **Range** is set by your fuel: to go further, jump in stages and refuel at your colonies.
 - On arrival, your scanner [discovers](/wiki/niebla) the system and those within range.
 - You can jump to any star within range, discovered or not.
+- **Jumping does not need you to watch the screen.** You can pick the destination and switch to another tab or window: the jump still happens (without the animation), and the server handles the trip and the arrival. When you come back, you see the tunnel if you are still travelling, or your ship already at the destination.
+- **Position memory:** the game remembers where your ship was in each system (when you jump away, when you park it and every minute while you fly). When you return to a system, you arrive there and the rift opens there.
+- **Next to a companion:** if a [companion](/wiki/companeros) is or was in a system, the jump selector ([[J]]) and the system panel on the map show **"Next to …"**: you arrive beside them, where they are now or where they last were.
 
 ### Dropping out halfway
 

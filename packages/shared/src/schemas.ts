@@ -129,12 +129,14 @@ export const ClientMessageSchema = z.union([
     t: z.literal("cmd"),
     cmdId: CmdIdSchema,
     op: z.literal("emperor.move"),
-    args: z.object({ systemId: SystemIdSchema }),
+    // `near`: llegar junto a un compañero (memoria de posición).
+    args: z.object({ systemId: SystemIdSchema, near: z.uuid().optional() }),
   }),
   // Espacio profundo y minería: salir del túnel, descargar la bodega, refinería de a bordo.
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("emperor.drop"), args: z.object({}).strict() }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("flagship.unload"), args: z.object({ colonyId: z.uuid() }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("flagship.refine"), args: z.object({ on: z.boolean() }) }),
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("flagship.jettison"), args: z.object({ resource: z.enum(["volatiles", "metal", "rare_metals", "exotic"]) }) }),
   z.object({
     t: z.literal("cmd"),
     cmdId: CmdIdSchema,
