@@ -8,11 +8,11 @@ import { useStore } from "zustand";
  */
 export const ACTIONS = {
   // Pilotar la nave (y el vuelo libre de cámara en el mapa).
-  flight: ["forward", "back", "strafeLeft", "strafeRight", "up", "down", "rollLeft", "rollRight", "turnLeft", "turnRight", "pitchUp", "pitchDown", "boost", "cameraView", "fireCannon", "fireMissile", "lockTarget", "pulse", "flightAssist", "mouseFlight", "cameraReset"],
+  flight: ["forward", "back", "strafeLeft", "strafeRight", "up", "down", "rollLeft", "rollRight", "turnLeft", "turnRight", "pitchUp", "pitchDown", "boost", "cameraView", "fireCannon", "fireMissile", "lockTarget", "pulse", "flightAssist", "mouseFlight", "cameraReset", "mine"],
   // Mover la cámara por el mapa galáctico.
   map: ["mapForward", "mapBack", "mapLeft", "mapRight", "mapUp", "mapDown", "mapBoost", "flightMode", "focus", "enter", "deselect"],
   // En cualquier momento.
-  general: ["jump", "toggleMap"],
+  general: ["jump", "toggleMap", "dropOut"],
 } as const;
 
 export type ActionContext = keyof typeof ACTIONS;
@@ -43,6 +43,8 @@ export const DEFAULT_BINDINGS: Bindings = {
   flightAssist: ["KeyZ"],
   mouseFlight: ["KeyG"],
   cameraReset: ["KeyB"],
+  // Espacio profundo: láser de minería (mantener) y salir del túnel cuántico.
+  mine: ["KeyL"],
   mapForward: ["KeyW", "ArrowUp"],
   mapBack: ["KeyS", "ArrowDown"],
   mapLeft: ["KeyA", "ArrowLeft"],
@@ -56,6 +58,7 @@ export const DEFAULT_BINDINGS: Bindings = {
   deselect: ["Escape"],
   jump: ["KeyJ"],
   toggleMap: ["KeyM"],
+  dropOut: ["KeyK"],
 };
 
 const STORAGE_KEY = "imperium.keys";

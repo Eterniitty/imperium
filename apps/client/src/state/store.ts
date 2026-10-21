@@ -2,6 +2,7 @@ import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { generateSector } from "@imperium/procgen";
 import {
+  isDeepId,
   parseSystemId,
   translate,
   worldToSector,
@@ -86,6 +87,8 @@ export interface GameState {
  * indica que el cliente y el servidor usan semillas distintas.
  */
 export function findSystemSummary(systemId: string): StarSystemSummary | null {
+  // Las regiones de espacio profundo no son sistemas estelares.
+  if (isDeepId(systemId)) return null;
   const { sector, index } = parseSystemId(systemId);
   const s = generateSector(UNIVERSE_SEED, sector).systems[index];
   return s && s.id === systemId ? s : null;

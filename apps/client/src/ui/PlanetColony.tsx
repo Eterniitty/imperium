@@ -45,6 +45,7 @@ export function PlanetColony({ detail, planet }: { detail: StarSystemDetail; pla
   const colonies = useWorld((s) => s.colonies);
   const fleets = useWorld((s) => s.fleets);
   const humans = useWorld((s) => s.humans);
+  const flagship = useWorld((s) => s.flagship);
   const myId = useWorld((s) => s.myEmperorId);
   const emperor = useAuth((s) => s.emperor);
   const { claims, systemId: claimsFor } = useClaims();
@@ -173,6 +174,7 @@ export function PlanetColony({ detail, planet }: { detail: StarSystemDetail; pla
               </button>
             </div>
           )}
+          {emperorHere && flagship && <UnloadHold hold={flagship.hold} busy={busy} onUnload={() => void run(connection.command("flagship.unload", { colonyId: own.id }))} />}
           {emperorHere && <Disembark colony={own} aboard={aboard} now={now} busy={busy} onLand={(n) => void run(connection.command("colony.disembark", { colonyId: own.id, humans: n }))} />}
           <ColonyDetail
             colony={own}
@@ -190,6 +192,29 @@ export function PlanetColony({ detail, planet }: { detail: StarSystemDetail; pla
           {errorText}
         </p>
       )}
+    </div>
+  );
+}
+
+/** Descargar la bodega de la nave del Emperador (lo minado en el espacio profundo) en la colonia. */
+function UnloadHold({ hold, busy, onUnload }: { hold: Partial<Record<StockId, number>>; busy: boolean; onUnload: () => void }) {
+  const t = useT();
+  const items = STOCK_IDS.filter((r) => (hold[r] ?? 0) >= 0.1);
+  if (items.length === 0) return null;
+  return (
+    <div className="claim-form">
+      <span className="muted small">
+        {t("hold.label")}:{" "}
+        {items.map((r, i) => (
+          <span key={r}>
+            {i > 0 && " · "}
+            <span style={{ color: STOCK_COLORS[r] }}>{t(`resource.${r}`)}</span> {fmtInt(hold[r] ?? 0)}
+          </span>
+        ))}
+      </span>
+      <button className="btn" type="button" disabled={busy} onClick={onUnload}>
+        {t("hold.unload")}
+      </button>
     </div>
   );
 }

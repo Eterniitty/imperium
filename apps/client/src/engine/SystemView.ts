@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
 import type { I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, WeaponKind, WorldPosition } from "@imperium/shared";
-import { ARRIVAL_EDGE, defaultPark, moonOffset, parkedPosition, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
+import { ARRIVAL_EDGE, deepLayout, defaultPark, moonOffset, parkedPosition, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
 import { resetSpace, shipName, spaceStore } from "../net/space";
 import { telemetry, type FlightTelemetry } from "./telemetry";
 import { connection, serverNow } from "../net/world";
@@ -10,7 +10,9 @@ import { RemoteShips } from "./RemoteShips";
 import { FleetScene } from "./FleetScene";
 import { Effects } from "./Effects";
 import { worldStore } from "../net/world";
-import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, MINING, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC } from "@imperium/content";
+import { playMiningPulse } from "../audio/miningSfx";
+import { DeepField } from "./DeepField";
 import { playQuantumCharge, stopQuantumCharge } from "../audio/quantumSfx";
 import { distanceGain, playCannon, playExplosion, playHit, playMissile } from "../audio/combatSfx";
 import { isBound, settingsStore, type Action } from "../state/settings";
@@ -120,6 +122,14 @@ export class SystemView implements View {
   private fleetScene = new FleetScene((at) => this.effects.explode(at));
   /** Batalla a la que llevar la cámara en cuanto se dibuje. */
   private pendingBattleFocus: string | null = null;
+  /** Espacio profundo: la región que se ve (o null en un sistema estelar), sus asteroides y la minería. */
+  private deepId: string | null = null;
+  private deep = new DeepField();
+  /** Asteroide que mina el láser propio (null: apagado), cuenta atrás del próximo pulso y de la puntería. */
+  private miningAt: number | null = null;
+  private mineTimer = 0;
+  private aimTimer = 0;
+  private outOfRangeWarned = false;
 
   constructor(
     dom: HTMLElement,
@@ -148,7 +158,7 @@ export class SystemView implements View {
     this.targetRing.scale.setScalar(0.06);
     this.targetRing.visible = false;
     this.targetRing.renderOrder = 11;
-    this.scene.add(this.backdrop.object, this.content, this.selectRing, this.remote.group, this.effects.group, this.targetRing, this.fleetScene.group);
+    this.scene.add(this.backdrop.object, this.content, this.selectRing, this.remote.group, this.effects.group, this.targetRing, this.fleetScene.group, this.deep.group);
     this.scene.add(new THREE.AmbientLight(0x5a6688, 0.9));
     // Cabina en primera persona: cuelga de la cámara (por eso la cámara va en la escena).
     this.cockpit.visible = false;
@@ -283,6 +293,100 @@ export class SystemView implements View {
     this.controls.update();
   }
 
+  /**
+   * Región de espacio profundo (salida del túnel a mitad de viaje): sin
+   * estrella ni planetas, solo el fondo y, si los hay, los asteroides que
+   * manda el servidor al subir a bordo (mensaje `field`).
+   */
+  buildDeep(regionId: string): void {
+    this.clear();
+    const layout = deepLayout();
+    this.layout = layout;
+    this.systemId = regionId;
+    this.deepId = regionId;
+    this.deep.light.visible = true;
+    this.fleetScene.setSystem(regionId, layout);
+    this.starName = "";
+    this.bodyUniforms.uSunColor.value.setRGB(0.8, 0.85, 1);
+    const field = spaceStore.getState().field;
+    if (field?.regionId === regionId) this.deep.set(field);
+    this.controls.target.set(0, 0, 0);
+    this.camera.position.set(0, 6_000, 14_000);
+    this.controls.maxDistance = 200_000;
+    this.controls.update();
+  }
+
+  /** ¿Se está viendo una región de espacio profundo? */
+  get inDeepSpace(): boolean {
+    return this.deepId !== null;
+  }
+
+  /**
+   * Láser de minería: mientras se mantiene su tecla (sin pulso ni salto), un
+   * pulso al servidor por intervalo con el asteroide al que apunta el morro,
+   * si está a tiro. Dibuja los láseres (el propio y los de los demás).
+   */
+  private updateMining(dt: number): void {
+    const field = spaceStore.getState().field;
+    if (field && field.regionId === this.deepId) this.deep.set(field);
+    this.deep.update(dt);
+    const ship = this.ship;
+    if (!ship || !this.flight) {
+      this.deep.setBeams([]);
+      return;
+    }
+    const fwd = this.forward();
+    const aim = this.deep.aim(ship.position, fwd, MINING.rangeM * 6);
+    this.aimTimer -= dt;
+    if (this.aimTimer <= 0) {
+      this.aimTimer = 0.15;
+      const prev = spaceStore.getState().aim;
+      const next = aim ? { index: aim.index, distance: Math.round(aim.distance / 10) * 10 } : null;
+      if (prev?.index !== next?.index || prev?.distance !== next?.distance) spaceStore.setState({ aim: next });
+    }
+    const wants = this.keyboard.action("mine") && !this.flight.pulse && !this.quantum;
+    if (wants) {
+      this.mineTimer -= dt;
+      if (this.mineTimer <= 0) {
+        this.mineTimer = MINING.tickSec;
+        if (aim && aim.distance <= MINING.rangeM) {
+          connection.send({ t: "mine", asteroid: aim.index });
+          this.miningAt = aim.index;
+          this.outOfRangeWarned = false;
+          playMiningPulse(1);
+        } else {
+          this.stopMining();
+          this.mineTimer = MINING.tickSec;
+          if (!this.outOfRangeWarned) {
+            this.outOfRangeWarned = true;
+            this.events.notify(aim ? "mining.outOfRange" : "mining.noTarget");
+          }
+        }
+      }
+    } else {
+      this.outOfRangeWarned = false;
+      this.stopMining();
+    }
+    if (spaceStore.getState().mining !== (this.miningAt !== null)) spaceStore.setState({ mining: this.miningAt !== null });
+    // Láseres: el propio (salvo si el servidor acaba de rechazar el pulso) y los de las demás naves.
+    const beams: Array<{ id: string; from: THREE.Vector3; asteroid: number }> = [];
+    const fail = spaceStore.getState().mineFail;
+    if (this.miningAt !== null && !(fail && Date.now() - fail.at < 700)) beams.push({ id: "self", from: ship.position.clone().addScaledVector(fwd, 20), asteroid: this.miningAt });
+    for (const [id, asteroid] of Object.entries(spaceStore.getState().beams)) {
+      const from = this.remote.positionOf(id);
+      if (from) beams.push({ id, from, asteroid });
+    }
+    this.deep.setBeams(beams);
+  }
+
+  /** Apaga el láser propio (y se lo dice al servidor). */
+  private stopMining(): void {
+    this.mineTimer = 0;
+    if (this.miningAt === null) return;
+    this.miningAt = null;
+    connection.send({ t: "mine", asteroid: null });
+  }
+
   /** Esfera de `radius` metros con `segments` segmentos (la mitad en vertical). */
   private sphereLevel(radius: number, segments: number): THREE.SphereGeometry {
     return new THREE.SphereGeometry(radius, segments, Math.max(8, segments / 2));
@@ -340,6 +444,9 @@ export class SystemView implements View {
 
   private clear(): void {
     this.stopPiloting();
+    this.deep.clear();
+    this.deep.light.visible = false;
+    this.deepId = null;
     this.content.traverse((o) => {
       if (o instanceof THREE.Mesh || o instanceof THREE.Points || o instanceof THREE.Line) {
         o.geometry.dispose();
@@ -479,6 +586,8 @@ export class SystemView implements View {
   stopPiloting(): void {
     if (!this.ship) return;
     this.cancelQuantum();
+    this.stopMining();
+    this.deep.setBeams([]);
     // Deja de pilotar: la nave se queda aparcada aquí, orbitando (el servidor lo confirma por el tema `me`).
     connection.send({ t: "leave" });
     const flagship = worldStore.getState().flagship;
@@ -542,7 +651,9 @@ export class SystemView implements View {
   /** Estrella, planetas y lunas con su posición actual (pulso, altímetro, gravedad y colisiones). */
   private bodies(): Array<{ name: string; center: THREE.Vector3; radius: number; planetIndex: number | null; body: CelestialBody }> {
     if (!this.layout) return [];
-    const out = [{ name: this.starName, center: new THREE.Vector3(), radius: this.layout.starRadius, planetIndex: null as number | null, body: this.layout.star }];
+    const out: Array<{ name: string; center: THREE.Vector3; radius: number; planetIndex: number | null; body: CelestialBody }> = [];
+    // En el espacio profundo no hay estrella (ni gravedad ni límite del pulso).
+    if (this.layout.starRadius > 0) out.push({ name: this.starName, center: new THREE.Vector3(), radius: this.layout.starRadius, planetIndex: null, body: this.layout.star });
     for (const p of this.planets) {
       out.push({ name: p.label ? p.label.key.split("|")[0]! : p.designation, center: p.mesh.getWorldPosition(new THREE.Vector3()), radius: p.layout.size, planetIndex: p.index, body: p.layout.body });
       for (const m of p.moons) out.push({ name: m.name, center: m.mesh.position.clone(), radius: m.layout.body.radius, planetIndex: null, body: m.layout.body });
@@ -802,6 +913,8 @@ export class SystemView implements View {
       const inward = v.dot(normal);
       if (inward < 0) v.addScaledVector(normal, -inward);
     }
+    // Asteroides del espacio profundo.
+    if (this.deepId) this.deep.collide(ship.position, this.flight!.velocity, 30);
   }
 
   activate(): void {
@@ -878,6 +991,7 @@ export class SystemView implements View {
     } else {
       this.controls.update();
     }
+    if (this.deepId) this.updateMining(dt);
     this.fleetScene.update(dt, this.time);
     if (this.pendingBattleFocus && !this.ship) {
       const at = this.fleetScene.battlePosition(this.pendingBattleFocus);
@@ -949,5 +1063,6 @@ export class SystemView implements View {
     this.clear();
     this.controls.dispose();
     this.chase.dispose();
+    this.deep.dispose();
   }
 }

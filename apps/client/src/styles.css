@@ -667,6 +667,14 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .quantum-hud.tunnel { bottom: 40px; min-width: 360px; }
 .quantum-dest-name { display: block; font-family: var(--font-display); font-size: 22px; letter-spacing: 0.06em; color: #bfd0ff; margin: 2px 0; }
 .quantum-time { font-size: 28px; color: var(--gold); margin: 4px 0; }
+.quantum-drop { margin-top: 8px; }
+/* Espacio profundo y minería. */
+.mining-hud { position: absolute; left: 12px; bottom: 190px; padding: 10px 14px; width: 280px; font-size: 12px; display: flex; flex-direction: column; gap: 4px; }
+.mining-region { font-family: var(--font-display); letter-spacing: 0.05em; color: #bfd0ff; }
+.mining-aim { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.mining-aim.in-range { color: #7dffc4; }
+.mining-hold { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.btn.btn-small { padding: 3px 10px; font-size: 12px; align-self: flex-start; }
 .quantum-bar span { background: linear-gradient(90deg, #6f7dff, #bfd0ff); }
 .ship-thumb { display: inline-block; flex: none; }
 .ship-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }

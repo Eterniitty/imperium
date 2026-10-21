@@ -9,6 +9,7 @@ import { authStore } from "../state/auth";
 import { gameStore, useGame } from "../state/store";
 import { FlightHud } from "./FlightHud";
 import { CombatHud } from "./CombatHud";
+import { MiningHud } from "./MiningHud";
 import { ColoniesPanel } from "./ColoniesPanel";
 import { FleetsPanel } from "./FleetsPanel";
 import { WarPanel } from "./WarPanel";
@@ -97,6 +98,7 @@ export function App() {
           <>
             <FlightHud />
             <CombatHud />
+            <MiningHud />
             <QuantumHud />
             {quantumPanel ? <QuantumPanel /> : <PlanetPanel />}
           </>

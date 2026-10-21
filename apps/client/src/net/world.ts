@@ -309,8 +309,11 @@ class Connection {
         const gone = ships[msg.id];
         delete ships[msg.id];
         const last = gone?.samples.at(-1);
+        const beams = { ...state.beams };
+        delete beams[msg.id];
         spaceStore.setState({
           ships,
+          beams,
           targetId: state.targetId === msg.id ? null : state.targetId,
           explosions: msg.reason === "destroyed" && last ? [...state.explosions, last.p] : state.explosions,
         });
@@ -329,6 +332,31 @@ class Connection {
         return;
       case "destroyed":
         spaceStore.setState({ destroyed: { by: msg.by, systemId: msg.systemId, rebornAt: msg.rebornAt, at: Date.now() } });
+        return;
+      // Espacio profundo y minería.
+      case "field":
+        spaceStore.setState({ field: msg.region });
+        return;
+      case "asteroid": {
+        const field = spaceStore.getState().field;
+        if (!field || msg.i >= field.left.length) return;
+        const left = field.left.slice();
+        left[msg.i] = msg.left;
+        spaceStore.setState({ field: { ...field, left } });
+        return;
+      }
+      case "beam": {
+        const beams = { ...spaceStore.getState().beams };
+        if (msg.asteroid === null) delete beams[msg.id];
+        else beams[msg.id] = msg.asteroid;
+        spaceStore.setState({ beams });
+        return;
+      }
+      case "hold":
+        spaceStore.setState({ hold: { hold: msg.hold, capacity: msg.capacity, refining: msg.refining } });
+        return;
+      case "mineFail":
+        spaceStore.setState({ mineFail: { reason: msg.reason, at: Date.now() } });
         return;
       case "poseRejected":
         spaceStore.setState({ correction: { p: msg.p, q: msg.q, v: msg.v } });

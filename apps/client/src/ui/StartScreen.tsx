@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { EMPEROR_NAME_MAX, EMPEROR_NAME_MIN, MAGIC_LINK_TTL_MINUTES } from "@imperium/shared";
+import { EMPEROR_NAME_MAX, EMPEROR_NAME_MIN, isDeepId, MAGIC_LINK_TTL_MINUTES } from "@imperium/shared";
 import { music } from "../audio/music";
 import { ACCOUNT_DELETED_FLAG, authStore, useAuth } from "../state/auth";
 import { settingsStore } from "../state/settings";
@@ -127,8 +127,8 @@ function AuthPanel() {
     case "authenticated":
       return (
         <>
-          {emperor && <p className="start-emperor">{t("emperor.at", { name: emperor.name, system: emperor.location.systemName })}</p>}
-          {emperor && !findSystemSummary(emperor.location.systemId) && <p className="auth-warning">{t("emperor.mismatch")}</p>}
+          {emperor && <p className="start-emperor">{t("emperor.at", { name: emperor.name, system: emperor.location.systemName || t("deep.name") })}</p>}
+          {emperor && !isDeepId(emperor.location.systemId) && !findSystemSummary(emperor.location.systemId) && <p className="auth-warning">{t("emperor.mismatch")}</p>}
           {enter}
           {error && (
             <p className="auth-error" role="alert">

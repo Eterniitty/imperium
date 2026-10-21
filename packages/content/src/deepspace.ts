@@ -76,8 +76,8 @@ export const DEEP_SPACE = {
 
 /** Láser de minería de la nave del Emperador (servidor autoritativo). */
 export const MINING = {
-  /** Distancia máxima (m) del morro a la superficie del asteroide. */
-  rangeM: 700,
+  /** Distancia máxima (m) del centro de la nave a la superficie del asteroide (con margen para naves grandes). */
+  rangeM: 1_000,
   /** Unidades extraídas por segundo de láser. */
   unitsPerSec: 3,
   /** Energía por segundo de láser (la del reactor de la nave). */
