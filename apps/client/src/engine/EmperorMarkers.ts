@@ -50,7 +50,7 @@ export class EmperorMarkers {
       ...shown.map(({ e, online }) => {
         const mine = e.id === (myEmperorId ?? own?.id);
         // Los Emperadores de la IA (Fase 11) llevan la marca «IA» en el rótulo.
-        const name = e.ai ? `${e.name} · ${translate(locale, "emperor.ai")}` : e.name;
+        const name = e.name;
         return { e, name, color: mine ? OWN_COLOR : OTHER_COLOR, size: mine ? 0.075 : 0.06, online };
       }),
       ...(Object.values(fleets) as Fleet[]).map((f) => ({
