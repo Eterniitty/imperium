@@ -185,7 +185,9 @@ export function SystemPanel() {
               <li key={e.id} className={e.id === myId ? "own" : ""}>
                 <span className={e.online ? "server-dot online" : "server-dot"} aria-hidden="true" />
                 <strong>{e.name}</strong>
-                <span className="muted small">{e.id === myId ? t("emperor.you") : t(e.online ? "emperor.online" : "emperor.offline")}</span>
+                <span className="muted small">
+                  {e.id === myId ? t("emperor.you") : e.ai ? t("emperor.ai") : t(e.online ? "emperor.online" : "emperor.offline")}
+                </span>
               </li>
             ))}
           </ul>

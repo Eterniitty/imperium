@@ -88,6 +88,8 @@ export interface Emperor {
   name: string;
   location: SystemLocation;
   travel: Travel | null;
+  /** Emperador humano de la IA (Fase 11); ausente en los jugadores. */
+  ai?: true;
 }
 
 /** Una nave de una flota. `classId` es una clase de `@imperium/content` (SHIP_CLASSES). */

@@ -52,4 +52,8 @@ En el panel **Batallas**:
 
 ## Emperadores humanos de la IA
 
-> [!dev] Los Emperadores humanos controlados por la IA (que colonizan, comercian y guerrean como un jugador) y la IA de pilotaje de las naves en 3D están diseñados (fases 9d y 11) pero aún no están en el juego.
+Para que el universo no esté vacío con pocos jugadores, hay unos pocos **Emperadores humanos de la IA**. Se ven en el mapa como cualquier Emperador, con la marca **IA**, y juegan con **las mismas órdenes y reglas** que tú: reclaman planetas con los humanos de su nave, construyen instalaciones en orden, fabrican colonizadores para fundar más colonias, mandan su explorador a descubrir sistemas cercanos y, los mercaderes, venden sus excedentes en el [mercado](/wiki/mercado). Solo saben lo que han descubierto y evitan colonizar territorio alienígena conocido. **En el Núcleo Humano no empiezan peleas.**
+
+{{tabla:ia-emperadores}}
+
+> [!dev] Aún no hacen la guerra por su cuenta ni aceptan compañeros, y la IA de pilotaje de las naves en 3D (fase 9d) está diseñada pero no hecha.

@@ -204,15 +204,20 @@ export class AlienService {
 
   /**
    * Regla de hostilidad para el combate por rondas (`WarService`): entre
-   * Emperadores, siempre; entre facciones, nunca (sus territorios no se tocan);
-   * entre una facción y un Emperador, según su postura y el rencor, y nunca en
-   * el Núcleo Humano.
+   * Emperadores, siempre (salvo los de la IA en el Núcleo Humano, que no
+   * empiezan peleas allí); entre facciones, nunca (sus territorios no se
+   * tocan); entre una facción y un Emperador, según su postura y el rencor, y
+   * nunca en el Núcleo Humano.
    */
   async hostile(db: Database | Tx, a: string, b: string, systemId: string): Promise<boolean> {
     await this.ensure();
     const fa = this.actorFactions.get(a);
     const fb = this.actorFactions.get(b);
-    if (!fa && !fb) return true;
+    if (!fa && !fb) {
+      if (!inHumanCore(systemId)) return true;
+      const ai = await db.select({ id: emperors.id }).from(emperors).where(and(inArray(emperors.id, [a, b]), eq(emperors.kind, "ai")));
+      return ai.length === 0;
+    }
     if (fa && fb) return false;
     if (inHumanCore(systemId)) return false;
     return this.isHostileTo(db, (fa ?? fb)!, fa ? b : a);

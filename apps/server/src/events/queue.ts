@@ -24,6 +24,8 @@ export interface EventPayloads {
   "battle.round": { battleId: string };
   /** Decisión de la IA alienígena en una región activa (Fase 11). */
   "ai.region": { regionKey: string };
+  /** Decisión de un Emperador humano de la IA (Fase 11). */
+  "ai.emperor": { emperorId: string };
 }
 export type EventKind = keyof EventPayloads;
 

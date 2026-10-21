@@ -39,6 +39,9 @@ const EnvSchema = z
     AUTH_REQUESTS_PER_IP: z.coerce.number().int().min(1).max(1000).default(10),
     /** Peticiones a la API HTTP por IP y minuto (tope general, además de los límites de cada ruta). */
     API_REQUESTS_PER_IP_MINUTE: z.coerce.number().int().min(1).max(100_000).default(600),
+    // Emperadores humanos de la IA (Fase 11) que se crean al arrancar. Por defecto 3
+    // (ninguno con APP_ENV=test, para que las pruebas de navegador no los vean).
+    AI_EMPERORS: z.coerce.number().int().min(0).max(6).optional(),
     MAIL_TRANSPORT: z.enum(["console", "smtp"]).default("console"),
     // Correo real (MAIL_TRANSPORT=smtp): servidor del proveedor de correo transaccional.
     // Con smtp, SMTP_HOST, SMTP_USER, SMTP_PASS y MAIL_FROM son obligatorias.
@@ -93,6 +96,7 @@ const EnvSchema = z
   .transform((env) => ({
     ...env,
     DETAIL_SEED: env.DETAIL_SEED ?? DEV_DETAIL_SEED,
+    AI_EMPERORS: env.AI_EMPERORS ?? (env.APP_ENV === "test" ? 0 : 3),
     SMTP_SECURE: env.SMTP_SECURE === undefined ? env.SMTP_PORT === 465 : env.SMTP_SECURE === "true",
   }));
 

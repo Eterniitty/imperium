@@ -678,6 +678,7 @@ export const es = {
   "system.alienPeaceful": "No atacarán mientras no les des motivos.",
   "fleet.inTerritory": "En territorio de {faction}",
   "colony.alienOwner": "{faction}",
+  "emperor.ai": "IA",
   "legend.territory": "Territorio alienígena",
   // Wiki: especies, territorios e IA (Fase 11)
   "wiki.k.philosophy": "Filosofía",
@@ -764,6 +765,14 @@ export const es = {
   "wiki.k.tradeOrders": "Órdenes abiertas de una facción, como mucho",
   "wiki.v.sectors": "{n} sectores ({ly} a.l.)",
   "wiki.v.minutes": "{n} min",
+  "wiki.col.personality": "Personalidad",
+  "wiki.col.maxColonies": "Colonias",
+  "wiki.col.buildOrder": "Construye (en orden)",
+  "wiki.col.keeps": "Mantiene",
+  "wiki.col.emperors": "Emperadores",
+  "wiki.personality.expansionist": "Expansionista",
+  "wiki.personality.merchant": "Mercader (vende excedentes)",
+  "wiki.personality.militarist": "Militarista",
 } as const;
 
 export type I18nKey = keyof typeof es;

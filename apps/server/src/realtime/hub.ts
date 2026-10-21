@@ -70,7 +70,8 @@ export class Hub {
   }
 
   private view(e: Emperor): EmperorView {
-    return { ...e, online: (this.online.get(e.id) ?? 0) > 0 };
+    // Los Emperadores de la IA (Fase 11) siempre están «conectados».
+    return { ...e, online: e.ai === true || (this.online.get(e.id) ?? 0) > 0 };
   }
 
   /** Deja de difundir y espera a que termine lo que hubiera en la cola. */

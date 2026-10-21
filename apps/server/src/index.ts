@@ -13,6 +13,9 @@ const backfilled = await new DiscoveryService(database.db, config).backfill();
 if (backfilled > 0) app.log.info({ emperors: backfilled }, "Descubrimientos iniciales añadidos");
 // Economía de la humanidad: tesoro, proyectos comunes y sus niveles (bonificaciones globales).
 await app.humanity.load();
+// Fase 11: Emperadores humanos de la IA (los que falten) para que el universo no esté vacío.
+const aiCreated = await app.aiEmperors.ensure(config.AI_EMPERORS);
+if (aiCreated > 0) app.log.info({ aiEmperors: aiCreated }, "Emperadores de la IA creados");
 app.addHook("onClose", () => database.close());
 
 // Cierre ordenado: systemd envía SIGTERM al reiniciar o parar el servicio.

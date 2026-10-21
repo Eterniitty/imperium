@@ -52,4 +52,8 @@ In the **Battles** panel:
 
 ## AI human Emperors
 
-> [!dev] Human Emperors controlled by the AI (who colonise, trade and wage war like a player) and the piloting AI for ships in 3D are designed (phases 9d and 11) but are not in the game yet.
+So the universe is not empty with few players, there are a few **AI human Emperors**. They show on the map like any Emperor, marked **AI**, and play with **the same orders and rules** as you: they claim planets with the humans on their ship, build installations in order, make colonizers to found more colonies, send their explorer to discover nearby systems and, the merchants, sell their surplus on the [market](/wiki/mercado). They only know what they have discovered and avoid colonising known alien territory. **They start no fights in the Human Core.**
+
+{{tabla:ia-emperadores}}
+
+> [!dev] They do not wage war on their own yet nor accept companions, and the piloting AI for ships in 3D (phase 9d) is designed but not built.

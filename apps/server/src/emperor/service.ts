@@ -13,12 +13,13 @@ import { findSystem, nameKey, pickSpawnSystem, placeFromRow, type PlaceRow } fro
 const columns = {
   id: emperors.id,
   name: emperors.name,
+  kind: emperors.kind,
   systemId: emperors.systemId,
   destSystemId: emperors.destSystemId,
   departAt: emperors.departAt,
   arriveAt: emperors.arriveAt,
 };
-type Row = PlaceRow & { name: string };
+type Row = PlaceRow & { name: string; kind: string };
 
 export type CreateResult = { ok: true; emperor: Emperor } | { ok: false; error: "emperor_exists" | "name_taken" };
 export type MoveResult = { ok: true; emperor: Emperor } | { ok: false; error: CommandError };
@@ -42,7 +43,7 @@ export class EmperorService {
   }
 
   private toEmperor(row: Row): Emperor {
-    return { id: row.id, name: row.name, ...placeFromRow(this.seed, row, this.now()) };
+    return { id: row.id, name: row.name, ...placeFromRow(this.seed, row, this.now()), ...(row.kind === "ai" ? { ai: true as const } : {}) };
   }
 
   async byAccount(accountId: string): Promise<Emperor | null> {

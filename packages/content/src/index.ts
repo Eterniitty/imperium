@@ -7,3 +7,4 @@ export * from "./validate";
 export * from "./economy";
 export * from "./humanity";
 export * from "./aliens";
+export * from "./aiEmperors";

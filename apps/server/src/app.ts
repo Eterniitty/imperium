@@ -24,6 +24,7 @@ import { MarketService } from "./market/service";
 import { inHumanCore } from "./emperor/world";
 import { SpaceService } from "./space/service";
 import { alienRoutes } from "./ai/routes";
+import { AiEmperorService } from "./ai/emperors";
 import { AlienService } from "./ai/service";
 import { TerritoryService } from "./ai/territory";
 import { warRoutes } from "./war/routes";
@@ -108,7 +109,10 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   wars.setShieldFactor((systemId) => (inHumanCore(systemId) ? humanity.bonuses().coreShield : 1));
   const market = new MarketService(deps.db, colonies, humanity);
   // Fase 11: facciones alienígenas (territorio, flotas, comercio y diplomacia básica) con la misma tubería de órdenes.
-  const aliens = new AlienService(deps.db, config, new TerritoryService(deps.db, config), fleets, colonies, humanity, (summary) => discoveries.detail(summary));
+  const territory = new TerritoryService(deps.db, config);
+  const aliens = new AlienService(deps.db, config, territory, fleets, colonies, humanity, (summary) => discoveries.detail(summary));
+  // Emperadores humanos de la IA: juegan con las órdenes de un jugador (se crean en index.ts).
+  const aiEmperors = new AiEmperorService(deps.db, config, territory, discoveries, fleets, colonies, market, app.log);
   aliens.market = market;
   wars.setAlienHooks(
     (db, a, b, systemId) => aliens.hostile(db, a, b, systemId),
@@ -136,6 +140,11 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   aliens.onMarket = (res) => {
     for (const id of res.wallets) void hub.publishWallet(id);
     for (const [colonyId, emperorId] of res.colonies) void hub.publishColony(emperorId, colonyId);
+  };
+  aiEmperors.onEffects = (fx) => {
+    for (const id of fx.colonies) void hub.publishColony(fx.emperorId, id);
+    for (const id of fx.fleets) void hub.publishFleet(fx.emperorId, id);
+    for (const m of fx.market) aliens.onMarket?.(m);
   };
   await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, colonies, logistics, wars, space, hub, humanity, market, aliens });
   await app.register(humanityRoutes, { config, db: deps.db, emperors, humanity, market });
@@ -208,6 +217,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   });
   // Fase 11: una decisión de la IA de una región alienígena activa.
   worker.on("ai.region", async (tx, { regionKey }) => aliens.tick(tx, regionKey));
+  worker.on("ai.emperor", async (tx, { emperorId }) => aiEmperors.tick(tx, emperorId));
   // El tesoro ya debería poder pagar un proyecto que tiene todos sus recursos.
   worker.on("humanity.fund", async (tx, { projectId }) => {
     if (await humanity.onFund(tx, projectId)) return () => void humanity.reload();
@@ -221,6 +231,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   app.decorate("humanity", humanity);
   app.decorate("market", market);
   app.decorate("aliens", aliens);
+  app.decorate("aiEmperors", aiEmperors);
 
   return app;
 }
@@ -233,5 +244,6 @@ declare module "fastify" {
     humanity: HumanityService;
     market: MarketService;
     aliens: AlienService;
+    aiEmperors: AiEmperorService;
   }
 }

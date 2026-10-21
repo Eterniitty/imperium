@@ -676,6 +676,7 @@ export const en: Record<I18nKey, string> = {
   "system.alienPeaceful": "They will not attack unless you give them reason.",
   "fleet.inTerritory": "In {faction} territory",
   "colony.alienOwner": "{faction}",
+  "emperor.ai": "AI",
   "legend.territory": "Alien territory",
   // Wiki: especies, territorios e IA (Fase 11)
   "wiki.k.philosophy": "Philosophy",
@@ -762,4 +763,12 @@ export const en: Record<I18nKey, string> = {
   "wiki.k.tradeOrders": "Open orders of a faction, at most",
   "wiki.v.sectors": "{n} sectors ({ly} ly)",
   "wiki.v.minutes": "{n} min",
+  "wiki.col.personality": "Personality",
+  "wiki.col.maxColonies": "Colonies",
+  "wiki.col.buildOrder": "Builds (in order)",
+  "wiki.col.keeps": "Keeps",
+  "wiki.col.emperors": "Emperors",
+  "wiki.personality.expansionist": "Expansionist",
+  "wiki.personality.merchant": "Merchant (sells surplus)",
+  "wiki.personality.militarist": "Militarist",
 };

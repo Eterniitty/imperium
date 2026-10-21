@@ -5,6 +5,9 @@
  * insertan con `{{tabla:<id>}}`.
  */
 import {
+  AI_EMPERORS,
+  AI_PERSONALITIES,
+  type AiPersonality,
   ALIEN_AI,
   ALIEN_SHIP_CLASSES,
   alienShipsOf,
@@ -440,6 +443,21 @@ export const GEN_TABLES: Record<string, Builder> = {
       ["wiki.k.tradeOrders", num(locale, ALIEN_AI.trade.maxOpenOrders)],
     ]);
   },
+
+  "ia-emperadores": (t, locale) => ({
+    head: [t("wiki.col.personality"), t("wiki.col.emperors"), t("wiki.col.maxColonies"), t("wiki.col.buildOrder"), t("wiki.col.keeps")],
+    rows: (Object.keys(AI_PERSONALITIES) as AiPersonality[]).map((id) => {
+      const p = AI_PERSONALITIES[id];
+      return [
+        t(`wiki.personality.${id}`),
+        AI_EMPERORS.filter((e) => e.personality === id).map((e) => e.name).join(", "),
+        num(locale, p.maxColonies),
+        p.buildOrder.map(([i, n]) => `${t(`installation.${i}`)} ×${n}`).join(" → "),
+        p.ships.map(([s, n]) => `${shipName(locale, s)} ×${n}`).join(", ") || "—",
+      ];
+    }),
+    numeric: [2],
+  }),
 
   "teclas-vuelo": (t, locale) => keysTable(t, locale, "flight"),
   "teclas-mapa": (t, locale) => keysTable(t, locale, "map"),
