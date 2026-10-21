@@ -1,10 +1,10 @@
 import { spawn } from "node:child_process";
-import { mkdirSync, openSync } from "node:fs";
+import { mkdirSync, openSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createDb } from "../apps/server/src/db/client";
 import { resetTestDatabase } from "../apps/server/test/resetDb";
 import { SERVER_LOG } from "./mail";
-import { CLIENT_PORT, SERVER_PORT } from "./ports";
+import { CLIENT_PORT, SERVER_PORT, STORAGE_STATE } from "./ports";
 
 const SERVER_DIR = fileURLToPath(new URL("../apps/server", import.meta.url));
 
@@ -57,6 +57,20 @@ export default async function globalSetup() {
     if (Date.now() > deadline) throw new Error(`El servidor de pruebas no arrancó; mira ${SERVER_LOG}`);
     await new Promise((r) => setTimeout(r, 250));
   }
+
+  // Preferencias del navegador de pruebas: calidad baja y sin música (sin GPU, cada fotograma cuesta).
+  writeFileSync(
+    STORAGE_STATE,
+    JSON.stringify({
+      cookies: [],
+      origins: [
+        {
+          origin: `http://localhost:${CLIENT_PORT}`,
+          localStorage: [{ name: "imperium.prefs", value: JSON.stringify({ quality: "low", uiScale: "auto", musicVolume: 0 }) }],
+        },
+      ],
+    }),
+  );
 
   return () => {
     server.kill("SIGTERM");

@@ -1,6 +1,7 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import type { EmperorView, StarSystemSummary } from "@imperium/shared";
 import { lastLoginLink } from "./mail";
+import { STORAGE_STATE } from "./ports";
 
 const SHOTS = "test-results/capturas";
 
@@ -13,7 +14,8 @@ interface Debug {
 
 /** Un jugador en su propio navegador (cookies separadas): entra, se corona y despierta. */
 async function newPlayer(browser: Browser, email: string, name: string): Promise<Page> {
-  const context = await browser.newContext();
+  // Los contextos creados a mano no heredan el estado del config: se pasa explícitamente.
+  const context = await browser.newContext({ storageState: STORAGE_STATE, locale: "es-ES", viewport: { width: 1280, height: 800 } });
   const page = await context.newPage();
   page.on("pageerror", (e) => {
     throw e;
@@ -122,8 +124,8 @@ test("dos jugadores se ven en el mismo universo y se ven moverse", async ({ brow
       const space = (window as unknown as { __imperium: { space: { getState(): { ships: Record<string, { state: { name: string } }> } } } }).__imperium.space;
       return Object.values(space.getState().ships).map((s) => s.state.name);
     });
-  await expect.poll(() => spaceShips(bruno), { timeout: 15_000 }).toEqual(["Ana Prima"]);
-  await expect.poll(() => spaceShips(ana), { timeout: 15_000 }).toEqual(["Bruno Segundo"]);
+  await expect.poll(() => spaceShips(bruno), { timeout: 30_000 }).toEqual(["Ana Prima"]);
+  await expect.poll(() => spaceShips(ana), { timeout: 30_000 }).toEqual(["Bruno Segundo"]);
   await bruno.waitForTimeout(500);
   await bruno.screenshot({ path: `${SHOTS}/7b-vuelo-compartido.png` });
 

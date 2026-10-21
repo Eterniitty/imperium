@@ -1,5 +1,5 @@
 import { defineConfig } from "@playwright/test";
-import { CLIENT_PORT, SERVER_PORT } from "./e2e/ports";
+import { CLIENT_PORT, SERVER_PORT, STORAGE_STATE } from "./e2e/ports";
 
 /**
  * Pruebas de navegador (`pnpm e2e`). Arrancan su propio servidor de juego en el
@@ -16,6 +16,8 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${CLIENT_PORT}`,
     locale: "es-ES",
+    // Calidad baja y sin música (lo escribe global-setup).
+    storageState: STORAGE_STATE,
     viewport: { width: 1280, height: 800 },
     screenshot: "only-on-failure",
     // Si una prueba falla, queda una traza para ver qué pasó: pnpm exec playwright show-trace <archivo>.

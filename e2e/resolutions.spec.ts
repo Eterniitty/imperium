@@ -29,7 +29,7 @@ async function checkLayout(page: Page, label: string) {
 
 test("la interfaz cabe en distintas resoluciones, pilotando y en el mapa", async ({ page }) => {
   // Cuatro tamaños con capturas: en la máquina de pruebas (2 CPU, WebGL por software) ronda los 2 minutos.
-  test.setTimeout(240_000);
+  test.setTimeout(420_000);
   await page.goto("/");
   await page.getByLabel("Correo electrónico").fill("pantallas@aeonarch.test");
   await page.getByRole("button", { name: "Enviar enlace de acceso" }).click();
@@ -47,17 +47,18 @@ test("la interfaz cabe en distintas resoluciones, pilotando y en el mapa", async
     await page.setViewportSize(size);
     await page.waitForTimeout(600);
     await checkLayout(page, `pilotando ${tag}`);
-    await page.screenshot({ path: `${SHOTS}/res-${tag}-pilotando.png` });
+    // Capturas solo en un tamaño: sin GPU, dibujar 2560×1440 tarda demasiado (lo que importa aquí es la maquetación).
+    if (size.width === 1366) await page.screenshot({ path: `${SHOTS}/res-${tag}-pilotando.png` });
 
     await page.keyboard.press("KeyM");
     await expect(page.locator("aside.side")).toBeVisible();
     await page.waitForTimeout(600);
     await checkLayout(page, `mapa ${tag}`);
-    await page.screenshot({ path: `${SHOTS}/res-${tag}-mapa.png` });
+    if (size.width === 1366) await page.screenshot({ path: `${SHOTS}/res-${tag}-mapa.png` });
 
     await page.getByRole("button", { name: "Abrir los ajustes" }).click();
     await expect(page.getByRole("dialog")).toBeInViewport();
-    await page.screenshot({ path: `${SHOTS}/res-${tag}-ajustes.png` });
+    if (size.width === 1366) await page.screenshot({ path: `${SHOTS}/res-${tag}-ajustes.png` });
     await page.keyboard.press("Escape");
     await page.keyboard.press("KeyM");
     await expect(page.locator(".flight-hud")).toBeVisible();

@@ -5,3 +5,6 @@
  */
 export const SERVER_PORT = Number(process.env.E2E_SERVER_PORT ?? 3100);
 export const CLIENT_PORT = Number(process.env.E2E_CLIENT_PORT ?? 5174);
+
+/** Estado inicial del navegador de pruebas (preferencias), que escribe global-setup. */
+export const STORAGE_STATE = `test-results/storage-state-${CLIENT_PORT}.json`;

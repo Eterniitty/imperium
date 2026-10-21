@@ -76,7 +76,7 @@ test("se reclama un planeta del sistema de inicio, se renombra y se construye un
   await logistics.getByLabel(/Metal/).fill("10");
   await logistics.getByRole("button", { name: "Cargar", exact: true }).click();
   await expect(logistics).toContainText("Bodega: 10 / 20");
-  await expect(page.locator(".fleets")).toContainText("Lleva 10 recursos");
+  await expect(page.locator(".fleets:not(.colonies)")).toContainText("Lleva 10 recursos");
   await logistics.getByLabel(/Metal/).fill("10");
   await logistics.getByRole("button", { name: "Descargar", exact: true }).click();
   await expect(logistics).toContainText("Bodega: 0 / 20");
