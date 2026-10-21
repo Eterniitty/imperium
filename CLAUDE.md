@@ -20,6 +20,7 @@ Idioma de trabajo: **español** (código y comentarios en español; identificado
 - Escala de los sistemas en metros (`packages/sim/src/systemLayout.ts` y `flight.ts`): nave ~45 m (`SHIP_SCALE`), planetas de km, estrellas de cientos de km; búfer de profundidad logarítmico (los ShaderMaterial propios pasan por `withLogDepth`).
 - Privacidad: el servidor solo envía cada Emperador a quien puede verlo (visibilidad `public`/`allies`/`hidden`, compañeros mutuos en `emperor_allies`). La música es solo generativa (Web Audio), sin archivos.
 - El juego corre en **tiempo real** (`TIME_SCALE=1`, también en el servidor de pruebas); las pruebas automáticas usan escalas altas para no esperar. Tickets, límites, órdenes procesadas, el espacio local y el estado de combate viven en memoria (un solo proceso; se pierden al reiniciar).
+- Legal (Alemania/RGPD): páginas estáticas en `apps/client/public/legal/` (es/en: aviso legal, privacidad, términos), servidas sin `basicauth`. Al pedir enlace se aceptan (versión `LEGAL_VERSION` en `packages/shared/src/api.ts`: súbela si cambias esos textos). Ajustes → Cuenta permite descargar los datos (`GET /api/account/export`) y borrar la cuenta (`POST /api/account/delete`). Si añades tablas con datos de un jugador, inclúyelas en la exportación y comprueba que se borran en cascada.
 - El cliente aún genera el mapa estelar (posiciones y clases de estrella) localmente; servidor y cliente deben usar la misma semilla (`UNIVERSE_SEED` / `VITE_UNIVERSE_SEED`).
 
 ## Reglas del proyecto

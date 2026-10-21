@@ -15,8 +15,10 @@ aeonarch.de, www.aeonarch.de {
 	encode zstd gzip
 
 	# Todo el sitio, incluidas la API y el WebSocket, sigue tras usuario y contraseña
-	# hasta abrir el juego al público.
-	basicauth {
+	# hasta abrir el juego al público. Salvo las páginas legales (aviso legal,
+	# privacidad, términos): la ley exige que cualquiera pueda leerlas.
+	@protected not path /legal/*
+	basicauth @protected {
 		tester HASH_DE_LA_CONTRASEÑA
 	}
 
