@@ -637,7 +637,9 @@ export class Engine {
     this.frameId = requestAnimationFrame(this.loop);
     this.lastFrameAt = performance.now();
     this.timer.update(time);
-    const dt = Math.min(this.timer.getDelta(), 0.1);
+    const realDt = Math.min(this.timer.getDelta(), 1);
+    const dt = Math.min(realDt, 0.1);
+    this.system.realDt = realDt;
     this.checkArrival();
     this.checkDestroyed();
     this.checkRemote();

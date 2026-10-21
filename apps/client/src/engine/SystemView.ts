@@ -1775,6 +1775,15 @@ export class SystemView implements View {
     this.dom.style.cursor = "";
   }
 
+  /**
+   * Tiempo real del último fotograma (con tope de 1 s). El `dt` de `update` tiene
+   * un tope de 0,1 s para que la física no dé saltos; con menos de 10 FPS el
+   * juego iría más despacio que el reloj. Las secuencias con duración (arranque
+   * de motores, alineación y carga del salto, llegada, carga del pulso) usan
+   * este para durar lo mismo en cualquier ordenador.
+   */
+  realDt = 0;
+
   update(dt: number): void {
     this.time += dt;
     // El tiempo de los shaders da la vuelta para no perder precisión en sesiones largas.
@@ -1813,12 +1822,13 @@ export class SystemView implements View {
       }
       this.updateNavigation();
       const departing = this.quantum?.phase === "depart";
-      this.updateEngines(dt);
-      if (this.quantum) this.updateQuantum(dt);
-      else if (this.arrival) this.updateArrival(dt);
+      const real = Math.max(dt, this.realDt);
+      this.updateEngines(real);
+      if (this.quantum) this.updateQuantum(real);
+      else if (this.arrival) this.updateArrival(real);
       else {
         this.updateCruise(dt);
-        this.flight.update(dt);
+        this.flight.update(dt, real);
       }
       // Al entrar en el túnel (`onDeparted`) la nave puede haber salido ya de esta vista.
       if (!this.ship || !this.flight) return;

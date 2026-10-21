@@ -177,7 +177,11 @@ export class ShipController {
   }
 
   /** Mueve la nave `dt` segundos (con subpasos fijos); devuelve el desplazamiento. */
-  update(dt: number): THREE.Vector3 {
+  /**
+   * `realDt`: tiempo real transcurrido. Las cargas (pulso) cuentan con él para
+   * durar lo mismo aunque el ordenador vaya a pocos FPS (el `dt` del vuelo tiene tope).
+   */
+  update(dt: number, realDt: number = dt): THREE.Vector3 {
     const kb = this.keyboard;
     const prefs = settingsStore.getState().prefs.flight;
     const M = FLIGHT_MODEL;
@@ -187,7 +191,7 @@ export class ShipController {
     }
     // Carga del pulso: al terminar, arranca desde la velocidad que se lleve.
     if (this.pulseCharge !== null) {
-      this.pulseCharge -= dt;
+      this.pulseCharge -= realDt;
       if (this.pulseCharge <= 0) {
         this.pulseCharge = null;
         this.pulseOn = true;
