@@ -243,6 +243,10 @@ export class SmtpMailer implements Mailer {
           // Correo automático: que nadie (ni los autorrespondedores) conteste.
           "Auto-Submitted": "auto-generated",
           "X-Auto-Response-Suppress": "All",
+          // Sin rastreo de clics ni aperturas en Mailjet (los demás proveedores las ignoran):
+          // el enlace de acceso no debe pasar por un redirector ajeno.
+          "X-Mailjet-TrackClick": "0",
+          "X-Mailjet-TrackOpen": "0",
         },
       }),
       this.timeouts.total,
