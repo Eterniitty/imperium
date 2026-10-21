@@ -41,12 +41,12 @@ Idioma de trabajo: **español** (código y comentarios en español; identificado
 - Dominio **`aeonarch.de`** en Cloudflare (plan Free; token de API en `.env` como `CLOUDFLARE_API_TOKEN`, solo para esa zona). Cortafuegos UFW: OpenSSH abierto; 80/443 **solo desde las IP de Cloudflare** (no quitar las reglas de SSH).
 - PostgreSQL 18 del paquete de Ubuntu, solo en local. Usuario `imperium` por socket, sin contraseña; bases `imperium` e `imperium_test` (esta se borra en cada `pnpm test`).
 - `.env` del servidor (no se sube): `APP_ENV=staging`, correo por consola (el enlace de acceso sale en `journalctl --user -u aeonarch-server`), `PUBLIC_URL=https://aeonarch.de`, `COOKIE_SECURE=true`.
-- Caddy sirve `aeonarch.de` por HTTPS (certificado de origen de Cloudflare, SSL Full strict) y el cliente compilado desde `/var/www/aeonarch`. **Abierto al público sin contraseña desde el 21-10-2026** (el usuario pidió quitar el `basicauth`). Configuración en `/etc/caddy/Caddyfile` (referencia: `deploy/Caddyfile`; copias anteriores `Caddyfile.antes-*`).
+- Caddy sirve `aeonarch.de` por HTTPS (certificado de origen de Cloudflare, SSL Full strict) y el cliente compilado desde `/var/www/aeonarch`. **Protegido con usuario y contraseña** (`basicauth`, salvo `/legal/*`; la versión de Caddy de Ubuntu usa `basicauth`, no `basic_auth`). El usuario `tester` se eliminó el 21-10-2026; el nuevo y su contraseña solo los tiene el usuario (nunca en el repositorio). Configuración en `/etc/caddy/Caddyfile` (referencia: `deploy/Caddyfile`).
 - Desplegar el cliente: `./scripts/deploy-client.sh`; el servidor: `./scripts/deploy-server.sh`. Ninguno necesita sudo (ver `docs/despliegue.md`).
 
 ### Seguridad: prioridad máxima
 - **No abras el juego al público sin protección** hasta cumplir, en este orden: (1) archivos estáticos servidos desde Cloudflare (R2/caché), nunca desde el servidor; (2) puertos 80/443 aceptados solo desde las IP de Cloudflare; (3) límites por IP y cuenta; (4) vigilante de tráfico saliente con corte automático (**hecho**: `aeonarch-egress`, corta Caddy a 15 TB/mes; ver docs/despliegue.md). Motivo: Hetzner cobra el tráfico saliente por encima de 20 TB y un atacante puede descargar un archivo en bucle.
-- No abras puertos nuevos ni relajes el cortafuegos, los límites o el vigilante sin que el usuario lo pida explícitamente. El juego ya es público: cualquier cambio de seguridad afecta a jugadores reales.
+- No quites el `basicauth` de Caddy ni abras puertos nuevos sin que el usuario lo pida explícitamente.
 - No actives copias de seguridad, volúmenes ni balanceadores de Hetzner (cuestan dinero) sin que el usuario lo decida.
 - **Nunca configures `ANTHROPIC_API_KEY`** en este servidor: el usuario usa su suscripción de Claude, y esa variable haría que se facturase como API.
 - Pide confirmación antes de cualquier comando con `sudo` o de modificar `/etc`.

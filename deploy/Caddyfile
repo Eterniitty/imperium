@@ -1,4 +1,5 @@
-# Configuración de Caddy de referencia (se copia tal cual a /etc/caddy/Caddyfile).
+# Configuración de Caddy de referencia (se copia a /etc/caddy/Caddyfile con USUARIO y
+# HASH_DE_LA_CONTRASEÑA sustituidos; el hash, de `caddy hash-password`).
 #
 # El juego se sirve en https://aeonarch.de a través de Cloudflare (proxy):
 # - Cloudflare -> servidor va cifrado con un certificado de origen de Cloudflare
@@ -13,8 +14,12 @@ aeonarch.de, www.aeonarch.de {
 	tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
 	encode zstd gzip
 
-	# Sin usuario y contraseña desde el 21-10-2026 (lo pidió el usuario): el juego
-	# está abierto; lo protegen Cloudflare, el cortafuegos, los límites y el vigilante.
+	# Usuario y contraseña para todo salvo las páginas legales (la ley exige que
+	# cualquiera pueda leerlas). El usuario y el hash reales solo están en /etc.
+	@protected not path /legal/*
+	basicauth @protected {
+		USUARIO HASH_DE_LA_CONTRASEÑA
+	}
 
 	# API y WebSocket: al servidor de juego, que solo escucha en la máquina local.
 	@game path /api/* /ws
