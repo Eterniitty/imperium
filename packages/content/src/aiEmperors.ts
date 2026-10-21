@@ -35,14 +35,14 @@ export const AI_PERSONALITIES: Readonly<Record<AiPersonality, AiPersonalityDefin
   merchant: {
     maxColonies: 2,
     buildOrder: [["mine", 2], ["power_plant", 1], ["refinery", 1], ["mine", 3], ["shipyard", 1], ["power_plant", 2]],
-    ships: [["freighter", 1]],
+    ships: [["freighter", 1], ["corvette", 1]],
     trades: true,
     explore: 0.3,
   },
   militarist: {
     maxColonies: 2,
     buildOrder: [["mine", 1], ["power_plant", 1], ["shipyard", 1], ["mine", 3], ["refinery", 1]],
-    ships: [["frigate", 3]],
+    ships: [["frigate", 2], ["corvette", 2], ["destroyer", 1]],
     trades: false,
     explore: 0.4,
   },

@@ -256,7 +256,13 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     playable: false,
     enabledInMvp: true,
     territory: { minCoreRing: 2, regionWeight: 1.2, systemShare: 0.25, region: "any" },
-    fleet: { style: "pack", composition: [["scav_raider", 3], ["scav_breaker", 1]], shipsPerFleet: [1, 3], fleetsPerRegion: [1, 2] },
+    fleet: {
+      style: "pack",
+      composition: [["scav_skiff", 3], ["scav_raider", 4], ["scav_harpoon", 1]],
+      deepComposition: [["scav_raider", 3], ["scav_harpoon", 2], ["scav_bomber", 2], ["scav_breaker", 2], ["scav_mothership", 1]],
+      shipsPerFleet: [2, 5],
+      fleetsPerRegion: [1, 2],
+    },
     ai: { patrol: 0.5, intruders: "attack", responders: 2, expansionPerDay: 0.5, trades: false, grudgePerColony: 0 },
   },
 ];

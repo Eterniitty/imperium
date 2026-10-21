@@ -118,27 +118,45 @@ describe("facciones", () => {
 });
 
 describe("naves", () => {
-  it("existen las cuatro clases del MVP", () => {
-    expect(SHIP_CLASSES.map((s) => s.id).sort()).toEqual(["colonizer", "explorer", "freighter", "frigate"]);
+  it("existen las doce clases humanas", () => {
+    expect(SHIP_CLASSES.map((s) => s.id).sort()).toEqual(
+      ["carrier", "colonizer", "corvette", "cruiser", "destroyer", "explorer", "fighter", "freighter", "frigate", "hauler", "interceptor", "troopship"],
+    );
   });
 
-  it("la fragata tiene el mayor ataque y es la única con ataque relevante", () => {
+  it("las naves civiles apenas atacan; las de combate escalan con su tamaño", () => {
     const frigate = getShipClass("frigate")!;
-    for (const s of SHIP_CLASSES) {
-      if (s.id === "frigate") continue;
-      expect(s.attack).toBeLessThan(frigate.attack);
-      expect(s.attack).toBeLessThanOrEqual(frigate.attack * 0.1);
+    for (const s of SHIP_CLASSES.filter((c) => c.role !== "combat")) expect(s.attack).toBeLessThanOrEqual(frigate.attack * 0.2);
+    const line = ["fighter", "frigate", "destroyer", "cruiser"].map((id) => getShipClass(id as "frigate")!);
+    for (let i = 1; i < line.length; i++) {
+      expect(line[i]!.attack).toBeGreaterThan(line[i - 1]!.attack);
+      expect(line[i]!.hull).toBeGreaterThan(line[i - 1]!.hull);
+      expect(line[i]!.speedLyPerHour).toBeLessThan(line[i - 1]!.speedLyPerHour);
     }
   });
 
-  it("el carguero es el de mayor carga, frágil y más lento que la fragata y el explorador", () => {
+  it("el carguero pesado lleva más que nadie y el carguero es frágil y lento", () => {
     const freighter = getShipClass("freighter")!;
+    const hauler = getShipClass("hauler")!;
     const frigate = getShipClass("frigate")!;
     const explorer = getShipClass("explorer")!;
-    expect(Math.max(...SHIP_CLASSES.map((s) => s.cargo))).toBe(freighter.cargo);
+    expect(Math.max(...SHIP_CLASSES.map((s) => s.cargo))).toBe(hauler.cargo);
+    expect(freighter.cargo).toBeGreaterThan(Math.max(...SHIP_CLASSES.filter((s) => s.role !== "logistics").map((s) => s.cargo)));
     expect(freighter.hull).toBeLessThan(frigate.hull);
     expect(freighter.speedLyPerHour).toBeLessThan(frigate.speedLyPerHour);
     expect(freighter.speedLyPerHour).toBeLessThan(explorer.speedLyPerHour);
+  });
+
+  it("las capitales piden dique orbital y aleaciones; todas, astillero", () => {
+    for (const s of SHIP_CLASSES) expect(s.requires.shipyard).toBeGreaterThanOrEqual(1);
+    for (const id of ["cruiser", "carrier"] as const) {
+      expect(getShipClass(id)!.requires.drydock).toBe(1);
+      expect(getShipClass(id)!.cost.alloys).toBeGreaterThan(0);
+    }
+  });
+
+  it("todas las naves con armas tienen bocas de fuego para cada una", () => {
+    for (const s of SHIP_CLASSES) for (const w of s.combat.weapons) expect(s.combat.hardpoints![w.kind].length).toBeGreaterThan(0);
   });
 
   it("solo el colonizador se consume al usarse", () => {

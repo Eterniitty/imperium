@@ -274,6 +274,8 @@ describe.skipIf(!TEST_DATABASE_URL)("colonias y economía", () => {
 
     expect(await s.cmd("colony.build", { colonyId: id, kind: "installation", itemId: "nada" })).toMatchObject({ ok: false, error: "unknown_item" });
     expect(await s.cmd("colony.build", { colonyId: id, kind: "ship", itemId: "frigate" })).toMatchObject({ ok: false, error: "needs_shipyard" });
+    // El dique orbital necesita antes un astillero.
+    expect(await s.cmd("colony.build", { colonyId: id, kind: "installation", itemId: "drydock" })).toMatchObject({ ok: false, error: "needs_installation" });
 
     let from = s.messages.length;
     expect(await s.cmd("colony.build", { colonyId: id, kind: "installation", itemId: "mine" })).toMatchObject({ ok: true });
@@ -324,6 +326,9 @@ describe.skipIf(!TEST_DATABASE_URL)("colonias y economía", () => {
     await db.insert(installations).values({ colonyId: id, kind: "shipyard" });
     await db.update(colonies).set({ ...ECONOMY.storage, population: 900, resolvedAt: new Date() }).where(eq(colonies.id, id));
     expect(await s.cmd("colony.build", { colonyId: id, kind: "installation", itemId: "shipyard" })).toMatchObject({ ok: false, error: "limit_reached" });
+    // Las naves pesadas piden más instalaciones: el destructor, refinería; el crucero, dique orbital.
+    expect(await s.cmd("colony.build", { colonyId: id, kind: "ship", itemId: "destroyer" })).toMatchObject({ ok: false, error: "needs_installation" });
+    expect(await s.cmd("colony.build", { colonyId: id, kind: "ship", itemId: "cruiser" })).toMatchObject({ ok: false, error: "needs_installation" });
 
     expect(await s.cmd("colony.build", { colonyId: id, kind: "ship", itemId: "colonizer" })).toMatchObject({ ok: true });
     const from = s.messages.length;

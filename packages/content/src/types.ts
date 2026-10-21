@@ -5,6 +5,7 @@
  * nave no contienen lógica. La simulación y la IA leen estas fichas para
  * decidir comportamiento, costes y aspecto visual.
  */
+import type { InstallationId } from "./economy";
 
 /** Recursos transportables que pueden figurar como preferencia económica. */
 export type ResourceId = "metal" | "volatiles" | "crystal" | "energy";
@@ -141,8 +142,10 @@ export type FleetStyle = "pack" | "bastion" | "caravan" | "relic" | "phalanx" | 
 /** Flotas de una especie (las que despliega la IA en su territorio). */
 export interface FleetDoctrine {
   style: FleetStyle;
-  /** Naves de la especie (ids de `ALIEN_SHIP_CLASSES`) y su peso al formar una flota. */
+  /** Naves de la especie (ids de `ALIEN_SHIP_CLASSES`) y su peso al formar una flota en el borde de su territorio. */
   composition: ReadonlyArray<readonly [string, number]>;
+  /** Pesos en lo más profundo de su territorio (se interpolan con la profundidad; sin ellos, siempre `composition`). */
+  deepComposition?: ReadonlyArray<readonly [string, number]>;
   /** Naves por flota: [en el borde de su territorio más cercano al Núcleo, en lo más profundo]. */
   shipsPerFleet: readonly [number, number];
   /** Flotas de guarnición por región activa: [cerca, lejos]. */
@@ -256,17 +259,65 @@ export interface FactionDefinition {
   regionShare: number;
 }
 
-/** Clases de nave humanas del MVP. */
-export type ShipClassId = "explorer" | "freighter" | "colonizer" | "frigate";
+/** Clases de nave humanas. */
+export type ShipClassId =
+  | "explorer"
+  | "fighter"
+  | "interceptor"
+  | "corvette"
+  | "frigate"
+  | "destroyer"
+  | "cruiser"
+  | "carrier"
+  | "freighter"
+  | "hauler"
+  | "troopship"
+  | "colonizer";
 
-export type ShipRole = "exploration" | "logistics" | "colonization" | "combat";
+export type ShipRole = "exploration" | "logistics" | "colonization" | "combat" | "transport";
 
 /** Coste de construcción en recursos transportables. */
 export interface ShipCost {
   metal: number;
   volatiles: number;
   crystal: number;
+  /** Aleaciones (de la refinería): las naves pesadas las necesitan. */
+  alloys: number;
 }
+
+/**
+ * Forma del casco para el modelo procedural del cliente (junto con el estilo de
+ * su facción: humano, o la silueta de la especie). Las mismas formas sirven a
+ * humanos y alienígenas; el estilo cambia materiales, detalles y simetría.
+ */
+export type HullShape = "needle" | "wedge" | "disc" | "spindle" | "shard" | "pod" | "crescent" | "monolith" | "ring" | "brick";
+
+/**
+ * Pistas para el modelo 3D procedural (no son lógica: el cliente construye la
+ * nave con ellas y el servidor coloca las bocas de fuego con `shipHardpoints`).
+ */
+export interface ShipModelHints {
+  /** Eslora en metros (la nave del Emperador mide ~45 m). */
+  lengthM: number;
+  hullShape: HullShape;
+  /** Número de motores o fuentes de luz (el modelo los reparte por la popa). */
+  engines: number;
+  /** Alas (cazas e interceptores). */
+  wings?: boolean;
+  /** Torretas dorsales con los cañones (naves grandes); sin ellas, cañones en el morro o los costados. */
+  turrets?: number;
+  /** Contenedores de carga a lo largo del casco. */
+  pods?: number;
+  /** Hangar o cubierta de vuelo (portanaves, transportes, naves nodriza). */
+  hangar?: boolean;
+  /** Anillo habitable (colonizadores). */
+  habitat?: boolean;
+  /** Antena o plato de sensores grande (exploradores). */
+  dish?: boolean;
+}
+
+/** Instalaciones que necesita la colonia para construir algo (cuántas de cada una). */
+export type InstallationRequirements = Partial<Record<InstallationId, number>>;
 
 /** Ficha de una clase de nave. */
 export interface ShipClassDefinition {
@@ -277,12 +328,27 @@ export interface ShipClassDefinition {
   descriptionKey: string;
   role: ShipRole;
   cost: ShipCost;
+  /** Instalaciones de la colonia necesarias para construirla (siempre al menos un astillero). */
+  requires: InstallationRequirements;
   /** Tiempo de construcción en horas de juego real. */
   buildTimeHours: number;
   /** Puntos de casco. */
   hull: number;
-  /** Poder de ataque por ronda de combate de flotas (daño de un disparo, ±20 %). */
+  /** Poder de ataque por ronda de combate de flotas (daño total por ronda, ±20 %). */
   attack: number;
+  /**
+   * Disparos por ronda en el combate de flotas (por defecto 1): el ataque se
+   * reparte entre ellos y cada uno elige su blanco. Muchos disparos pequeños
+   * no se desperdician en naves ya casi destruidas (bueno contra enjambres);
+   * uno grande atraviesa mejor los escudos de una nave sola.
+   */
+  battleShots?: number;
+  /**
+   * Tamaño como blanco en el combate de flotas (entero, por defecto 1): la
+   * probabilidad de que un disparo enemigo la elija es proporcional a él. Las
+   * naves grandes atraen el fuego y protegen a las pequeñas.
+   */
+  battleProfile?: number;
   /**
    * Escudo en el combate de flotas por rondas: absorbe hasta este daño en cada
    * ronda y se recarga entero al empezar la siguiente.
@@ -300,6 +366,8 @@ export interface ShipClassDefinition {
   consumedOnUse: boolean;
   /** Combate en tiempo real: escudo y armas. */
   combat: ShipCombat;
+  /** Modelo 3D procedural. */
+  model: ShipModelHints;
 }
 
 /** Tipos de arma: cañón (proyectil recto, rápido) o misil (sigue al objetivo fijado). */

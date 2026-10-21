@@ -2,20 +2,70 @@
  * Piratas Carroñeros (IA): dónde viven y cómo se mueven. Funciones puras; el
  * estado y la difusión los lleva SpaceService.
  */
-import { PIRATE_RAIDER } from "@imperium/content";
+import { getAlienShipClass, scavengerDanger, type AlienFlight } from "@imperium/content";
 import { hashString } from "@imperium/procgen";
 import { parseSystemId, type Quat, type Vec3 } from "@imperium/shared";
 import { HUMAN_CORE_RADIUS } from "../emperor/world";
 import { planetPosition, type SystemLayout } from "@imperium/sim";
 import { normalize } from "./combat";
 
-/** Cuántos piratas viven en un sistema: ninguno en el Núcleo Humano (zona segura); fuera, en cuatro de cada diez. */
-export function pirateCount(systemId: string): number {
+/** Anillo de un sistema: distancia al Núcleo Humano en sectores (el mayor de |x|, |y|, |z|). */
+export function systemRing(systemId: string): number {
   const { sector } = parseSystemId(systemId);
-  const r = HUMAN_CORE_RADIUS;
-  if (Math.abs(sector.x) <= r && Math.abs(sector.y) <= r && Math.abs(sector.z) <= r) return 0;
+  return Math.max(Math.abs(sector.x), Math.abs(sector.y), Math.abs(sector.z));
+}
+
+/** Un pirata que vive en un sistema: su nave y su puntería. */
+export interface PirateSpec {
+  classId: string;
+  /** Error de puntería (radianes, de lado a lado). */
+  aimJitter: number;
+}
+
+/**
+ * Piratas que viven en un sistema, según su nivel de peligro (`SCAVENGER_DANGER`):
+ * ninguno en el Núcleo Humano (zona segura); fuera, en una parte de los
+ * sistemas, más y más pesados cuanto más lejos. Determinista por sistema.
+ */
+export function piratesOf(systemId: string): PirateSpec[] {
+  const ring = systemRing(systemId);
+  if (ring <= HUMAN_CORE_RADIUS) return [];
+  const level = scavengerDanger(ring);
+  if (!level) return [];
   const h = hashString(`piratas:${systemId}`);
-  return h % 100 < 40 ? 1 + ((h >>> 8) % 3) : 0;
+  if (h % 100 >= level.chancePct) return [];
+  const [min, max] = level.count;
+  const count = min + ((h >>> 8) % (max - min + 1));
+  const total = level.ships.reduce((a, [, w]) => a + w, 0);
+  const out: PirateSpec[] = [];
+  for (let i = 0; i < count; i++) {
+    const r = hashString(`pirata-clase:${systemId}:${i}`);
+    let classId = level.ships[0]![0];
+    if (i === 0 && level.leader && r % 100 < level.leader[1]) {
+      classId = level.leader[0];
+    } else {
+      let roll = (r >>> 7) % (total * 1000);
+      for (const [id, w] of level.ships) {
+        roll -= w * 1000;
+        if (roll < 0) {
+          classId = id;
+          break;
+        }
+      }
+    }
+    out.push({ classId, aimJitter: level.aimJitter });
+  }
+  return out;
+}
+
+/** Cuántos piratas viven en un sistema. */
+export function pirateCount(systemId: string): number {
+  return piratesOf(systemId).length;
+}
+
+/** Vuelo de una nave pirata (el de su clase; si no lo trae, el del asaltante). */
+export function pirateFlight(classId: string): AlienFlight {
+  return getAlienShipClass(classId)?.flight ?? getAlienShipClass("scav_raider")!.flight!;
 }
 
 /**
@@ -54,8 +104,8 @@ export interface PirateStep {
  * luego lo rodea; sin objetivo: vuelve despacio a casa. La velocidad cambia
  * poco a poco (inercia) y el morro mira hacia donde va o hacia el objetivo.
  */
-export function stepPirate(p: Vec3, v: Vec3, home: Vec3, target: Vec3 | null, dtSec: number, phase: number): PirateStep {
-  const max = PIRATE_RAIDER.speedU;
+export function stepPirate(p: Vec3, v: Vec3, home: Vec3, target: Vec3 | null, dtSec: number, phase: number, flight: AlienFlight): PirateStep {
+  const max = flight.speedU;
   let desired: Vec3;
   let face: Vec3 | null = null;
   if (target) {
@@ -63,12 +113,14 @@ export function stepPirate(p: Vec3, v: Vec3, home: Vec3, target: Vec3 | null, dt
     const d = Math.hypot(...to);
     const dir = normalize(to) ?? [0, 0, -1];
     face = dir;
-    if (d > PIRATE_RAIDER.preferredRangeU) {
+    if (d > flight.preferredRangeU) {
       desired = [dir[0] * max, dir[1] * max, dir[2] * max];
     } else {
-      // Cerca: lo rodea (perpendicular en el plano horizontal), sentido según el pirata.
+      // Cerca: lo rodea (perpendicular en el plano horizontal), sentido según el pirata;
+      // si se le echa encima (menos de la mitad de su distancia), además se aleja (los bombarderos mantienen las distancias).
       const s = phase > 0.5 ? 1 : -1;
-      desired = [-dir[2] * max * 0.7 * s, 0, dir[0] * max * 0.7 * s];
+      const back = d < flight.preferredRangeU * 0.5 ? 0.6 : 0;
+      desired = [(-dir[2] * 0.7 * s - dir[0] * back) * max, -dir[1] * back * max, (dir[0] * 0.7 * s - dir[2] * back) * max];
     }
   } else {
     const back: Vec3 = [home[0] - p[0], home[1] - p[1], home[2] - p[2]];

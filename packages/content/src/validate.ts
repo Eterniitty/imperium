@@ -3,7 +3,8 @@ import { SPECIES } from "./species";
 import { FACTIONS } from "./factions";
 import { SHIP_CLASSES } from "./ships";
 import { contentEn, contentEs, type ContentDictionary } from "./i18n";
-import { ALIEN_SHIP_CLASSES, type AlienShipClassDefinition } from "./aliens";
+import { ALIEN_SHIP_CLASSES, SCAVENGER_DANGER, type AlienShipClassDefinition } from "./aliens";
+import { ECONOMY, getInstallation, STOCK_IDS } from "./economy";
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 
@@ -77,7 +78,7 @@ export function validateContent(
     if (!(nearShips >= 1 && deepShips >= nearShips) || !(nearFleets >= 0 && deepFleets >= nearFleets))
       errors.push(`${where}: tamaños de flota inválidos`);
     if (s.fleet.composition.length === 0) errors.push(`${where}: flota sin naves`);
-    for (const [shipId, w] of s.fleet.composition) {
+    for (const [shipId, w] of [...s.fleet.composition, ...(s.fleet.deepComposition ?? [])]) {
       const ship = alienShips.find((a) => a.id === shipId);
       if (!ship) errors.push(`${where}: nave inexistente en su flota ${shipId}`);
       else if (ship.speciesId !== s.id) errors.push(`${where}: la nave ${shipId} es de otra especie`);
@@ -122,6 +123,7 @@ export function validateContent(
       ["metal", sh.cost.metal],
       ["volatiles", sh.cost.volatiles],
       ["crystal", sh.cost.crystal],
+      ["alloys", sh.cost.alloys],
       ["hull", sh.hull],
       ["attack", sh.attack],
       ["battleShield", sh.battleShield],
@@ -132,6 +134,15 @@ export function validateContent(
     if (!(sh.buildTimeHours > 0)) errors.push(`${where}: buildTimeHours debe ser > 0`);
     if (!(sh.speedLyPerHour > 0)) errors.push(`${where}: speedLyPerHour debe ser > 0`);
     if (!(sh.scannerRangeLy > 0)) errors.push(`${where}: scannerRangeLy debe ser > 0`);
+    if (!sh.requires.shipyard) errors.push(`${where}: toda nave necesita un astillero`);
+    for (const [req, n] of Object.entries(sh.requires)) {
+      const inst = getInstallation(req);
+      if (!inst) errors.push(`${where}: requisito desconocido ${req}`);
+      else if (!(n! >= 1 && n! <= inst.maxPerColony)) errors.push(`${where}: requisito ${req} imposible (${n})`);
+    }
+    for (const r of STOCK_IDS) if (sh.cost[r] > ECONOMY.storage[r]) errors.push(`${where}: cuesta más ${r} del que cabe en el almacén`);
+    errors.push(...validateBattle(where, sh));
+    if (!(sh.model.lengthM > 0) || !(sh.model.engines >= 0)) errors.push(`${where}: modelo inválido`);
     errors.push(...validateCombat(where, sh.combat));
   }
 
@@ -144,7 +155,22 @@ export function validateContent(
       if (!Number.isFinite(v) || v < 0) errors.push(`${where}: ${k} negativo o inválido`);
     if (!(sh.hull > 0) || !(sh.speedLyPerHour > 0) || !(sh.scannerRangeLy > 0)) errors.push(`${where}: casco, velocidad y escáner deben ser > 0`);
     if (!(sh.model.lengthM > 0) || !(sh.model.engines >= 0)) errors.push(`${where}: modelo inválido`);
+    errors.push(...validateBattle(where, sh));
+    if (sh.flight && !(sh.flight.speedU > 0 && sh.flight.preferredRangeU > 0)) errors.push(`${where}: vuelo inválido`);
     errors.push(...validateCombat(where, sh.combat));
+  }
+
+  // Peligro de los Carroñeros del espacio local: naves de los Carroñeros con vuelo propio.
+  let lastRing = 1;
+  for (const level of SCAVENGER_DANGER) {
+    const where = `peligro de anillo ${level.minRing}`;
+    if (level.minRing <= lastRing) errors.push(`${where}: anillos fuera de orden o dentro del Núcleo`);
+    lastRing = level.minRing;
+    if (!(level.count[0] >= 1 && level.count[1] >= level.count[0])) errors.push(`${where}: número de piratas inválido`);
+    for (const [id] of [...level.ships, ...(level.leader ? [level.leader] : [])]) {
+      const ship = alienShips.find((a) => a.id === id);
+      if (!ship || ship.speciesId !== "scavengers" || !ship.flight) errors.push(`${where}: ${id} no es una nave de los Carroñeros con vuelo`);
+    }
   }
 
   // Claves i18n presentes y no vacías en ambos idiomas
@@ -153,6 +179,14 @@ export function validateContent(
     if (!en[key]?.trim()) errors.push(`Falta la clave i18n "${key}" en en`);
   }
 
+  return errors;
+}
+
+/** Disparos y tamaño en el combate de flotas: enteros de 1 en adelante. */
+function validateBattle(where: string, s: { battleShots?: number; battleProfile?: number }): string[] {
+  const errors: string[] = [];
+  for (const [k, v] of [["battleShots", s.battleShots], ["battleProfile", s.battleProfile]] as const)
+    if (v !== undefined && !(Number.isInteger(v) && v >= 1 && v <= 12)) errors.push(`${where}: ${k} debe ser un entero entre 1 y 12`);
   return errors;
 }
 
@@ -166,5 +200,8 @@ export function validateCombat(where: string, c: ShipCombat): string[] {
     if (w.ammo !== null && !(w.ammo > 0 && (w.ammoRegenSec ?? 0) > 0)) errors.push(`${where}: arma ${w.kind}: munición y recarga deben ser > 0`);
   }
   if (new Set(c.weapons.map((w) => w.kind)).size !== c.weapons.length) errors.push(`${where}: dos armas del mismo tipo`);
+  if (c.hardpoints) {
+    for (const w of c.weapons) if (c.hardpoints[w.kind].length === 0) errors.push(`${where}: arma ${w.kind} sin bocas de fuego`);
+  }
   return errors;
 }

@@ -49,6 +49,9 @@ export const SHIP_HUMAN_CAPACITY: Partial<Record<ShipClassId, number>> = {
  */
 export const SHIP_PASSENGERS: Partial<Record<ShipClassId, number>> = {
   freighter: 200,
+  hauler: 300,
+  /** Las tropas de asalto (Fase 9b) viajan como pasajeros. */
+  troopship: 600,
 };
 
 /** Crecimiento de la población de una colonia (logístico, hacia un tope). */
@@ -65,7 +68,7 @@ export const POPULATION = {
 } as const;
 
 /** Clases de instalación de una colonia. */
-export type InstallationId = "mine" | "refinery" | "power_plant" | "shipyard";
+export type InstallationId = "mine" | "refinery" | "power_plant" | "shipyard" | "drydock";
 
 export interface InstallationDefinition {
   id: InstallationId;
@@ -80,6 +83,8 @@ export interface InstallationDefinition {
   maxPerColony: number;
   /** Mantenimiento: volátiles por hora que consume de su colonia mientras exista. */
   upkeepVolatilesPerHour: number;
+  /** Instalaciones que tiene que tener ya la colonia para construirla. */
+  requires?: Partial<Record<InstallationId, number>>;
 }
 
 export const INSTALLATIONS: readonly InstallationDefinition[] = [
@@ -118,6 +123,17 @@ export const INSTALLATIONS: readonly InstallationDefinition[] = [
     energyUse: 3,
     maxPerColony: 1,
     upkeepVolatilesPerHour: 1.5,
+  },
+  {
+    // Dique orbital: gradas para las naves capitales (crucero, portanaves). Necesita el astillero.
+    id: "drydock",
+    nameKey: "installation.drydock",
+    cost: { metal: 1000, volatiles: 300, crystal: 60, alloys: 150 },
+    buildTimeHours: 10,
+    energyUse: 6,
+    maxPerColony: 1,
+    upkeepVolatilesPerHour: 3,
+    requires: { shipyard: 1 },
   },
 ];
 
@@ -166,6 +182,11 @@ export function validateEconomy(): string[] {
     if (!(i.buildTimeHours > 0)) errors.push(`instalación ${i.id}: buildTimeHours debe ser > 0`);
     if (!(i.maxPerColony >= 1)) errors.push(`instalación ${i.id}: maxPerColony debe ser ≥ 1`);
     for (const r of STOCK_IDS) if (!(i.cost[r] >= 0)) errors.push(`instalación ${i.id}: coste de ${r} negativo`);
+    for (const [req, n] of Object.entries(i.requires ?? {})) {
+      if (!getInstallation(req)) errors.push(`instalación ${i.id}: requisito desconocido ${req}`);
+      if (req === i.id || !(n! >= 1)) errors.push(`instalación ${i.id}: requisito ${req} inválido`);
+    }
+    for (const r of STOCK_IDS) if (i.cost[r] > ECONOMY.storage[r]) errors.push(`instalación ${i.id}: cuesta más ${r} del que cabe en el almacén`);
   }
   if (HUMANS.flagshipStart > HUMANS.flagshipCapacity) errors.push("La nave del Emperador empieza con más humanos de los que caben");
   if (HUMANS.minColonistsBase + HUMANS.minColonistsHostile > HUMANS.flagshipCapacity) errors.push("Hay planetas que ni la nave del Emperador llena podría colonizar");

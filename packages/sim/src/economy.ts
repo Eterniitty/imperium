@@ -286,3 +286,13 @@ export function installationAllowed(id: InstallationId, built: InstallationCount
   const def = getInstallation(id);
   return def !== undefined && (built[id] ?? 0) + queued < def.maxPerColony;
 }
+
+/**
+ * Instalaciones que faltan en la colonia para construir algo que pide
+ * `requires` (una nave o una instalación): solo cuentan las ya construidas.
+ */
+export function missingInstallations(requires: Partial<Record<InstallationId, number>> | undefined, built: InstallationCounts): InstallationId[] {
+  const missing: InstallationId[] = [];
+  for (const [id, n] of Object.entries(requires ?? {}) as Array<[InstallationId, number]>) if ((built[id] ?? 0) < n) missing.push(id);
+  return missing;
+}

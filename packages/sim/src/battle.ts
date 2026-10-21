@@ -5,12 +5,14 @@
  * (ataque, escudo de batalla, casco) están en `@imperium/content`.
  *
  * Una ronda: todas las naves disparan a la vez (las que caen en la ronda
- * también disparan). Cada nave con ataque elige al azar una nave enemiga que
- * siga en pie y le hace `ataque ± dispersión` de daño; el escudo de batalla del
- * objetivo absorbe daño hasta agotarse en esa ronda y el resto va al casco.
- * Con el casco a 0, la nave queda destruida.
+ * también disparan). Cada nave con ataque reparte su ataque entre sus
+ * disparos (`battleShots`, normalmente 1); cada disparo elige al azar una nave
+ * enemiga que siga en pie —con probabilidad proporcional a su tamaño como
+ * blanco (`battleProfile`)— y le hace su parte del ataque ± dispersión; el
+ * escudo de batalla del objetivo absorbe daño hasta agotarse en esa ronda y el
+ * resto va al casco. Con el casco a 0, la nave queda destruida.
  */
-import { FLEET_BATTLE, getAnyShipClass } from "@imperium/content";
+import { battleProfileOf, FLEET_BATTLE, getAnyShipClass } from "@imperium/content";
 
 /** Nave en una batalla. */
 export interface BattleShip {
@@ -23,6 +25,10 @@ export interface BattleShip {
   shield: number;
   /** Casco actual (entero). */
   hull: number;
+  /** Disparos por ronda entre los que se reparte el ataque (por defecto 1). */
+  shots?: number;
+  /** Tamaño como blanco (entero ≥ 1, por defecto 1): peso al elegirla como objetivo. */
+  profile?: number;
 }
 
 /** Resultado de una ronda. */
@@ -59,12 +65,37 @@ export function battleRoundSeed(battleSeed: number, round: number): number {
 /** Nave de batalla con los datos de su clase (ataque y escudo; humana o alienígena) y su casco actual. */
 export function battleShip(id: string, classId: string, hull: number, /** Multiplicador del escudo (Defensas del Núcleo). */ shieldFactor = 1): BattleShip {
   const cls = getAnyShipClass(classId);
-  return { id, classId, attack: cls?.attack ?? 0, shield: (cls?.battleShield ?? 0) * shieldFactor, hull };
+  return {
+    id,
+    classId,
+    attack: cls?.attack ?? 0,
+    shield: (cls?.battleShield ?? 0) * shieldFactor,
+    hull,
+    shots: cls?.battleShots ?? 1,
+    profile: cls ? battleProfileOf(cls) : 1,
+  };
 }
 
 /** ¿Puede este bando hacer daño? (alguna nave con ataque). */
 export function canAttack(side: readonly BattleShip[]): boolean {
   return side.some((s) => s.attack > 0 && s.hull > 0);
+}
+
+/**
+ * Elige un blanco con probabilidad proporcional a su tamaño. Si todos miden lo
+ * mismo, es la elección uniforme de siempre (mismo resultado con la misma semilla).
+ */
+function pickTarget(alive: readonly BattleShip[], next: () => number): BattleShip {
+  const w = (s: BattleShip) => Math.max(1, Math.floor(s.profile ?? 1));
+  const first = w(alive[0]!);
+  if (alive.every((s) => w(s) === first)) return alive[next() % alive.length]!;
+  const total = alive.reduce((a, s) => a + w(s), 0);
+  let roll = next() % total;
+  for (const s of alive) {
+    roll -= w(s);
+    if (roll < 0) return s;
+  }
+  return alive[alive.length - 1]!;
 }
 
 const byId = (a: BattleShip, b: BattleShip) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
@@ -89,23 +120,26 @@ export function resolveBattleRound(sides: readonly [readonly BattleShip[], reado
 
   for (const from of [0, 1] as const) {
     const enemies = ordered[from === 0 ? 1 : 0];
-    for (const shooter of ordered[from]) {
+    shooting: for (const shooter of ordered[from]) {
       if (shooter.attack <= 0) continue;
-      // Objetivos: los enemigos que siguen en pie (así no se malgastan disparos).
-      const alive = enemies.filter((e) => hull.get(e.id)! > 0);
-      if (alive.length === 0) break;
-      const target = alive[next() % alive.length]!;
-      // Daño: ataque ± dispersión, redondeado (entero).
-      const pct = 100 - spread + (next() % (2 * spread + 1));
-      const damage = Math.round((shooter.attack * pct) / 100);
-      const s = shield.get(target.id)!;
-      const blocked = Math.min(s, damage);
-      shield.set(target.id, s - blocked);
-      const h = hull.get(target.id)!;
-      const toHull = Math.min(h, damage - blocked);
-      hull.set(target.id, h - toHull);
-      dealt[from] += toHull;
-      absorbed[from === 0 ? 1 : 0] += blocked;
+      const shots = Math.max(1, Math.floor(shooter.shots ?? 1));
+      for (let k = 0; k < shots; k++) {
+        // Objetivos: los enemigos que siguen en pie (así no se malgastan disparos).
+        const alive = enemies.filter((e) => hull.get(e.id)! > 0);
+        if (alive.length === 0) break shooting;
+        const target = pickTarget(alive, next);
+        // Daño: su parte del ataque ± dispersión, redondeado (entero).
+        const pct = 100 - spread + (next() % (2 * spread + 1));
+        const damage = Math.round((shooter.attack * pct) / 100 / shots);
+        const s = shield.get(target.id)!;
+        const blocked = Math.min(s, damage);
+        shield.set(target.id, s - blocked);
+        const h = hull.get(target.id)!;
+        const toHull = Math.min(h, damage - blocked);
+        hull.set(target.id, h - toHull);
+        dealt[from] += toHull;
+        absorbed[from === 0 ? 1 : 0] += blocked;
+      }
     }
   }
 

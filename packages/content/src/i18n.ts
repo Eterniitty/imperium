@@ -76,7 +76,31 @@ export const contentEs: ContentDictionary = {
     "Una semilla de civilización en viaje lento. Se desmantela al llegar para fundar la nueva colonia.",
   "ship.frigate.name": "Fragata",
   "ship.frigate.description":
-    "La espina dorsal de la flota imperial. La única nave del arsenal inicial diseñada para combatir.",
+    "La espina dorsal de la flota: casco sólido, cañón y misiles. Buena en todo, excelente en nada.",
+  "ship.fighter.name": "Caza ligero",
+  "ship.fighter.description":
+    "Barato y rápido de construir. En enjambre abruma a las naves solas; contra corbetas cae a montones.",
+  "ship.interceptor.name": "Interceptor",
+  "ship.interceptor.description":
+    "La nave de combate más veloz: alcanza convoyes en ruta y escapa de lo que no puede vencer.",
+  "ship.corvette.name": "Corbeta",
+  "ship.corvette.description":
+    "Escolta con cañones antiaéreos de tiro rápido: muchos disparos pequeños, ideal contra cazas y enjambres.",
+  "ship.destroyer.name": "Destructor",
+  "ship.destroyer.description":
+    "Torretas pesadas y torpedos. Atraviesa escudos; necesita aleaciones y una refinería en la colonia.",
+  "ship.cruiser.name": "Crucero",
+  "ship.cruiser.description":
+    "Nave capital de línea: cuatro torretas, escudos que anulan el fuego ligero y casco para aguantar una batalla entera. Se construye en un dique orbital.",
+  "ship.carrier.name": "Portanaves",
+  "ship.carrier.description":
+    "Una cubierta de vuelo con alas de cazas embarcadas: reparte muchos disparos por ronda y atrae el fuego enemigo. La nave más cara del astillero.",
+  "ship.hauler.name": "Carguero pesado",
+  "ship.hauler.description":
+    "Una espina de contenedores con motores: cuatro veces la bodega del carguero, lento y con algo más de blindaje.",
+  "ship.troopship.name": "Transporte de tropas",
+  "ship.troopship.description":
+    "Casco blindado con bodegas para 600 personas: traslada población entre colonias y llevará las tropas de asalto.",
 
   // Filosofía y actitud de cada especie
   "species.eradicators.philosophy": "La humanidad es un error en la estructura de la existencia. Purificar no es crueldad: es devolver el orden natural, en el que lo que muere permanece muerto.",
@@ -101,6 +125,14 @@ export const contentEs: ContentDictionary = {
   "species.scavengers.attitude": "Saqueo. Sus guaridas empiezan justo fuera del Núcleo Humano: flotas pequeñas que atacan a quien entra en ellas. Nunca entran en el Núcleo.",
 
   // Naves alienígenas (aliens.ts)
+  "ship.scav_skiff.name": "Esquife",
+  "ship.scav_skiff.description": "Una cabina soldada a un motor. Barato, rápido y desechable: los Carroñeros los sueltan en enjambre.",
+  "ship.scav_harpoon.name": "Arponero",
+  "ship.scav_harpoon.description": "Se pega a la presa con arpones magnéticos y cápsulas de abordaje. Peligroso a quemarropa.",
+  "ship.scav_bomber.name": "Bombardero",
+  "ship.scav_bomber.description": "Un casco lento cargado de misiles robados. Dispara desde lejos y huye si lo alcanzan.",
+  "ship.scav_mothership.name": "Nave nodriza",
+  "ship.scav_mothership.description": "Un carguero colosal convertido en guarida: talleres, hangares de esquifes y torretas de chatarra. Guía a la manada en las zonas más peligrosas.",
   "ship.scav_raider.name": "Asaltante",
   "ship.scav_raider.description": "Casco robado y motores sobrealimentados. Caza en manada y huye si la presa muerde.",
   "ship.scav_breaker.name": "Desguazador",
@@ -213,7 +245,31 @@ export const contentEn: ContentDictionary = {
     "A seed of civilization on a slow voyage. It is dismantled on arrival to found the new colony.",
   "ship.frigate.name": "Frigate",
   "ship.frigate.description":
-    "The backbone of the imperial fleet. The only ship in the starting arsenal built to fight.",
+    "The backbone of the fleet: solid hull, cannon and missiles. Good at everything, excellent at nothing.",
+  "ship.fighter.name": "Light fighter",
+  "ship.fighter.description":
+    "Cheap and quick to build. A swarm overwhelms lone ships; against corvettes they fall in heaps.",
+  "ship.interceptor.name": "Interceptor",
+  "ship.interceptor.description":
+    "The fastest warship: it catches convoys en route and escapes whatever it cannot beat.",
+  "ship.corvette.name": "Corvette",
+  "ship.corvette.description":
+    "Escort with rapid-fire flak cannons: many small shots, ideal against fighters and swarms.",
+  "ship.destroyer.name": "Destroyer",
+  "ship.destroyer.description":
+    "Heavy turrets and torpedoes. It punches through shields; it needs alloys and a refinery in the colony.",
+  "ship.cruiser.name": "Cruiser",
+  "ship.cruiser.description":
+    "Capital ship of the line: four turrets, shields that shrug off light fire and a hull to last a whole battle. Built in an orbital drydock.",
+  "ship.carrier.name": "Carrier",
+  "ship.carrier.description":
+    "A flight deck with wings of embarked fighters: it spreads many shots per round and draws enemy fire. The most expensive ship in the yard.",
+  "ship.hauler.name": "Heavy freighter",
+  "ship.hauler.description":
+    "A spine of containers with engines: four times a freighter's hold, slow and a little better armoured.",
+  "ship.troopship.name": "Troopship",
+  "ship.troopship.description":
+    "Armoured hull with berths for 600 people: it moves population between colonies and will carry assault troops.",
 
   // Filosofía y actitud de cada especie
   "species.eradicators.philosophy": "Humanity is an error in the fabric of existence. Purification is not cruelty: it restores the natural order, in which what dies stays dead.",
@@ -238,6 +294,14 @@ export const contentEn: ContentDictionary = {
   "species.scavengers.attitude": "Plunder. Their dens begin just outside the Human Core: small fleets that attack whoever enters them. They never enter the Core.",
 
   // Naves alienígenas (aliens.ts)
+  "ship.scav_skiff.name": "Skiff",
+  "ship.scav_skiff.description": "A cockpit welded to an engine. Cheap, fast and disposable: the Scavengers loose them in swarms.",
+  "ship.scav_harpoon.name": "Harpooner",
+  "ship.scav_harpoon.description": "It latches onto its prey with magnetic harpoons and boarding pods. Deadly at point-blank range.",
+  "ship.scav_bomber.name": "Bomber",
+  "ship.scav_bomber.description": "A slow hull packed with stolen missiles. It fires from afar and runs if caught.",
+  "ship.scav_mothership.name": "Mothership",
+  "ship.scav_mothership.description": "A colossal freighter turned lair: workshops, skiff hangars and scrap turrets. It leads the pack in the most dangerous zones.",
   "ship.scav_raider.name": "Raider",
   "ship.scav_raider.description": "Stolen hull and overcharged engines. Hunts in packs and flees if the prey bites back.",
   "ship.scav_breaker.name": "Breaker",

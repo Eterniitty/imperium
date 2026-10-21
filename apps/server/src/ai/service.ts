@@ -2,6 +2,7 @@ import {
   ALIEN_AI,
   effectiveTraits,
   FACTIONS,
+  fleetComposition,
   getAlienShipClass,
   getFaction,
   getSpecies,
@@ -55,9 +56,14 @@ export type TributeResult = { ok: true; emperorId: string } | { ok: false; error
 
 /** Interpola entre lo cercano y lo profundo según el anillo de la región. */
 function depthLerp(range: readonly [number, number], ring: number, minRing: number): number {
-  const span = Math.max(1, ALIEN_AI.deepRing - minRing);
-  const t = Math.min(1, Math.max(0, (ring - minRing) / span));
+  const t = depthOf(ring, minRing);
   return Math.round(range[0] + (range[1] - range[0]) * t);
+}
+
+/** Profundidad de una región en el territorio de su especie: 0 en su borde más cercano al Núcleo, 1 en lo más hondo. */
+function depthOf(ring: number, minRing: number): number {
+  const span = Math.max(1, ALIEN_AI.deepRing - minRing);
+  return Math.min(1, Math.max(0, (ring - minRing) / span));
 }
 
 function regionFromKey(key: string): RegionCoord {
@@ -323,7 +329,8 @@ export class AlienService {
     const [{ n } = { n: 0 }] = await tx.select({ n: sql<number>`coalesce(max(${fleets.number}), 0)::int` }).from(fleets).where(eq(fleets.emperorId, actorId));
     const [fleet] = await tx.insert(fleets).values({ emperorId: actorId, number: n + 1, systemId: at.id }).returning({ id: fleets.id });
     const { ships: count } = this.garrisonSize(key, species);
-    const comp = species.fleet.composition;
+    // Composición según la profundidad (nivel de peligro): más naves pesadas cuanto más lejos del Núcleo.
+    const comp = fleetComposition(species.fleet, depthOf(regionMaxRing(regionFromKey(key), this.territory.regionSize), species.territory.minCoreRing));
     const total = comp.reduce((a, [, w]) => a + w, 0);
     const shipRows = [];
     for (let i = 0; i < count; i++) {

@@ -18,6 +18,7 @@ import {
   flagshipHumansAfter,
   gameHours,
   installationAllowed,
+  missingInstallations,
   isTravelling,
   minColonists,
   netRates,
@@ -457,16 +458,19 @@ export class ColonyService {
   async build(emperorId: string, colonyId: string, kind: "installation" | "ship", itemId: string): Promise<ColonyResult> {
     let cost: StockAmounts;
     let hours: number;
+    let requires: Partial<Record<InstallationId, number>> | undefined;
     if (kind === "installation") {
       const def = getInstallation(itemId);
       if (!def) return { ok: false, error: "unknown_item" };
       cost = def.cost;
       hours = def.buildTimeHours;
+      requires = def.requires;
     } else {
       const cls = getShipClass(itemId as ShipClassId);
       if (!cls) return { ok: false, error: "unknown_item" };
-      cost = { ...cls.cost, alloys: 0 };
+      cost = { ...cls.cost };
       hours = cls.buildTimeHours;
+      requires = cls.requires;
     }
 
     return this.db.transaction(async (tx): Promise<ColonyResult> => {
@@ -486,6 +490,8 @@ export class ColonyService {
       } else if (!counts.shipyard) {
         return { ok: false, error: "needs_shipyard" };
       }
+      // Instalaciones que pide (refinería, dique orbital…): tienen que estar ya construidas.
+      if (missingInstallations(requires, counts).length > 0) return { ok: false, error: "needs_installation" };
       const site = this.site(row, counts, await this.extraUpkeepOf(tx, row));
       if (!site) return { ok: false, error: "unknown_planet" };
       const now = this.now();

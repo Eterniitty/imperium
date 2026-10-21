@@ -6,7 +6,7 @@
 import type { Battle, Cargo, Colony, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, OrderSide, Stock, StockId, Wallet } from "./api";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
-export const PROTOCOL_VERSION = 8;
+export const PROTOCOL_VERSION = 9;
 
 /** Tamaño máximo de un mensaje del cliente, en bytes. */
 export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;
@@ -101,6 +101,11 @@ export interface ShipState extends ShipPose {
   id: string;
   /** Nave de un Emperador o pirata de la IA (su nombre se traduce en el cliente). */
   kind: "emperor" | "pirate";
+  /**
+   * Clase de nave de `@imperium/content` (las de la IA: p. ej. `scav_raider`),
+   * para dibujar su modelo y su nombre. Sin ella, la nave de un Emperador.
+   */
+  classId?: string;
   name: string;
   /** Compañero del jugador que la recibe (no se le puede disparar). */
   ally: boolean;
@@ -152,6 +157,8 @@ export type CommandError =
   | "unknown_item"
   | "insufficient_resources"
   | "needs_shipyard"
+  /** Falta otra instalación que pide la nave o la instalación (refinería, dique orbital…). */
+  | "needs_installation"
   | "limit_reached"
   | "queue_full"
   | "no_build"

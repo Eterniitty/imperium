@@ -1,4 +1,4 @@
-import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, PIRATE_RAIDER } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, getAlienShipClass, PIRATE_AI } from "@imperium/content";
 import type { ServerMessage, ShipPose, ShipState, Vec3, WeaponKind } from "@imperium/shared";
 import { bodiesAt, isTravelling, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_SPEED, plausibleMove, pulseLimitAt, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
@@ -6,16 +6,18 @@ import type { EmperorService } from "../emperor/service";
 import type { Client } from "../realtime/hub";
 import type { SocialService } from "../social/service";
 import type { FlagshipService } from "./flagship";
-import { Combatant, type StoredSupplies, distance, forwardOf, MISSILE_LOCK_COS, normalize, rayHit, rotate } from "./combat";
-import { pirateCount, pirateHome, stepPirate } from "./pirates";
+import { Combatant, type StoredSupplies, distance, forwardOf, HIT_RADIUS, MISSILE_LOCK_COS, normalize, rayHit, rotate } from "./combat";
+import { pirateFlight, pirateHome, piratesOf, stepPirate } from "./pirates";
 
 /** Una nave presente en un sistema: de un Emperador o un pirata de la IA. */
 interface Member {
   /** Id del Emperador, o "pirate:<sistema>:<n>" para los piratas. */
   emperorId: string;
   kind: "emperor" | "pirate";
-  /** Solo piratas: dónde viven y un valor fijo para variar su forma de rodear. */
-  ai?: { home: Vec3; phase: number };
+  /** Solo piratas: dónde viven, un valor fijo para variar su forma de rodear, su clase de nave y su puntería. */
+  ai?: { home: Vec3; phase: number; classId: string; aimJitter: number };
+  /** Radio de impacto (metros): las naves grandes son más fáciles de acertar. */
+  radius: number;
   name: string;
   systemId: string;
   /** Conexiones que pilotan esta nave (normalmente una; varias pestañas a la vez). */
@@ -210,6 +212,7 @@ export class SpaceService {
     return {
       id: m.emperorId,
       kind: m.kind,
+      ...(m.ai ? { classId: m.ai.classId } : {}),
       name: m.name,
       ally: viewer !== null && viewer !== m && viewer.allies.has(m.emperorId),
       ...m.pose,
@@ -342,6 +345,7 @@ export class SpaceService {
       combat: this.combatantOf(emperorId, supplies),
       sentShield: -1,
       park,
+      radius: HIT_RADIUS,
     };
     for (const o of room) this.sendTo(o, { t: "ship", ship: this.stateFor(m, o) });
     room.add(m);
@@ -456,21 +460,23 @@ export class SpaceService {
 
   /** Crea los piratas que viven en el sistema (los que no estén muertos esperando reaparecer). */
   private spawnPirates(systemId: string, room: Set<Member>): void {
-    const count = pirateCount(systemId);
+    const specs = piratesOf(systemId);
     const now = this.now();
-    for (let i = 0; i < count; i++) {
+    specs.forEach((spec, i) => {
       const id = `pirate:${systemId}:${i}`;
-      if (this.members.has(id) || (this.deadPirates.get(id) ?? 0) > now) continue;
-      this.deadPirates.delete(id);
+      if (this.members.has(id) || (this.deadPirates.get(id) ?? 0) > now) return;
+      const cls = getAlienShipClass(spec.classId);
       const layout = this.layout(systemId);
-      if (!layout) return;
+      if (!layout || !cls) return;
+      this.deadPirates.delete(id);
       const home = pirateHome(systemId, i, layout, now);
-      const combat = new Combatant(PIRATE_RAIDER.hull, PIRATE_RAIDER.combat, now);
+      const combat = new Combatant(cls.hull, cls.combat, now);
       this.combatants.set(id, combat);
       const m: Member = {
         emperorId: id,
         kind: "pirate",
-        ai: { home, phase: (i * 0.37) % 1 },
+        ai: { home, phase: (i * 0.37) % 1, classId: cls.id, aimJitter: spec.aimJitter },
+        radius: Math.max(HIT_RADIUS, cls.model.lengthM * 0.45),
         name: "",
         systemId,
         clients: new Set(),
@@ -486,7 +492,7 @@ export class SpaceService {
       for (const o of room) this.sendTo(o, { t: "ship", ship: this.stateFor(m, o) });
       room.add(m);
       this.members.set(id, m);
-    }
+    });
   }
 
   /** Una conexión se cierra o deja de pilotar: si era la última de su nave, la nave se queda aparcada. */
@@ -561,7 +567,7 @@ export class SpaceService {
       for (const o of room) {
         if (!this.hostile(m, o)) continue;
         for (const p of this.recentPositions(o, now)) {
-          const t = rayHit(from, dir, p, def.rangeU);
+          const t = rayHit(from, dir, p, def.rangeU, o.radius);
           if (t !== null && (hitDistance === null || t < hitDistance)) {
             hitDistance = t;
             target = o;
@@ -610,7 +616,7 @@ export class SpaceService {
     if (v.kind === "pirate") {
       this.leave(v.emperorId, "destroyed");
       this.combatants.delete(v.emperorId);
-      this.deadPirates.set(v.emperorId, this.now() + PIRATE_RAIDER.respawnSec * 1000);
+      this.deadPirates.set(v.emperorId, this.now() + PIRATE_AI.respawnSec * 1000);
       return;
     }
     const clients = [...v.clients];
@@ -627,7 +633,13 @@ export class SpaceService {
     }
   }
 
-  /** Mueve los piratas y los hace disparar cuando tienen a un enemigo delante y a tiro. */
+  /**
+   * Mueve los piratas y los hace disparar cuando tienen a un enemigo delante y a
+   * tiro: el cañón a su alcance y, si llevan, misiles (con el blanco delante
+   * del morro). Cada clase vuela a su velocidad y a su distancia preferida
+   * (los arponeros se pegan, los bombarderos se quedan lejos) y apunta con el
+   * error de su nivel de peligro.
+   */
   private stepPirates(now: number): void {
     const dt = TICK_MS / 1000;
     for (const room of this.rooms.values()) {
@@ -635,7 +647,7 @@ export class SpaceService {
         if (m.kind !== "pirate" || !m.ai) continue;
         // El enemigo más cercano dentro de su radio de detección.
         let target: Member | null = null;
-        let best = PIRATE_RAIDER.aggroRangeU;
+        let best: number = PIRATE_AI.aggroRangeU;
         for (const o of room) {
           // Solo naves pilotadas: una nave aparcada, sin nadie a bordo, no les llama la atención.
           if (o.kind !== "emperor" || o.clients.size === 0) continue;
@@ -645,7 +657,7 @@ export class SpaceService {
             target = o;
           }
         }
-        const step = stepPirate(m.pose.p, m.pose.v, m.ai.home, target?.pose.p ?? null, dt, m.ai.phase);
+        const step = stepPirate(m.pose.p, m.pose.v, m.ai.home, target?.pose.p ?? null, dt, m.ai.phase, pirateFlight(m.ai.classId));
         m.pose = step;
         m.poseAt = now;
         m.history.push({ t: now, p: step.p });
@@ -653,10 +665,13 @@ export class SpaceService {
         m.dirty = true;
         if (target) {
           const to = normalize([target.pose.p[0] - step.p[0], target.pose.p[1] - step.p[1], target.pose.p[2] - step.p[2]]);
-          const cannon = PIRATE_RAIDER.combat.weapons[0]!;
-          // Puntería imperfecta (unos 4°): de lejos fallan más, de cerca casi nunca.
-          const j = () => (Math.random() - 0.5) * 0.14;
-          if (to && best <= cannon.rangeU) this.fireFrom(m, "cannon", [to[0] + j(), to[1] + j(), to[2] + j()]);
+          // Puntería imperfecta: de lejos fallan más, de cerca casi nunca.
+          const jitter = m.ai.aimJitter;
+          const j = () => (Math.random() - 0.5) * jitter;
+          const cannon = m.combat.weapons.get("cannon");
+          if (to && cannon && best <= cannon.def.rangeU) this.fireFrom(m, "cannon", [to[0] + j(), to[1] + j(), to[2] + j()]);
+          const missile = m.combat.weapons.get("missile");
+          if (to && missile && best <= missile.def.rangeU && (missile.ammo ?? 0) > 0 && now >= missile.readyAt) this.fireFrom(m, "missile", to, target.emperorId);
         }
       }
       // Reaparecen los que ya cumplieron su espera.
