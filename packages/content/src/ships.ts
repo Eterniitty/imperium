@@ -532,6 +532,18 @@ export const MOTHERSHIP_WORKSHOP = {
   alloysPerHull: 0.25,
 } as const;
 
+/**
+ * Hangar de la nave nodriza: cuando el Emperador pilota en el sistema donde
+ * espera su flota, la nodriza lanza un ala de `fighters` naves de la clase
+ * `classId` que le escoltan como las demás; un caza derribado vuelve a estar
+ * listo a los `rebuildSec` segundos.
+ */
+export const MOTHERSHIP_HANGAR = {
+  fighters: 4,
+  classId: "fighter" as ShipClassId,
+  rebuildSec: 300,
+} as const;
+
 /** Naves con las que empieza cada Emperador nuevo, como su primera flota. */
 export const STARTING_FLEET: readonly ShipClassId[] = ["explorer"];
 

@@ -40,6 +40,7 @@ import {
   CORE_MILITIA,
   INTEREST,
   MOTHERSHIP_WORKSHOP,
+  MOTHERSHIP_HANGAR,
   FLEET_TACTIC_IDS,
   STAR_HEAT_LETHAL_DPS,
   FLEET_BATTLE,
@@ -519,6 +520,8 @@ export const GEN_TABLES: Record<string, Builder> = {
     kv(t, [
       ["wiki.k.workshopHull", `${num(locale, MOTHERSHIP_WORKSHOP.hullPerMinute)}/min`],
       ["wiki.k.workshopAlloys", num(locale, MOTHERSHIP_WORKSHOP.alloysPerHull)],
+      ["wiki.k.hangarFighters", `${num(locale, MOTHERSHIP_HANGAR.fighters)} × ${shipName(locale, MOTHERSHIP_HANGAR.classId)}`],
+      ["wiki.k.hangarRebuild", `${num(locale, MOTHERSHIP_HANGAR.rebuildSec / 60)} min`],
     ]),
 
   interes: (t, locale) => kv(t, [["wiki.k.interestRange", `${num(locale, INTEREST.rangeLy)} a.l.`]]),

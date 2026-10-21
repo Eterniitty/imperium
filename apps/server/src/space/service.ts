@@ -1,4 +1,4 @@
-import { AIM_ASSIST, ALIEN_LOCAL, BODY_COLLISION, CORE_MILITIA, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, getAlienShipClass, getShipClass, MINING, PIRATE_AI, type ShipClassId } from "@imperium/content";
+import { AIM_ASSIST, ALIEN_LOCAL, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, getAlienShipClass, getShipClass, MINING, PIRATE_AI, type ShipClassId } from "@imperium/content";
 import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
 import { addToHold, arriveVelocity, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
@@ -514,8 +514,8 @@ export class SpaceService {
     const now = this.now();
     list.forEach((e, i) => {
       const key = fleetShipKey(e.shipId);
-      // Ya está en el espacio (pilotada a distancia o escoltando).
-      if (this.members.has(key)) return;
+      // Ya está en el espacio (pilotada a distancia o escoltando), o es un caza del ala aún sin reponer.
+      if (this.members.has(key) || (this.deadWing.get(key) ?? 0) > now) return;
       const cls = getShipClass(e.classId as ShipClassId);
       if (!cls) return;
       const combat = new Combatant(cls.hull, cls.combat, now);
@@ -561,11 +561,15 @@ export class SpaceService {
     return null;
   }
 
-  /** Una escolta vuelve a su flota con el casco que le quede. */
+  /** Cazas del ala de una nodriza derribados: cuándo vuelven a estar listos (`MOTHERSHIP_HANGAR.rebuildSec`). */
+  private readonly deadWing = new Map<string, number>();
+
+  /** Una escolta vuelve a su flota con el casco que le quede (los cazas del ala, a su hangar, sin guardar nada). */
   private dismissEscort(m: Member): void {
     const hull = Math.round(m.combat.hull);
     this.leave(m.emperorId, "left");
     this.combatants.delete(m.emperorId);
+    if (m.shipId?.startsWith("wing:")) return;
     void this.fleetShips?.saveHull(m.owner!, m.fleetId!, m.shipId!, hull).catch((err: unknown) => this.log.error(err, "Error al guardar el casco de una escolta"));
   }
 
@@ -1063,7 +1067,7 @@ export class SpaceService {
       if (o.kind === "pirate") this.combatants.delete(o.emperorId);
       // Naves de flota sin piloto (alienígenas): vuelven a su flota con su casco.
       if (o.kind === "fleet") this.combatants.delete(o.emperorId);
-      if (o.kind === "fleet" && o.fleetId) {
+      if (o.kind === "fleet" && o.fleetId && !o.shipId?.startsWith("wing:")) {
         void this.fleetShips?.saveHull(o.owner!, o.fleetId!, o.shipId!, Math.round(o.combat.hull)).catch((err: unknown) => this.log.error(err, "Error al guardar el casco de una nave alienígena"));
       }
     }
@@ -1322,6 +1326,13 @@ export class SpaceService {
       this.leave(v.emperorId, "destroyed");
       this.combatants.delete(v.emperorId);
       this.deadMilitia.set(v.emperorId, this.now() + CORE_MILITIA.respawnSec * 1000);
+      return;
+    }
+    if (v.shipId?.startsWith("wing:")) {
+      // Un caza del ala de una nodriza: se repone en su hangar al rato.
+      this.leave(v.emperorId, "destroyed");
+      this.combatants.delete(v.emperorId);
+      this.deadWing.set(v.emperorId, this.now() + MOTHERSHIP_HANGAR.rebuildSec * 1000);
       return;
     }
     if (v.kind === "fleet") {

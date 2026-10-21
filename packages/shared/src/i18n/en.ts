@@ -571,6 +571,8 @@ export const en: Record<I18nKey, string> = {
   "wiki.k.interestRange": "You see Emperors within",
   "wiki.k.workshopHull": "Workshop: hull repaired per ship",
   "wiki.k.workshopAlloys": "Workshop: alloys per hull point",
+  "wiki.k.hangarFighters": "Hangar: fighter wing",
+  "wiki.k.hangarRebuild": "Hangar: a downed fighter is ready again in",
   "wiki.k.heatLethal": "Lethal zone (warning and pulse cut) from",
   "wiki.col.heatZone": "Heat zone (stellar radii)",
   "wiki.col.heatSurface": "Damage at the surface",

@@ -1,4 +1,4 @@
-import { anyFleetSpeedLyPerHour, FLEET_TACTICS, getAnyShipClass, getShipClass, MOTHERSHIP_WORKSHOP, SHIP_CLASSES, SHIP_PASSENGERS, type ShipClassId } from "@imperium/content";
+import { anyFleetSpeedLyPerHour, FLEET_TACTICS, getAnyShipClass, getShipClass, MOTHERSHIP_HANGAR, MOTHERSHIP_WORKSHOP, SHIP_CLASSES, SHIP_PASSENGERS, type ShipClassId } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import type { Cargo, CommandError, Fleet, FleetRoute, FleetTactic } from "@imperium/shared";
 import { isTravelling, travelDurationMs } from "@imperium/sim";
@@ -157,10 +157,17 @@ export class FleetService {
       if (f.travel || f.battleId || f.location.systemId !== systemId) continue;
       for (const s of f.ships) {
         const cls = getShipClass(s.classId as ShipClassId);
+        // La nodriza no sale a escoltar: se queda y lanza su ala de cazas (`MOTHERSHIP_HANGAR`).
+        if (cls?.dockFlagship) {
+          for (let i = 0; i < MOTHERSHIP_HANGAR.fighters; i++) out.push({ fleetId: f.id, shipId: `wing:${s.id}:${i}`, classId: MOTHERSHIP_HANGAR.classId, hull: getShipClass(MOTHERSHIP_HANGAR.classId)?.hull ?? 100, size: 0 });
+          continue;
+        }
         if (cls && cls.combat.weapons.length > 0) out.push({ fleetId: f.id, shipId: s.id, classId: s.classId, hull: s.hull, size: cls.hull });
       }
     }
-    return out.sort((a, b) => b.size - a.size || (a.shipId < b.shipId ? -1 : 1)).slice(0, max).map(({ size: _size, ...e }) => e);
+    // Las naves de la flota primero (por tamaño); el ala de cazas aparte, sin contar en el tope.
+    const own = out.filter((e) => !e.shipId.startsWith("wing:")).sort((a, b) => b.size - a.size || (a.shipId < b.shipId ? -1 : 1)).slice(0, max);
+    return [...own, ...out.filter((e) => e.shipId.startsWith("wing:"))].map(({ size: _size, ...e }) => e);
   }
 
   /**
