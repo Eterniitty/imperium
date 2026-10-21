@@ -214,6 +214,7 @@ export const ClientMessageSchema = z.union([
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("heir.assign"), args: z.object({ heirId: z.uuid(), colonyId: z.uuid() }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("heir.incarnate"), args: z.object({ heirId: z.uuid() }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("colony.disembark"), args: z.object({ colonyId: z.uuid(), humans: z.number().int().min(1).max(100_000) }) }),
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("colony.embark"), args: z.object({ colonyId: z.uuid(), humans: z.number().int().min(1).max(100_000) }) }),
   z.object({ t: z.literal("sub"), topic: z.enum(["emperors", "me"]) }),
   z.object({ t: z.literal("pose"), systemId: PlaceIdSchema, p: Vec3Schema, q: QuatSchema, v: Vec3Schema }),
   z.object({ t: z.literal("leave") }),

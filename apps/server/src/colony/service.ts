@@ -708,6 +708,61 @@ export class ColonyService {
   }
 
   /**
+   * Embarca humanos de una colonia propia en la nave del Emperador (la inversa
+   * de `disembark`): el Emperador tiene que estar en ese sistema (no viajando),
+   * la nave no pasa de su capacidad y en la colonia quedan siempre al menos
+   * `HUMANS.colonyKeep` (como cuando embarcan colonos en un colonizador).
+   */
+  async embark(emperorId: string, colonyId: string, humans: number): Promise<ColonyResult> {
+    return this.db.transaction(async (tx): Promise<ColonyResult> => {
+      const [row] = await tx
+        .select()
+        .from(colonies)
+        .where(and(eq(colonies.id, colonyId), eq(colonies.emperorId, emperorId)))
+        .for("update")
+        .limit(1);
+      if (!row) return { ok: false, error: "no_colony" };
+      const [emp] = await tx
+        .select({
+          id: emperors.id,
+          systemId: emperors.systemId,
+          destSystemId: emperors.destSystemId,
+          departAt: emperors.departAt,
+          arriveAt: emperors.arriveAt,
+          humans: emperors.humans,
+          humansAt: emperors.humansAt,
+          deadAt: emperors.deadAt,
+        })
+        .from(emperors)
+        .where(eq(emperors.id, emperorId))
+        .for("update")
+        .limit(1);
+      if (!emp) return { ok: false, error: "no_emperor" };
+      if (emp.deadAt) return { ok: false, error: "dead" };
+      const now = this.now();
+      const place = placeFromRow(this.seed, emp, now);
+      if (isTravelling(place, now)) return { ok: false, error: "in_transit" };
+      if (place.location.systemId !== row.systemId) return { ok: false, error: "not_present" };
+      const aboard = flagshipHumansAfter(emp.humans, gameHours(emp.humansAt.getTime(), now, this.timeScale));
+      if (humans > Math.floor(HUMANS.flagshipCapacity - aboard)) return { ok: false, error: "flagship_full" };
+
+      const counts = (await this.installationCounts(tx, [row.id])).get(row.id) ?? {};
+      const site = this.site(row, counts, await this.extraUpkeepOf(tx, row));
+      if (!site) return { ok: false, error: "unknown_planet" };
+      const state = this.resolve(row, site, now);
+      if (humans > Math.floor(state.population - HUMANS.colonyKeep)) return { ok: false, error: "colony_keep" };
+
+      await tx.update(emperors).set({ humans: aboard + humans, humansAt: new Date(now) }).where(eq(emperors.id, emperorId));
+      await tx
+        .update(colonies)
+        .set({ population: state.population - humans, ...state.stock, resolvedAt: new Date(now) })
+        .where(eq(colonies.id, row.id));
+      await tx.insert(resourceLedger).values({ emperorId, colonyId: row.id, reason: "embark", ref: "emperor", humans: -humans });
+      return { ok: true, emperorId, colonyId: row.id };
+    });
+  }
+
+  /**
    * Colonia propia bloqueada y resuelta a la hora `at` (con su mantenimiento),
    * para quien vaya a cambiar sus existencias o población (logística). Null si
    * no existe o no es de `emperorId`.

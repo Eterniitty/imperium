@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { ECONOMY, INSTALLATIONS, SHIP_CLASSES, STOCK_IDS, type StockAmounts, type StockId } from "@imperium/content";
+import { ECONOMY, HUMANS, INSTALLATIONS, SHIP_CLASSES, STOCK_IDS, type StockAmounts, type StockId } from "@imperium/content";
 import { PLANET_NAME_MAX, PLANET_NAME_MIN, type Colony, type Fleet, type I18nKey, type Planet, type StarSystemDetail } from "@imperium/shared";
 import { minColonists, missingInstallations } from "@imperium/sim";
 import { connection, useWorld } from "../net/world";
@@ -176,6 +176,7 @@ export function PlanetColony({ detail, planet }: { detail: StarSystemDetail; pla
           )}
           {emperorHere && flagship && <UnloadHold hold={flagship.hold} busy={busy} onUnload={() => void run(connection.command("flagship.unload", { colonyId: own.id }))} />}
           {emperorHere && <Disembark colony={own} aboard={aboard} now={now} busy={busy} onLand={(n) => void run(connection.command("colony.disembark", { colonyId: own.id, humans: n }))} />}
+          {emperorHere && <Embark colony={own} aboard={liveHumans(humans, now)} now={now} busy={busy} onBoard={(n) => void run(connection.command("colony.embark", { colonyId: own.id, humans: n }))} />}
           <ColonyDetail
             colony={own}
             now={now}
@@ -240,6 +241,36 @@ function Disembark({ colony, aboard, now, busy, onLand }: { colony: Colony; aboa
       </label>
       <button className="btn" type="submit" disabled={busy}>
         {t("colony.disembark")}
+      </button>
+    </form>
+  );
+}
+
+/**
+ * Embarcar humanos de la colonia en la nave del Emperador (presente en el
+ * sistema): hasta llenar la nave y dejando siempre `HUMANS.colonyKeep` en la colonia.
+ */
+function Embark({ colony, aboard, now, busy, onBoard }: { colony: Colony; aboard: number; now: number; busy: boolean; onBoard: (n: number) => void }) {
+  const t = useT();
+  const spare = Math.max(0, Math.floor(livePopulation(colony, now) - HUMANS.colonyKeep));
+  const room = Math.max(0, Math.floor(HUMANS.flagshipCapacity - aboard));
+  const max = Math.min(spare, room);
+  const [n, setN] = useState("");
+  if (max < 1) return null;
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const v = Math.min(max, Math.max(1, Number.parseInt(n, 10) || max));
+    onBoard(v);
+    setN("");
+  };
+  return (
+    <form className="claim-form" onSubmit={submit}>
+      <label>
+        <span className="muted small">{t("colony.embarkLabel", { max, keep: HUMANS.colonyKeep })}</span>
+        <input type="number" min={1} max={max} placeholder={String(max)} value={n} onChange={(e) => setN(e.target.value.replace(/[^0-9]/g, ""))} />
+      </label>
+      <button className="btn" type="submit" disabled={busy}>
+        {t("colony.embark")}
       </button>
     </form>
   );
