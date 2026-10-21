@@ -8,7 +8,7 @@ import { useStore } from "zustand";
  */
 export const ACTIONS = {
   // Pilotar la nave (y el vuelo libre de cámara en el mapa).
-  flight: ["forward", "back", "strafeLeft", "strafeRight", "up", "down", "rollLeft", "rollRight", "turnLeft", "turnRight", "pitchUp", "pitchDown", "boost", "cameraView", "fireCannon", "fireMissile", "lockTarget", "pulse"],
+  flight: ["forward", "back", "strafeLeft", "strafeRight", "up", "down", "rollLeft", "rollRight", "turnLeft", "turnRight", "pitchUp", "pitchDown", "boost", "cameraView", "fireCannon", "fireMissile", "lockTarget", "pulse", "flightAssist", "mouseFlight", "cameraReset"],
   // Mover la cámara por el mapa galáctico.
   map: ["mapForward", "mapBack", "mapLeft", "mapRight", "mapUp", "mapDown", "mapBoost", "flightMode", "focus", "enter", "deselect"],
   // En cualquier momento.
@@ -40,6 +40,9 @@ export const DEFAULT_BINDINGS: Bindings = {
   fireMissile: ["KeyR"],
   lockTarget: ["KeyX"],
   pulse: ["KeyP"],
+  flightAssist: ["KeyZ"],
+  mouseFlight: ["KeyG"],
+  cameraReset: ["KeyB"],
   mapForward: ["KeyW", "ArrowUp"],
   mapBack: ["KeyS", "ArrowDown"],
   mapLeft: ["KeyA", "ArrowLeft"],
@@ -107,6 +110,42 @@ export function uiScaleFor(scale: UiScale, width: number, height: number): numbe
   return Math.round(Math.min(1.75, Math.max(0.85, k)) * 100) / 100;
 }
 
+/**
+ * Ajustes de pilotaje (Ajustes → Controles). Escalan `FLIGHT_MODEL`
+ * (`@imperium/content`) sin pasar de sus cifras de velocidad.
+ */
+export interface FlightPrefs {
+  /** Asistencia de vuelo: los propulsores frenan y estabilizan solos. */
+  assist: boolean;
+  /** Pilotaje con ratón: arrastrar con el botón izquierdo gira la nave (si no, mueve la cámara). */
+  mouseFlight: boolean;
+  /** Multiplicador de la aceleración de los propulsores (0,5–1,5). */
+  accel: number;
+  /** Inercia de la asistencia (0,5 = muy ágil, 2 = muy pesada). */
+  inertia: number;
+  /** Fracción de la velocidad máxima de maniobra (0,25–1). */
+  maxSpeed: number;
+  /** Invertir el eje vertical de la cámara orbital. */
+  invertCameraY: boolean;
+}
+
+export const DEFAULT_FLIGHT_PREFS: FlightPrefs = { assist: true, mouseFlight: false, accel: 1, inertia: 1, maxSpeed: 1, invertCameraY: false };
+
+function loadFlightPrefs(saved: unknown): FlightPrefs {
+  const f = (saved ?? {}) as Partial<Record<keyof FlightPrefs, unknown>>;
+  const num = (v: unknown, lo: number, hi: number, def: number) => (typeof v === "number" && v >= lo && v <= hi ? v : def);
+  const bool = (v: unknown, def: boolean) => (typeof v === "boolean" ? v : def);
+  const d = DEFAULT_FLIGHT_PREFS;
+  return {
+    assist: bool(f.assist, d.assist),
+    mouseFlight: bool(f.mouseFlight, d.mouseFlight),
+    accel: num(f.accel, 0.5, 1.5, d.accel),
+    inertia: num(f.inertia, 0.5, 2, d.inertia),
+    maxSpeed: num(f.maxSpeed, 0.25, 1, d.maxSpeed),
+    invertCameraY: bool(f.invertCameraY, d.invertCameraY),
+  };
+}
+
 export interface Preferences {
   quality: Quality;
   uiScale: UiScale;
@@ -114,9 +153,10 @@ export interface Preferences {
   musicVolume: number;
   /** Volumen de los efectos de sonido (combate, motor cuántico), 0 a 1. */
   sfxVolume: number;
+  flight: FlightPrefs;
 }
 
-const DEFAULT_PREFERENCES: Preferences = { quality: "auto", uiScale: "auto", musicVolume: 0.5, sfxVolume: 0.6 };
+const DEFAULT_PREFERENCES: Preferences = { quality: "auto", uiScale: "auto", musicVolume: 0.5, sfxVolume: 0.6, flight: DEFAULT_FLIGHT_PREFS };
 const PREFS_KEY = "imperium.prefs";
 
 function loadPrefs(): Preferences {
@@ -130,6 +170,7 @@ function loadPrefs(): Preferences {
       uiScale: UI_SCALES.includes(saved?.uiScale as UiScale) ? (saved!.uiScale as UiScale) : DEFAULT_PREFERENCES.uiScale,
       musicVolume: typeof volume === "number" && volume >= 0 && volume <= 1 ? volume : DEFAULT_PREFERENCES.musicVolume,
       sfxVolume: typeof sfx === "number" && sfx >= 0 && sfx <= 1 ? sfx : DEFAULT_PREFERENCES.sfxVolume,
+      flight: loadFlightPrefs(saved?.flight),
     };
   } catch {
     return { ...DEFAULT_PREFERENCES };

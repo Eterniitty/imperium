@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
 import type { I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, WeaponKind, WorldPosition } from "@imperium/shared";
-import { ARRIVAL_EDGE, defaultPark, moonOffset, parkedPosition, PILOT_BOOST, PILOT_SPEED, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
+import { ARRIVAL_EDGE, defaultPark, moonOffset, parkedPosition, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
 import { resetSpace, shipName, spaceStore } from "../net/space";
 import { telemetry, type FlightTelemetry } from "./telemetry";
 import { connection, serverNow } from "../net/world";
@@ -16,7 +16,8 @@ import { distanceGain, playCannon, playExplosion, playHit, playMissile } from ".
 import { isBound, settingsStore, type Action } from "../state/settings";
 import { gameStore } from "../state/store";
 import { Backdrop } from "./Backdrop";
-import { FlightController } from "./FlightController";
+import { ShipController, type Maneuver } from "./ShipController";
+import { ChaseCamera } from "./ChaseCamera";
 import type { Keyboard } from "./input";
 import { createFlagship, disposeShip, SHIP_SCALE, shipRig } from "./shipModel";
 import { createCockpit } from "./cockpit";
@@ -56,10 +57,6 @@ export interface SystemViewEvents {
 /** Cada cuánto se envía la posición propia al servidor mientras se pilota. */
 const POSE_INTERVAL = 0.125;
 
-/** Cámara de persecución (tercera persona): detrás y algo por encima de la nave. */
-const CHASE_OFFSET = new THREE.Vector3(0, 24, 100);
-/** Cámara de cabina (primera persona): en el puente, mirando al frente. */
-const COCKPIT_OFFSET = new THREE.Vector3(0, 5.5, -4);
 
 /**
  * Vista de un sistema estelar, con la disposición de `@imperium/sim` (distancias
@@ -92,8 +89,9 @@ export class SystemView implements View {
   private dom: HTMLElement;
   private layout: SystemLayout | null = null;
   private ship: THREE.Group | null = null;
-  private flight: FlightController | null = null;
-  private chaseTarget = new THREE.Vector3();
+  private flight: ShipController | null = null;
+  /** Cámara del piloto (exterior orbital o cabina), independiente de la orientación de la nave. */
+  private chase: ChaseCamera;
   private leaving = false;
   private systemId: string | null = null;
   private starName = "";
@@ -133,6 +131,7 @@ export class SystemView implements View {
     this.controls.minDistance = 200;
     this.controls.maxDistance = 600;
     this.controls.enabled = false;
+    this.chase = new ChaseCamera(this.camera, dom);
 
     this.selectRing = new THREE.Sprite(
       new THREE.SpriteMaterial({ map: ringTexture(), color: 0xe8b64c, depthTest: false, sizeAttenuation: false, transparent: true }),
@@ -388,13 +387,12 @@ export class SystemView implements View {
     ship.rotateY(Math.PI);
     this.content.add(ship);
     this.ship = ship;
-    const flight = new FlightController(ship, this.dom, this.keyboard);
-    flight.baseSpeed = PILOT_SPEED;
-    flight.boostFactor = PILOT_BOOST;
+    const flight = new ShipController(ship, this.dom, this.keyboard);
     flight.enabled = true;
     this.flight = flight;
     this.leaving = false;
     this.controls.enabled = false;
+    this.chase.reset();
     this.placeChaseCamera(1);
     gameStore.getState().setFlight(true, 0);
   }
@@ -496,22 +494,15 @@ export class SystemView implements View {
     gameStore.getState().setFlight(false, 0);
   }
 
+  /** Coloca la cámara del piloto; con `k` = 1, de golpe (al empezar o tras una corrección). */
   private placeChaseCamera(k: number): void {
     const ship = this.ship!;
     const first = gameStore.getState().cameraView === "first";
     // En primera persona el casco taparía la vista: se oculta la nave y se ve la cabina.
     ship.visible = !first;
     this.cockpit.visible = first;
-    if (first) {
-      this.camera.position.copy(COCKPIT_OFFSET).applyQuaternion(ship.quaternion).add(ship.position);
-      this.camera.quaternion.copy(ship.quaternion);
-      return;
-    }
-    const desired = CHASE_OFFSET.clone().applyQuaternion(ship.quaternion).add(ship.position);
-    this.camera.position.lerp(desired, k);
-    this.camera.up.copy(new THREE.Vector3(0, 1, 0).applyQuaternion(ship.quaternion));
-    this.chaseTarget.copy(new THREE.Vector3(0, 0, -300).applyQuaternion(ship.quaternion).add(ship.position));
-    this.camera.lookAt(this.chaseTarget);
+    if (k >= 1) this.chase.snap(ship, first);
+    else this.chase.place(ship, first, k);
   }
 
   /** Morro de la nave propia (vector unitario). */
@@ -525,6 +516,14 @@ export class SystemView implements View {
     if (!flight) return;
     if (!flight.pulse && this.outOfFuel()) return this.events.notify("pilot.noFuel");
     flight.pulse = !flight.pulse;
+  }
+
+  /** Cambia un ajuste de pilotaje (asistencia, pilotaje con ratón) y lo avisa. */
+  private toggleFlightPref(key: "assist" | "mouseFlight", on: I18nKey, off: I18nKey): void {
+    const st = settingsStore.getState();
+    const value = !st.prefs.flight[key];
+    st.setPrefs({ flight: { ...st.prefs.flight, [key]: value } });
+    this.events.notify(value ? on : off);
   }
 
   /** Sin combustible (según el servidor) no hay pulso. */
@@ -849,10 +848,13 @@ export class SystemView implements View {
       this.remote.update(dt, this.time);
       const rig = shipRig(this.ship);
       rig.setThrust(this.flight.thrust, this.flight.pulse);
+      // Propulsores de maniobra del modelo, si los tiene (lo expone el generador de naves).
+      (rig as { setManeuver?: (m: Maneuver) => void }).setManeuver?.(this.flight.maneuver);
       rig.tick(this.time, dt, Math.max(0, 1 - this.flight.speed / 40));
       this.fireCannon();
       this.updateCombatVisuals(dt);
       this.placeChaseCamera(1 - Math.exp(-dt * 8));
+      telemetry.freeCam = this.chase.free && gameStore.getState().cameraView !== "first";
       gameStore.getState().setFlight(true, this.flight.speed, this.flight.pulse);
       // Más allá del borde: espacio interestelar.
       if (!this.leaving && this.layout && this.ship.position.length() > this.boundary) {
@@ -917,6 +919,9 @@ export class SystemView implements View {
       else if (this.quantum && (code === "Escape" || isBound("jump", code))) this.cancelQuantum();
       else if (this.quantum) return;
       else if (isBound("pulse", code)) this.togglePulse();
+      else if (isBound("cameraReset", code)) this.chase.reset();
+      else if (isBound("flightAssist", code)) this.toggleFlightPref("assist", "pilot.assistOn", "pilot.assistOff");
+      else if (isBound("mouseFlight", code)) this.toggleFlightPref("mouseFlight", "pilot.mouseFlightOn", "pilot.mouseFlightOff");
       else if (isBound("lockTarget", code)) this.cycleTarget();
       else if (isBound("fireMissile", code)) this.fireMissile();
       return;
@@ -929,5 +934,6 @@ export class SystemView implements View {
     this.fleetScene.clear();
     this.clear();
     this.controls.dispose();
+    this.chase.dispose();
   }
 }

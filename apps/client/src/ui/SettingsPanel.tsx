@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { I18nKey } from "@imperium/shared";
 import {
   ACTIONS,
   conflictsOf,
@@ -97,6 +98,36 @@ function GeneralTab() {
   );
 }
 
+/** Ajustes de pilotaje: asistencia, pilotaje con ratón, cámara, aceleración, inercia y velocidad máxima. */
+function FlightPrefsSection() {
+  const t = useT();
+  const flight = useSettings((s) => s.prefs.flight);
+  const set = (changes: Partial<typeof flight>) => settingsStore.getState().setPrefs({ flight: { ...flight, ...changes } });
+  const check = (key: "assist" | "mouseFlight" | "invertCameraY", label: I18nKey) => (
+    <label className="flight-pref">
+      <input type="checkbox" checked={flight[key]} onChange={(e) => set({ [key]: e.target.checked })} /> {t(label)}
+    </label>
+  );
+  const range = (key: "accel" | "inertia" | "maxSpeed", label: I18nKey, min: number, max: number) => (
+    <label className="flight-pref">
+      {t(label)}{" "}
+      <input type="range" min={min * 100} max={max * 100} step={5} value={Math.round(flight[key] * 100)} onChange={(e) => set({ [key]: Number(e.target.value) / 100 })} />{" "}
+      <span className="mono small">{Math.round(flight[key] * 100)} %</span>
+    </label>
+  );
+  return (
+    <section className="flight-prefs">
+      <h3>{t("settings.flight")}</h3>
+      {check("assist", "settings.flight.assist")}
+      {check("mouseFlight", "settings.flight.mouseFlight")}
+      {check("invertCameraY", "settings.flight.invertY")}
+      {range("accel", "settings.flight.accel", 0.5, 1.5)}
+      {range("inertia", "settings.flight.inertia", 0.5, 2)}
+      {range("maxSpeed", "settings.flight.maxSpeed", 0.25, 1)}
+    </section>
+  );
+}
+
 /** Pestaña Controles: cómo se juega y las teclas (dos por acción). */
 export function SettingsPanel() {
   const t = useT();
@@ -168,12 +199,13 @@ export function SettingsPanel() {
           <>
         <h3>{t("settings.howToPlay")}</h3>
         <ul className="howto">
-          <li>{t("help.pilotMouse")}</li>
+          <li>{t("help.pilotMouse", keys)}</li>
           <li>{t("help.keysPilot", keys)}</li>
           <li>{t("help.rotate")} · {t("help.pan")} · {t("help.zoom")}</li>
           <li>{t("help.select")}</li>
           <li>{t("help.keysMap", keys)}</li>
         </ul>
+        <FlightPrefsSection />
         <h3>{t("settings.keys")}</h3>
         <p className="muted small">{t("settings.keysHint")}</p>
         {(Object.keys(ACTIONS) as ActionContext[]).map((ctx) => (

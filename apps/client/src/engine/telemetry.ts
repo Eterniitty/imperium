@@ -25,6 +25,8 @@ export interface FlightTelemetry {
   quantumCharge: number | null;
   /** Alineación con el destino cuántico (coseno; 1 = perfecto) o null. */
   quantumAlign: number | null;
+  /** La cámara exterior está fuera de la vista de seguimiento (orbitando la nave). */
+  freeCam: boolean;
 }
 
 export const telemetry: FlightTelemetry = {
@@ -39,6 +41,7 @@ export const telemetry: FlightTelemetry = {
   thrust: 0,
   quantumCharge: null,
   quantumAlign: null,
+  freeCam: false,
 };
 
 /** Copia de la telemetría refrescada cada `intervalMs` (para los números del HUD). */
