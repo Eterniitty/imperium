@@ -447,7 +447,10 @@ a.btn-link { color: inherit; text-decoration: none; }
 @media (max-height: 760px) { .legend { display: none; } }
 
 /* Barra superior: lo menos usado se oculta antes de que no quepa. */
-@media (max-width: 1400px) { .hide-md { display: none !important; } }
+/* Según el ancho de la propia barra (con la escala de la interfaz ya aplicada), no el de la ventana. */
+.topbar { container-type: inline-size; }
+@container (max-width: 1600px) { .hide-md { display: none !important; } }
+@container (max-width: 1300px) { .hide-lg { display: none !important; } }
 
 @media (max-width: 760px) {
   .hide-sm { display: none !important; }

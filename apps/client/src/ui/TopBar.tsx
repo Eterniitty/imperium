@@ -109,7 +109,7 @@ export function TopBar() {
               {fmt(focus.x)}, {fmt(focus.y)}, {fmt(focus.z)} {t("unit.ly")}
             </span>
           </div>
-          <div className="stat hide-sm">
+          <div className="stat hide-sm hide-lg">
             <span className="stat-label">{t("hud.systems")}</span>
             <span className="stat-value mono">{loaded.toLocaleString()}</span>
           </div>

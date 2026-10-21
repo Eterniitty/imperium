@@ -14,14 +14,18 @@ Copia inicial: `proyecto/imperium-20261021-051653-antes-noche.tar.gz` + `imperiu
        Empieza después de fusionar el pilotaje (comparte `shipModel.ts`).
 
 ## Agente 2 (rama `worktree-agent-a3b0fc1f726a359e1`)
-1. [ ] Pulso estilo supercrucero (activable junto a planetas, velocidad según distancia, sin brusquedad).
-2. [ ] Nave detallada; disparos desde cañones y lanzadores; misiles y explosiones mejores.
-3. [ ] Flotar en reposo y orbitar la estrella cuando está aparcada (determinista, servidor lo conoce).
-4. [ ] Cabina tipo Battlefield: munición, misiles, energía, combustible, escudos, casco (recursos del servidor).
-5. [ ] Viaje cuántico entre sistemas (minutos a ~40 min), unificado con `emperor.move`.
+1. [x] Pulso estilo supercrucero (activable junto a planetas, velocidad según distancia, sin brusquedad).
+2. [x] Nave detallada; disparos desde cañones y lanzadores; misiles y explosiones mejores.
+3. [x] Flotar en reposo y orbitar la estrella cuando está aparcada (determinista, servidor lo conoce).
+4. [x] Cabina tipo Battlefield: munición, misiles, energía, combustible, escudos, casco (recursos del servidor).
+5. [x] Viaje cuántico entre sistemas (minutos a ~40 min), unificado con `emperor.move`.
+6. [x] Volumen de efectos aparte de la música y sonidos del combate; `pnpm e2e` completo pasado (se arregló el
+       desbordamiento de la barra superior con la escala de la interfaz). Fusionado en `main` con avance rápido:
+       migraciones 0013 (aparcamiento) y 0014 (recursos de la nave), `PROTOCOL_VERSION` 8, guía en
+       `docs/ayuda-pilotaje.md` y artículo «Pilotar» de la Wiki al día.
 
 ## Después (orquestador)
-- [ ] Copia de seguridad → fusionar rama de pilotaje en `main`, typecheck y `pnpm test`.
+- [x] Fusionar rama de pilotaje en `main`, typecheck y `pnpm test` (lo hizo el agente 2; la copia de seguridad, pendiente del orquestador).
 - [x] Ventana de ayuda detallada (sustituida por la Wiki, ver abajo) (economía con números reales, controles, combate, logística, lore,
       pilotaje nuevo). Se paró para respetar el límite de dos agentes; se relanza al quedar un hueco.
 - [ ] Tipos de nave (ver Agente 1, punto 3).
