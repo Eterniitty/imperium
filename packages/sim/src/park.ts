@@ -5,6 +5,7 @@
  * partir de dónde estaba a una hora dada y de la hora del servidor, así que el
  * servidor (combate, visibilidad) y todos los clientes la ven en el mismo sitio.
  */
+import { WORLD_SCALE } from "@imperium/content";
 import { orbitalPeriodS, type SystemLayout } from "./systemLayout";
 
 export type Vec3Like = readonly [number, number, number];
@@ -42,14 +43,32 @@ export function parkedVelocity(park: ParkedOrbit, t: number): [number, number, n
 
 /**
  * Dónde aparca una nave que no ha volado nunca en el sistema (o que renace):
- * junto a la órbita del primer planeta (o cerca de la estrella), siempre en el
- * mismo lado. Hora de referencia 0: desde entonces orbita como cualquier otra.
+ * en el hueco entre la esfera de influencia del primer planeta y la del
+ * siguiente cuerpo (o fuera de la de la estrella), siempre en el mismo lado.
+ * Hora de referencia 0: desde entonces orbita como cualquier otra.
  */
 export function defaultPark(layout: SystemLayout): ParkedOrbit {
-  const first = layout.planets[0]?.orbitRadius ?? layout.starRadius * 5;
+  const first = layout.planets[0];
+  const r = first ? first.orbitRadius + first.body.influenceRadius + WORLD_SCALE.orbitGapM / 2 : layout.parkMinRadius * 1.5;
   const d = Math.hypot(0.2, 0.15, 1);
-  const k = (first * 1.15) / d;
+  const k = r / d;
   return { p: [0.2 * k, 0.15 * k, 1 * k], at: 0 };
+}
+
+/**
+ * Una nave no se queda aparcada dentro de la esfera de influencia de la
+ * estrella: se lleva hacia fuera en la misma dirección. También corrige las
+ * órbitas guardadas con la escala anterior (sistemas de pocos miles de km),
+ * sin migrar la base de datos.
+ */
+export function sanitizePark(layout: SystemLayout, park: ParkedOrbit): ParkedOrbit {
+  const [x, y, z] = park.p;
+  const d = Math.hypot(x, y, z);
+  const min = layout.parkMinRadius * 1.05;
+  if (d >= min) return park;
+  if (d < 1) return { p: [0, 0, min], at: park.at };
+  const k = min / d;
+  return { p: [x * k, y * k, z * k], at: park.at };
 }
 
 /** Fracción del radio del sistema a la que aparece una nave que llega de un salto. */

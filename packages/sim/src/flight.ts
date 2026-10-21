@@ -16,7 +16,7 @@ export const PILOT_BOOST = 4;
  * aleja. Acelera y frena de forma suave, nunca a saltos.
  */
 export const PULSE_MIN_SPEED = 300;
-export const PULSE_MAX_SPEED = 150_000;
+export const PULSE_MAX_SPEED = 20_000_000;
 /**
  * Segundos "hasta la superficie" que deja el límite al ir de frente hacia un
  * cuerpo: la velocidad máxima es la distancia entre este tiempo. Así la nave

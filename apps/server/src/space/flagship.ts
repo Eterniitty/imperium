@@ -1,7 +1,7 @@
 import { EMPEROR_FLAGSHIP, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import type { FlagshipStatus, StarSystemDetail, StarSystemSummary } from "@imperium/shared";
-import { defaultPark, regenFuel, systemLayout, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
+import { defaultPark, regenFuel, sanitizePark, systemLayout, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import { and, eq, isNull, lte, or } from "drizzle-orm";
 import type { ColonyService } from "../colony/service";
 import type { ServerConfig } from "../config";
@@ -105,8 +105,9 @@ export class FlagshipService {
   /** Órbita de aparcamiento efectiva: la guardada, o la de por defecto del sistema. */
   resolvePark(systemId: string, row: ParkRow): ParkedOrbit {
     const stored = parkFromRow(row);
-    if (stored) return stored;
     const layout = this.layout(systemId);
+    // Las órbitas guardadas con la escala anterior quedan dentro de la estrella: se llevan fuera.
+    if (stored) return layout ? sanitizePark(layout, stored) : stored;
     return layout ? defaultPark(layout) : { p: [0, 0, 0], at: 0 };
   }
 
