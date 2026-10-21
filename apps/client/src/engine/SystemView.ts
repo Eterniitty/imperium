@@ -1390,7 +1390,10 @@ export class SystemView implements View {
   private updateStarFx(): void {
     const fx = this.starFx;
     if (!fx) return;
-    fx.surface.uniforms.uSpin!.value = ((serverNow() / 1000) * Math.PI * 2) / STAR_SPIN_PERIOD_SEC % (Math.PI * 2000);
+    // Fase del giro en [0, 2π) calculada en doble precisión (en el sombreador, un ángulo enorme pierde precisión).
+    const sec = serverNow() / 1000;
+    fx.surface.uniforms.uSpin!.value = ((sec % STAR_SPIN_PERIOD_SEC) / STAR_SPIN_PERIOD_SEC) * Math.PI * 2;
+    fx.surface.uniforms.uShear!.value = 0.5 * Math.sin(((sec % 900) / 900) * Math.PI * 2);
     const d = this.camera.position.length();
     const r = fx.radius;
     const t = Math.min(1, Math.max(0, (d - r * 1.3) / (r * 20 - r * 1.3)));

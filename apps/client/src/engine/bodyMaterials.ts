@@ -413,6 +413,7 @@ const STAR_FRAGMENT = /* glsl */ `
   uniform vec3 uSeed;
   uniform float uMaxOctaves;
   uniform float uSpin;
+  uniform float uShear;
   varying vec3 vObjPos;
   varying vec3 vViewPos;
   varying vec3 vNormalView;
@@ -426,9 +427,11 @@ const STAR_FRAGMENT = /* glsl */ `
       gl_FragColor = vec4(uColor * pow(1.0 - mu, 3.0) * 1.5, 1.0);
       return;
     }
-    // Rotación diferencial, como el Sol: el ecuador gira más deprisa que los polos.
+    // Giro (uSpin, ya reducido a una vuelta) con algo de rotación diferencial: el
+    // ecuador se adelanta a los polos y vuelve (uShear, acotado). Si la diferencia
+    // se acumulase sin fin, la superficie se retorcería hasta romperse en rayas.
     vec3 d0 = normalize(vObjPos);
-    float spin = uSpin * (1.0 - 0.35 * d0.y * d0.y);
+    float spin = uSpin - uShear * d0.y * d0.y;
     float cs = cos(spin);
     float sn = sin(spin);
     vec3 dir = vec3(cs * d0.x + sn * d0.z, d0.y, -sn * d0.x + cs * d0.z);
@@ -612,6 +615,7 @@ export function createStarSurfaceMaterial(color: THREE.Color, seed: THREE.Vector
       uSeed: { value: seed },
       uMaxOctaves: shared.uMaxOctaves,
       uSpin: { value: 0 },
+      uShear: { value: 0 },
     },
     ...withLogDepth({ vertexShader: BODY_VERTEX, fragmentShader: STAR_FRAGMENT }),
   });
