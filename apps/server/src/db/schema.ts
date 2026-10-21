@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { FLAGSHIP_SUPPLIES } from "@imperium/content";
 import { bigint, bigserial, boolean, check, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 /**
@@ -106,6 +107,16 @@ export const emperors = pgTable("emperors", {
   parkY: doublePrecision("park_y"),
   parkZ: doublePrecision("park_z"),
   parkAt: timestamp("park_at", { withTimezone: true }),
+  /**
+   * Recursos de la nave (ver FLAGSHIP_SUPPLIES en content): combustible a la hora
+   * `fuelAt` (la reserva de emergencia se regenera sola desde ahí) y munición a la
+   * hora `ammoAt`. La energía no se guarda: el reactor la recarga en segundos.
+   */
+  fuel: doublePrecision("fuel").notNull().default(FLAGSHIP_SUPPLIES.fuelMax),
+  fuelAt: timestamp("fuel_at", { withTimezone: true }).notNull().defaultNow(),
+  cannonAmmo: integer("cannon_ammo").notNull().default(1500),
+  missiles: integer("missiles").notNull().default(6),
+  ammoAt: timestamp("ammo_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [

@@ -98,7 +98,7 @@ test("planetas y estrella de cerca, sin errores de shader", { tag: "@lento" }, a
     return sys && sys.planets.length > 0 && sys.ship;
   });
   // Pilota un poco (como un jugador) antes de colocar la nave a mano.
-  await page.locator("canvas").click();
+  await page.locator(".viewport canvas").click();
   await page.keyboard.down("KeyW");
   await page.waitForTimeout(800);
   await page.keyboard.up("KeyW");

@@ -2,17 +2,19 @@
  * Tests de integración del WebSocket: conexiones reales contra el servidor
  * escuchando en un puerto local. Usan TEST_DATABASE_URL, que se vacía.
  */
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import WebSocket from "ws";
 import { LOGIN_TOKEN_PARAM, PROTOCOL_VERSION, WS_CLOSE, type Emperor, type EmperorView, type Fleet, type ServerMessage, type Topic, type Visibility } from "@imperium/shared";
 import { generateSector, universeSeedFromString } from "@imperium/procgen";
+import { planetPosition, quantumFuelCost } from "@imperium/sim";
 import { buildApp } from "../src/app";
+import { colonies, emperors, fleets, resourceLedger } from "../src/db/schema";
 import { sessionCookieName } from "../src/auth/routes";
 import { loadConfig } from "../src/config";
 import { createDb } from "../src/db/client";
 import type { Mailer } from "../src/mail";
-import { spawnCandidates } from "../src/emperor/world";
+import { spawnCandidates, systemsInRange } from "../src/emperor/world";
 import { resetTestDatabase } from "./resetDb";
 
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
@@ -138,7 +140,10 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
     const cookies = await login(email);
     const res = await app.inject({ method: "POST", url: "/api/emperor", payload: { name }, cookies });
     await app.inject({ method: "POST", url: "/api/social/visibility", payload: { visibility }, cookies });
-    return { cookies, emperor: res.json().emperor as Emperor };
+    const emperor = res.json().emperor as Emperor;
+    // Depósito sin límite: los saltos cruzan el Núcleo (el alcance por combustible tiene su propia prueba).
+    await database.db.update(emperors).set({ fuel: 1e6 }).where(eq(emperors.id, emperor.id));
+    return { cookies, emperor };
   }
 
   const social = (cookies: Record<string, string>, url: string, payload?: unknown) =>
@@ -492,6 +497,71 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       // El dueño conoce siempre dónde está aparcada su nave (tema `me`).
       expect((await app.flagships.status(a.emperor.id))!.park.p).toEqual([1_000_000, 0, 0]);
     });
+
+    it("el salto cuántico gasta combustible según la distancia; sin combustible no se salta", async () => {
+      const a = await player("a@ejemplo.com", "Aurelia");
+      const sa = await connect(a.cookies);
+      // Un destino al alcance de un depósito lleno.
+      const dest = systemsInRange(seed, a.emperor.location.position, 100).find((s) => s.id !== a.emperor.location.systemId)!;
+      const ly = Math.hypot(dest.position.x - a.emperor.location.position.x, dest.position.y - a.emperor.location.position.y, dest.position.z - a.emperor.location.position.z);
+      const cost = quantumFuelCost(ly);
+      await database.db.update(emperors).set({ fuel: cost - 1, fuelAt: new Date() }).where(eq(emperors.id, a.emperor.id));
+      sa.send({ t: "cmd", cmdId: "salto-sin-01", op: "emperor.move", args: { systemId: dest.id } });
+      expect(await sa.next(is("ack"))).toMatchObject({ ok: false, error: "insufficient_fuel" });
+      await database.db.update(emperors).set({ fuel: 1000, fuelAt: new Date() }).where(eq(emperors.id, a.emperor.id));
+      sa.send({ t: "cmd", cmdId: "salto-con-01", op: "emperor.move", args: { systemId: dest.id } });
+      expect(await sa.next((m): m is Extract<ServerMessage, { t: "ack" }> => m.t === "ack" && m.cmdId === "salto-con-01")).toMatchObject({ ok: true });
+      const status = (await app.flagships.status(a.emperor.id))!;
+      expect(status.supplies.fuel).toBeCloseTo(1000 - cost, 0);
+    });
+
+    it("al pilotar se reciben energía y combustible; el pulso sin combustible no avanza", async () => {
+      const a = await player("a@ejemplo.com", "Aurelia");
+      const sa = await connect(a.cookies);
+      const systemId = a.emperor.location.systemId;
+      const far = app.flagships.layout(systemId)!.boundary * 0.9;
+      await parkAt(a.emperor.id, [far, 0, 0]);
+      await database.db.update(emperors).set({ fuel: 0, fuelAt: new Date() }).where(eq(emperors.id, a.emperor.id));
+      sa.send({ t: "pose", systemId, ...pose([far, 0, 0]) });
+      await sa.next(is("space"));
+      expect(await sa.next(is("supplies"))).toMatchObject({ energy: 100, energyMax: 100, fuel: 0, fuelMax: 1000 });
+      // A 20 km/s (pulso) sin combustible: rechazada. A velocidad de maniobra, aceptada.
+      await settle(150);
+      sa.send({ t: "pose", systemId, ...pose([far - 5000, 0, 0]) });
+      expect(await sa.next(is("poseRejected"))).toMatchObject({ p: [far, 0, 0] });
+      await settle(300);
+      const from = sa.messages.length;
+      sa.send({ t: "pose", systemId, ...pose([far - 100, 0, 0]) });
+      await settle(200);
+      expect(sa.messages.slice(from).filter(is("poseRejected"))).toEqual([]);
+    });
+
+    it("junto a una colonia propia se repone el combustible con sus volátiles", async () => {
+      const a = await player("a@ejemplo.com", "Aurelia");
+      const sa = await connect(a.cookies);
+      const systemId = a.emperor.location.systemId;
+      const layout = app.flagships.layout(systemId)!;
+      const planet = layout.planets[0]!;
+      sa.send({ t: "cmd", cmdId: "reclamar-01", op: "colony.claim", args: { systemId, planetIndex: planet.index, humans: 200 } });
+      expect(await sa.next(is("ack"))).toMatchObject({ ok: true });
+      const [colony] = await database.db.select().from(colonies).where(eq(colonies.emperorId, a.emperor.id));
+      // Con el tiempo de las pruebas tan acelerado, el mantenimiento vaciaría los volátiles en un instante.
+      // Sin flotas, la colonia no paga su mantenimiento (y sus volátiles no se gastan solos).
+      await database.db.delete(fleets).where(eq(fleets.emperorId, a.emperor.id));
+      await database.db.update(colonies).set({ volatiles: 1000, resolvedAt: new Date() }).where(eq(colonies.id, colony!.id));
+      const c = planetPosition(planet, Date.now());
+      const p: [number, number, number] = [c.x + planet.size + 2000, c.y, c.z];
+      await parkAt(a.emperor.id, p);
+      await database.db.update(emperors).set({ fuel: 100, fuelAt: new Date() }).where(eq(emperors.id, a.emperor.id));
+      sa.send({ t: "pose", systemId, ...pose(p) });
+      await sa.next(is("space"));
+      const refilled = await sa.next((m): m is Extract<ServerMessage, { t: "supplies" }> => m.t === "supplies" && m.fuel > 110, 0, 9000);
+      expect(refilled.resupplying).toBe(true);
+      // Lo pagan las existencias de la colonia, con su asiento en el libro.
+      const ledger = await database.db.select().from(resourceLedger).where(eq(resourceLedger.reason, "flagship_resupply"));
+      expect(ledger.length).toBeGreaterThan(0);
+      expect(ledger[0]!.volatiles).toBeLessThan(0);
+    }, 15_000);
 
     it("rechaza posiciones imposibles: demasiado rápido o fuera del sistema", async () => {
       const a = await player("a@ejemplo.com", "Aurelia");

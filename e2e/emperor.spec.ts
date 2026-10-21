@@ -44,14 +44,14 @@ test("nombrar al Emperador, entrar en su sistema, trasladarlo y que lo recuerde"
 
   // Al entrar, se empieza a los mandos de la nave, dentro del sistema del Emperador.
   await page.getByRole("button", { name: "Despertar" }).click();
-  await expect(page.locator("canvas")).toBeVisible();
+  await expect(page.locator(".viewport canvas")).toBeVisible();
   await expect(page.getByRole("button", { name: /Aurelia Varn/ })).toBeVisible();
   await expect(page.getByText("Exterior (T)")).toBeVisible();
   await page.waitForTimeout(1000);
   await page.screenshot({ path: `${SHOTS}/3-pilotando.png` });
 
   // Vuela un poco hacia delante y cambia a la cámara de cabina.
-  await page.locator("canvas").click({ position: { x: 640, y: 400 } });
+  await page.locator(".viewport canvas").click({ position: { x: 640, y: 400 } });
   await page.keyboard.down("KeyW");
   await page.waitForTimeout(1200);
   await page.keyboard.up("KeyW");
@@ -67,7 +67,16 @@ test("nombrar al Emperador, entrar en su sistema, trasladarlo y que lo recuerde"
   await expect(panel.getByText("Tu Emperador está aquí")).toBeVisible();
 
   // Selecciona otro sistema (con el acceso de depuración del modo desarrollo) y salta.
-  const target = generateSector(SEED, { x: 0, y: 0, z: 0 }).systems.find((s) => s.name !== spawnName)!;
+  // El más cercano: el salto cuántico tiene el alcance de un depósito lleno.
+  const core: StarSystemSummary[] = [];
+  for (let x = -1; x <= 1; x++) for (let y = -1; y <= 1; y++) for (let z = -1; z <= 1; z++) core.push(...generateSector(SEED, { x, y, z }).systems);
+  const spawnId = await page.evaluate(() => {
+    const w = (window as unknown as { __imperium: { world: { getState(): { myEmperorId: string; emperors: Record<string, { location: { systemId: string } }> } } } }).__imperium.world.getState();
+    return w.emperors[w.myEmperorId]!.location.systemId;
+  });
+  const spawn = core.find((s) => s.id === spawnId)!;
+  const dist = (s: StarSystemSummary) => Math.hypot(s.position.x - spawn.position.x, s.position.y - spawn.position.y, s.position.z - spawn.position.z);
+  const target = core.filter((s) => s.id !== spawn.id && s.name !== spawnName).sort((a, b) => dist(a) - dist(b))[0]!;
   await page.evaluate((s: StarSystemSummary) => {
     (window as unknown as { __imperium: { store: { getState(): { select(s: StarSystemSummary): void } } } }).__imperium.store
       .getState()
@@ -76,7 +85,8 @@ test("nombrar al Emperador, entrar en su sistema, trasladarlo y que lo recuerde"
   await expect(panel.getByRole("heading", { level: 2 })).toHaveText(target.name);
   await panel.getByRole("button", { name: /Saltar aquí/ }).click();
   // Viaja: la barra superior muestra el destino y la cuenta atrás; la cámara sigue a la nave.
-  await expect(page.getByText(`Viajando a ${target.name}`)).toBeVisible();
+  // Antes del salto, la nave se alinea con el destino y carga el motor cuántico (unos segundos).
+  await expect(page.getByText(`Viajando a ${target.name}`)).toBeVisible({ timeout: 30_000 });
   await page.screenshot({ path: `${SHOTS}/4-viajando.png` });
   // Al llegar, entra pilotando en el sistema de destino.
   await expect(page.getByText(`Viajando a ${target.name}`)).toBeHidden({ timeout: 30_000 });

@@ -29,6 +29,8 @@ export interface SpaceState {
   self: ShipState | null;
   /** Armas propias: munición y cuándo vuelven a estar listas. */
   weapons: Array<{ kind: WeaponKind; ammo: number | null; ammoMax: number | null; readyAt: number }>;
+  /** Energía y combustible de la nave propia según el servidor (mientras se pilota). */
+  supplies: { energy: number; energyMax: number; fuel: number; fuelMax: number; resupplying: boolean } | null;
   /** Nave enemiga fijada para los misiles. */
   targetId: string | null;
   /** Disparos recibidos pendientes de dibujar (la vista los recoge y vacía la lista). */
@@ -39,7 +41,7 @@ export interface SpaceState {
   destroyed: { by: string; systemId: string } | null;
 }
 
-const EMPTY = { systemId: null, ships: {}, correction: null, self: null, weapons: [], targetId: null, shots: [], explosions: [], destroyed: null };
+const EMPTY = { systemId: null, ships: {}, correction: null, self: null, weapons: [], supplies: null, targetId: null, shots: [], explosions: [], destroyed: null };
 
 export const spaceStore = createStore<SpaceState>()(() => ({ ...EMPTY }));
 

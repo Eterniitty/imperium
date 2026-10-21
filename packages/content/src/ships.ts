@@ -114,6 +114,54 @@ export function getShipClass(id: ShipClassId): ShipClassDefinition | undefined {
 }
 
 /**
+ * Cañón de la nave del Emperador: proyectiles contados (1500). A bordo solo se
+ * fabrica una reserva de emergencia (hasta 300, uno cada 12 s); el resto se
+ * repone junto a una colonia propia.
+ */
+const FLAGSHIP_CANNON: WeaponDefinition = { ...CANNON, ammo: 1500, ammoRegenSec: 12, ammoRegenMax: 300 };
+/** Misiles de la nave del Emperador: 6; a bordo se fabrican hasta 2 (uno cada 30 min). */
+const FLAGSHIP_MISSILE: WeaponDefinition = { ...MISSILE, ammo: 6, ammoRegenSec: 1800, ammoRegenMax: 2 };
+
+/**
+ * Recursos de la nave del Emperador (servidor autoritativo; ver docs/ayuda-pilotaje.md):
+ * - Energía: la produce el reactor y se recarga sola; alimenta escudos, cañón y pulso.
+ * - Combustible: lo gastan el pulso y el salto cuántico. Se repone junto a una
+ *   colonia propia con sus volátiles; a bordo solo se regenera, muy despacio,
+ *   una reserva de emergencia para que nadie quede atrapado.
+ * Tiempos en segundos reales (son sistemas de la nave, no producción).
+ */
+export const FLAGSHIP_SUPPLIES = {
+  energyMax: 100,
+  /** Recarga del reactor por segundo. */
+  energyRegenPerSec: 10,
+  /** Energía por disparo de cañón. */
+  cannonEnergy: 2.5,
+  /** Energía por segundo con el pulso encendido. */
+  pulseEnergyPerSec: 3,
+  /** Energía por punto de escudo recargado. */
+  shieldEnergyPerPoint: 0.25,
+  fuelMax: 1000,
+  /** Combustible por segundo de pulso. */
+  pulseFuelPerSec: 0.4,
+  /** Combustible por año luz de salto cuántico: con el depósito lleno, unos 133 a.l. (unos 40 min de viaje). */
+  quantumFuelPerLy: 7.5,
+  /** Reserva de emergencia: el combustible se regenera solo hasta aquí… */
+  emergencyFuelMax: 150,
+  /** …a este ritmo (por hora real): de vacío a la reserva, unas 5 horas. */
+  emergencyFuelPerHour: 30,
+  /** Distancia (m) a la superficie de un planeta con colonia propia a la que se repone. */
+  resupplyRangeM: 150_000,
+  /** Reposición por segundo junto a una colonia propia (si tiene existencias). */
+  resupplyFuelPerSec: 30,
+  resupplyCannonPerSec: 75,
+  resupplyMissilesPerSec: 0.5,
+  /** Coste en existencias de la colonia: volátiles por unidad de combustible, metal por proyectil y aleaciones por misil. */
+  volatilesPerFuel: 0.2,
+  metalPerRound: 0.04,
+  alloysPerMissile: 3,
+} as const;
+
+/**
  * Nave del Emperador. No se construye: cada Emperador tiene la suya. Rápida y
  * con buen escáner, pero sola no gana batallas.
  */
@@ -126,8 +174,11 @@ export const EMPEROR_FLAGSHIP: {
   speedLyPerHour: 200,
   scannerRangeLy: 15,
   hull: 400,
-  combat: { shield: 200, shieldRegenPerSec: 20, shieldDelaySec: 4, weapons: [CANNON, MISSILE], hardpoints: FLAGSHIP_HARDPOINTS },
+  combat: { shield: 200, shieldRegenPerSec: 20, shieldDelaySec: 4, weapons: [FLAGSHIP_CANNON, FLAGSHIP_MISSILE], hardpoints: FLAGSHIP_HARDPOINTS },
 };
+
+/** Alcance máximo del salto cuántico con el depósito lleno (años luz). */
+export const QUANTUM_MAX_LY = FLAGSHIP_SUPPLIES.fuelMax / FLAGSHIP_SUPPLIES.quantumFuelPerLy;
 
 /**
  * Combate de flotas por rondas (Fase 9a), resuelto en el servidor. Cada ronda

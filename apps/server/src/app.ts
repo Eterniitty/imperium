@@ -122,7 +122,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   const hub = new Hub(emperors, fleets, social, discoveries, colonies, wars, humanity, app.log, config.TIME_SCALE);
   // Nave del Emperador fuera del pilotaje (aparcada) y disposición de los sistemas, que
   // depende de su detalle secreto.
-  const flagships = new FlagshipService(deps.db, config, (summary) => discoveries.detail(summary));
+  const flagships = new FlagshipService(deps.db, config, (summary) => discoveries.detail(summary), colonies);
   hub.flagships = flagships;
   emperors.layoutOf = (systemId) => flagships.layout(systemId);
   const space = new SpaceService(flagships, emperors, social, app.log, (emperorId) => {
@@ -130,6 +130,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     void hub.publishFlagship(emperorId);
   });
   space.onFlagship = (emperorId) => void hub.publishFlagship(emperorId);
+  // Al reponer la nave cambian las existencias de la colonia.
+  space.onColony = (emperorId, colonyId) => void hub.publishColony(emperorId, colonyId);
   app.addHook("onClose", async () => space.stop());
   // Antes de cerrar conexiones: dejar de difundir y parar la cola de eventos, para que
   // nada use la base de datos mientras se apaga.

@@ -164,6 +164,7 @@ export type CommandError =
   | "no_target"
   | "unknown_faction"
   | "no_diplomacy"
+  | "insufficient_fuel"
   | "rate_limited"
   | "internal";
 
@@ -211,6 +212,11 @@ export type ServerMessage =
   | { t: "destroyed"; by: string; systemId: string }
   /** Estado de tus armas: munición restante y cuándo vuelven a estar listas (hora del servidor). */
   | { t: "weapons"; weapons: Array<{ kind: WeaponKind; ammo: number | null; ammoMax: number | null; readyAt: number }> }
+  /**
+   * Energía y combustible de tu nave mientras la pilotas (unas dos veces por segundo
+   * si cambian). `resupplying`: junto a una colonia propia, reponiendo.
+   */
+  | { t: "supplies"; energy: number; energyMax: number; fuel: number; fuelMax: number; resupplying: boolean }
   /** El servidor rechaza una posición imposible (demasiado rápida, fuera del sistema): la nave vuelve aquí. */
   | ({ t: "poseRejected" } & ShipPose)
   | { t: "ack"; cmdId: string; ok: true }

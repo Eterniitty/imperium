@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EMPEROR_FLAGSHIP, FLAGSHIP_HARDPOINTS } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, FLAGSHIP_HARDPOINTS, FLAGSHIP_SUPPLIES } from "@imperium/content";
 import { Combatant, forwardOf, rayHit, rotate } from "../src/space/combat";
 
 describe("reglas del combate", () => {
@@ -33,16 +33,45 @@ describe("reglas del combate", () => {
     expect(rayHit([0, 0, 0], [0, 0, -1], [0, 0, -200], 140)).toBeNull();
   });
 
-  it("cadencia y munición: el misil se gasta y se repone con el tiempo", () => {
+  it("cadencia y munición: los misiles se gastan y a bordo solo se fabrica la reserva de emergencia", () => {
     const c = new Combatant(400, EMPEROR_FLAGSHIP.combat, 0);
     expect(c.tryFire("cannon", 0)).not.toBeNull();
     expect(c.tryFire("cannon", 100)).toBeNull(); // cadencia de 0,2 s
     expect(c.tryFire("cannon", 200)).not.toBeNull();
-    // Seis misiles cada 2,5 s (0 a 12,5 s); a los 15 s ya se ha repuesto uno.
+    // Seis misiles cada 2,5 s (0 a 12,5 s); luego, ninguno.
     for (let t = 0; t <= 12_500; t += 2500) expect(c.tryFire("missile", t)).not.toBeNull();
-    expect(c.tryFire("missile", 15_000)).not.toBeNull();
-    expect(c.tryFire("missile", 17_500)).toBeNull(); // sin misiles hasta la siguiente recarga
-    expect(c.tryFire("missile", 30_000)).not.toBeNull();
+    expect(c.tryFire("missile", 15_000)).toBeNull();
+    // A bordo se fabrica uno cada 30 min, hasta 2.
+    expect(c.tryFire("missile", 1_900_000)).not.toBeNull();
+    expect(c.weaponsView(3 * 3_600_000 + 10_000).find((w) => w.kind === "missile")!.ammo).toBe(2);
+  });
+
+  it("energía, combustible y reposición de la nave del Emperador", () => {
+    const S = FLAGSHIP_SUPPLIES;
+    const c = new Combatant(400, EMPEROR_FLAGSHIP.combat, 0, { fuel: 10, fuelAt: 0, cannon: 1500, missiles: 6, ammoAt: 0 });
+    // El cañón gasta energía: sin energía no dispara, y el reactor la recarga sola.
+    let t = 0;
+    let shots = 0;
+    while (c.tryFire("cannon", t)) {
+      shots++;
+      t += 200;
+    }
+    expect(shots).toBeGreaterThan(80);
+    expect(c.energyNow(t)).toBeLessThan(S.cannonEnergy);
+    expect(c.energyNow(t + 10_000)).toBe(S.energyMax);
+    // El pulso gasta combustible; sin combustible no hay pulso.
+    expect(c.spendPulse(20, 20_000)).toBe(true);
+    expect(c.fuelNow(20_000)).toBeCloseTo(10 - 20 * S.pulseFuelPerSec, 0);
+    expect(c.spendPulse(5, 20_000)).toBe(true);
+    expect(c.spendPulse(1, 20_000)).toBe(false);
+    // La reserva de emergencia se regenera despacio (unas 30 unidades por hora), solo hasta su tope.
+    expect(c.fuelNow(20_000 + 3_600_000)).toBeCloseTo(S.emergencyFuelPerHour, 0);
+    expect(c.fuelNow(20_000 + 100 * 3_600_000)).toBe(S.emergencyFuelMax);
+    // Junto a una colonia: se llena hasta el máximo, no más.
+    const added = c.refill({ fuel: 5000, cannon: 10, missiles: 3 }, 400 * 3_600_000);
+    expect(added.fuel).toBe(S.fuelMax - S.emergencyFuelMax);
+    expect(added.missiles).toBe(0);
+    expect(c.stored(400 * 3_600_000)).toMatchObject({ fuel: S.fuelMax, missiles: 6 });
   });
 
   it("el daño va primero al escudo, luego al casco; el escudo se recarga tras unos segundos", () => {

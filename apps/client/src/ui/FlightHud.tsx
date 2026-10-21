@@ -1,5 +1,6 @@
 import { PILOT_BOOST, PILOT_SPEED, PULSE_MAX_SPEED } from "@imperium/sim";
 import { useTelemetry } from "../engine/telemetry";
+import { FlightInstruments } from "./FlightInstruments";
 import { useGame, useT } from "../state/store";
 import { useKeyLabels } from "./keys";
 import { formatDuration } from "./useNow";
@@ -37,6 +38,7 @@ export function FlightHud() {
   const scale = pulse ? Math.log(1 + speed) / Math.log(1 + PULSE_MAX_SPEED) : speed / MAX_SPEED[view];
   return (
     <div className="flight-hud" aria-hidden>
+      {piloting && <FlightInstruments />}
       {(!piloting || camera === "first") && (
         <svg className="crosshair" viewBox="0 0 46 46">
           <circle cx="23" cy="23" r="9" fill="none" stroke="currentColor" strokeWidth="1.2" />

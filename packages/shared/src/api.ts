@@ -216,6 +216,12 @@ export interface EmperorHumans {
 export interface FlagshipStatus {
   systemId: string;
   park: { p: [number, number, number]; at: number };
+  /**
+   * Combustible y munición guardados (lo que se gasta al pilotar llega aparte, en
+   * tiempo real). El combustible es el de la hora `fuelAt`: por debajo de la
+   * reserva de emergencia se regenera solo (`regenFuel` de `@imperium/sim`).
+   */
+  supplies: { fuel: number; fuelMax: number; fuelAt: number; cannon: number; cannonMax: number; missiles: number; missilesMax: number };
 }
 
 /** Construcción en la cola de una colonia: una instalación o una nave (del astillero). */

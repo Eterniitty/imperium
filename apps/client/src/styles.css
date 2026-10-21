@@ -487,6 +487,24 @@ a.btn-link { color: inherit; text-decoration: none; }
 .flight-bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--gold)); }
 .help-sep { margin-top: 6px; }
 .flight-sub { font-size: 11.5px; margin-top: 2px; }
+.instruments { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.combat-bar { position: relative; }
+.combat-bar.energy span { background: linear-gradient(90deg, #6f7dff, #b4a0ff); }
+.combat-bar.fuel span { background: linear-gradient(90deg, #4cc38a, #a6f0b0); }
+.combat-bar .bar-mark { position: absolute; top: -2px; bottom: -2px; width: 1px; background: rgba(255, 255, 255, 0.55); }
+.combat-row.warn .stat-label { color: #ff8a6a; }
+.combat-alerts { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.hud-tag { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; border-radius: 3px; padding: 1px 6px; border: 1px solid; }
+.hud-tag.ok { color: #7ef0b0; border-color: rgba(126, 240, 176, 0.5); }
+.hud-tag.warn { color: #ff8a6a; border-color: rgba(255, 138, 106, 0.55); animation: hud-blink 1.2s steps(2, start) infinite; }
+@keyframes hud-blink { to { opacity: 0.35; } }
+.combat-weapons { position: absolute; right: 12px; bottom: 12px; padding: 8px 14px; width: 220px; display: flex; gap: 14px; justify-content: space-between; }
+.weapon-slot { display: flex; flex-direction: column; gap: 2px; color: var(--muted); }
+.weapon-slot.ready { color: #8fe9ff; }
+.weapon-slot .ammo { font-family: var(--font-display); font-weight: 700; font-size: 22px; font-variant-numeric: tabular-nums; color: inherit; }
+.weapon-slot .ammo small { font-size: 12px; color: var(--muted); font-weight: 400; }
+.weapon-slot .ammo.low { color: #ff8a6a; }
 .pulse-key { color: #8fe9ff; opacity: 0.8; }
 .pulse-key.on { opacity: 1; font-weight: 600; }
 .flight-eta { font-size: 12px; margin-top: 4px; white-space: nowrap; }
@@ -535,7 +553,7 @@ a.btn-link { color: inherit; text-decoration: none; }
 .combat-target .combat-bar { margin-top: 4px; }
 .weapon { color: var(--muted); }
 .weapon.ready { color: #8fe9ff; }
-.combat-target { position: absolute; right: 12px; bottom: 12px; padding: 10px 14px; width: 220px; font-size: 13px; }
+.combat-target { position: absolute; right: 12px; bottom: 92px; padding: 10px 14px; width: 220px; font-size: 13px; }
 .combat-target .enemy { color: #ff7a6a; }
 .combat-target .ally { color: #5fd3e6; }
 .flight-speed.pulse { color: #8fe9ff; }

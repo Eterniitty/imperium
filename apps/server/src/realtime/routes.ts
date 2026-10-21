@@ -173,10 +173,13 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     return res;
                   }
                   case "emperor.move": {
+                    // El salto gasta combustible: primero se guarda el que lleva la nave en memoria.
+                    await space.flushSupplies(owner.emperorId);
                     const res = await emperors.move(owner.accountId, msg.args.systemId);
                     if (res.ok) {
-                      // Al saltar, la nave deja el sistema en el que volaba.
+                      // Al saltar, la nave deja el sistema en el que volaba (y su combustible cambió en la base de datos).
                       space.leave(res.emperor.id, "left");
+                      space.suppliesChanged(res.emperor.id);
                       await hub.publish(res.emperor.id);
                       // Dónde aparecerá al llegar (borde del destino).
                       await hub.publishFlagship(res.emperor.id);

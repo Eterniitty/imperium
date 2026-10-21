@@ -3,7 +3,7 @@
  * llegar una flota y al llegar el Emperador, y entrega del detalle solo de lo
  * descubierto. Usan TEST_DATABASE_URL, que se vacía.
  */
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import WebSocket from "ws";
 import { EMPEROR_FLAGSHIP, getShipClass, STARTING_FLEET } from "@imperium/content";
@@ -13,7 +13,7 @@ import { buildApp } from "../src/app";
 import { sessionCookieName } from "../src/auth/routes";
 import { loadConfig } from "../src/config";
 import { createDb } from "../src/db/client";
-import { discoveries } from "../src/db/schema";
+import { discoveries, emperors } from "../src/db/schema";
 import { DiscoveryService, systemDetailSeed } from "../src/discovery/service";
 import { findSystem, systemsInRange } from "../src/emperor/world";
 import type { Mailer } from "../src/mail";
@@ -174,6 +174,8 @@ describe.skipIf(!TEST_DATABASE_URL)("niebla de guerra", () => {
     const sa = await connect(a.cookies);
     await sa.next((m): m is Snap => m.t === "snap");
 
+    // Depósito sin límite: el salto es largo (el alcance por combustible se prueba en realtime.test).
+    await database.db.update(emperors).set({ fuel: 1e6 }).where(eq(emperors.id, a.emperor.id));
     sa.send({ t: "cmd", cmdId: "salto-lejos-01", op: "emperor.move", args: { systemId: far.id } });
     // Antes de llegar, aún no se conoce.
     expect((await getSystem(a.cookies, far.id)).statusCode).toBe(403);

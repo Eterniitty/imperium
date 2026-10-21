@@ -1,7 +1,7 @@
 import { EMPEROR_FLAGSHIP, getShipClass, HUMANS, STARTING_FLEET } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
-import type { CommandError, Emperor } from "@imperium/shared";
-import { arrivalPark, isTravelling, travelDurationMs, type SystemLayout } from "@imperium/sim";
+import { distance, type CommandError, type Emperor } from "@imperium/shared";
+import { arrivalPark, isTravelling, quantumFuelCost, regenFuel, travelDurationMs, type SystemLayout } from "@imperium/sim";
 import { eq, ne, sql } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
@@ -125,12 +125,21 @@ export class EmperorService {
     if (!dest) return { ok: false, error: "unknown_system" };
 
     return this.db.transaction(async (tx): Promise<MoveResult> => {
-      const [row] = await tx.select(columns).from(emperors).where(eq(emperors.accountId, accountId)).for("update").limit(1);
+      const [row] = await tx
+        .select({ ...columns, fuel: emperors.fuel, fuelAt: emperors.fuelAt })
+        .from(emperors)
+        .where(eq(emperors.accountId, accountId))
+        .for("update")
+        .limit(1);
       if (!row) return { ok: false, error: "no_emperor" };
       const now = this.now();
       const current = this.toEmperor(row);
       if (isTravelling(current, now)) return { ok: false, error: "in_transit" };
       if (current.location.systemId === dest.id) return { ok: false, error: "already_there" };
+      // El motor cuántico gasta combustible según la distancia: el depósito marca el alcance.
+      const fuel = regenFuel(row.fuel, (now - row.fuelAt.getTime()) / 1000);
+      const cost = quantumFuelCost(distance(current.location.position, dest.position));
+      if (cost > fuel) return { ok: false, error: "insufficient_fuel" };
 
       const arriveAt = now + travelDurationMs(current.location.position, dest.position, this.speed);
       // Aparece en el borde del destino, del lado por el que llega, y desde ahí orbita.
@@ -145,6 +154,8 @@ export class EmperorService {
           departAt: new Date(now),
           arriveAt: new Date(arriveAt),
           ...parkColumns(park),
+          fuel: fuel - cost,
+          fuelAt: new Date(now),
           updatedAt: sql`now()`,
         })
         .where(eq(emperors.id, row.id))

@@ -6,3 +6,4 @@ export * from "./battle";
 export * from "./humanity";
 export * from "./market";
 export * from "./park";
+export * from "./supplies";

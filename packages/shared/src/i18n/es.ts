@@ -776,6 +776,18 @@ export const es = {
   "pilot.pulseLimit": "máx. {v}",
   "pilot.eta": "Tiempo estimado",
   "pilot.etaNone": "—",
+  "error.insufficient_fuel": "No hay combustible suficiente para ese salto. Repón junto a una colonia propia o espera a la reserva de emergencia.",
+  "hud.energy": "Energía",
+  "hud.fuel": "Combustible",
+  "hud.rounds": "Proyectiles",
+  "hud.altitude": "Altitud",
+  "hud.heading": "Rumbo",
+  "hud.resupplying": "Reponiendo en la colonia",
+  "hud.lowFuel": "Combustible bajo",
+  "hud.noEnergy": "Sin energía",
+  "hud.targetDistance": "Distancia",
+  "hud.emergencyReserve": "reserva de emergencia",
+  "pilot.noFuel": "Sin combustible: el pulso no funciona. Repón junto a una colonia propia; la reserva de emergencia se regenera muy despacio.",
 } as const;
 
 export type I18nKey = keyof typeof es;

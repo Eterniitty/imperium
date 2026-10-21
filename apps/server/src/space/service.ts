@@ -1,12 +1,12 @@
-import { EMPEROR_FLAGSHIP, PIRATE_RAIDER } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, PIRATE_RAIDER } from "@imperium/content";
 import type { ServerMessage, ShipPose, ShipState, Vec3, WeaponKind } from "@imperium/shared";
-import { bodiesAt, isTravelling, parkedPosition, parkedVelocity, PILOT_BOOST, PILOT_SPEED, plausibleMove, pulseLimitAt, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
+import { bodiesAt, isTravelling, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_SPEED, plausibleMove, pulseLimitAt, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { EmperorService } from "../emperor/service";
 import type { Client } from "../realtime/hub";
 import type { SocialService } from "../social/service";
 import type { FlagshipService } from "./flagship";
-import { Combatant, distance, forwardOf, MISSILE_LOCK_COS, normalize, rayHit, rotate } from "./combat";
+import { Combatant, type StoredSupplies, distance, forwardOf, MISSILE_LOCK_COS, normalize, rayHit, rotate } from "./combat";
 import { pirateCount, pirateHome, stepPirate } from "./pirates";
 
 /** Una nave presente en un sistema: de un Emperador o un pirata de la IA. */
@@ -37,6 +37,13 @@ interface Member {
    * puede disparar). Null mientras alguien la pilota.
    */
   park: ParkedOrbit | null;
+  /** Solo Emperadores: colonias propias en el sistema (para reponer) y cuándo se consultaron. */
+  colonies?: { list: Array<{ colonyId: string; planetIndex: number }>; at: number; loading: boolean };
+  /** Reposición en curso (una a la vez) y hasta cuándo se muestra "reponiendo". */
+  resupplyPending?: boolean;
+  resupplyingUntil?: number;
+  /** Energía y combustible enviados por última vez al piloto (para no repetirlos). */
+  sentSupplies?: string;
 }
 
 const TICK_MS = 100;
@@ -53,6 +60,15 @@ const BOARD_TOLERANCE = 5_000;
 const PARKED_POSE_MS = 1_000;
 /** Cada cuánto se repasa qué Emperadores están aparcados en cada sistema activo (llegadas, salidas). */
 const PARKED_REFRESH_MS = 5_000;
+/** Cada cuánto se envían energía y combustible al piloto (si cambian). */
+const SUPPLIES_SEND_MS = 500;
+/** Cada cuánto se guardan los recursos de las naves que han cambiado. */
+const SUPPLIES_FLUSH_MS = 15_000;
+/** Cada cuánto se repone junto a las colonias y se vuelven a consultar. */
+const RESUPPLY_MS = 2_000;
+const COLONIES_REFRESH_MS = 30_000;
+/** Por encima de esta velocidad (con margen) la nave va con el pulso, que gasta combustible y energía. */
+const PULSE_THRESHOLD = PILOT_SPEED * PILOT_BOOST * 1.3;
 
 /**
  * Espacio local: quién vuela en cada sistema, sus posiciones y el combate. Vive
@@ -73,6 +89,11 @@ export class SpaceService {
   private readonly timer: ReturnType<typeof setInterval>;
   private readonly timeouts = new Set<ReturnType<typeof setTimeout>>();
   private lastShieldBroadcast = 0;
+  private lastSuppliesSend = 0;
+  private lastSuppliesFlush = 0;
+  private lastResupply = 0;
+  /** Se llama cuando cambian las existencias de una colonia al reponer (para enviarla a su dueño). */
+  onColony: (emperorId: string, colonyId: string) => void = () => {};
   /** Piratas destruidos y hasta cuándo no reaparecen. */
   private readonly deadPirates = new Map<string, number>();
   /** Uniones en curso, para no validar dos veces a la vez la misma nave. */
@@ -125,10 +146,64 @@ export class SpaceService {
     return Math.max(PILOT_SPEED * PILOT_BOOST, pulseLimitAt(a, null, bodies), pulseLimitAt(b, null, bodies));
   }
 
-  private combatantOf(emperorId: string): Combatant {
+  /**
+   * Estado de combate de la nave de un Emperador. Se guarda en memoria mientras
+   * dura el proceso (el casco no se cura saliendo y entrando); los recursos
+   * (combustible, munición) vienen de la base de datos la primera vez, o de
+   * nuevo si cambiaron fuera (salto cuántico).
+   */
+  private combatantOf(emperorId: string, supplies?: StoredSupplies | null): Combatant {
     let c = this.combatants.get(emperorId);
-    if (!c) this.combatants.set(emperorId, (c = new Combatant(EMPEROR_FLAGSHIP.hull, EMPEROR_FLAGSHIP.combat, this.now())));
+    if (!c) this.combatants.set(emperorId, (c = new Combatant(EMPEROR_FLAGSHIP.hull, EMPEROR_FLAGSHIP.combat, this.now(), supplies ?? undefined)));
+    else if (supplies && (c.stale || !c.hasReactor)) c.load(supplies, this.now());
     return c;
+  }
+
+  /** Energía y combustible al piloto, si han cambiado (o siempre, con `force`). */
+  private sendSupplies(m: Member, now: number, force = false): void {
+    if (m.clients.size === 0) return;
+    const r = m.combat.reactorView(now);
+    if (!r) return;
+    const msg = {
+      t: "supplies" as const,
+      energy: Math.round(r.energy),
+      energyMax: r.energyMax,
+      fuel: Math.round(r.fuel * 10) / 10,
+      fuelMax: r.fuelMax,
+      resupplying: (m.resupplyingUntil ?? 0) > now,
+    };
+    const key = `${msg.energy}|${msg.fuel}|${msg.resupplying}`;
+    if (!force && key === m.sentSupplies) return;
+    m.sentSupplies = key;
+    this.sendTo(m, msg);
+  }
+
+  /** Guarda los recursos de una nave si han cambiado. */
+  private async saveSupplies(emperorId: string, c: Combatant): Promise<void> {
+    if (!c.dirty || !c.hasReactor || c.stale) return;
+    c.dirty = false;
+    try {
+      await this.flagships.saveSupplies(emperorId, c.stored(this.now()));
+    } catch (err) {
+      c.dirty = true;
+      this.log.error(err, "Error al guardar los recursos de una nave");
+    }
+  }
+
+  /**
+   * Guarda ya los recursos de un Emperador (antes de que otro los lea de la base
+   * de datos, como el salto cuántico) y, con `stale`, los marca para volver a
+   * leerlos después.
+   */
+  async flushSupplies(emperorId: string): Promise<void> {
+    const c = this.combatants.get(emperorId);
+    if (c) await this.saveSupplies(emperorId, c);
+  }
+
+  /** Los recursos guardados cambiaron fuera (salto cuántico): se vuelven a leer al entrar en el siguiente sistema. */
+  suppliesChanged(emperorId: string): void {
+    const c = this.combatants.get(emperorId);
+    if (c) c.stale = true;
   }
 
   private stateFor(m: Member, viewer: Member | null): ShipState {
@@ -175,7 +250,11 @@ export class SpaceService {
     m.clients.add(client);
     const t = this.now();
     const outside = Math.hypot(...pose.p) > this.boundary(systemId) + BOUNDARY_SLACK;
-    if (outside || !plausibleMove(m.pose.p, pose.p, (t - m.poseAt) / 1000, this.maxSpeedAt(systemId, m.pose.p, pose.p, t))) {
+    const dt = Math.max(0, Math.min(1, (t - m.poseAt) / 1000));
+    // Con el pulso (más rápido que el impulso) se gasta combustible; sin combustible, no hay pulso.
+    const pulsing = distance(m.pose.p, pose.p) / (dt + 0.15) > PULSE_THRESHOLD;
+    const noFuel = pulsing && !m.combat.spendPulse(dt, t);
+    if (outside || noFuel || !plausibleMove(m.pose.p, pose.p, (t - m.poseAt) / 1000, this.maxSpeedAt(systemId, m.pose.p, pose.p, t))) {
       // Posición imposible: se ignora y la nave vuelve a la última válida.
       client.send({ t: "poseRejected", ...m.pose });
       return;
@@ -205,7 +284,11 @@ export class SpaceService {
     const emperor = await this.emperors.byId(client.emperorId);
     if (!emperor || isTravelling(emperor, this.now()) || emperor.location.systemId !== systemId) return null;
     if (Math.hypot(...pose.p) > this.boundary(systemId) + BOUNDARY_SLACK) return null;
-    const [allies, status] = await Promise.all([this.social.mutualAllies(emperor.id), this.flagships.status(emperor.id)]);
+    const [allies, status, supplies] = await Promise.all([
+      this.social.mutualAllies(emperor.id),
+      this.flagships.status(emperor.id),
+      this.flagships.supplies(emperor.id),
+    ]);
     if (!status || status.systemId !== systemId) return null;
     // Mientras se consultaba, pudo entrar ya (otra pestaña, o el repaso de aparcadas).
     const already = this.members.get(emperor.id);
@@ -224,7 +307,7 @@ export class SpaceService {
       return parked;
     }
     // Entra aparcada donde la dejó; `board` le da los mandos si la posición cuadra.
-    const m = this.addParked(systemId, room, emperor.id, emperor.name, status.park);
+    const m = this.addParked(systemId, room, emperor.id, emperor.name, status.park, supplies);
     m.allies = allies;
     this.log.debug({ emperorId: emperor.id, systemId }, "Nave entra en el sistema");
     return m;
@@ -242,7 +325,7 @@ export class SpaceService {
   }
 
   /** Añade a la sala una nave de Emperador aparcada (sin piloto) y avisa a los presentes. */
-  private addParked(systemId: string, room: Set<Member>, emperorId: string, name: string, park: ParkedOrbit): Member {
+  private addParked(systemId: string, room: Set<Member>, emperorId: string, name: string, park: ParkedOrbit, supplies: StoredSupplies | null): Member {
     const now = this.now();
     const p = parkedPosition(park, now);
     const m: Member = {
@@ -256,7 +339,7 @@ export class SpaceService {
       history: [{ t: now, p }],
       dirty: false,
       allies: new Set(),
-      combat: this.combatantOf(emperorId),
+      combat: this.combatantOf(emperorId, supplies),
       sentShield: -1,
       park,
     };
@@ -288,6 +371,7 @@ export class SpaceService {
     client.send({ t: "space", systemId: m.systemId, serverTime: now, ships: [...room].filter((o) => o !== m).map((o) => this.stateFor(o, m)) });
     client.send({ t: "ship", ship: this.stateFor(m, m) });
     this.sendWeapons(m);
+    this.sendSupplies(m, now, true);
   }
 
   /**
@@ -305,7 +389,7 @@ export class SpaceService {
       const ids = new Set(present.map((p) => p.emperorId));
       for (const o of [...room]) if (o.kind === "emperor" && o.park && !ids.has(o.emperorId)) this.leave(o.emperorId, "left");
       for (const p of present) {
-        if (!this.members.has(p.emperorId) && this.rooms.get(systemId) === room) this.addParked(systemId, room, p.emperorId, p.name, p.park);
+        if (!this.members.has(p.emperorId) && this.rooms.get(systemId) === room) this.addParked(systemId, room, p.emperorId, p.name, p.park, p.supplies);
       }
     } catch (err) {
       this.log.error(err, "Error al repasar las naves aparcadas");
@@ -328,6 +412,7 @@ export class SpaceService {
     m.poseAt = now;
     m.dirty = true;
     const id = m.emperorId;
+    void this.saveSupplies(id, m.combat);
     void this.flagships
       .savePark(id, m.park)
       .then(() => this.onFlagship(id))
@@ -342,6 +427,7 @@ export class SpaceService {
         .filter((m) => m.kind === "emperor" && !m.park)
         .map((m) => this.flagships.savePark(m.emperorId, { p: m.pose.p, at: now }).catch((err: unknown) => this.log.error(err, "Error al guardar la nave aparcada"))),
     );
+    await Promise.all([...this.combatants].filter(([id]) => !id.startsWith("pirate:")).map(([id, c]) => this.saveSupplies(id, c)));
   }
 
   /** Sin pilotos, el sistema se "duerme": se dejan de simular piratas y naves aparcadas. */
@@ -530,6 +616,7 @@ export class SpaceService {
     const clients = [...v.clients];
     this.leave(v.emperorId, "destroyed");
     v.combat.restore(this.now());
+    void this.saveSupplies(v.emperorId, v.combat);
     try {
       const emperor = await this.emperors.respawn(v.emperorId);
       if (!emperor) return;
@@ -578,6 +665,60 @@ export class SpaceService {
     }
   }
 
+  /**
+   * Reposición: una nave (pilotada o aparcada) junto a un planeta con colonia
+   * propia toma combustible y munición de sus existencias, poco a poco.
+   */
+  private resupplyAll(now: number): void {
+    for (const m of this.members.values()) {
+      if (m.kind !== "emperor" || !m.combat.hasReactor || m.combat.stale) continue;
+      const cols = m.colonies;
+      if (!cols || (!cols.loading && now - cols.at >= COLONIES_REFRESH_MS)) {
+        const state: NonNullable<Member["colonies"]> = { list: cols?.list ?? [], at: now, loading: true };
+        m.colonies = state;
+        void this.flagships
+          .coloniesIn(m.emperorId, m.systemId)
+          .then((list) => Object.assign(state, { list, loading: false }))
+          .catch((err: unknown) => {
+            state.loading = false;
+            this.log.error(err, "Error al consultar las colonias para reponer");
+          });
+      }
+      if (m.resupplyPending || !m.colonies?.list.length) continue;
+      const missing = m.combat.missing(now);
+      if (missing.fuel < 0.5 && missing.cannon < 1 && missing.missiles < 1) continue;
+      const layout = this.layout(m.systemId);
+      if (!layout) continue;
+      const near = m.colonies.list.find((c) => {
+        const planet = layout.planets.find((p) => p.index === c.planetIndex);
+        if (!planet) return false;
+        const at = planetPosition(planet, now);
+        return distance(m.pose.p, [at.x, at.y, at.z]) - planet.size <= FLAGSHIP_SUPPLIES.resupplyRangeM;
+      });
+      if (!near) continue;
+      const sec = RESUPPLY_MS / 1000;
+      const want = {
+        fuel: Math.min(missing.fuel, FLAGSHIP_SUPPLIES.resupplyFuelPerSec * sec),
+        cannon: Math.min(missing.cannon, Math.ceil(FLAGSHIP_SUPPLIES.resupplyCannonPerSec * sec)),
+        missiles: Math.min(missing.missiles, Math.ceil(FLAGSHIP_SUPPLIES.resupplyMissilesPerSec * sec)),
+      };
+      m.resupplyPending = true;
+      void this.flagships
+        .resupply(m.emperorId, near.colonyId, want)
+        .then((got) => {
+          const added = m.combat.refill(got, this.now());
+          if (added.fuel > 0 || added.cannon > 0 || added.missiles > 0) {
+            m.resupplyingUntil = this.now() + RESUPPLY_MS + 1000;
+            this.sendWeapons(m);
+            this.sendSupplies(m, this.now());
+            this.onColony(m.emperorId, near.colonyId);
+          }
+        })
+        .catch((err: unknown) => this.log.error(err, "Error al reponer la nave"))
+        .finally(() => (m.resupplyPending = false));
+    }
+  }
+
   /** Naves aparcadas: avanzan por su órbita; y, de vez en cuando, se repasa quién está en cada sistema. */
   private stepParked(now: number): void {
     for (const [systemId, room] of this.rooms) {
@@ -601,6 +742,18 @@ export class SpaceService {
     const now = this.now();
     this.stepPirates(now);
     this.stepParked(now);
+    if (now - this.lastSuppliesSend >= SUPPLIES_SEND_MS) {
+      this.lastSuppliesSend = now;
+      for (const m of this.members.values()) if (m.kind === "emperor") this.sendSupplies(m, now);
+    }
+    if (now - this.lastSuppliesFlush >= SUPPLIES_FLUSH_MS) {
+      this.lastSuppliesFlush = now;
+      for (const [id, c] of this.combatants) if (!id.startsWith("pirate:")) void this.saveSupplies(id, c);
+    }
+    if (now - this.lastResupply >= RESUPPLY_MS) {
+      this.lastResupply = now;
+      this.resupplyAll(now);
+    }
     for (const room of this.rooms.values()) {
       const changed = [...room].filter((m) => m.dirty);
       if (changed.length > 0) {

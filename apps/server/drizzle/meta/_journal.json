@@ -99,6 +99,13 @@
       "when": 1792565381438,
       "tag": "0013_chief_captain_stacy",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792565428503,
+      "tag": "0014_lumpy_professor_monster",
+      "breakpoints": true
     }
   ]
 }

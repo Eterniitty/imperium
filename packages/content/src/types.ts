@@ -317,6 +317,12 @@ export interface WeaponDefinition {
   /** Munición máxima (null = ilimitada) y segundos para recuperar una unidad. */
   ammo: number | null;
   ammoRegenSec: number | null;
+  /**
+   * Hasta dónde se recupera sola la munición (por defecto, hasta `ammo`). La
+   * nave del Emperador fabrica a bordo solo una reserva de emergencia; el resto
+   * se repone junto a una colonia propia.
+   */
+  ammoRegenMax?: number;
 }
 
 /** Defensas y armamento de una nave para el combate en tiempo real. */

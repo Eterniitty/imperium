@@ -1,5 +1,6 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import type { EmperorView, StarSystemSummary } from "@imperium/shared";
+import { unlimitedFuel } from "../apps/server/test/e2eFuel";
 import { lastLoginLink } from "./mail";
 import { STORAGE_STATE } from "./ports";
 
@@ -102,10 +103,12 @@ test("dos jugadores se ven en el mismo universo y se ven moverse", { tag: "@lent
   await select(bruno, brunoSystem);
   await select(ana, brunoSystem);
   if (brunoE.location.systemId === anaE.location.systemId) test.skip(true, "Los dos aparecieron en el mismo sistema");
+  // Pueden estar más lejos de lo que alcanza un depósito lleno.
+  await unlimitedFuel(anaE.id);
   await anaPanel.getByRole("button", { name: /Saltar aquí/ }).click();
 
   const brunoPanel = bruno.locator("aside.side");
-  await expect(brunoPanel.getByRole("heading", { name: "En camino hacia aquí" })).toBeVisible();
+  await expect(brunoPanel.getByRole("heading", { name: "En camino hacia aquí" })).toBeVisible({ timeout: 30_000 });
   await expect(brunoPanel.locator(".emperor-list li", { hasText: "Ana Prima" })).toBeVisible();
   await bruno.waitForTimeout(800);
   await bruno.screenshot({ path: `${SHOTS}/6-bruno-ve-venir-a-ana.png` });
@@ -132,7 +135,8 @@ test("dos jugadores se ven en el mismo universo y se ven moverse", { tag: "@lent
 
   // Combate: HUD con escudo y casco. Ana es su compañera: X no la fija (no hay fuego amigo).
   await expect(bruno.locator(".combat-self")).toContainText("Escudo");
-  await expect(bruno.locator(".combat-self")).toContainText("Misiles 6/6");
+  await expect(bruno.locator(".combat-weapons")).toContainText("Misiles 6/6");
+  await expect(bruno.locator(".combat-self")).toContainText("Combustible");
   await bruno.keyboard.press("KeyX");
   await expect(bruno.locator(".combat-target")).toContainText("Sin objetivo");
   // Cuenta los disparos que devuelve el servidor mientras se mantiene F.

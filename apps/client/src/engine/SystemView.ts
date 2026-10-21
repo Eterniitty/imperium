@@ -9,13 +9,14 @@ import { connection, serverNow } from "../net/world";
 import { RemoteShips } from "./RemoteShips";
 import { Effects } from "./Effects";
 import { worldStore } from "../net/world";
-import { EMPEROR_FLAGSHIP } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES } from "@imperium/content";
 import { isBound, settingsStore, type Action } from "../state/settings";
 import { gameStore } from "../state/store";
 import { Backdrop } from "./Backdrop";
 import { FlightController } from "./FlightController";
 import type { Keyboard } from "./input";
 import { createFlagship, disposeShip, SHIP_SCALE, shipRig } from "./shipModel";
+import { createCockpit } from "./cockpit";
 import { glowTexture, labelTexture, ringTexture } from "./textures";
 import { CORONA_SCALE, createAtmosphereMaterial, createBodyUniforms, createCoronaMaterial, createPlanetMaterial, createRingMaterial, createStarSurfaceMaterial } from "./bodyMaterials";
 import { bodyDetailFor, bodySegments, planetLook } from "./planetLook";
@@ -100,6 +101,7 @@ export class SystemView implements View {
   );
   /** Siguiente cañón propio (se alternan, igual que en el servidor). */
   private cannonIndex = 0;
+  private cockpit = createCockpit();
   private targetRing: THREE.Sprite;
   /** Cadencia local del cañón: no se envían disparos que el servidor rechazaría. */
   private cannonReadyAt = 0;
@@ -132,6 +134,10 @@ export class SystemView implements View {
     this.targetRing.renderOrder = 11;
     this.scene.add(this.backdrop.object, this.content, this.selectRing, this.remote.group, this.effects.group, this.targetRing);
     this.scene.add(new THREE.AmbientLight(0x5a6688, 0.9));
+    // Cabina en primera persona: cuelga de la cámara (por eso la cámara va en la escena).
+    this.cockpit.visible = false;
+    this.camera.add(this.cockpit);
+    this.scene.add(this.camera);
   }
 
   /** Construye la representación del sistema a partir de su detalle generado. */
@@ -397,14 +403,16 @@ export class SystemView implements View {
     disposeShip(this.ship);
     this.ship = null;
     this.controls.enabled = true;
+    this.cockpit.visible = false;
     gameStore.getState().setFlight(false, 0);
   }
 
   private placeChaseCamera(k: number): void {
     const ship = this.ship!;
     const first = gameStore.getState().cameraView === "first";
-    // En primera persona el casco taparía la vista: se oculta la nave.
+    // En primera persona el casco taparía la vista: se oculta la nave y se ve la cabina.
     ship.visible = !first;
+    this.cockpit.visible = first;
     if (first) {
       this.camera.position.copy(COCKPIT_OFFSET).applyQuaternion(ship.quaternion).add(ship.position);
       this.camera.quaternion.copy(ship.quaternion);
@@ -426,7 +434,14 @@ export class SystemView implements View {
   private togglePulse(): void {
     const flight = this.flight;
     if (!flight) return;
+    if (!flight.pulse && this.outOfFuel()) return this.events.notify("pilot.noFuel");
     flight.pulse = !flight.pulse;
+  }
+
+  /** Sin combustible (según el servidor) no hay pulso. */
+  private outOfFuel(): boolean {
+    const supplies = spaceStore.getState().supplies;
+    return supplies !== null && supplies.fuel < 0.5;
   }
 
   /** Estrella y planetas con su posición actual (para el pulso, el altímetro y las colisiones). */
@@ -501,6 +516,10 @@ export class SystemView implements View {
   /** Mantener la tecla dispara el cañón a su cadencia, hacia donde apunta el morro. */
   private fireCannon(): void {
     if (!this.keyboard.action("fireCannon") || this.flight?.pulse) return;
+    // Sin proyectiles o sin energía, el servidor no dispararía: no se envía ni se dibuja.
+    const { weapons, supplies } = spaceStore.getState();
+    if (weapons.find((w) => w.kind === "cannon")?.ammo === 0) return;
+    if (supplies && supplies.energy < FLAGSHIP_SUPPLIES.cannonEnergy) return;
     const now = performance.now();
     if (now < this.cannonReadyAt) return;
     const cannon = EMPEROR_FLAGSHIP.combat.weapons.find((w) => w.kind === "cannon");
@@ -691,6 +710,10 @@ export class SystemView implements View {
       this.selectRing.visible = false;
     }
     if (this.ship && this.flight) {
+      if (this.flight.pulse && this.outOfFuel()) {
+        this.flight.pulse = false;
+        this.events.notify("pilot.noFuel");
+      }
       this.updateNavigation();
       this.flight.update(dt);
       this.collide();

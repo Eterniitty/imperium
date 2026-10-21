@@ -296,6 +296,11 @@ class Connection {
       case "shot":
         spaceStore.setState({ shots: [...spaceStore.getState().shots, msg] });
         return;
+      case "supplies": {
+        const { t: _t, ...supplies } = msg;
+        spaceStore.setState({ supplies });
+        return;
+      }
       case "weapons":
         spaceStore.setState({ weapons: msg.weapons });
         return;
