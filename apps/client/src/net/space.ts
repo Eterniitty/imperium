@@ -1,6 +1,6 @@
 import { createStore } from "zustand/vanilla";
 import { contentDictionaries } from "@imperium/content";
-import { translate, type Locale, type Quat, type ServerMessage, type ShipPose, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
+import { translate, type DeepRegionView, type Locale, type Quat, type ServerMessage, type ShipPose, type ShipState, type StockId, type Vec3, type WeaponKind } from "@imperium/shared";
 
 /** Muestra de posición de otra nave, con la hora del servidor en que se envió. */
 export interface PoseSample {
@@ -41,9 +41,21 @@ export interface SpaceState {
   /** La nave propia fue destruida: dónde renace y quién la derribó. */
   /** Tu nave cayó (Fase 10): quién la derribó, dónde renacerás y cuándo; `at` es la hora local del aviso. */
   destroyed: { by: string; systemId: string; rebornAt: number; at: number } | null;
+  /** Espacio profundo: la región donde se pilota (asteroides y lo que les queda), o null en un sistema. */
+  field: DeepRegionView | null;
+  /** Láseres de minería encendidos de las demás naves: id de la nave → asteroide. */
+  beams: Record<string, number>;
+  /** Bodega y refinería de a bordo según el servidor (mientras se pilota). */
+  hold: { hold: Partial<Record<StockId, number>>; capacity: number; refining: boolean } | null;
+  /** Último pulso de minería rechazado (motivo y hora local), para avisar en el HUD. */
+  mineFail: { reason: Extract<ServerMessage, { t: "mineFail" }>["reason"]; at: number } | null;
+  /** Asteroide al que apunta el morro (a tiro o no) y su distancia a la superficie (m). */
+  aim: { index: number; distance: number } | null;
+  /** El láser de minería propio está encendido. */
+  mining: boolean;
 }
 
-const EMPTY = { systemId: null, ships: {}, correction: null, self: null, weapons: [], supplies: null, targetId: null, shots: [], explosions: [], destroyed: null };
+const EMPTY = { systemId: null, ships: {}, correction: null, self: null, weapons: [], supplies: null, targetId: null, shots: [], explosions: [], destroyed: null, field: null, beams: {}, hold: null, mineFail: null, aim: null, mining: false };
 
 export const spaceStore = createStore<SpaceState>()(() => ({ ...EMPTY }));
 

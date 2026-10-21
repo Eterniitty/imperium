@@ -9,6 +9,7 @@ import { authStore } from "../state/auth";
 import { gameStore, useGame } from "../state/store";
 import { FlightHud } from "./FlightHud";
 import { CombatHud } from "./CombatHud";
+import { MiningHud } from "./MiningHud";
 import { ColoniesPanel } from "./ColoniesPanel";
 import { FleetsPanel } from "./FleetsPanel";
 import { WarPanel } from "./WarPanel";
@@ -24,6 +25,7 @@ import { SystemPanel } from "./SystemPanel";
 import { TopBar } from "./TopBar";
 import { DeathScreen } from "./DeathScreen";
 import { LineagePanel } from "./LineagePanel";
+import { PhotosensitivityNotice } from "./PhotosensitivityNotice";
 
 /** Escala de la interfaz según los ajustes y el tamaño de la ventana (se recalcula al cambiarla). */
 function useUiScale(): number {
@@ -97,6 +99,7 @@ export function App() {
           <>
             <FlightHud />
             <CombatHud />
+            <MiningHud />
             <QuantumHud />
             {quantumPanel ? <QuantumPanel /> : <PlanetPanel />}
           </>
@@ -106,6 +109,7 @@ export function App() {
         <SettingsPanel />
         <EconomyPanel />
         <LineagePanel />
+        <PhotosensitivityNotice />
       </div>
     </div>
   );

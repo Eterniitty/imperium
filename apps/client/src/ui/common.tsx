@@ -12,6 +12,16 @@ export const RESOURCE_COLORS: Record<ResourceId | "energy", string> = {
   energy: "#ffc857",
 };
 
+/** Color de cada recurso almacenable (existencias, mercado, bodega). */
+export const STOCK_COLORS: Record<import("@imperium/shared").StockId, string> = {
+  metal: RESOURCE_COLORS.metal,
+  volatiles: RESOURCE_COLORS.volatiles,
+  crystal: RESOURCE_COLORS.crystal,
+  alloys: "#ffb070",
+  rare_metals: "#e6d27a",
+  exotic: "#ff6fd8",
+};
+
 export function starColorCss(c: StarClass): string {
   return `#${STAR_CLASSES[c].color.toString(16).padStart(6, "0")}`;
 }

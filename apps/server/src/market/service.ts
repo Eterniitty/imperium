@@ -254,7 +254,7 @@ export class MarketService {
       await this.humanity.receive(tx, s);
       return null;
     }
-    const amounts = { metal: s.metal, volatiles: s.volatiles, crystal: s.crystal, alloys: s.alloys };
+    const amounts = { metal: s.metal, volatiles: s.volatiles, crystal: s.crystal, alloys: s.alloys, rare_metals: s.rare_metals, exotic: s.exotic };
     const ref = s.tradeId !== null ? `trade:${s.tradeId}` : `shipment:${s.id}`;
     if (s.emperorId && s.toColonyId) {
       const done = await this.colonies.adjustStock(tx, s.emperorId, s.toColonyId, amounts, "market_delivery", ref, this.now());
@@ -342,7 +342,7 @@ export class MarketService {
           id: s.id,
           kind: s.kind as ShipmentView["kind"],
           to: s.kind === "trade" ? colonyName(s.toColonyId) : (s.projectId ?? ""),
-          amounts: { ...zeroStock(), metal: s.metal, volatiles: s.volatiles, crystal: s.crystal, alloys: s.alloys },
+          amounts: { ...zeroStock(), metal: s.metal, volatiles: s.volatiles, crystal: s.crystal, alloys: s.alloys, rare_metals: s.rare_metals, exotic: s.exotic },
           departAt: s.departAt.getTime(),
           arriveAt: s.arriveAt.getTime(),
         }),

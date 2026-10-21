@@ -24,6 +24,7 @@ import { MarketService } from "./market/service";
 import { inHumanCore } from "./emperor/world";
 import { FlagshipService } from "./space/flagship";
 import { SpaceService } from "./space/service";
+import { DeepSpaceService } from "./space/deep";
 import { alienRoutes } from "./ai/routes";
 import { AiEmperorService } from "./ai/emperors";
 import { AlienService } from "./ai/service";
@@ -140,6 +141,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   emperors.layoutOf = (systemId) => flagships.layout(systemId);
   const space = new SpaceService(flagships, emperors, social, app.log);
   space.onFlagship = (emperorId) => void hub.publishFlagship(emperorId);
+  // Espacio profundo: contenido secreto de las regiones y minería de sus asteroides.
+  space.deep = new DeepSpaceService(deps.db, config);
   // Fase 10: muerte y linaje (Cunas, gestación, Herederos y encarnación).
   const lineage = new LineageService(deps.db, config, colonies, app.log);
   lineage.layoutOf = (systemId) => flagships.layout(systemId);
@@ -208,7 +211,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     for (const s of fx.sieges) hub.publishSiegeFx(s);
   };
   aliens.onSiege = (fx) => hub.publishSiegeFx(fx);
-  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage: announceLineage });
+  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage: announceLineage });
   await app.register(humanityRoutes, { config, db: deps.db, emperors, humanity, market });
   await app.register(warRoutes, { config, db: deps.db, emperors, wars, aliens });
   await app.register(alienRoutes, { config, db: deps.db, emperors, discoveries, wars, aliens });

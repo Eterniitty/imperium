@@ -19,6 +19,7 @@ import type { Database } from "../db/client";
 import type { EmperorService } from "../emperor/service";
 import type { FleetService } from "../fleet/service";
 import type { SpaceService } from "../space/service";
+import type { FlagshipService } from "../space/flagship";
 import type { WarService } from "../war/service";
 import type { HumanityService } from "../humanity/service";
 import type { MarketService } from "../market/service";
@@ -37,6 +38,8 @@ export interface RealtimeDeps {
   logistics: LogisticsService;
   wars: WarService;
   space: SpaceService;
+  /** Nave del Emperador fuera del pilotaje (bodega: descargar en una colonia). */
+  flagships: FlagshipService;
   hub: Hub;
   humanity: HumanityService;
   market: MarketService;
@@ -55,7 +58,7 @@ const HEARTBEAT_MS = 30_000;
 const MAX_CONNECTIONS_PER_ACCOUNT = 5;
 const MAX_CONNECTIONS = 1_000;
 
-export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage }: RealtimeDeps) {
+export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage }: RealtimeDeps) {
   const cookieName = sessionCookieName(config);
   const tickets = new TicketStore();
   const ticketsPerAccount = new RateLimiter(30, MINUTE);
@@ -142,7 +145,7 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
         if (!parsed?.success) return socket.close(WS_CLOSE.protocol, "invalid message");
 
         const msg = parsed.data;
-        const limiter = msg.t === "pose" ? posesPerAccount : msg.t === "fire" ? shotsPerAccount : messagesPerAccount;
+        const limiter = msg.t === "pose" ? posesPerAccount : msg.t === "fire" || msg.t === "mine" ? shotsPerAccount : messagesPerAccount;
         if (!limiter.consume(owner.accountId)) return socket.close(WS_CLOSE.rateLimited, "rate limited");
         switch (msg.t) {
           case "pose":
@@ -153,6 +156,9 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
             return;
           case "fire":
             space.fire(client, msg.weapon, msg.dir, msg.target);
+            return;
+          case "mine":
+            space.mine(client, msg.asteroid);
             return;
           case "sub":
             void hub.subscribe(client, msg.topic);
@@ -192,6 +198,32 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                       await hub.publishFlagship(res.emperor.id);
                     }
                     return res;
+                  }
+                  // Espacio profundo: salir del túnel a mitad de viaje (ver emperor/service.ts drop).
+                  case "emperor.drop": {
+                    const res = await emperors.drop(owner.accountId);
+                    if (res.ok) {
+                      space.suppliesChanged(res.emperor.id);
+                      await hub.publish(res.emperor.id);
+                      await hub.publishFlagship(res.emperor.id);
+                      if (res.discovered.length) await hub.publishDiscovered(res.emperor.id, res.discovered);
+                    }
+                    return res;
+                  }
+                  // Bodega de la nave: descargar en una colonia propia del sistema y refinería de a bordo.
+                  case "flagship.unload": {
+                    await space.flushSupplies(owner.emperorId);
+                    const res = await flagships.unload(owner.emperorId, msg.args.colonyId);
+                    if (res.ok) {
+                      space.holdChanged(owner.emperorId);
+                      await hub.publishFlagship(owner.emperorId);
+                      await hub.publishColony(owner.emperorId, msg.args.colonyId);
+                    }
+                    return res.ok ? ({ ok: true } as const) : res;
+                  }
+                  case "flagship.refine": {
+                    await space.setRefining(owner.emperorId, msg.args.on);
+                    return { ok: true } as const;
                   }
                   case "fleet.move": {
                     const res = await fleets.move(owner.emperorId, msg.args.fleetId, msg.args.systemId);

@@ -1,4 +1,4 @@
-import { ECONOMY, HUMANS, STOCK_IDS, type StockId } from "@imperium/content";
+import { ECONOMY, HUMANS, CARGO_STOCK_IDS, type StockId } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import type { Cargo, CommandError, FleetRoute } from "@imperium/shared";
 import { isTravelling } from "@imperium/sim";
@@ -20,7 +20,7 @@ export interface RouteStep {
   colonyIds: string[];
 }
 
-const KINDS = [...STOCK_IDS, "humans"] as const;
+const KINDS = [...CARGO_STOCK_IDS, "humans"] as const;
 type Kind = (typeof KINDS)[number];
 const EPS = 1e-6;
 
@@ -91,7 +91,7 @@ export class LogisticsService {
     let population = colony.state.population;
     const moved: Cargo = { ...EMPTY_CARGO };
     // Hueco en la bodega (recursos juntos) y en las plazas de pasajeros.
-    let freeResources = fleet.capacity.resources - STOCK_IDS.reduce((a, r) => a + cargo[r], 0);
+    let freeResources = fleet.capacity.resources - CARGO_STOCK_IDS.reduce((a, r) => a + cargo[r], 0);
     let freeSeats = fleet.capacity.humans - cargo.humans;
 
     for (const k of KINDS) {

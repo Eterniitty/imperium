@@ -71,7 +71,7 @@ describe("conquista (Fase 9b)", () => {
   });
 
   it("captura: pierde una parte de población, existencias e instalaciones (determinista)", () => {
-    const stock = { metal: 1000, volatiles: 400, crystal: 100, alloys: 0 };
+    const stock = { metal: 1000, volatiles: 400, crystal: 100, alloys: 0, rare_metals: 0, exotic: 0 };
     const ids = Array.from({ length: 50 }, (_, i) => `inst-${String(i).padStart(2, "0")}`);
     const a = captureLosses(1000, stock, ids, 99);
     expect(a).toEqual(captureLosses(1000, stock, [...ids].reverse(), 99));

@@ -4,9 +4,11 @@
  * `schemas.ts`.
  */
 import type { Battle, Cargo, Colony, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, HeirDoctrineId, LineageStatus, OrderSide, Siege, Stock, StockId, Wallet } from "./api";
+import type { DeepRegionView } from "./deepspace";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
-export const PROTOCOL_VERSION = 12;
+// 13: espacio profundo y minería (rama `espacio-profundo`; `emperor.drop`, `flagship.*`, `mine`, `field`, `hold`…).
+export const PROTOCOL_VERSION = 13;
 
 /** Tamaño máximo de un mensaje del cliente, en bytes. */
 export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;
@@ -50,6 +52,15 @@ export interface CommandArgs {
    */
   "humanity.contribute": { projectId: string; colonyId?: string; amounts?: Partial<Stock>; credits?: number };
   "emperor.move": { systemId: string };
+  /**
+   * Sale del túnel cuántico a mitad de viaje: la nave queda en la región de
+   * espacio profundo de su posición (se gasta solo el combustible recorrido).
+   */
+  "emperor.drop": Record<string, never>;
+  /** Descarga la bodega de la nave en una colonia propia del sistema donde está (lo que quepa). */
+  "flagship.unload": { colonyId: string };
+  /** Enciende o apaga la refinería de a bordo (volátiles de la bodega → combustible, despacio). */
+  "flagship.refine": { on: boolean };
   "fleet.move": { fleetId: string; systemId: string };
   /**
    * Reclama un planeta libre de un sistema descubierto. Sin `fleetId`, desembarca
@@ -155,7 +166,12 @@ export type ClientMessage =
    * Disparo. Cañón: en la dirección `dir` (vector unitario). Misil: hacia la nave
    * `target` (fijada), que tiene que estar a tiro y delante.
    */
-  | { t: "fire"; weapon: WeaponKind; dir: Vec3; target?: string };
+  | { t: "fire"; weapon: WeaponKind; dir: Vec3; target?: string }
+  /**
+   * Láser de minería (espacio profundo): mientras se mantiene, unas dos veces por
+   * segundo con el asteroide apuntado; `null` al soltarlo.
+   */
+  | { t: "mine"; asteroid: number | null };
 
 /** Tipos de arma (los mismos que en `@imperium/content`). */
 export type WeaponKind = "cannon" | "missile";
@@ -179,6 +195,12 @@ export type CommandError =
   | "unknown_planet"
   | "planet_owned"
   | "not_present"
+  /** No está de viaje (salir del túnel). */
+  | "not_travelling"
+  /** La bodega de la nave está vacía (nada que descargar). */
+  | "hold_empty"
+  /** En el espacio profundo no hay colonias (descargar, reponer). */
+  | "in_deep_space"
   | "not_enough_humans"
   | "no_colonizer"
   | "no_colony"
@@ -279,6 +301,16 @@ export type ServerMessage =
   | { t: "supplies"; energy: number; energyMax: number; fuel: number; fuelMax: number; resupplying: boolean }
   /** El servidor rechaza una posición imposible (demasiado rápida, fuera del sistema): la nave vuelve aquí. */
   | ({ t: "poseRejected" } & ShipPose)
+  /** Espacio profundo: contenido de la región donde se pilota (al subir a bordo). */
+  | { t: "field"; region: DeepRegionView }
+  /** Un asteroide de la región cambió (lo están minando): unidades que le quedan. */
+  | { t: "asteroid"; i: number; left: number }
+  /** Láser de minería de una nave de la región (para dibujarlo): el asteroide, o null si se apaga. */
+  | { t: "beam"; id: string; asteroid: number | null }
+  /** Tu bodega y tu refinería de a bordo (al minar, refinar o descargar). */
+  | { t: "hold"; hold: Partial<Record<StockId, number>>; capacity: number; refining: boolean }
+  /** Pulso de minería rechazado: fuera de alcance, asteroide agotado, bodega llena o sin energía. */
+  | { t: "mineFail"; reason: "range" | "empty" | "full" | "energy" | "none" }
   | { t: "ack"; cmdId: string; ok: true }
   | { t: "ack"; cmdId: string; ok: false; error: CommandError };
 

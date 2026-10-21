@@ -100,6 +100,9 @@ function GeneralTab() {
       <dd>
         <input id="pref-reduce-fx" type="checkbox" checked={prefs.reduceEffects} onChange={(e) => set({ reduceEffects: e.target.checked })} />
         <div className="muted small">{t("settings.reduceEffectsHint")}</div>
+        <button className="link-btn small" type="button" onClick={() => set({ photosensitivityAck: false })}>
+          {t("photo.show")}
+        </button>
       </dd>
     </dl>
   );

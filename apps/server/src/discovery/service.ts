@@ -1,7 +1,7 @@
 import { createHmac } from "node:crypto";
 import { EMPEROR_FLAGSHIP, getAnyShipClass } from "@imperium/content";
 import { generateSystemDetail, universeSeedFromString } from "@imperium/procgen";
-import type { StarSystemDetail, StarSystemSummary } from "@imperium/shared";
+import type { StarSystemDetail, StarSystemSummary, WorldPosition } from "@imperium/shared";
 import { isTravelling } from "@imperium/sim";
 import { and, asc, eq, sql } from "drizzle-orm";
 import type { ServerConfig } from "../config";
@@ -45,6 +45,21 @@ export async function discoverAround(
   const rows = await db
     .insert(discoveries)
     .values([...ids].map((systemId) => ({ emperorId, systemId })))
+    .onConflictDoNothing()
+    .returning({ systemId: discoveries.systemId });
+  return rows.map((r) => r.systemId);
+}
+
+/**
+ * Descubre los sistemas al alcance del escáner desde un punto del espacio
+ * profundo (la nave salió del túnel cuántico a mitad de viaje).
+ */
+export async function discoverNear(db: Tx | Database, universeSeed: number, emperorId: string, position: WorldPosition, rangeLy: number): Promise<string[]> {
+  const ids = systemsInRange(universeSeed, position, rangeLy).map((s) => s.id);
+  if (ids.length === 0) return [];
+  const rows = await db
+    .insert(discoveries)
+    .values(ids.map((systemId) => ({ emperorId, systemId })))
     .onConflictDoNothing()
     .returning({ systemId: discoveries.systemId });
   return rows.map((r) => r.systemId);
@@ -154,8 +169,10 @@ export class DiscoveryService {
       await this.db.transaction(async (tx) => {
         const place = placeFromRow(this.seed, row, now);
         // Si viaja, descubre el sistema del que salió; el de destino, al llegar.
-        const here = findSystem(this.seed, place.location.systemId)!;
-        await discoverAround(tx, this.seed, row.id, here, EMPEROR_FLAGSHIP.scannerRangeLy);
+        const here = findSystem(this.seed, place.location.systemId);
+        // En el espacio profundo no hay sistema: lo que alcance el escáner desde allí.
+        if (here) await discoverAround(tx, this.seed, row.id, here, EMPEROR_FLAGSHIP.scannerRangeLy);
+        else await discoverNear(tx, this.seed, row.id, place.location.position, EMPEROR_FLAGSHIP.scannerRangeLy);
         if (place.travel && isTravelling(place, now)) {
           await schedule(tx, "emperor.arrive", new Date(place.travel.arriveAt), { emperorId: row.id, systemId: place.travel.to.systemId });
         }

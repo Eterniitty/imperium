@@ -42,7 +42,7 @@ describe("linaje (Fase 10)", () => {
     // Nunca con la cola ocupada (no se mete en las órdenes del jugador).
     expect(governorChoice("bastion", {}, 1, rich)).toBeNull();
     // Sin existencias por encima de la reserva, nada.
-    expect(governorChoice("prosperity", {}, 0, { metal: 100, volatiles: 10, crystal: 0, alloys: 0 })).toBeNull();
+    expect(governorChoice("prosperity", {}, 0, { metal: 100, volatiles: 10, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 })).toBeNull();
   });
 
   it("nombres de los Herederos", () => {

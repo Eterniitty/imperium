@@ -1,6 +1,7 @@
 import { randomInt } from "node:crypto";
 import { generateSector } from "@imperium/procgen";
 import {
+  deepLocation,
   distance,
   parseSystemId,
   worldToSector,
@@ -93,15 +94,17 @@ export interface PlaceRow {
 /** Ubicación y viaje de una fila, con el viaje ya resuelto si terminó a la hora `now`. */
 export function placeFromRow(universeSeed: number, row: PlaceRow, now: number): { location: SystemLocation; travel: Travel | null } {
   const system = findSystem(universeSeed, row.systemId);
+  // Un Emperador puede estar en una región de espacio profundo (salió del túnel a mitad de viaje).
+  const here = system ? toLocation(system) : deepLocation(row.systemId);
   // Solo pasaría si cambiase la semilla o el generador con datos ya creados.
-  if (!system) throw new Error(`${row.id} está en un sistema inexistente: ${row.systemId}`);
+  if (!here) throw new Error(`${row.id} está en un sistema inexistente: ${row.systemId}`);
   let travel: Travel | null = null;
   if (row.destSystemId && row.departAt && row.arriveAt) {
     const dest = findSystem(universeSeed, row.destSystemId);
     if (!dest) throw new Error(`${row.id} viaja a un sistema inexistente: ${row.destSystemId}`);
     travel = { to: toLocation(dest), departAt: row.departAt.getTime(), arriveAt: row.arriveAt.getTime() };
   }
-  return settle({ location: toLocation(system), travel }, now);
+  return settle({ location: here, travel }, now);
 }
 
 /** ¿Está el sistema en el Núcleo Humano? (los sectores alrededor del origen). */

@@ -1,6 +1,6 @@
 # Mercado global
 
-El **mercado global** permite comprar y vender recursos (metal, volátiles, cristal y aleaciones) con otros Emperadores a cambio de [créditos](/wiki/humanidad#creditos). Se abre pulsando tus créditos en la barra superior (o **Humanidad** → pestaña **Mercado**). La energía no se comercia: no se puede transportar. Todas las cifras de esta página se leen del código del juego.
+El **mercado global** permite comprar y vender recursos (metal, volátiles, cristal, aleaciones y lo minado en el [espacio profundo](/wiki/espacio-profundo): metales raros y materia exótica) con otros Emperadores a cambio de [créditos](/wiki/humanidad#creditos). Se abre pulsando tus créditos en la barra superior (o **Humanidad** → pestaña **Mercado**). La energía no se comercia: no se puede transportar. Todas las cifras de esta página se leen del código del juego.
 
 {{tabla:mercado}}
 

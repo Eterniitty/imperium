@@ -4,7 +4,7 @@
  */
 import { getAlienShipClass, scavengerDanger, type AlienFlight } from "@imperium/content";
 import { hashString } from "@imperium/procgen";
-import { parseSystemId, type Quat, type Vec3 } from "@imperium/shared";
+import { isDeepId, parseSystemId, type Quat, type Vec3 } from "@imperium/shared";
 import { HUMAN_CORE_RADIUS } from "../emperor/world";
 import { planetPosition, type SystemLayout } from "@imperium/sim";
 import { normalize } from "./combat";
@@ -28,6 +28,10 @@ export interface PirateSpec {
  * sistemas, más y más pesados cuanto más lejos. Determinista por sistema.
  */
 export function piratesOf(systemId: string): PirateSpec[] {
+  // Espacio profundo: por ahora, sin piratas ni alienígenas. Para añadirlos más
+  // adelante, este es el punto de enganche (una tabla por tipo de región en
+  // `DEEP_REGIONS` de `@imperium/content` y su `ring` según la celda).
+  if (isDeepId(systemId)) return [];
   const ring = systemRing(systemId);
   if (ring <= HUMAN_CORE_RADIUS) return [];
   const level = scavengerDanger(ring);

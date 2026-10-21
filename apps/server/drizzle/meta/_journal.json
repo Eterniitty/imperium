@@ -134,6 +134,13 @@
       "when": 1792582885071,
       "tag": "0019_wiki_grupo_lore",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792587263054,
+      "tag": "0020_espacio_profundo",
+      "breakpoints": true
     }
   ]
 }

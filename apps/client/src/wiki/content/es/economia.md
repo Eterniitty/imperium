@@ -10,6 +10,8 @@ Cada colonia tiene su **propio inventario**: no hay un almacén global. Lo que p
 | **Volátiles** | Combustible y mantenimiento de naves e instalaciones. |
 | **Cristal raro** | Escaso; lo piden el astillero y casi todas las naves. |
 | **Aleaciones** | Producto elaborado en la refinería a partir de metal y volátiles. |
+| **Metales raros** | No los produce ninguna colonia: se minan en el [espacio profundo](/wiki/espacio-profundo) o se compran en el mercado. Los piden las naves capitales. |
+| **Materia exótica** | Muy escasa; solo en algunos asteroides del espacio profundo (o en el mercado). |
 | **Energía** | Se produce y se gasta en la propia colonia; **no se almacena ni se transporta**. |
 
 Cada recurso almacenable tiene un **tope de almacén** por colonia. **Lo que no cabe se pierde**, así que conviene gastarlo o sacarlo en cargueros.

@@ -7,6 +7,7 @@ import {
   type InstallationId,
   type ShipClassId,
   type StockAmounts,
+  type StockId,
 } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import type { Colony, ColonyBuild, CommandError, EmperorHumans, Planet, PlanetClaim, StarSystemDetail, StarSystemSummary } from "@imperium/shared";
@@ -75,7 +76,7 @@ const DETAIL_CACHE = 2_000;
 /** Reembolso al cancelar un encargo: todo si no había empezado, una parte si sí. */
 function refundOf(build: { kind: string; itemId: string; startedAt: Date | null }): StockAmounts {
   const def = build.kind === "installation" ? getInstallation(build.itemId) : getShipClass(build.itemId as ShipClassId);
-  const cost: StockAmounts = def ? { ...{ metal: 0, volatiles: 0, crystal: 0, alloys: 0 }, ...def.cost } : { metal: 0, volatiles: 0, crystal: 0, alloys: 0 };
+  const cost: StockAmounts = def ? { ...{ metal: 0, volatiles: 0, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 }, ...def.cost } : { metal: 0, volatiles: 0, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 };
   return scaled(cost, build.startedAt ? ECONOMY.cancelRefundStarted : 1);
 }
 /** Existencias iniciales de una colonia con el multiplicador de las subvenciones (sin pasar del almacén). */
@@ -84,9 +85,9 @@ function foundingStock(multiplier: number): StockAmounts {
   for (const k of Object.keys(out) as Array<keyof StockAmounts>) out[k] = Math.min(ECONOMY.storage[k], Math.round(out[k] * multiplier));
   return out;
 }
-const stockOf = (r: Pick<ColonyRow, "metal" | "volatiles" | "crystal" | "alloys">): StockAmounts => ({ metal: r.metal, volatiles: r.volatiles, crystal: r.crystal, alloys: r.alloys });
-const negate = (s: StockAmounts): StockAmounts => ({ metal: -s.metal, volatiles: -s.volatiles, crystal: -s.crystal, alloys: -s.alloys });
-const scaled = (s: StockAmounts, k: number): StockAmounts => ({ metal: s.metal * k, volatiles: s.volatiles * k, crystal: s.crystal * k, alloys: s.alloys * k });
+const stockOf = (r: Pick<ColonyRow, StockId>): StockAmounts => ({ metal: r.metal, volatiles: r.volatiles, crystal: r.crystal, alloys: r.alloys, rare_metals: r.rare_metals, exotic: r.exotic });
+const negate = (s: StockAmounts): StockAmounts => ({ metal: -s.metal, volatiles: -s.volatiles, crystal: -s.crystal, alloys: -s.alloys, rare_metals: -s.rare_metals, exotic: -s.exotic });
+const scaled = (s: StockAmounts, k: number): StockAmounts => ({ metal: s.metal * k, volatiles: s.volatiles * k, crystal: s.crystal * k, alloys: s.alloys * k, rare_metals: s.rare_metals * k, exotic: s.exotic * k });
 
 /**
  * Humanos, colonias y economía (Fase 7). Las reglas están en `@imperium/sim`
@@ -481,7 +482,7 @@ export class ColonyService {
     } else {
       const cls = getShipClass(itemId as ShipClassId);
       if (!cls) return { ok: false, error: "unknown_item" };
-      cost = { ...cls.cost };
+      cost = { rare_metals: 0, exotic: 0, ...cls.cost };
       hours = cls.buildTimeHours;
       requires = cls.requires;
     }
@@ -751,8 +752,8 @@ export class ColonyService {
     const locked = await this.lockResolved(tx, emperorId, colonyId, at);
     if (!locked) return { ok: false, error: "no_colony" };
     const stock = { ...locked.state.stock };
-    const applied: StockAmounts = { metal: 0, volatiles: 0, crystal: 0, alloys: 0 };
-    const lost: StockAmounts = { metal: 0, volatiles: 0, crystal: 0, alloys: 0 };
+    const applied: StockAmounts = { metal: 0, volatiles: 0, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 };
+    const lost: StockAmounts = { metal: 0, volatiles: 0, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 };
     for (const k of Object.keys(applied) as Array<keyof StockAmounts>) {
       const d = delta[k] ?? 0;
       if (d < 0 && stock[k] + 1e-6 < -d) return { ok: false, error: "insufficient_resources" };
@@ -867,6 +868,8 @@ export class ColonyService {
       volatiles: -state.stock.volatiles,
       crystal: -state.stock.crystal,
       alloys: -state.stock.alloys,
+      rare_metals: -state.stock.rare_metals,
+      exotic: -state.stock.exotic,
       humans: -state.population,
     });
     await tx.insert(resourceLedger).values({
@@ -878,6 +881,8 @@ export class ColonyService {
       volatiles: state.stock.volatiles + lost("volatiles"),
       crystal: state.stock.crystal + lost("crystal"),
       alloys: state.stock.alloys + lost("alloys"),
+      rare_metals: state.stock.rare_metals + lost("rare_metals"),
+      exotic: state.stock.exotic + lost("exotic"),
       humans: population,
     });
     return { oldOwnerId, capitalId: capitalId === row.id ? null : capitalId, destroyed: losses.destroyed.length };

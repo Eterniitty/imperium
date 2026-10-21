@@ -283,6 +283,9 @@ export interface ShipCost {
   crystal: number;
   /** Aleaciones (de la refinería): las naves pesadas las necesitan. */
   alloys: number;
+  /** Metales raros y materia exótica (minados en el espacio profundo): solo las naves capitales. */
+  rare_metals?: number;
+  exotic?: number;
 }
 
 /**

@@ -1,16 +1,16 @@
 import { useState } from "react";
-import { STOCK_IDS } from "@imperium/content";
+import { CARGO_STOCK_IDS } from "@imperium/content";
 import type { Cargo, Colony, Fleet, I18nKey } from "@imperium/shared";
 import { connection, useWorld } from "../net/world";
 import { useT } from "../state/store";
 import { fmtInt } from "./colonies";
 
-const KINDS = [...STOCK_IDS, "humans"] as const;
+const KINDS = [...CARGO_STOCK_IDS, "humans"] as const;
 type Kind = (typeof KINDS)[number];
 
 /** Total en la bodega (recursos juntos) y pasajeros. */
 export function cargoSummary(f: Fleet): { resources: number; humans: number } {
-  return { resources: STOCK_IDS.reduce((a, r) => a + f.cargo[r], 0), humans: f.cargo.humans };
+  return { resources: CARGO_STOCK_IDS.reduce((a, r) => a + f.cargo[r], 0), humans: f.cargo.humans };
 }
 
 /**
@@ -108,7 +108,7 @@ export function FleetLogistics({ fleet, colony }: { fleet: Fleet; colony: Colony
                         fleetId: fleet.id,
                         fromColonyId: colony.id,
                         toColonyId: routeTo,
-                        carry: STOCK_IDS.filter((r) => carry[r]),
+                        carry: CARGO_STOCK_IDS.filter((r) => carry[r]),
                         humans: carry.humans,
                       }),
                     )

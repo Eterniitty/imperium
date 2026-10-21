@@ -90,6 +90,10 @@ Vuela hasta el **borde del sistema** (unos miles de kilómetros más allá del �
 - Al llegar, tu escáner [descubre](/wiki/niebla) el sistema y los que tenga al alcance.
 - Se puede saltar a cualquier estrella al alcance, descubierta o no.
 
+### Salir del túnel a mitad de viaje
+
+En el túnel, [[K]] (o el botón **Salir del túnel aquí**) detiene el viaje: quedas en el **espacio profundo**, entre las dos estrellas, y solo gastas el combustible del tramo recorrido. Allí puede haber asteroides que minar con [[L]]. Ver [Espacio profundo y minería](/wiki/espacio-profundo).
+
 ## Vuelo compartido
 
 Dentro de un sistema ves moverse a los demás Emperadores que vuelan allí, y ellos a ti. Fuera del Núcleo Humano te puedes encontrar con piratas. Ver [Combate](/wiki/combate).

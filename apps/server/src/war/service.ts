@@ -1,5 +1,5 @@
 import { randomInt } from "node:crypto";
-import { CONTACT_SENSORS, EMPEROR_FLAGSHIP, FLAGSHIP_BATTLE, FLEET_BATTLE, STOCK_IDS } from "@imperium/content";
+import { CONTACT_SENSORS, EMPEROR_FLAGSHIP, FLAGSHIP_BATTLE, FLEET_BATTLE, CARGO_STOCK_IDS } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import {
   distance,
@@ -404,16 +404,16 @@ export class WarService {
     const [row] = await tx.select().from(fleetCargo).where(eq(fleetCargo.fleetId, fleetId)).for("update").limit(1);
     const cargo: Cargo = row ? { metal: row.metal, volatiles: row.volatiles, crystal: row.crystal, alloys: row.alloys, humans: row.humans } : { ...EMPTY_CARGO };
     const cap = fleetCapacity(leftClasses);
-    const total = STOCK_IDS.reduce((a, r) => a + cargo[r], 0);
+    const total = CARGO_STOCK_IDS.reduce((a, r) => a + cargo[r], 0);
     const keep = total > cap.resources + EPS ? cap.resources / total : 1;
     const lost: Cargo = { ...EMPTY_CARGO };
-    for (const r of STOCK_IDS) lost[r] = cargo[r] * (1 - keep);
+    for (const r of CARGO_STOCK_IDS) lost[r] = cargo[r] * (1 - keep);
     lost.humans = Math.max(0, cargo.humans - cap.humans);
     const after: Cargo = { ...EMPTY_CARGO };
-    for (const k of [...STOCK_IDS, "humans"] as const) after[k] = Math.max(0, cargo[k] - lost[k]);
+    for (const k of [...CARGO_STOCK_IDS, "humans"] as const) after[k] = Math.max(0, cargo[k] - lost[k]);
     if (row && leftClasses.length > 0) await tx.update(fleetCargo).set(after).where(eq(fleetCargo.fleetId, fleetId));
     const humans = lost.humans + humansAboard;
-    if (STOCK_IDS.every((r) => lost[r] <= EPS) && humans <= EPS) return;
+    if (CARGO_STOCK_IDS.every((r) => lost[r] <= EPS) && humans <= EPS) return;
     await tx.insert(resourceLedger).values({
       emperorId,
       colonyId: null,
