@@ -14,6 +14,19 @@ aeonarch.de, www.aeonarch.de {
 	tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
 	encode zstd gzip
 
+	# Cabeceras de seguridad. El juego y la Wiki no cargan nada de fuera ni
+	# scripts en línea, así que la CSP es estricta; la página de la puerta trae su
+	# propia CSP (con su script en línea) y por eso aquí va con «?» (solo si falta).
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+		?Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss://aeonarch.de wss://www.aeonarch.de; media-src 'self' blob: data:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		-Server
+	}
+
 	# Puerta de entrada propia (antes de abrir al público): su página y su API van
 	# sin protección; todo lo demás (salvo /legal/*, que la ley exige que sea
 	# público) solo con la cookie de la puerta, que comprueba el juego
