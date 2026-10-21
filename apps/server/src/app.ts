@@ -18,6 +18,10 @@ import { realtimeRoutes } from "./realtime/routes";
 import { socialRoutes } from "./social/routes";
 import { SocialService } from "./social/service";
 import { LogisticsService } from "./logistics/service";
+import { humanityRoutes } from "./humanity/routes";
+import { HumanityService } from "./humanity/service";
+import { MarketService } from "./market/service";
+import { inHumanCore } from "./emperor/world";
 import { SpaceService } from "./space/service";
 import { warRoutes } from "./war/routes";
 import { WarService } from "./war/service";
@@ -94,7 +98,13 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   const colonies = new ColonyService(deps.db, config, (summary) => discoveries.detail(summary));
   const logistics = new LogisticsService(deps.db, config, colonies, fleets);
   const wars = new WarService(deps.db, config, fleets, colonies, logistics);
-  const hub = new Hub(emperors, fleets, social, discoveries, colonies, wars, app.log, config.TIME_SCALE);
+  // Economía de la humanidad (créditos, tesoro del Núcleo, proyectos comunes) y mercado global.
+  const humanity = new HumanityService(deps.db, config, colonies);
+  // Niveles de los proyectos comunes: al arrancar (index.ts) o, si no, la primera vez que hagan falta.
+  colonies.setBonuses(() => humanity.bonuses());
+  wars.setShieldFactor((systemId) => (inHumanCore(systemId) ? humanity.bonuses().coreShield : 1));
+  const market = new MarketService(deps.db, colonies, humanity);
+  const hub = new Hub(emperors, fleets, social, discoveries, colonies, wars, humanity, app.log, config.TIME_SCALE);
   const space = new SpaceService(
     config,
     emperors,
@@ -113,11 +123,12 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   });
   app.decorate("space", space);
   await app.register(emperorRoutes, { config, db: deps.db, emperors, hub });
-  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, colonies, logistics, wars, space, hub });
+  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, colonies, logistics, wars, space, hub, humanity, market });
+  await app.register(humanityRoutes, { config, db: deps.db, emperors, humanity, market });
   await app.register(warRoutes, { config, db: deps.db, emperors, wars });
   await app.register(socialRoutes, { config, db: deps.db, emperors, social, hub });
   await app.register(discoveryRoutes, { config, db: deps.db, emperors, discoveries });
-  await app.register(accountRoutes, { config, db: deps.db, hub, space, colonies });
+  await app.register(accountRoutes, { config, db: deps.db, hub, space, colonies, humanity, market });
   await app.register(colonyRoutes, { config, db: deps.db, emperors, discoveries, colonies });
 
   // Cola de eventos programados: llegadas de flotas y del Emperador (y, más adelante, construcciones…).
@@ -158,12 +169,34 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
       if (done.discovered) void hub.publishDiscovered(done.discovered.emperorId, done.discovered.systemIds);
     };
   });
+  // Economía de la humanidad: recálculo periódico de cada cartera (renta según la población).
+  worker.on("economy.settle", async (tx, { emperorId }) => {
+    const res = await humanity.onSettle(tx, emperorId);
+    if (res) return () => {
+      if (res.leveled) void humanity.reload();
+      if (res.changed) void hub.publishWallet(emperorId);
+    };
+  });
+  // Llega un envío del Núcleo: una compra a su colonia o un aporte a un proyecto común.
+  worker.on("shipment.arrive", async (tx, { shipmentId }) => {
+    const done = await market.arrive(tx, shipmentId);
+    return () => {
+      void humanity.reload();
+      if (done) void hub.publishColony(done.emperorId, done.colonyId);
+    };
+  });
+  // El tesoro ya debería poder pagar un proyecto que tiene todos sus recursos.
+  worker.on("humanity.fund", async (tx, { projectId }) => {
+    if (await humanity.onFund(tx, projectId)) return () => void humanity.reload();
+  });
   if (deps.startWorker !== false) {
     app.addHook("onReady", async () => worker.start());
     app.addHook("onClose", async () => worker.stop());
   }
   app.decorate("eventWorker", worker);
   app.decorate("colonies", colonies);
+  app.decorate("humanity", humanity);
+  app.decorate("market", market);
 
   return app;
 }
@@ -173,5 +206,7 @@ declare module "fastify" {
     eventWorker: EventWorker;
     colonies: ColonyService;
     space: SpaceService;
+    humanity: HumanityService;
+    market: MarketService;
   }
 }

@@ -12,9 +12,9 @@
 
 En **Ajustes → Cuenta**:
 
-- **Descargar mis datos**: un archivo JSON con todo lo que se guarda de tu cuenta y tu partida (cuenta, Emperador, flotas y naves, carga, rutas, colonias, instalaciones, encargos, descubrimientos, compañeros, batallas y tus asientos del [libro de recursos](/wiki/economia#libro-de-recursos)).
+- **Descargar mis datos**: un archivo JSON con todo lo que se guarda de tu cuenta y tu partida (cuenta, Emperador, flotas y naves, carga, rutas, colonias, instalaciones, encargos, descubrimientos, compañeros, batallas, tu cartera de créditos, tus aportes, órdenes, operaciones y envíos del [mercado](/wiki/mercado) y tus asientos del [libro de recursos](/wiki/economia#libro-de-recursos)).
 - **Eliminar mi cuenta**: escribe **BORRAR** para confirmar. Se borran en el acto tu cuenta y tu correo, tu Emperador, tus flotas, tus descubrimientos y tu lista de compañeros (las cuentas de los demás no se tocan). **No se puede deshacer.**
-- Lo que hiciste en el universo **se queda**: tus planetas siguen con el nombre que les diste, como [colonias independientes](/wiki/colonias#colonias-independientes).
+- Lo que hiciste en el universo **se queda**: tus planetas siguen con el nombre que les diste, como [colonias independientes](/wiki/colonias#colonias-independientes). Tus órdenes del mercado se cancelan antes (lo retenido vuelve a tus colonias) y tus aportes a los proyectos comunes se quedan, anónimos.
 
 ## Cookies y privacidad
 

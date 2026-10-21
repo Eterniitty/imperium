@@ -344,3 +344,118 @@ export interface WsTicketResponse {
 export interface ApiError {
   error: ApiErrorCode;
 }
+
+// --- Economía de la humanidad y mercado global ---
+
+/**
+ * Cartera de créditos del Emperador propio (tema `me`). El saldo actual es
+ * `credits + incomePerHour × (ahora − at)` en horas reales: el cliente lo
+ * hace avanzar solo, como las existencias de las colonias.
+ */
+export interface Wallet {
+  credits: number;
+  /** Renta neta por hora real (tras el aporte al Núcleo). */
+  incomePerHour: number;
+  /** Aporte al tesoro del Núcleo por hora real. */
+  taxPerHour: number;
+  at: number;
+}
+
+export type HumanityProjectStatus = "collecting" | "awaiting_funds" | "complete";
+
+/** Proyecto común de la humanidad, tal y como lo ve cualquier jugador. */
+export interface HumanityProject {
+  id: string;
+  level: number;
+  maxLevel: number;
+  status: HumanityProjectStatus;
+  /** Coste del siguiente nivel (null si ya está completo). */
+  cost: (Stock & { credits: number }) | null;
+  /** Recursos ya aportados para el siguiente nivel. */
+  progress: Stock;
+  /** Recursos de camino al Núcleo para este proyecto. */
+  inTransit: Stock;
+  /** Efecto actual (fracción: 0,08 = +8 %) y el de cada nivel. */
+  effect: number;
+  effectPerLevel: number;
+  /** Mayores contribuyentes (nombre null: cuenta borrada), con lo aportado en unidades (recursos + créditos). */
+  top: Array<{ name: string | null; total: number }>;
+}
+
+/** `GET /api/humanity`: la economía de toda la humanidad (pública para cualquier jugador). */
+export interface HumanityResponse {
+  /** Emperadores con colonias y número de colonias (incluidas las independientes). */
+  emperors: number;
+  colonies: number;
+  population: number;
+  /** Existencias de todas las colonias y producción neta por hora real. */
+  stock: Stock;
+  ratesPerHour: Stock;
+  /** Créditos en las carteras de todos los Emperadores. */
+  credits: number;
+  treasury: { credits: number; incomePerHour: number; taxRate: number; at: number };
+  projects: HumanityProject[];
+  at: number;
+}
+
+export type OrderSide = "buy" | "sell";
+
+/** Resumen de un recurso en el mercado: mejores precios, libro e historial. */
+export interface MarketResource {
+  resource: StockId;
+  bestBid: number | null;
+  bestAsk: number | null;
+  last: number | null;
+  /** Unidades casadas en las últimas 24 horas reales. */
+  volume24h: number;
+  bids: Array<{ price: number; quantity: number }>;
+  asks: Array<{ price: number; quantity: number }>;
+  /** Por horas (inicio de la hora en ms): precio medio ponderado y unidades. */
+  history: Array<{ t: number; avg: number; volume: number }>;
+}
+
+/** `GET /api/market`. */
+export interface MarketResponse {
+  resources: MarketResource[];
+  feeRate: number;
+  at: number;
+}
+
+export interface MarketOrderView {
+  id: string;
+  resource: StockId;
+  side: OrderSide;
+  price: number;
+  quantity: number;
+  remaining: number;
+  colonyId: string;
+  colonyName: string;
+  createdAt: number;
+}
+
+/** Envío por la red del Núcleo: compra que llega o aporte que va a un proyecto. */
+export interface ShipmentView {
+  id: string;
+  kind: "trade" | "contribution";
+  /** Compra: colonia de destino; aporte: proyecto. */
+  to: string;
+  amounts: Stock;
+  departAt: number;
+  arriveAt: number;
+}
+
+export interface MarketTradeView {
+  resource: StockId;
+  side: OrderSide;
+  price: number;
+  quantity: number;
+  at: number;
+}
+
+/** `GET /api/market/mine`: órdenes, envíos y operaciones recientes propias. */
+export interface MarketMineResponse {
+  orders: MarketOrderView[];
+  shipments: ShipmentView[];
+  trades: MarketTradeView[];
+  maxOpenOrders: number;
+}

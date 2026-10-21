@@ -6,6 +6,10 @@
  */
 import {
   CONTACT_SENSORS,
+  CREDITS,
+  HUMANITY,
+  HUMANITY_PROJECTS,
+  MARKET,
   FACTIONS,
   SPECIES,
   ECONOMY,
@@ -319,6 +323,39 @@ export const GEN_TABLES: Record<string, Builder> = {
     rows: PLANET_TYPES.map((p) => [t(`planet.${p}`), range(locale, DEPOSIT_TABLE[p].metal), range(locale, DEPOSIT_TABLE[p].volatiles)]),
     numeric: [1, 2],
   }),
+
+  // Economía de la humanidad y mercado global.
+  humanidad: (t, locale) =>
+    kv(t, [
+      ["wiki.k.creditsPerPop", t("wiki.v.creditsPerPop", { n: num(locale, CREDITS.perPopulationPerHour, 3), k: num(locale, CREDITS.perPopulationPerHour * 1000) })],
+      ["wiki.k.startingCredits", `₢ ${num(locale, CREDITS.starting)}`],
+      ["wiki.k.taxRate", `${num(locale, HUMANITY.taxRate * 100)} %`],
+      ["wiki.k.settleEvery", t("colony.costHours", { h: num(locale, HUMANITY.settleEveryHours) })],
+      ["wiki.k.shipmentSpeed", `${num(locale, HUMANITY.shipmentSpeedLyPerHour)} ${t("unit.ly")}/h`],
+      ["wiki.k.minShipment", t("colony.costHours", { h: num(locale, HUMANITY.minShipmentHours) })],
+      ["wiki.k.minContribution", num(locale, HUMANITY.minContribution)],
+    ]),
+
+  proyectos: (t, locale) => ({
+    head: [t("wiki.col.project"), t("wiki.col.maxLevel"), t("wiki.col.effect"), t("wiki.col.costL1"), t("wiki.col.growth")],
+    rows: HUMANITY_PROJECTS.map((p) => [
+      t(`project.${p.id}.name`),
+      num(locale, p.maxLevel),
+      t(`wiki.effect.${p.id}`, { per: `${num(locale, p.effectPerLevel * 100)} %` }),
+      `₢ ${num(locale, p.baseCost.credits)} · ${cost(t, locale, p.baseCost)}`,
+      `× ${num(locale, p.costGrowth)}`,
+    ]),
+    numeric: [1],
+  }),
+
+  mercado: (t, locale) =>
+    kv(t, [
+      ["wiki.k.marketFee", `${num(locale, MARKET.feeRate * 100)} %`],
+      ["wiki.k.maxOrders", num(locale, MARKET.maxOpenOrders)],
+      ["wiki.k.maxQuantity", num(locale, MARKET.maxQuantity)],
+      ["wiki.k.priceRange", `₢ ${num(locale, MARKET.minPrice)} – ₢ ${num(locale, MARKET.maxPrice)}`],
+      ["wiki.k.history", t("colony.costHours", { h: num(locale, MARKET.historyHours) })],
+    ]),
 
   "teclas-vuelo": (t, locale) => keysTable(t, locale, "flight"),
   "teclas-mapa": (t, locale) => keysTable(t, locale, "map"),

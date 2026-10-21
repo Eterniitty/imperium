@@ -3,10 +3,10 @@
  * docs/arquitectura.md §8. Los esquemas Zod de lo que envía el cliente están en
  * `schemas.ts`.
  */
-import type { Battle, Cargo, Colony, Emperor, EmperorHumans, Fleet, FleetRoute } from "./api";
+import type { Battle, Cargo, Colony, Emperor, EmperorHumans, Fleet, FleetRoute, OrderSide, Stock, StockId, Wallet } from "./api";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
-export const PROTOCOL_VERSION = 5;
+export const PROTOCOL_VERSION = 6;
 
 /** Tamaño máximo de un mensaje del cliente, en bytes. */
 export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;
@@ -23,7 +23,8 @@ export interface TopicData {
   emperors: { emperors: EmperorView[] };
   /** `discovered`: ids de los sistemas descubiertos (niebla de guerra); solo de ellos se puede pedir el detalle. */
   /** `battles`: las batallas en curso y las acabadas hace poco. */
-  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans; battles: Battle[] };
+  /** `wallet`: la cartera de créditos (economía de la humanidad). */
+  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans; battles: Battle[]; wallet: Wallet };
 }
 
 /** Emperador visto por los demás jugadores: añade si está conectado. */
@@ -33,6 +34,19 @@ export interface EmperorView extends Emperor {
 
 /** Órdenes que el cliente puede dar. */
 export interface CommandArgs {
+  /**
+   * Mercado global: orden de compra o venta de `quantity` unidades a `price`
+   * créditos cada una. Una venta retiene los recursos de `colonyId`; una compra,
+   * los créditos, y lo comprado se envía a `colonyId`.
+   */
+  "market.order": { resource: StockId; side: OrderSide; price: number; quantity: number; colonyId: string };
+  /** Cancela una orden propia: se devuelve lo retenido que quede. */
+  "market.cancel": { orderId: string };
+  /**
+   * Aporta a un proyecto común de la humanidad: recursos que salen de
+   * `colonyId` hacia el Núcleo y/o créditos de la cartera al tesoro.
+   */
+  "humanity.contribute": { projectId: string; colonyId?: string; amounts?: Partial<Stock>; credits?: number };
   "emperor.move": { systemId: string };
   "fleet.move": { fleetId: string; systemId: string };
   /**
@@ -113,6 +127,13 @@ export type WeaponKind = "cannon" | "missile";
 /** Motivos por los que se rechaza una orden; el cliente los traduce con `error.*`. */
 export type CommandError =
   | "invalid_command"
+  | "insufficient_credits"
+  | "invalid_order"
+  | "too_many_orders"
+  | "no_order"
+  | "unknown_project"
+  | "project_complete"
+  | "exceeds_need"
   | "unknown_system"
   | "in_transit"
   | "already_there"
@@ -152,6 +173,8 @@ export type DeltaOp =
   | { path: `colonies.${string}`; v: Colony | null }
   /** Humanos de la nave del Emperador (el id es el del Emperador propio). */
   | { path: `humans.${string}`; v: EmperorHumans }
+  /** Cartera de créditos del Emperador propio (el id es el suyo). */
+  | { path: `wallet.${string}`; v: Wallet }
   /** Batalla propia: empieza, avanza una ronda o termina (null si deja de mostrarse). */
   | { path: `battles.${string}`; v: Battle | null };
 

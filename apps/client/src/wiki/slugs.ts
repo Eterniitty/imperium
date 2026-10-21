@@ -21,6 +21,8 @@ export const WIKI_ARTICLES = [
   { slug: "humanos", group: "empire" },
   { slug: "colonias", group: "empire" },
   { slug: "economia", group: "empire" },
+  { slug: "humanidad", group: "empire" },
+  { slug: "mercado", group: "empire" },
   { slug: "flotas", group: "empire" },
   { slug: "guerra", group: "war" },
   { slug: "companeros", group: "people" },

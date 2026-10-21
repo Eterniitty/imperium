@@ -48,3 +48,14 @@ export function fmtRate(n: number): string {
   const v = Math.abs(n) < 10 ? Math.round(n * 10) / 10 : Math.round(n);
   return `${v > 0 ? "+" : ""}${v.toLocaleString()}`;
 }
+
+/** Créditos de la cartera ahora (crecen con la renta neta entre dos avisos del servidor). */
+export function liveCredits(w: { credits: number; incomePerHour: number; at: number } | null, now: number): number {
+  if (!w) return 0;
+  return w.credits + (w.incomePerHour * Math.max(0, now - w.at)) / HOUR_MS;
+}
+
+/** Créditos con dos decimales si son pocos y sin ellos si son muchos. */
+export function fmtCredits(n: number): string {
+  return n.toLocaleString(undefined, { maximumFractionDigits: Math.abs(n) < 1000 ? 2 : 0, minimumFractionDigits: 0 });
+}

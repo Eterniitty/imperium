@@ -20,6 +20,8 @@ import type { EmperorService } from "../emperor/service";
 import type { FleetService } from "../fleet/service";
 import type { SpaceService } from "../space/service";
 import type { WarService } from "../war/service";
+import type { HumanityService } from "../humanity/service";
+import type { MarketService } from "../market/service";
 import type { Client, Hub } from "./hub";
 import { TicketStore } from "./tickets";
 
@@ -33,6 +35,8 @@ export interface RealtimeDeps {
   wars: WarService;
   space: SpaceService;
   hub: Hub;
+  humanity: HumanityService;
+  market: MarketService;
 }
 
 const MINUTE = 60_000;
@@ -41,7 +45,7 @@ const HEARTBEAT_MS = 30_000;
 const MAX_CONNECTIONS_PER_ACCOUNT = 5;
 const MAX_CONNECTIONS = 1_000;
 
-export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, colonies, logistics, wars, space, hub }: RealtimeDeps) {
+export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, colonies, logistics, wars, space, hub, humanity, market }: RealtimeDeps) {
   const cookieName = sessionCookieName(config);
   const tickets = new TicketStore();
   const ticketsPerAccount = new RateLimiter(30, MINUTE);
@@ -147,6 +151,24 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
             void hub
               .command(client, msg.cmdId, async () => {
                 switch (msg.op) {
+                  // Economía de la humanidad y mercado global (ver humanity/ y market/).
+                  case "market.order":
+                  case "market.cancel": {
+                    const res = msg.op === "market.order" ? await market.place(owner.emperorId, msg.args) : await market.cancel(owner.emperorId, msg.args.orderId);
+                    if (res.ok) {
+                      for (const id of res.wallets) await hub.publishWallet(id);
+                      for (const [colonyId, emperorId] of res.colonies) await hub.publishColony(emperorId, colonyId);
+                    }
+                    return res;
+                  }
+                  case "humanity.contribute": {
+                    const res = await humanity.contribute(owner.emperorId, msg.args);
+                    if (res.ok) {
+                      await hub.publishWallet(res.emperorId);
+                      if (res.colonyId) await hub.publishColony(res.emperorId, res.colonyId);
+                    }
+                    return res;
+                  }
                   case "emperor.move": {
                     const res = await emperors.move(owner.accountId, msg.args.systemId);
                     if (res.ok) {

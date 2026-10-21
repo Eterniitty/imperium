@@ -82,6 +82,8 @@ Los costes y tiempos de las naves están en [Flotas](/wiki/flotas#naves).
 
 ## Libro de recursos
 
-Cada movimiento discreto de recursos o humanos queda apuntado en un **libro solo de inserción**, que nadie puede modificar ni borrar: fundaciones, encargos, cancelaciones, colonos que embarcan o desembarcan, cargas y descargas de flotas, pérdidas en batalla e independencia de colonias. La producción continua no se apunta (es el cálculo perezoso). Sirve para auditar y reconstruir los saldos, y aparece en la [descarga de tus datos](/wiki/cuenta).
+Cada movimiento discreto de recursos o humanos queda apuntado en un **libro solo de inserción**, que nadie puede modificar ni borrar: fundaciones, encargos, cancelaciones, colonos que embarcan o desembarcan, cargas y descargas de flotas, pérdidas en batalla, independencia de colonias y, desde la [economía de la humanidad](/wiki/humanidad), créditos, aportes y operaciones del [mercado](/wiki/mercado). La producción continua no se apunta (es el cálculo perezoso). Sirve para auditar y reconstruir los saldos, y aparece en la [descarga de tus datos](/wiki/cuenta).
 
-> [!dev] La **red de suministro** (instalaciones aisladas que se debilitan), la **economía de toda la humanidad** (aportes al Núcleo Humano, proyectos comunes) y un **mercado global** con precios por oferta y demanda están previstos para más adelante.
+Por encima de las colonias está la [economía de toda la humanidad](/wiki/humanidad): las colonias generan **créditos** según su población, una parte va al tesoro del Núcleo Humano y paga proyectos comunes. Con los créditos se compran y venden recursos en el [mercado global](/wiki/mercado).
+
+> [!dev] La **red de suministro** (instalaciones aisladas que se debilitan) está prevista para más adelante.

@@ -14,7 +14,9 @@ import {
   colonyBuilds,
   discoveries,
   emperorAllies,
+  emperorWallets,
   emperors,
+  humanityContributions,
   fleetCargo,
   fleetRoutes,
   fleets,
@@ -26,6 +28,8 @@ import {
   ships,
 } from "../db/schema";
 import type { ColonyService } from "../colony/service";
+import type { HumanityService } from "../humanity/service";
+import type { MarketService } from "../market/service";
 import type { Hub } from "../realtime/hub";
 import type { SpaceService } from "../space/service";
 import { maskEmail } from "../auth/tokens";
@@ -36,6 +40,8 @@ export interface AccountDeps {
   hub: Hub;
   space: SpaceService;
   colonies: ColonyService;
+  humanity: HumanityService;
+  market: MarketService;
 }
 
 function fail(reply: FastifyReply, status: number, error: ApiError["error"]) {
@@ -46,7 +52,7 @@ function fail(reply: FastifyReply, status: number, error: ApiError["error"]) {
  * Derechos del RGPD que el jugador ejerce solo (ver /legal/privacidad.html):
  * descargar sus datos (art. 15 y 20) y borrar su cuenta (art. 17).
  */
-export async function accountRoutes(app: FastifyInstance, { config, db, hub, space, colonies: colonyService }: AccountDeps) {
+export async function accountRoutes(app: FastifyInstance, { config, db, hub, space, colonies: colonyService, humanity, market }: AccountDeps) {
   const cookieName = sessionCookieName(config);
   const cookieOptions = { path: "/", httpOnly: true, secure: config.COOKIE_SECURE, sameSite: "lax" } as const;
   // La exportación lee muchas tablas: pocas por cuenta.
@@ -94,6 +100,10 @@ export async function accountRoutes(app: FastifyInstance, { config, db, hub, spa
           .from(battleSides)
           .innerJoin(battles, eq(battles.id, battleSides.battleId))
           .where(eq(battleSides.emperorId, emperor.id)),
+        // Economía de la humanidad y mercado: cartera, aportes, órdenes, operaciones y envíos.
+        wallet: (await db.select().from(emperorWallets).where(eq(emperorWallets.emperorId, emperor.id)))[0] ?? null,
+        humanityContributions: await db.select().from(humanityContributions).where(eq(humanityContributions.emperorId, emperor.id)),
+        ...(await market.exportFor(emperor.id)),
       };
     }
     const data = { exportedAt: new Date().toISOString(), account: acc, sessions: sessionRows, game };
@@ -131,6 +141,11 @@ export async function accountRoutes(app: FastifyInstance, { config, db, hub, spa
               buildIds.length ? inArray(sql`${scheduledEvents.payload}->>'buildId'`, buildIds) : undefined,
             ),
           );
+        // Mercado: sus órdenes se cancelan (lo retenido vuelve a sus colonias antes de independizarse)
+        // y su renta deja de aportar al tesoro del Núcleo.
+        const at = Date.now();
+        await market.cancelAll(tx, emperor.id, at);
+        await humanity.onEmperorDeleted(tx, emperor.id, at);
         // Lo hecho en el universo se queda: sus colonias pasan a ser independientes
         // (congeladas, con su nombre, población e instalaciones; conquistables en la Fase 9b).
         await colonyService.makeIndependent(tx, emperor.id, Date.now());

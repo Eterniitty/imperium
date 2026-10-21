@@ -572,3 +572,52 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .cookie-notice { position: absolute; left: 50%; bottom: 48px; transform: translateX(-50%); width: min(560px, calc(100% - 24px)); display: flex; gap: 14px; align-items: center; padding: 10px 14px; font-size: 12.5px; color: #c3cbd9; z-index: 5; }
 .cookie-notice p { margin: 0; line-height: 1.45; }
 .cookie-notice a { color: var(--cyan); }
+
+/* Economía de la humanidad y mercado. */
+.economy { width: min(760px, calc(100% - 24px)); }
+.economy-body h3 { margin-top: 18px; }
+.eco-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px 14px; margin: 8px 0; }
+.eco-stat { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border: 1px solid var(--panel-border); border-radius: 4px; }
+.eco-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 6px 0; }
+.eco-table th { text-align: left; font-weight: 400; color: var(--muted); padding: 3px 6px; border-bottom: 1px solid var(--panel-border); }
+.eco-table td { padding: 3px 6px; }
+.eco-table .num { text-align: right; }
+.eco-table .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+.projects { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.project { border: 1px solid var(--panel-border); border-radius: 4px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
+.project p { margin: 0; }
+.project-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.project-head strong { color: var(--gold); }
+.project-complete { opacity: 0.8; }
+.project-awaiting_funds { border-color: rgba(232, 182, 76, 0.55); }
+.project-bars { display: flex; flex-direction: column; gap: 3px; }
+.project-bar { display: grid; grid-template-columns: 90px 1fr auto; align-items: center; gap: 6px; }
+.contribute summary { cursor: pointer; color: var(--cyan); font-size: 12.5px; }
+.contribute { display: flex; flex-direction: column; gap: 6px; }
+.contribute[open] > * + * { margin-top: 6px; }
+.contribute select, .order-form select { font: inherit; font-size: 12px; max-width: 100%; }
+.ok-text { color: #7ee08a; }
+.resource-tabs { flex-wrap: wrap; }
+.price-chart { margin: 10px 0; }
+.price-chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart-axis { stroke: rgba(255, 255, 255, 0.15); stroke-width: 1; }
+.chart-line { fill: none; stroke: var(--gold); stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.chart-dot { fill: var(--gold); stroke: rgba(8, 12, 22, 0.9); stroke-width: 2; }
+.chart-hit { fill: transparent; }
+.chart-hit:hover { fill: rgba(255, 255, 255, 0.06); }
+.chart-bar { fill: rgba(95, 211, 230, 0.55); }
+.volume-chart { margin-top: 4px; }
+.order-book { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.order-book h4, .order-form h4, .economy-body section h4 { margin: 12px 0 4px; }
+.bid { color: #7ee08a; }
+.ask { color: #ff9f7a; }
+.order-form { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--panel-border); margin-top: 10px; }
+.order-form .mode { align-self: flex-start; }
+.order-form .btn { align-self: flex-start; }
+.my-order { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.credits-stat .stat-value { color: var(--gold); }
+@media (max-width: 760px) {
+  .economy { padding: 12px; max-height: calc(100% - 16px); width: calc(100% - 12px); }
+  .projects { grid-template-columns: 1fr; }
+  .order-book { grid-template-columns: 1fr; }
+}

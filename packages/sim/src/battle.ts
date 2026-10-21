@@ -57,9 +57,9 @@ export function battleRoundSeed(battleSeed: number, round: number): number {
 }
 
 /** Nave de batalla con los datos de su clase (ataque y escudo) y su casco actual. */
-export function battleShip(id: string, classId: string, hull: number): BattleShip {
+export function battleShip(id: string, classId: string, hull: number, /** Multiplicador del escudo (Defensas del Núcleo). */ shieldFactor = 1): BattleShip {
   const cls = getShipClass(classId as ShipClassId);
-  return { id, classId, attack: cls?.attack ?? 0, shield: cls?.battleShield ?? 0, hull };
+  return { id, classId, attack: cls?.attack ?? 0, shield: (cls?.battleShield ?? 0) * shieldFactor, hull };
 }
 
 /** ¿Puede este bando hacer daño? (alguna nave con ataque). */

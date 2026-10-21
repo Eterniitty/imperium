@@ -7,7 +7,7 @@ import { formatDuration, useServerNow } from "./useNow";
 import { useGame, useT } from "../state/store";
 import { ServerStatus } from "./ServerStatus";
 import { useWorld } from "../net/world";
-import { fmtInt, fmtRate, liveHumans } from "./colonies";
+import { fmtCredits, fmtInt, fmtRate, liveCredits, liveHumans } from "./colonies";
 
 function fmt(n: number): string {
   return Math.round(n).toLocaleString();
@@ -24,6 +24,7 @@ export function TopBar() {
   const flight = useGame((s) => s.flight);
   const emperor = useAuth((s) => s.emperor);
   const humans = useWorld((s) => s.humans);
+  const wallet = useWorld((s) => s.wallet);
   const keys = useKeyLabels();
   const now = useServerNow();
   const travel = emperor?.travel && emperor.travel.arriveAt > now ? emperor.travel : null;
@@ -61,6 +62,19 @@ export function TopBar() {
             {fmtInt(liveHumans(humans, now))} / {fmtInt(humans.capacity)}
           </span>
         </div>
+      )}
+
+      {/* Economía de la humanidad: créditos (abre el mercado) y el panel «Humanidad». */}
+      {emperor && wallet && (
+        <button className="stat stat-button credits-stat" onClick={() => gameStore.getState().setEconomyOpen("market")} title={t("eco.marketTitle")}>
+          <span className="stat-label">{t("eco.credits")}</span>
+          <span className="stat-value mono">₢ {fmtCredits(liveCredits(wallet, now))}</span>
+        </button>
+      )}
+      {emperor && (
+        <button className="btn" onClick={() => gameStore.getState().setEconomyOpen("humanity")} title={t("eco.humanityTitle")}>
+          {t("eco.humanity")}
+        </button>
       )}
 
       {emperor && (

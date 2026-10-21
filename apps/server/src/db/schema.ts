@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { bigserial, boolean, check, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { bigint, bigserial, boolean, check, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 /**
  * Esquema de la base de datos. Tras cambiarlo: `pnpm --filter @imperium/server db:generate`
@@ -296,6 +296,8 @@ export const resourceLedger = pgTable(
     alloys: doublePrecision("alloys").notNull().default(0),
     /** Humanos que entran (+) o salen (−) de la colonia. */
     humans: doublePrecision("humans").notNull().default(0),
+    /** Créditos que entran (+) o salen (−) de la cartera del Emperador (o del tesoro, sin Emperador ni colonia). */
+    credits: doublePrecision("credits").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("resource_ledger_colony_id_idx").on(t.colonyId), index("resource_ledger_emperor_id_idx").on(t.emperorId)],
@@ -403,4 +405,160 @@ export const battleRounds = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.battleId, t.round] })],
+);
+
+// --- Economía de la humanidad y mercado global ---
+
+/** Cuatro cantidades de recursos almacenables (progreso, envíos…). */
+const stockColumns = () => ({
+  metal: doublePrecision("metal").notNull().default(0),
+  volatiles: doublePrecision("volatiles").notNull().default(0),
+  crystal: doublePrecision("crystal").notNull().default(0),
+  alloys: doublePrecision("alloys").notNull().default(0),
+});
+
+/**
+ * Cartera de créditos de cada Emperador, resuelta perezosamente: `credits` es
+ * el saldo a la hora `settledAt` y `incomePerHour` la renta bruta (por hora de
+ * juego) de sus colonias; el Emperador cobra la parte neta y el tesoro el
+ * aporte. `summary` guarda, del último recálculo, sus agregados (colonias,
+ * población, existencias y tasas) para los de toda la humanidad.
+ */
+export const emperorWallets = pgTable(
+  "emperor_wallets",
+  {
+    emperorId: uuid("emperor_id")
+      .primaryKey()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    credits: doublePrecision("credits").notNull(),
+    incomePerHour: doublePrecision("income_per_hour").notNull().default(0),
+    settledAt: timestamp("settled_at", { withTimezone: true }).notNull(),
+    summary: jsonb("summary").notNull().default({}),
+  },
+  (t) => [check("emperor_wallets_nonnegative", sql`${t.credits} >= 0 AND ${t.incomePerHour} >= 0`)],
+);
+
+/**
+ * Tesoro común del Núcleo Humano (una sola fila, id 1): saldo a la hora
+ * `settledAt` y aportes por hora de juego (la suma de los de todas las carteras).
+ */
+export const humanityTreasury = pgTable(
+  "humanity_treasury",
+  {
+    id: integer("id").primaryKey(),
+    credits: doublePrecision("credits").notNull().default(0),
+    incomePerHour: doublePrecision("income_per_hour").notNull().default(0),
+    settledAt: timestamp("settled_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [check("humanity_treasury_single", sql`${t.id} = 1`), check("humanity_treasury_nonnegative", sql`${t.credits} >= 0`)],
+);
+
+/**
+ * Proyectos comunes de la humanidad (fichas en `@imperium/content`): niveles
+ * completados y recursos ya aportados para el siguiente. Los créditos los
+ * paga el tesoro cuando están todos los recursos (evento `humanity.fund`).
+ */
+export const humanityProjects = pgTable("humanity_projects", {
+  projectId: text("project_id").primaryKey(),
+  level: integer("level").notNull().default(0),
+  ...stockColumns(),
+  /** Hora de la próxima comprobación de fondos programada (null si no hay). */
+  fundCheckAt: timestamp("fund_check_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+});
+
+/** Aportes a los proyectos comunes (al llegar al Núcleo), para el reconocimiento de cada Emperador. */
+export const humanityContributions = pgTable(
+  "humanity_contributions",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    /** Null si el Emperador borró su cuenta: el aporte se queda, anónimo. */
+    emperorId: uuid("emperor_id").references(() => emperors.id, { onDelete: "set null" }),
+    projectId: text("project_id").notNull(),
+    ...stockColumns(),
+    credits: doublePrecision("credits").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("humanity_contributions_project_idx").on(t.projectId), index("humanity_contributions_emperor_idx").on(t.emperorId)],
+);
+
+/**
+ * Órdenes abiertas del mercado global. Al crearla se retiene lo que se ofrece:
+ * los recursos de una venta salen de su colonia y los créditos de una compra
+ * de la cartera (`escrowCredits`). Al casarse del todo o cancelarse, se borra.
+ */
+export const marketOrders = pgTable(
+  "market_orders",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    /** Orden de llegada: a igual precio, gana la más antigua. */
+    seq: bigserial("seq", { mode: "number" }).notNull(),
+    emperorId: uuid("emperor_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    /** Colonia de origen (venta) o de destino (compra) de los recursos. */
+    colonyId: uuid("colony_id")
+      .notNull()
+      .references(() => colonies.id, { onDelete: "cascade" }),
+    resource: text("resource").notNull(),
+    side: text("side").notNull(),
+    price: doublePrecision("price").notNull(),
+    quantity: integer("quantity").notNull(),
+    remaining: integer("remaining").notNull(),
+    escrowCredits: doublePrecision("escrow_credits").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("market_orders_book_idx").on(t.resource, t.side, t.price),
+    index("market_orders_emperor_idx").on(t.emperorId),
+    check("market_orders_side", sql`${t.side} IN ('buy', 'sell')`),
+    check("market_orders_resource", sql`${t.resource} IN ('metal', 'volatiles', 'crystal', 'alloys')`),
+    check("market_orders_amounts", sql`${t.price} > 0 AND ${t.remaining} > 0 AND ${t.remaining} <= ${t.quantity} AND ${t.escrowCredits} >= 0`),
+  ],
+);
+
+/** Operaciones casadas: el historial de precios. Las partes quedan anónimas si borran su cuenta. */
+export const marketTrades = pgTable(
+  "market_trades",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    resource: text("resource").notNull(),
+    price: doublePrecision("price").notNull(),
+    quantity: integer("quantity").notNull(),
+    buyerId: uuid("buyer_id").references(() => emperors.id, { onDelete: "set null" }),
+    sellerId: uuid("seller_id").references(() => emperors.id, { onDelete: "set null" }),
+    buyerColonyId: uuid("buyer_colony_id"),
+    sellerColonyId: uuid("seller_colony_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("market_trades_history_idx").on(t.resource, t.createdAt),
+    index("market_trades_buyer_idx").on(t.buyerId),
+    index("market_trades_seller_idx").on(t.sellerId),
+  ],
+);
+
+/**
+ * Envíos de recursos por la red del Núcleo: lo comprado en el mercado (de la
+ * colonia del vendedor a la del comprador) y los aportes a los proyectos (de
+ * una colonia al Núcleo). Llegan con el evento `shipment.arrive`.
+ */
+export const shipments = pgTable(
+  "shipments",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    kind: text("kind").notNull(),
+    /** Destinatario (compra) o quien aporta (proyecto). Null si borró su cuenta. */
+    emperorId: uuid("emperor_id").references(() => emperors.id, { onDelete: "set null" }),
+    fromColonyId: uuid("from_colony_id"),
+    fromSystemId: text("from_system_id").notNull(),
+    toColonyId: uuid("to_colony_id"),
+    toSystemId: text("to_system_id"),
+    projectId: text("project_id"),
+    tradeId: bigint("trade_id", { mode: "number" }),
+    ...stockColumns(),
+    departAt: timestamp("depart_at", { withTimezone: true }).notNull(),
+    arriveAt: timestamp("arrive_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("shipments_emperor_idx").on(t.emperorId), check("shipments_kind", sql`${t.kind} IN ('trade', 'contribution')`)],
 );

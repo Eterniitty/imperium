@@ -16,6 +16,7 @@ import {
 import { UNIVERSE_SEED } from "../config";
 
 export type ViewMode = "galaxy" | "system";
+export type EconomyTab = "humanity" | "market";
 
 /**
  * Detalle del sistema seleccionado (niebla de guerra; ver `details.ts`):
@@ -50,6 +51,8 @@ export interface GameState {
   /** Aviso breve en pantalla (salir de un sistema, error de un salto…). */
   notice: { key: I18nKey; params?: Record<string, string | number>; id: number } | null;
   settingsOpen: boolean;
+  /** Panel de economía abierto: «Humanidad», «Mercado» o ninguno. */
+  economyOpen: EconomyTab | null;
   /** Cámara al pilotar: desde la cabina (primera persona) o desde detrás de la nave (tercera). */
   cameraView: "first" | "third";
 
@@ -65,6 +68,7 @@ export interface GameState {
   setStats(stats: { loadedSectors: number; loadedSystems: number; fps: number }): void;
   notify(key: I18nKey, params?: Record<string, string | number>): void;
   setSettingsOpen(open: boolean): void;
+  setEconomyOpen(tab: EconomyTab | null): void;
   toggleCameraView(): void;
 }
 
@@ -111,6 +115,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   selectedPlanet: null,
   notice: null,
   settingsOpen: false,
+  economyOpen: null,
   cameraView: "third",
 
   start: (at) => {
@@ -150,6 +155,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   setStats: (stats) => set(stats),
 
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
+  setEconomyOpen: (economyOpen) => set({ economyOpen }),
   toggleCameraView: () => set({ cameraView: get().cameraView === "first" ? "third" : "first" }),
 
   notify: (key, params) => {

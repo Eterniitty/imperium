@@ -25,8 +25,10 @@ import {
   populationCap,
   populationGrowthPerHour,
   realDurationMs,
+  NO_BONUSES,
   resolveColony,
   upkeepShortage,
+  type HumanityBonuses,
   type ColonySite,
   type ColonyState,
   type InstallationCounts,
@@ -73,6 +75,12 @@ function refundOf(build: { kind: string; itemId: string; startedAt: Date | null 
   const cost: StockAmounts = def ? { ...{ metal: 0, volatiles: 0, crystal: 0, alloys: 0 }, ...def.cost } : { metal: 0, volatiles: 0, crystal: 0, alloys: 0 };
   return scaled(cost, build.startedAt ? ECONOMY.cancelRefundStarted : 1);
 }
+/** Existencias iniciales de una colonia con el multiplicador de las subvenciones (sin pasar del almacén). */
+function foundingStock(multiplier: number): StockAmounts {
+  const out = { ...ECONOMY.foundingStock };
+  for (const k of Object.keys(out) as Array<keyof StockAmounts>) out[k] = Math.min(ECONOMY.storage[k], Math.round(out[k] * multiplier));
+  return out;
+}
 const stockOf = (r: Pick<ColonyRow, "metal" | "volatiles" | "crystal" | "alloys">): StockAmounts => ({ metal: r.metal, volatiles: r.volatiles, crystal: r.crystal, alloys: r.alloys });
 const negate = (s: StockAmounts): StockAmounts => ({ metal: -s.metal, volatiles: -s.volatiles, crystal: -s.crystal, alloys: -s.alloys });
 const scaled = (s: StockAmounts, k: number): StockAmounts => ({ metal: s.metal * k, volatiles: s.volatiles * k, crystal: s.crystal * k, alloys: s.alloys * k });
@@ -86,6 +94,8 @@ export class ColonyService {
   private readonly seed: number;
   private readonly timeScale: number;
   private readonly details = new Map<string, StarSystemDetail>();
+  /** Bonificaciones de los proyectos comunes de la humanidad (las pone `HumanityService`). */
+  private bonuses: () => HumanityBonuses = () => NO_BONUSES;
 
   constructor(
     private readonly db: Database,
@@ -96,6 +106,11 @@ export class ColonyService {
   ) {
     this.seed = universeSeedFromString(config.UNIVERSE_SEED);
     this.timeScale = config.TIME_SCALE;
+  }
+
+  /** Enlaza las bonificaciones globales de la humanidad (extracción, fundación). */
+  setBonuses(get: () => HumanityBonuses): void {
+    this.bonuses = get;
   }
 
   private detail(systemId: string): StarSystemDetail | null {
@@ -156,7 +171,7 @@ export class ColonyService {
   private site(row: ColonyRow, counts: InstallationCounts, extraUpkeep = 0): (ColonySite & { planet: Planet }) | null {
     const found = this.planet(row.systemId, row.planetIndex);
     if (!found) return null;
-    return { planet: found.planet, starEnergy: found.detail.energy, installations: counts, extraUpkeep };
+    return { planet: found.planet, starEnergy: found.detail.energy, installations: counts, extraUpkeep, extractionMultiplier: this.bonuses().extraction };
   }
 
   // --- Mantenimiento de las flotas: lo paga la capital ---
@@ -220,7 +235,7 @@ export class ColonyService {
     if (!site) return null;
     const state = this.resolve(row, site, now);
     const cap = populationCap(site.planet.habitability);
-    const flows = colonyFlows(site.planet, site.starEnergy, counts, state.population, extraUpkeep);
+    const flows = colonyFlows(site.planet, site.starEnergy, counts, state.population, extraUpkeep, site.extractionMultiplier);
     const energy = colonyEnergy(site.starEnergy, counts);
     const installed: Record<string, number> = {};
     for (const [k, v] of Object.entries(counts)) if (v) installed[k] = v;
@@ -404,7 +419,8 @@ export class ColonyService {
       }
 
       // Sin objetivo de conflicto: si otro lo reclamó a la vez, no se inserta nada y se deshace todo.
-      const stock = ECONOMY.foundingStock;
+      // Las subvenciones del Núcleo (proyecto común) aumentan las existencias iniciales.
+      const stock = foundingStock(this.bonuses().founding);
       const [colony] = await tx
         .insert(colonies)
         .values({ emperorId, systemId: system.id, planetIndex: args.planetIndex, population: humans, ...stock, resolvedAt: new Date(now) })
@@ -690,6 +706,42 @@ export class ColonyService {
   /** Guarda el estado de una colonia resuelto a la hora `at`. */
   async writeState(tx: Tx, colonyId: string, state: ColonyState, at: number): Promise<void> {
     await tx.update(colonies).set({ population: state.population, ...state.stock, resolvedAt: new Date(at) }).where(eq(colonies.id, colonyId));
+  }
+
+  /**
+   * Suma (o resta, con cantidades negativas) recursos a una colonia propia,
+   * resuelta antes a la hora `at`, y lo asienta en el libro con `reason`. Lo
+   * usan el mercado y los aportes a la humanidad, y es el punto de enganche
+   * para reponer combustible y munición de la nave en colonias propias.
+   * Las retiradas exigen tener todo (si no, `insufficient_resources` y no
+   * cambia nada); lo que entra y no cabe en el almacén se pierde y se devuelve
+   * en `lost`. Null si la colonia no existe o no es de `emperorId`.
+   */
+  async adjustStock(
+    tx: Tx,
+    emperorId: string,
+    colonyId: string,
+    delta: Partial<StockAmounts>,
+    reason: string,
+    ref: string | null,
+    at: number,
+  ): Promise<{ ok: true; systemId: string; lost: StockAmounts } | { ok: false; error: CommandError }> {
+    const locked = await this.lockResolved(tx, emperorId, colonyId, at);
+    if (!locked) return { ok: false, error: "no_colony" };
+    const stock = { ...locked.state.stock };
+    const applied: StockAmounts = { metal: 0, volatiles: 0, crystal: 0, alloys: 0 };
+    const lost: StockAmounts = { metal: 0, volatiles: 0, crystal: 0, alloys: 0 };
+    for (const k of Object.keys(applied) as Array<keyof StockAmounts>) {
+      const d = delta[k] ?? 0;
+      if (d < 0 && stock[k] + 1e-6 < -d) return { ok: false, error: "insufficient_resources" };
+      const next = Math.max(0, Math.min(ECONOMY.storage[k], stock[k] + d));
+      applied[k] = next - stock[k];
+      if (d > 0) lost[k] = d - applied[k];
+      stock[k] = next;
+    }
+    await this.writeState(tx, colonyId, { population: locked.state.population, stock }, at);
+    await tx.insert(resourceLedger).values({ emperorId, colonyId, reason, ref, ...applied });
+    return { ok: true, systemId: locked.row.systemId, lost };
   }
 
   /**

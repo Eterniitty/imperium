@@ -63,6 +63,14 @@ const EPS = 1e-6;
 export class WarService {
   private readonly seed: number;
 
+  /** Multiplicador del escudo de batalla en un sistema (Defensas del Núcleo; lo enlaza `app.ts`). */
+  private shieldFactor: (systemId: string) => number = () => 1;
+
+  /** Enlaza el multiplicador del escudo de batalla por sistema (proyectos comunes de la humanidad). */
+  setShieldFactor(get: (systemId: string) => number): void {
+    this.shieldFactor = get;
+  }
+
   constructor(
     private readonly db: Database,
     private readonly config: Pick<ServerConfig, "UNIVERSE_SEED" | "TIME_SCALE">,
@@ -218,9 +226,10 @@ export class WarService {
     const fleetOwner = new Map(fleetRows.map((f) => [f.id, f.emperorId]));
     for (const f of fleetRows) fx.fleets.set(f.id, f.emperorId);
     const bySide: [BattleShip[], BattleShip[]] = [[], []];
+    const shield = this.shieldFactor(battle.systemId);
     for (const s of shipRows) {
       const side = sideOf.get(fleetOwner.get(s.fleetId)!);
-      if (side !== undefined) bySide[side].push(battleShip(s.id, s.classId, s.hull));
+      if (side !== undefined) bySide[side].push(battleShip(s.id, s.classId, s.hull, shield));
     }
 
     // Un bando sin naves en la batalla ha huido (o su Emperador ya no existe).

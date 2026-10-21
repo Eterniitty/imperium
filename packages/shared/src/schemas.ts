@@ -83,7 +83,34 @@ const Vec3Schema = z.tuple([Coord, Coord, Coord]);
 const QuatSchema = z.tuple([z.number().min(-1.01).max(1.01), z.number().min(-1.01).max(1.01), z.number().min(-1.01).max(1.01), z.number().min(-1.01).max(1.01)]);
 
 /** Mensajes del cliente por el WebSocket (ver `protocol.ts`). */
+const Stock4 = z.enum(["metal", "volatiles", "crystal", "alloys"]);
+
 export const ClientMessageSchema = z.union([
+  // Economía de la humanidad y mercado (los límites finos se comprueban en el servidor).
+  z.object({
+    t: z.literal("cmd"),
+    cmdId: CmdIdSchema,
+    op: z.literal("market.order"),
+    args: z.object({
+      resource: Stock4,
+      side: z.enum(["buy", "sell"]),
+      price: z.number().finite().positive().max(1e6),
+      quantity: z.number().int().positive().max(1e7),
+      colonyId: z.uuid(),
+    }),
+  }),
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("market.cancel"), args: z.object({ orderId: z.uuid() }) }),
+  z.object({
+    t: z.literal("cmd"),
+    cmdId: CmdIdSchema,
+    op: z.literal("humanity.contribute"),
+    args: z.object({
+      projectId: z.string().regex(/^[a-z_]{1,32}$/),
+      colonyId: z.uuid().optional(),
+      amounts: z.object({ metal: Amount, volatiles: Amount, crystal: Amount, alloys: Amount }).partial().optional(),
+      credits: z.number().finite().min(0).max(1e9).optional(),
+    }),
+  }),
   z.object({
     t: z.literal("cmd"),
     cmdId: CmdIdSchema,

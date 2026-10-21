@@ -14,6 +14,12 @@ export interface EventPayloads {
   "emperor.arrive": { emperorId: string; systemId: string };
   /** Termina una construcción de una colonia (instalación o nave). */
   "colony.build": { buildId: string };
+  /** Recálculo periódico de la cartera de créditos de un Emperador (economía de la humanidad). */
+  "economy.settle": { emperorId: string };
+  /** Llega un envío de la red del Núcleo (compra del mercado o aporte a un proyecto). */
+  "shipment.arrive": { shipmentId: string };
+  /** Comprobar si el tesoro ya puede pagar un proyecto común que tiene todos sus recursos. */
+  "humanity.fund": { projectId: string };
   /** Siguiente ronda de una batalla de flotas (Fase 9a). */
   "battle.round": { battleId: string };
 }

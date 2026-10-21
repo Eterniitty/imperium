@@ -82,6 +82,8 @@ Ship costs and build times are in [Fleets](/wiki/flotas#ships).
 
 ## Resource ledger
 
-Every discrete movement of resources or humans is recorded in an **insert-only ledger** that nobody can modify or delete: foundations, orders, cancellations, colonists boarding or landing, fleet loading and unloading, battle losses and colonies becoming independent. Continuous production is not recorded (that is the lazy calculation). It is used to audit and rebuild balances, and it is included in your [data download](/wiki/cuenta).
+Every discrete movement of resources or humans is recorded in an **insert-only ledger** that nobody can modify or delete: foundations, orders, cancellations, colonists boarding or landing, fleet loading and unloading, battle losses, colonies becoming independent and, with the [economy of humanity](/wiki/humanidad), credits, contributions and [market](/wiki/mercado) trades. Continuous production is not recorded (that is the lazy calculation). It is used to audit and rebuild balances, and it is included in your [data download](/wiki/cuenta).
 
-> [!dev] The **supply network** (isolated installations that weaken), the **economy of all humanity** (contributions to the Human Core, shared projects) and a **global market** with supply-and-demand prices are planned for later.
+Above the colonies there is the [economy of all humanity](/wiki/humanidad): colonies generate **credits** according to their population, part of them goes to the Human Core treasury and pays for common projects. Credits buy and sell resources on the [global market](/wiki/mercado).
+
+> [!dev] The **supply network** (isolated installations that weaken) is planned for later.

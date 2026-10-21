@@ -137,12 +137,20 @@ export function installationsUpkeep(installations: InstallationCounts): number {
  * `extraUpkeep`: mantenimiento que paga esta colonia además del suyo (la
  * capital paga el de las flotas del Emperador).
  */
-export function colonyFlows(planet: ColonyPlanet, starEnergy: number, installations: InstallationCounts, population: number, extraUpkeep = 0): ColonyFlows {
+export function colonyFlows(
+  planet: ColonyPlanet,
+  starEnergy: number,
+  installations: InstallationCounts,
+  population: number,
+  extraUpkeep = 0,
+  /** Multiplicador de la extracción (proyecto común «Investigación del Núcleo»). */
+  extractionMultiplier = 1,
+): ColonyFlows {
   const rich = effectiveRichness(planet);
   const { efficiency } = colonyEnergy(starEnergy, installations);
   const labor = laborFactor(population);
   const mines = installations.mine ?? 0;
-  const perRichness = (ECONOMY.baseExtractionPerRichness + ECONOMY.mineExtractionPerRichness * mines * efficiency) * labor;
+  const perRichness = (ECONOMY.baseExtractionPerRichness + ECONOMY.mineExtractionPerRichness * mines * efficiency) * labor * extractionMultiplier;
   const refineries = (installations.refinery ?? 0) * efficiency * labor;
   return {
     extraction: {
@@ -233,6 +241,8 @@ export interface ColonySite {
   installations: InstallationCounts;
   /** Mantenimiento de las flotas, si esta colonia es la capital del Emperador. */
   extraUpkeep?: number;
+  /** Multiplicador de la extracción de los proyectos comunes de la humanidad (1 = ninguno). */
+  extractionMultiplier?: number;
 }
 
 /** Pasos de como mucho una hora (la población cambia la producción); más allá de este número, un solo paso. */
@@ -247,7 +257,7 @@ export function resolveColony(state: ColonyState, site: ColonySite, hours: numbe
   let left = hours;
   for (let i = 0; left > EPS; i++) {
     const step = i < MAX_STEPS ? Math.min(1, left) : left;
-    stock = advanceStock(stock, colonyFlows(site.planet, site.starEnergy, site.installations, population, extraUpkeep), step);
+    stock = advanceStock(stock, colonyFlows(site.planet, site.starEnergy, site.installations, population, extraUpkeep, site.extractionMultiplier ?? 1), step);
     population = populationAfter(population, cap, step);
     left -= step;
   }

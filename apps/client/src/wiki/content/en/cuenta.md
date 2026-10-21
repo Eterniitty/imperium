@@ -12,9 +12,9 @@
 
 In **Settings → Account**:
 
-- **Download my data**: a JSON file with everything stored about your account and your game (account, Emperor, fleets and ships, cargo, routes, colonies, installations, orders, discoveries, companions, battles and your entries in the [resource ledger](/wiki/economia#resource-ledger)).
+- **Download my data**: a JSON file with everything stored about your account and your game (account, Emperor, fleets and ships, cargo, routes, colonies, installations, orders, discoveries, companions, battles, your credit wallet, your contributions, [market](/wiki/mercado) orders, trades and shipments, and your entries in the [resource ledger](/wiki/economia#resource-ledger)).
 - **Delete my account**: type **DELETE** to confirm. Your account and email, your Emperor, your fleets, your discoveries and your companion list are deleted immediately (other players' accounts are not touched). **It cannot be undone.**
-- What you did in the universe **stays**: your planets keep the names you gave them, as [independent colonies](/wiki/colonias#independent-colonies).
+- What you did in the universe **stays**: your planets keep the names you gave them, as [independent colonies](/wiki/colonias#independent-colonies). Your market orders are cancelled first (whatever was held returns to your colonies) and your contributions to common projects stay, anonymous.
 
 ## Cookies and privacy
 

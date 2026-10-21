@@ -14,6 +14,7 @@ import { FleetsPanel } from "./FleetsPanel";
 import { WarPanel } from "./WarPanel";
 import { Notice } from "./Notice";
 import { SettingsPanel } from "./SettingsPanel";
+import { EconomyPanel } from "./EconomyPanel";
 import { Legend } from "./Legend";
 import { PlanetPanel } from "./PlanetPanel";
 import { StartScreen } from "./StartScreen";
@@ -93,6 +94,7 @@ export function App() {
         )}
         <Notice />
         <SettingsPanel />
+        <EconomyPanel />
       </div>
     </div>
   );

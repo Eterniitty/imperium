@@ -11,6 +11,8 @@ const app = await buildApp(config, { db: database.db });
 // existiera) descubren su entorno. Idempotente; casi siempre no hace nada.
 const backfilled = await new DiscoveryService(database.db, config).backfill();
 if (backfilled > 0) app.log.info({ emperors: backfilled }, "Descubrimientos iniciales añadidos");
+// Economía de la humanidad: tesoro, proyectos comunes y sus niveles (bonificaciones globales).
+await app.humanity.load();
 app.addHook("onClose", () => database.close());
 
 // Cierre ordenado: systemd envía SIGTERM al reiniciar o parar el servicio.

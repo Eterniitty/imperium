@@ -103,3 +103,15 @@ export function placeFromRow(universeSeed: number, row: PlaceRow, now: number): 
   }
   return settle({ location: toLocation(system), travel }, now);
 }
+
+/** ¿Está el sistema en el Núcleo Humano? (los sectores alrededor del origen). */
+export function inHumanCore(systemId: string): boolean {
+  let sector: { x: number; y: number; z: number };
+  try {
+    sector = parseSystemId(systemId).sector;
+  } catch {
+    return false;
+  }
+  const r = HUMAN_CORE_RADIUS;
+  return Math.abs(sector.x) <= r && Math.abs(sector.y) <= r && Math.abs(sector.z) <= r;
+}
