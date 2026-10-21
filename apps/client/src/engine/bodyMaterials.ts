@@ -466,17 +466,30 @@ const STAR_FRAGMENT = /* glsl */ `
     vec2 sg = worley(dir * 11.0 + uSeed.zxy, t * 0.05, 1.0);
     float network = 1.0 - smoothstep(0.0, 0.22, sg.y - sg.x);
     // Celdas casi blancas y canales del color de la estrella: brilla, no parece barro.
-    vec3 hot = mix(uColor, vec3(1.0, 0.97, 0.9), 0.7);
-    vec3 lane = uColor * 0.88;
-    vec3 col = mix(lane, hot, gran) * (1.05 + 0.25 * mottle + 0.12 * network);
+    // Plasma: lenguas de fuego que fluyen y se retuercen sobre la superficie (ruido
+    // deformado por otro ruido que se mueve), con zonas más calientes y más oscuras.
+    vec3 fp = dir * 3.2 + uSeed.zyx;
+    // Octavas según la calidad elegida (la estrella puede llenar la pantalla).
+    float wo = clamp(uMaxOctaves - 3.0, 1.0, 2.0);
+    vec3 warp = vec3(fbm(fp + vec3(0.0, t * 0.05, 0.0), wo), fbm(fp + vec3(5.2, -t * 0.04, 1.3), wo), fbm(fp + vec3(1.7, 9.2, t * 0.045), wo));
+    float flame = fbm(fp * 1.6 + warp * 2.4 + vec3(t * 0.03), clamp(uMaxOctaves - 2.0, 2.0, 4.0));
+    float tongues = smoothstep(0.35, 0.85, flame);
+    // Menos blanco que antes: la estrella se ve de su color y con relieve, no como un disco lavado.
+    vec3 hot = mix(uColor, vec3(1.0, 0.95, 0.82), 0.45);
+    vec3 deep = uColor * vec3(0.95, 0.55, 0.35);
+    vec3 lane = mix(deep, uColor * 0.85, 0.5);
+    vec3 col = mix(lane, hot, gran) * (0.95 + 0.25 * mottle + 0.12 * network);
+    col = mix(col * vec3(0.8, 0.6, 0.5), col * 1.25 + hot * 0.15, tongues);
     col = mix(col, uColor * 0.5, penumbra * 0.6);
     col = mix(col, uColor * uColor * 0.22, umbra * 0.8);
     // Fáculas brillantes cerca del borde y oscurecimiento del limbo.
     col += hot * 0.28 * smoothstep(0.25, 0.7, mottle) * (1.0 - mu);
     col *= 0.38 + 0.62 * pow(mu, 0.45);
     col = mix(col, uColor * 0.55, (1.0 - mu) * (1.0 - mu) * 0.5);
-    // Cromosfera: un filo rojizo y brillante justo en el borde del disco.
-    col += mix(uColor, vec3(1.0, 0.45, 0.35), 0.5) * pow(1.0 - mu, 9.0) * 0.9;
+    // Cromosfera: un filo rojizo y brillante justo en el borde del disco, con llamas
+    // que lo recorren (las mismas lenguas de fuego, más intensas hacia el borde).
+    float edge = pow(1.0 - mu, 6.0);
+    col += mix(uColor, vec3(1.0, 0.45, 0.3), 0.5) * edge * (0.6 + 1.2 * tongues);
     gl_FragColor = vec4(col * 0.95, 1.0);
   }
 `;

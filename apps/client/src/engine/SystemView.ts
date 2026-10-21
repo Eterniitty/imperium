@@ -1401,8 +1401,9 @@ export class SystemView implements View {
     fx.corona.uniforms.uNear!.value = near;
     const toCam = this.camera.position.clone().normalize();
     fx.glare.position.copy(toCam).multiplyScalar(r * 1.02);
-    fx.glare.scale.setScalar(r * (3 + 12 * near));
-    fx.glare.material.opacity = 0.12 + 0.55 * near;
+    fx.glare.scale.setScalar(r * (3.2 + 9 * near));
+    // El resplandor rodea el disco sin taparlo del todo (si no, la superficie se ve lavada).
+    fx.glare.material.opacity = 0.05 + 0.28 * near;
   }
 
   /**
