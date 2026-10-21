@@ -75,6 +75,10 @@ export interface SpaceState {
   remote: { shipId: string; fleetId: string; classId: string; systemId: string } | null;
   /** El servidor terminó el pilotaje a distancia (la nave cayó o la flota se fue), pendiente de atender. */
   remoteEnded: "destroyed" | "left" | null;
+  /** Acoplada en la nave nodriza de esta flota (número para el HUD), o null. */
+  docked: { fleetId: string; number: number } | null;
+  /** El servidor la desacopló (la flota se fue o la nave se alejó), pendiente de atender. */
+  undocked: boolean;
 }
 
 /** Id en el espacio de una nave de flota pilotada a distancia (el mismo que usa el servidor). */
@@ -83,7 +87,7 @@ export const fleetShipId = (shipId: string) => `ship:${shipId}`;
 /** Armas que se pueden seleccionar: cañón, misiles y láser de minería (solo en el espacio profundo). */
 export type SelectedWeapon = "cannon" | "missile" | "laser";
 
-const EMPTY: SpaceState = { systemId: null, ships: {}, correction: null, self: null, weapons: [], supplies: null, targetId: null, weapon: "cannon", shots: [], explosions: [], rifts: [], destroyed: null, field: null, beams: {}, hold: null, mineFail: null, aim: null, mining: false, remote: null, remoteEnded: null };
+const EMPTY: SpaceState = { systemId: null, ships: {}, correction: null, self: null, weapons: [], supplies: null, targetId: null, weapon: "cannon", shots: [], explosions: [], rifts: [], destroyed: null, field: null, beams: {}, hold: null, mineFail: null, aim: null, mining: false, remote: null, remoteEnded: null, docked: null, undocked: false };
 
 export const spaceStore = createStore<SpaceState>()(() => ({ ...EMPTY }));
 

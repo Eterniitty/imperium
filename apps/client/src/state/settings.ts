@@ -8,7 +8,7 @@ import { useStore } from "zustand";
  */
 export const ACTIONS = {
   // Pilotar la nave (y el vuelo libre de cámara en el mapa).
-  flight: ["forward", "back", "strafeLeft", "strafeRight", "up", "down", "rollLeft", "rollRight", "turnLeft", "turnRight", "pitchUp", "pitchDown", "boost", "cameraView", "fireCannon", "fireMissile", "lockTarget", "targetNext", "targetPrev", "targetNearest", "autoFire", "weaponCannon", "weaponMissile", "weaponLaser", "pulse", "flightAssist", "mouseFlight", "cameraReset", "engines", "mine", "cruise", "follow"],
+  flight: ["forward", "back", "strafeLeft", "strafeRight", "up", "down", "rollLeft", "rollRight", "turnLeft", "turnRight", "pitchUp", "pitchDown", "boost", "cameraView", "fireCannon", "fireMissile", "lockTarget", "targetNext", "targetPrev", "targetNearest", "autoFire", "weaponCannon", "weaponMissile", "weaponLaser", "pulse", "flightAssist", "mouseFlight", "cameraReset", "engines", "mine", "cruise", "follow", "dock"],
   // Mover la cámara por el mapa galáctico.
   map: ["mapForward", "mapBack", "mapLeft", "mapRight", "mapUp", "mapDown", "mapBoost", "flightMode", "focus", "enter", "deselect"],
   // En cualquier momento.
@@ -57,6 +57,7 @@ export const DEFAULT_BINDINGS: Bindings = {
   // Piloto automático: lista de destinos (o cancelar) y seguir a otra nave.
   cruise: ["KeyN"],
   follow: ["KeyH"],
+  dock: ["Enter"],
   mapForward: ["KeyW", "ArrowUp"],
   mapBack: ["KeyS", "ArrowDown"],
   mapLeft: ["KeyA", "ArrowLeft"],

@@ -85,6 +85,15 @@ In the cockpit you see the **artificial horizon** (relative to the orbital plane
 - **Rounds and missiles**: limited. Only a small reserve is made on board.
 - **Resupply**: within 150 km of a planet with **one of your colonies**, the ship refills by itself from the colony's stock (volatiles for fuel, metal for rounds, alloys for missiles).
 
+## Docking in a mothership
+
+The **mothership** is the biggest ship you can build (1600 m, in an orbital drydock; see [Human ships](/wiki/naves)). When one of your fleets with a mothership is stationary in the system where you are flying, get close to it and press [[Enter]] (dock): your ship enters its hangar and **resupplies from the fleet's hold** as it would next to one of your colonies (volatiles → fuel, metal → ammunition, alloys → missiles and hull). Fill the fleet's hold at a colony first (see [Logistics](/wiki/logistica)).
+
+- While docked your ship does not move on its own; press [[Enter]] again to leave.
+- You undock automatically if the fleet sets off or your ship moves away.
+
+> [!dev] Travelling docked with the fleet from one system to another is not possible yet.
+
 ## Remotely piloting your fleets' ships
 
 In the **Fleets** panel (also on the command bridge during a quantum trip), stationary fleets that are not in battle have a **Pilot** button: you take the controls of their biggest armed ship, in the system where the fleet is, even if your own ship is far away or travelling. Your Emperor's ship stays parked.

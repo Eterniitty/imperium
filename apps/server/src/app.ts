@@ -146,6 +146,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   space.onFlagship = (emperorId) => void hub.publishFlagship(emperorId);
   // Espacio profundo: contenido secreto de las regiones y minería de sus asteroides.
   space.deep = new DeepSpaceService(deps.db, config);
+  space.onFleetCargo = (emperorId, fleetId) => void hub.publishFleet(emperorId, fleetId);
   // Naves de flota pilotadas a distancia: su casco vuelve a la flota; si caen, la flota la pierde.
   space.fleetShips = {
     saveHull: async (emperorId, fleetId, shipId, hull) => {

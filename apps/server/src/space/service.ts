@@ -1,6 +1,6 @@
-import { AIM_ASSIST, BODY_COLLISION, EMPEROR_FLAGSHIP, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, getAlienShipClass, getShipClass, MINING, PIRATE_AI, type ShipClassId } from "@imperium/content";
-import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, isDeepId, type ServerMessage, type ShipPose, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
-import { addToHold, bodiesAt, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
+import { AIM_ASSIST, BODY_COLLISION, EMPEROR_FLAGSHIP, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, getAlienShipClass, getShipClass, MINING, PIRATE_AI, type ShipClassId } from "@imperium/content";
+import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, isDeepId, type CommandError, type ServerMessage, type ShipPose, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
+import { addToHold, bodiesAt, fleetRallyPoint, fleetSlotPosition, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { EmperorService } from "../emperor/service";
 import type { Client, RemotePilot } from "../realtime/hub";
@@ -67,6 +67,8 @@ interface Member {
   refinePending?: boolean;
   /** Hasta cuándo no cuenta otro choque contra un cuerpo (`BODY_COLLISION.cooldownSec`). */
   bodyBumpUntil?: number;
+  /** Solo la nave del Emperador: acoplada en la nave nodriza de esta flota, que espera en `at` (punto del sistema). */
+  dock?: { fleetId: string; slot: number; colonyPlanet: number | null; reach: number } | null;
 }
 
 /** Clave (e id de la nave en el espacio) de una nave de flota pilotada a distancia. */
@@ -129,6 +131,8 @@ export class SpaceService {
   private readonly deadPirates = new Map<string, number>();
   /** Espacio profundo: contenido de las regiones y minería (lo pone `buildApp`). */
   deep: DeepSpaceService | null = null;
+  /** La bodega de una flota cambió (reposición acoplada): avisar a su dueño. */
+  onFleetCargo: ((emperorId: string, fleetId: string) => void) | null = null;
   /** Naves de flota pilotadas a distancia: guardar su casco al dejarlas y borrarlas si las destruyen (los pone el servidor). */
   fleetShips: { saveHull(emperorId: string, fleetId: string, shipId: string, hull: number): Promise<void>; destroyed(emperorId: string, fleetId: string, shipId: string): Promise<void> } | null = null;
   /** Emperadores con la refinería de a bordo encendida (volátiles de la bodega → combustible). */
@@ -410,8 +414,44 @@ export class SpaceService {
     if (reason === "destroyed") client.send({ t: "remoteEnded", reason });
   }
 
+  /**
+   * Acopla la nave del Emperador que pilota este cliente en la nave nodriza de
+   * una flota (ya validada): la flota espera en su sitio (`slot`) junto al punto
+   * de reunión del sistema, y la nave tiene que estar a menos de `reach`.
+   */
+  dock(client: Client, fleetId: string, slot: number, colonyPlanet: number | null, reach: number): CommandError | null {
+    const m = this.members.get(client.emperorId);
+    if (client.piloting || !m || m.park || !m.clients.has(client)) return "too_far";
+    const at = this.dockPoint(m.systemId, slot, colonyPlanet, this.now());
+    if (!at || distance(m.pose.p, at) > reach) return "too_far";
+    m.dock = { fleetId, slot, colonyPlanet, reach };
+    return null;
+  }
+
+  /** Dónde espera ahora la flota en la que se acopla (se mueve con su planeta). */
+  private dockPoint(systemId: string, slot: number, colonyPlanet: number | null, now: number): Vec3 | null {
+    const layout = this.layout(systemId);
+    return layout ? fleetSlotPosition(fleetRallyPoint(layout, colonyPlanet, now), slot) : null;
+  }
+
+  undock(client: Client): void {
+    const m = this.members.get(client.emperorId);
+    if (m) m.dock = null;
+  }
+
+  /** Sistema en el que pilota este cliente su nave del Emperador (null si no la pilota). */
+  pilotingIn(client: Client): string | null {
+    const m = client.piloting ? null : this.members.get(client.emperorId);
+    return m && !m.park && m.clients.has(client) ? m.systemId : null;
+  }
+
   /** La flota se va (orden de viaje o intercepción): quien pilotaba una de sus naves deja de hacerlo. */
   releaseFleet(fleetId: string): void {
+    for (const m of this.members.values()) {
+      if (m.dock?.fleetId !== fleetId) continue;
+      m.dock = null;
+      this.sendTo(m, { t: "undocked" });
+    }
     for (const m of [...this.members.values()]) {
       if (m.kind !== "fleet" || m.fleetId !== fleetId) continue;
       for (const c of [...m.clients]) {
@@ -774,6 +814,7 @@ export class SpaceService {
     const ahead = Math.min(0.5, Math.max(0, (now - m.poseAt) / 1000));
     const p: Vec3 = [m.pose.p[0] + m.pose.v[0] * ahead, m.pose.p[1] + m.pose.v[1] * ahead, m.pose.p[2] + m.pose.v[2] * ahead];
     m.park = { p, at: now };
+    m.dock = null;
     m.pose = { p, q: m.pose.q, v: parkedVelocity(m.park, now) };
     m.poseAt = now;
     m.dirty = true;
@@ -1169,6 +1210,10 @@ export class SpaceService {
   private resupplyAll(now: number): void {
     for (const m of this.members.values()) {
       if (m.kind !== "emperor" || !m.combat.hasReactor || m.combat.stale) continue;
+      if (m.dock) {
+        this.resupplyDocked(m, now);
+        continue;
+      }
       const cols = m.colonies;
       if (!cols || (!cols.loading && now - cols.at >= COLONIES_REFRESH_MS)) {
         const state: NonNullable<Member["colonies"]> = { list: cols?.list ?? [], at: now, loading: true };
@@ -1216,6 +1261,42 @@ export class SpaceService {
         .catch((err: unknown) => this.log.error(err, "Error al reponer la nave"))
         .finally(() => (m.resupplyPending = false));
     }
+  }
+
+  /** Acoplada en una nave nodriza: se repone de la bodega de su flota; si se aleja, se desacopla. */
+  private resupplyDocked(m: Member, now: number): void {
+    const dock = m.dock!;
+    const at = this.dockPoint(m.systemId, dock.slot, dock.colonyPlanet, now);
+    if (m.park || !at || distance(m.pose.p, at) > dock.reach * 2) {
+      m.dock = null;
+      this.sendTo(m, { t: "undocked" });
+      return;
+    }
+    if (m.resupplyPending) return;
+    const missing = m.combat.missing(now);
+    if (missing.fuel < 0.5 && missing.cannon < 1 && missing.missiles < 1 && missing.hull < 0.5) return;
+    const sec = RESUPPLY_MS / 1000;
+    const want = {
+      fuel: Math.min(missing.fuel, FLAGSHIP_DOCK.fuelPerSec * sec),
+      cannon: Math.min(missing.cannon, Math.ceil(FLAGSHIP_DOCK.cannonPerSec * sec)),
+      missiles: Math.min(missing.missiles, Math.ceil(FLAGSHIP_DOCK.missilesPerSec * sec)),
+      hull: Math.min(missing.hull, FLAGSHIP_DOCK.hullPerSec * sec),
+    };
+    m.resupplyPending = true;
+    void this.flagships
+      .resupplyFromFleet(m.emperorId, dock.fleetId, want)
+      .then((got) => {
+        const added = m.combat.refill(got, this.now());
+        if (added.fuel > 0 || added.cannon > 0 || added.missiles > 0 || added.hull > 0) {
+          m.resupplyingUntil = this.now() + RESUPPLY_MS + 1000;
+          this.sendWeapons(m);
+          this.sendSupplies(m, this.now());
+          if (added.hull > 0) this.broadcastState(m);
+          this.onFleetCargo?.(m.emperorId, dock.fleetId);
+        }
+      })
+      .catch((err: unknown) => this.log.error(err, "Error al reponer la nave en su nave nodriza"))
+      .finally(() => (m.resupplyPending = false));
   }
 
   /** Naves aparcadas: avanzan por su órbita; y, de vez en cuando, se repasa quién está en cada sistema. */

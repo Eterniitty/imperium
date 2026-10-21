@@ -5,7 +5,7 @@ import { isTravelling, travelDurationMs } from "@imperium/sim";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { emperors, fleetCargo, fleetRoutes, fleets, ships } from "../db/schema";
+import { colonies, emperors, fleetCargo, fleetRoutes, fleets, ships } from "../db/schema";
 import type { RemotePilot } from "../realtime/hub";
 import { findSystem, placeFromRow } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
@@ -123,6 +123,27 @@ export class FleetService {
     const [{ name } = { name: "" }] = await this.db.select({ name: emperors.name }).from(emperors).where(eq(emperors.id, emperorId)).limit(1);
     const systemId = f.destSystemId ?? f.systemId;
     return { ok: true, pilot: { shipId: s.id, fleetId, systemId, classId: s.classId, hull: s.hull, name } };
+  }
+
+  /**
+   * Acople en una nave nodriza: la flota es propia, está parada en `systemId`
+   * fuera de batalla y lleva una nave con `dockFlagship`. Devuelve su sitio
+   * entre las flotas paradas del sistema (el mismo orden que dibuja el
+   * cliente) y la colonia propia de menor índice del sistema (punto de reunión).
+   */
+  async dockInfo(emperorId: string, fleetId: string, systemId: string): Promise<{ ok: true; slot: number; colonyPlanet: number | null; lengthM: number } | { ok: false; error: CommandError }> {
+    const all = await this.byEmperor(emperorId);
+    const parked = all.filter((f) => !f.travel && !f.battleId && f.location.systemId === systemId).sort((a, b) => a.number - b.number);
+    const slot = parked.findIndex((f) => f.id === fleetId);
+    const fleet = all.find((f) => f.id === fleetId);
+    if (!fleet) return { ok: false, error: "no_fleet" };
+    if (fleet.battleId) return { ok: false, error: "in_battle" };
+    if (slot < 0) return { ok: false, error: "not_present" };
+    const mother = fleet.ships.map((s) => getShipClass(s.classId as ShipClassId)).find((c) => c?.dockFlagship);
+    if (!mother) return { ok: false, error: "no_mothership" };
+    const own = await this.db.select({ planetIndex: colonies.planetIndex }).from(colonies).where(and(eq(colonies.emperorId, emperorId), eq(colonies.systemId, systemId)));
+    const colonyPlanet = own.length ? Math.min(...own.map((c) => c.planetIndex)) : null;
+    return { ok: true, slot, colonyPlanet, lengthM: mother.model.lengthM };
   }
 
   /** Casco de una nave tras pilotarla a distancia. */

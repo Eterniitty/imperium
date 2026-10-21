@@ -95,6 +95,9 @@ export const contentEs: ContentDictionary = {
   "ship.carrier.name": "Portanaves",
   "ship.carrier.description":
     "Una cubierta de vuelo con alas de cazas embarcadas: reparte muchos disparos por ronda y atrae el fuego enemigo. La nave más cara del astillero.",
+  "ship.mothership.name": "Nave nodriza",
+  "ship.mothership.description":
+    "Una ciudad con motores: 1600 m de casco, una bodega enorme y un hangar donde se acopla la nave del Emperador para repostar y rearmarse con lo que lleva la flota. Se construye en un dique orbital.",
   "ship.hauler.name": "Carguero pesado",
   "ship.hauler.description":
     "Una espina de contenedores con motores: cuatro veces la bodega del carguero, lento y con algo más de blindaje.",
@@ -264,6 +267,9 @@ export const contentEn: ContentDictionary = {
   "ship.carrier.name": "Carrier",
   "ship.carrier.description":
     "A flight deck with wings of embarked fighters: it spreads many shots per round and draws enemy fire. The most expensive ship in the yard.",
+  "ship.mothership.name": "Mothership",
+  "ship.mothership.description":
+    "A city with engines: 1600 m of hull, a huge hold and a hangar where the Emperor's ship docks to refuel and rearm from what the fleet carries. Built in an orbital drydock.",
   "ship.hauler.name": "Heavy freighter",
   "ship.hauler.description":
     "A spine of containers with engines: four times a freighter's hold, slow and a little better armoured.",

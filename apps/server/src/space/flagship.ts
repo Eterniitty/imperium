@@ -6,7 +6,7 @@ import { and, eq, isNull, lte, or } from "drizzle-orm";
 import type { ColonyService } from "../colony/service";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { colonies, emperors } from "../db/schema";
+import { colonies, emperors, fleetCargo, fleets, resourceLedger } from "../db/schema";
 import { findSystem, placeFromRow } from "../emperor/world";
 import type { StoredSupplies } from "./combat";
 import { rememberPosition } from "./memory";
@@ -291,6 +291,34 @@ export class FlagshipService {
       // El punto de enganche de la economía: resuelve la colonia, descuenta y lo asienta en el libro.
       const res = await service.adjustStock(tx, emperorId, colonyId, spent, "flagship_resupply", `emperor:${emperorId}`, now);
       if (!res.ok) return none;
+      return { fuel, cannon, missiles, hull };
+    });
+  }
+
+  /**
+   * Reposición acoplada en una nave nodriza: como junto a una colonia, pero de
+   * la bodega de la flota (volátiles → combustible, metal → proyectiles,
+   * aleaciones → misiles y casco), asentado en el libro de recursos.
+   */
+  async resupplyFromFleet(emperorId: string, fleetId: string, want: Refill): Promise<Refill> {
+    const none: Refill = { fuel: 0, cannon: 0, missiles: 0, hull: 0 };
+    return this.db.transaction(async (tx) => {
+      const [own] = await tx.select({ id: fleets.id }).from(fleets).where(and(eq(fleets.id, fleetId), eq(fleets.emperorId, emperorId))).limit(1);
+      if (!own) return none;
+      const [cargo] = await tx.select().from(fleetCargo).where(eq(fleetCargo.fleetId, fleetId)).for("update").limit(1);
+      if (!cargo) return none;
+      const S = FLAGSHIP_SUPPLIES;
+      const fuel = Math.max(0, Math.min(want.fuel, cargo.volatiles / S.volatilesPerFuel));
+      const cannon = Math.max(0, Math.floor(Math.min(want.cannon, cargo.metal / S.metalPerRound)));
+      const missiles = Math.max(0, Math.floor(Math.min(want.missiles, cargo.alloys / S.alloysPerMissile)));
+      const hull = Math.max(0, Math.min(want.hull, (cargo.alloys - missiles * S.alloysPerMissile) / FLAGSHIP_REPAIR.alloysPerHull));
+      if (fuel <= 0 && cannon <= 0 && missiles <= 0 && hull <= 0) return none;
+      const spent = { volatiles: fuel * S.volatilesPerFuel, metal: cannon * S.metalPerRound, alloys: missiles * S.alloysPerMissile + hull * FLAGSHIP_REPAIR.alloysPerHull };
+      await tx
+        .update(fleetCargo)
+        .set({ volatiles: Math.max(0, cargo.volatiles - spent.volatiles), metal: Math.max(0, cargo.metal - spent.metal), alloys: Math.max(0, cargo.alloys - spent.alloys) })
+        .where(eq(fleetCargo.fleetId, fleetId));
+      await tx.insert(resourceLedger).values({ emperorId, reason: "flagship_resupply_fleet", ref: `fleet:${fleetId}`, volatiles: -spent.volatiles, metal: -spent.metal, alloys: -spent.alloys });
       return { fuel, cannon, missiles, hull };
     });
   }

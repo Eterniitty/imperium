@@ -23,6 +23,7 @@ import type { FlagshipService } from "../space/flagship";
 import type { WarService } from "../war/service";
 import type { HumanityService } from "../humanity/service";
 import type { ProbeService } from "../probe/service";
+import { FLAGSHIP_DOCK } from "@imperium/content";
 import type { MarketService } from "../market/service";
 import type { AlienService } from "../ai/service";
 import type { SiegeService } from "../war/siege";
@@ -327,6 +328,18 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                       for (const id of res.colonyIds) await hub.publishColony(res.emperorId, id);
                     }
                     return res;
+                  }
+                  case "flagship.dock": {
+                    const systemId = space.pilotingIn(client);
+                    if (!systemId) return { ok: false, error: "too_far" } as const;
+                    const info = await fleets.dockInfo(owner.emperorId, msg.args.fleetId, systemId);
+                    if (!info.ok) return info;
+                    const error = space.dock(client, msg.args.fleetId, info.slot, info.colonyPlanet, FLAGSHIP_DOCK.rangeM + info.lengthM);
+                    return error ? ({ ok: false, error } as const) : ({ ok: true } as const);
+                  }
+                  case "flagship.undock": {
+                    space.undock(client);
+                    return { ok: true } as const;
                   }
                   case "probe.launch": {
                     if (!probes) return { ok: false, error: "invalid_command" } as const;

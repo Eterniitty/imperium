@@ -88,7 +88,7 @@ El usuario delegó el orden: se sigue esta cola sin pedir permiso, un solo agent
 2. [x] **Calor de las estrellas**: zona de calor según la clase (escudos y luego casco, cada vez más rápido), aviso en el HUD, el pulso se apaga antes de la zona mortal, agujero negro = destrucción al cruzar el horizonte; cálculo en el servidor (muerte y linaje de la Fase 10).
 3. [x] **Limitador de destellos** (fotosensibilidad): tope global de destellos por segundo, sin rojo saturado parpadeante, saltos de brillo suavizados en explosiones, impactos, grieta y túnel.
 4. [x] **Qué hacer mientras viajas**, en orden: ✔ puente de mando en el túnel; ✔ órdenes tácticas en batallas a distancia (`fleet.tactic`); ✔ pilotar otras naves de tus flotas a distancia (`fleet.pilot`); ✔ gestión más profunda de colonias (ventana de gestión, `colony.demolish`); ✔ sondas de exploración a distancia (`probe.launch`, migración 0024).
-5. [ ] **Nave nodriza**: clase capital portanaves; la nave del Emperador se acopla en su hangar (aproximación y anclaje en 3D, tecla de acoplar) y recarga combustible, munición y energía desde la bodega de la flota.
+5. [x] **Nave nodriza** (clase `mothership`, 1600 m): la nave del Emperador se acopla en su hangar (Enter, `flagship.dock`) y se repone de la bodega de la flota (`FLAGSHIP_DOCK`). Pendiente: viajar acoplada con la flota.
 6. [ ] **9d. IA de naves** (`docs/ia-naves.md`): pilotaje 3D de piratas y alienígenas, tácticas de grupo, emboscadas; combate pilotado contra naves alienígenas.
 7. [ ] **9c. Combate a gran escala**: por encima de ~5 naves por bando, el combate en tiempo real pasa a rondas.
 8. [ ] **Conquista instalación a instalación** y **red de suministro** (9b/8): la Cuna como objetivo propio, instalaciones aisladas que se debilitan.

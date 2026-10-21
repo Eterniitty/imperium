@@ -11,10 +11,10 @@
  * rondas es solo una puesta en escena.
  */
 import * as THREE from "three";
-import { contentDictionaries, getFaction } from "@imperium/content";
-import type { Battle, Fleet, Locale, ShipCounts } from "@imperium/shared";
+import { contentDictionaries, getFaction, getShipClass, type ShipClassId } from "@imperium/content";
+import type { Battle, Colony, Fleet, Locale, ShipCounts } from "@imperium/shared";
 import { translate } from "@imperium/shared";
-import { defaultPark, parkedPosition, planetPosition, type SystemLayout } from "@imperium/sim";
+import { fleetRallyPoint, fleetSlotPosition, type SystemLayout } from "@imperium/sim";
 import { serverNow, worldStore } from "../net/world";
 import { gameStore } from "../state/store";
 import { createShipModel, shipLength } from "./shipFactory";
@@ -154,16 +154,18 @@ export class FleetScene {
   anchor(out: THREE.Vector3, now = serverNow()): THREE.Vector3 {
     const layout = this.layout;
     if (!layout) return out.set(0, 0, 0);
-    const colonies = worldStore.getState().colonies;
-    const own = Object.values(colonies).find((c) => c.systemId === this.systemId);
-    const planet = own ? layout.planets.find((p) => p.index === own.planetIndex) : undefined;
-    if (planet) {
-      const c = planetPosition(planet, now);
-      const d = Math.hypot(c.x, c.z) || 1;
-      const off = planet.size * 2.5 + 6000;
-      return out.set(c.x - (c.x / d) * off, c.y + planet.size * 0.6, c.z - (c.z / d) * off);
-    }
-    return out.set(...parkedPosition(defaultPark(layout), now));
+    // La colonia propia de menor índice (el servidor usa la misma regla para el acople).
+    const own = (Object.values(worldStore.getState().colonies) as Colony[]).filter((c) => c.systemId === this.systemId).map((c) => c.planetIndex);
+    return out.set(...fleetRallyPoint(layout, own.length ? Math.min(...own) : null, now));
+  }
+
+  /** Nave nodriza de una flota parada aquí (posición en el mundo y eslora), o null. */
+  mothership(fleetId: string): { at: THREE.Vector3; lengthM: number; q: THREE.Quaternion } | null {
+    const g = this.fleets.get(fleetId);
+    const s = g?.ships.find((x) => getShipClass(x.classId as ShipClassId)?.dockFlagship);
+    if (!g || !s) return null;
+    g.root.updateMatrixWorld();
+    return { at: s.obj.getWorldPosition(new THREE.Vector3()), lengthM: shipLength(s.classId) ?? 1000, q: s.obj.getWorldQuaternion(new THREE.Quaternion()) };
   }
 
   /** Dónde se dibuja una batalla (para llevar la cámara allí), o null si no está. */
@@ -200,8 +202,7 @@ export class FleetScene {
       }
       this.setLabel(g, translate(locale, "fleet.name", { n: f.number }), "#5fd3e6");
       // Cada flota, a un lado del punto de reunión, mirando hacia la estrella.
-      const a = i * 1.1;
-      g.root.position.set(base.x + Math.cos(a) * 1500 * (i + 1), base.y + 300 * i, base.z + Math.sin(a) * 1500 * (i + 1));
+      g.root.position.set(...fleetSlotPosition([base.x, base.y, base.z], i));
       g.root.lookAt(0, g.root.position.y, 0);
       g.root.rotateY(Math.PI);
       for (const s of g.ships) {

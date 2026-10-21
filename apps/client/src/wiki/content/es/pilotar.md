@@ -85,6 +85,15 @@ En la cabina ves el **horizonte artificial** (respecto al plano de las órbitas)
 - **Proyectiles y misiles**: contados. A bordo solo se fabrica una pequeña reserva.
 - **Reponer**: a menos de 150 km de un planeta con **colonia propia**, la nave se repone sola con las existencias de la colonia (volátiles para el combustible, metal para los proyectiles, aleaciones para los misiles).
 
+## Acoplarse en una nave nodriza
+
+La **nave nodriza** es la nave más grande que puedes construir (1600 m, en un dique orbital; ver [Naves humanas](/wiki/naves)). Cuando una flota tuya con nave nodriza está parada en el sistema donde pilotas, acércate a ella y pulsa [[Enter]] (acoplar): tu nave entra en su hangar y **se repone de la bodega de la flota** como junto a una colonia propia (volátiles → combustible, metal → munición, aleaciones → misiles y casco). Llena antes la bodega de la flota en una colonia (ver [Logística](/wiki/logistica)).
+
+- Mientras estás acoplada la nave no se mueve por su cuenta; vuelve a pulsar [[Enter]] para salir.
+- Te desacoplas sola si la flota se pone en marcha o si tu nave se aleja.
+
+> [!dev] Viajar acoplado con la flota de un sistema a otro aún no es posible.
+
 ## Pilotar naves de tus flotas a distancia
 
 En el panel de **Flotas** (también en el puente de mando, durante un viaje cuántico), las flotas paradas que no estén en batalla tienen el botón **Pilotar**: tomas los mandos de su nave armada más grande, en el sistema donde esté la flota, aunque tu nave esté lejos o viajando. Tu nave del Emperador se queda aparcada.

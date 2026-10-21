@@ -99,6 +99,10 @@ export interface CommandArgs {
   "fleet.route": FleetRoute & { fleetId: string };
   /** Quita la ruta automática de una flota (se queda donde esté). */
   "fleet.routeStop": { fleetId: string };
+  /** Acopla la nave del Emperador (pilotada, cerca) en la nave nodriza de una flota propia parada en el mismo sistema. */
+  "flagship.dock": { fleetId: string };
+  /** Desacopla la nave del Emperador de su nave nodriza. */
+  "flagship.undock": Record<string, never>;
   /** Lanza una sonda de exploración a un sistema sin descubrir (`PROBE`: cuesta créditos y tiene alcance). */
   "probe.launch": { systemId: string };
   /** Pilota a distancia una nave de una flota propia parada (ni viajando ni en batalla); `leave` deja de pilotarla. */
@@ -264,6 +268,10 @@ export type CommandError =
   | "out_of_range"
   /** Sonda: el sistema ya está descubierto. */
   | "already_discovered"
+  /** Acople: la flota no tiene nave nodriza. */
+  | "no_mothership"
+  /** Acople: la nave está demasiado lejos de la flota (o no se está pilotando). */
+  | "too_far"
   | "no_target"
   | "unknown_faction"
   | "no_diplomacy"
@@ -343,6 +351,8 @@ export type ServerMessage =
   | { t: "destroyed"; by: string; systemId: string; rebornAt: number }
   /** Se acabó el pilotaje a distancia de una nave de flota (`fleet.pilot`): la destruyeron o ya no se puede pilotar. */
   | { t: "remoteEnded"; reason: "destroyed" | "left" }
+  /** La nave del Emperador se ha desacoplado sola de su nave nodriza (la flota se fue o la nave se alejó). */
+  | { t: "undocked" }
   /** Estado de tus armas: munición restante y cuándo vuelven a estar listas (hora del servidor). */
   | { t: "weapons"; weapons: Array<{ kind: WeaponKind; ammo: number | null; ammoMax: number | null; readyAt: number }> }
   /**

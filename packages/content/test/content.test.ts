@@ -120,7 +120,7 @@ describe("facciones", () => {
 describe("naves", () => {
   it("existen las doce clases humanas", () => {
     expect(SHIP_CLASSES.map((s) => s.id).sort()).toEqual(
-      ["carrier", "colonizer", "corvette", "cruiser", "destroyer", "explorer", "fighter", "freighter", "frigate", "hauler", "interceptor", "troopship"],
+      ["carrier", "colonizer", "corvette", "cruiser", "destroyer", "explorer", "fighter", "freighter", "frigate", "hauler", "interceptor", "mothership", "troopship"],
     );
   });
 

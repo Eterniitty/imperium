@@ -41,6 +41,7 @@ export function CombatHud() {
   const target = useStore(spaceStore, (s) => (s.targetId ? s.ships[s.targetId]?.state : undefined));
   const now = useServerNow(250);
   const { heat } = useTelemetry(250);
+  const docked = useStore(spaceStore, (s) => s.docked);
   if (view !== "system" || !flight || !self) return null;
 
   const cannon = weapons.find((w) => w.kind === "cannon");
@@ -81,8 +82,9 @@ export function CombatHud() {
               <Bar value={supplies.fuel} max={supplies.fuelMax} kind="fuel" mark={FLAGSHIP_SUPPLIES.emergencyFuelMax} />
               <span className="mono small">{Math.floor(supplies.fuel)}</span>
             </div>
-            {(supplies.resupplying || lowFuel || noEnergy) && (
+            {(docked || supplies.resupplying || lowFuel || noEnergy) && (
               <div className="combat-alerts">
+                {docked && <span className="hud-tag ok">{t("hud.docked", { n: docked.number })}</span>}
                 {supplies.resupplying && <span className="hud-tag ok">{t("hud.resupplying")}</span>}
                 {lowFuel && !supplies.resupplying && <span className="hud-tag warn">{t("hud.lowFuel")}</span>}
                 {noEnergy && <span className="hud-tag warn">{t("hud.noEnergy")}</span>}

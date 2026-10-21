@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
-import type { I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, WeaponKind, WorldPosition } from "@imperium/shared";
+import type { Fleet, I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, WeaponKind, WorldPosition } from "@imperium/shared";
 import { ARRIVAL_EDGE, deepLayout, starHeatDps, defaultPark, moonOffset, parkedPosition, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
 import { resetSpace, shipName, spaceStore, type SelectedWeapon } from "../net/space";
 import { TargetAssist, relationOf, type CannonAim } from "./TargetAssist";
@@ -12,7 +12,7 @@ import { FleetScene } from "./FleetScene";
 import { createShipModel, shipLength } from "./shipFactory";
 import { Effects } from "./Effects";
 import { worldStore } from "../net/world";
-import { BODY_COLLISION, EMPEROR_FLAGSHIP, FLIGHT_MODEL, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_SUPPLIES, MINING, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC, QUANTUM_RIFT, SHIP_COLLISION, STAR_HEAT_LETHAL_DPS } from "@imperium/content";
+import { BODY_COLLISION, EMPEROR_FLAGSHIP, FLIGHT_MODEL, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_SUPPLIES, MINING, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC, QUANTUM_RIFT, SHIP_COLLISION, STAR_HEAT_LETHAL_DPS, FLAGSHIP_DOCK } from "@imperium/content";
 import { playQuantumCharge, playQuantumTear, stopQuantumCharge } from "../audio/quantumSfx";
 import { playEngineStart, playEngineStop, stopEngineSound } from "../audio/engineSfx";
 import { RiftField } from "./fx/riftPortal";
@@ -847,6 +847,7 @@ export class SystemView implements View {
     this.ship = null;
     this.remotePiloting = false;
     this.fleetScene.hide(null, null);
+    if (spaceStore.getState().docked) spaceStore.setState({ docked: null, undocked: false });
     this.controls.enabled = true;
     this.cockpit.visible = false;
     this.dom.style.cursor = "";
@@ -877,6 +878,63 @@ export class SystemView implements View {
     if (!flight.pulse && this.outOfFuel()) return this.events.notify("pilot.noFuel");
     if (!flight.pulse && telemetry.heat.lethal && this.headingToStar()) return this.events.notify("pilot.heatPulseOff");
     flight.pulse = !flight.pulse;
+  }
+
+  // --- Acople en la nave nodriza de una flota propia (`flagship.dock`) ---
+
+  /** Tecla de acoplar: se desacopla si ya lo está; si no, en la nave nodriza más cercana a su alcance. */
+  private async dockKey(): Promise<void> {
+    if (!this.ship || this.remotePiloting) return;
+    if (spaceStore.getState().docked) return this.undock(true);
+    const fleets = Object.values(worldStore.getState().fleets) as Fleet[];
+    let best: { fleet: Fleet; d: number; reach: number } | null = null;
+    for (const f of fleets) {
+      const m = this.fleetScene.mothership(f.id);
+      if (!m) continue;
+      const d = m.at.distanceTo(this.ship.position);
+      if (!best || d < best.d) best = { fleet: f, d, reach: FLAGSHIP_DOCK.rangeM + m.lengthM };
+    }
+    if (!best) return this.events.notify("dock.noMothership");
+    if (best.d > best.reach) return gameStore.getState().notify("dock.tooFar", { km: Math.round(best.reach / 1000) });
+    const error = await connection.command("flagship.dock", { fleetId: best.fleet.id });
+    if (error) return this.events.notify(error);
+    this.cancelCruise();
+    if (this.flight) {
+      this.flight.pulse = false;
+      this.flight.stop();
+      this.flight.enabled = false;
+    }
+    spaceStore.setState({ docked: { fleetId: best.fleet.id, number: best.fleet.number }, undocked: false });
+    gameStore.getState().notify("dock.docked", { n: best.fleet.number });
+  }
+
+  /** Suelta la nave de la nave nodriza (a mano, o porque el servidor la desacopló) y la empuja hacia delante. */
+  private undock(tellServer: boolean): void {
+    if (tellServer) void connection.command("flagship.undock", {});
+    spaceStore.setState({ docked: null, undocked: false });
+    if (this.flight) {
+      this.flight.enabled = true;
+      this.flight.velocity.copy(this.forward()).multiplyScalar(40);
+    }
+  }
+
+  /** Acoplada: la nave sigue a su nave nodriza (dentro de su hangar). */
+  private followDock(): void {
+    const { docked, undocked } = spaceStore.getState();
+    if (undocked) {
+      this.undock(false);
+      return this.events.notify("dock.released");
+    }
+    if (!docked || !this.ship) return;
+    const m = this.fleetScene.mothership(docked.fleetId);
+    if (!m) {
+      this.undock(true);
+      return this.events.notify("dock.released");
+    }
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(m.q);
+    this.ship.position.copy(m.at).addScaledVector(up, m.lengthM * 0.04);
+    this.ship.quaternion.copy(m.q);
+    this.flight?.velocity.set(0, 0, 0);
   }
 
   /** ¿Apunta el morro hacia la estrella (está en el origen del sistema)? */
@@ -1649,7 +1707,8 @@ export class SystemView implements View {
         this.flight.update(dt);
       }
       if (!departing) {
-        this.collide();
+        this.followDock();
+        if (!spaceStore.getState().docked) this.collide();
         this.applyCorrection();
         this.followParkUntilBoarded();
         // Al saltar, el servidor ya la sacó del sistema: no se envían más posiciones.
@@ -1752,6 +1811,7 @@ export class SystemView implements View {
       else if (this.quantum) return;
       else if (isBound("cruise", code)) this.cruiseKey();
       else if (isBound("follow", code)) this.followKey();
+      else if (isBound("dock", code)) void this.dockKey();
       else if (code === "Escape" && gameStore.getState().cruisePanel) gameStore.getState().setCruisePanel(false);
       else if (code === "Escape" && this.autopilot.active) this.cancelCruise("cruise.cancelled");
       else if (isBound("engines", code)) this.toggleEngines();

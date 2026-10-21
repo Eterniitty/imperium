@@ -354,6 +354,9 @@ class Connection {
       case "remoteEnded":
         spaceStore.setState({ remoteEnded: msg.reason });
         return;
+      case "undocked":
+        spaceStore.setState({ undocked: true });
+        return;
       // Espacio profundo y minería.
       case "field":
         spaceStore.setState({ field: msg.region });

@@ -240,6 +240,28 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     model: { archetype: "capital", lengthM: 620, hullShape: "brick", engines: 4, hangar: true, turrets: 2 },
   },
   {
+    id: "mothership",
+    nameKey: "ship.mothership.name",
+    descriptionKey: "ship.mothership.description",
+    role: "combat",
+    cost: { metal: 3200, volatiles: 1200, crystal: 240, alloys: 420, rare_metals: 140, exotic: 14 },
+    requires: DRYDOCK,
+    buildTimeHours: 36,
+    hull: 2600,
+    attack: 180,
+    battleShots: 6,
+    battleProfile: 8,
+    battleShield: 60,
+    speedLyPerHour: 80,
+    cargo: 3000,
+    scannerRangeLy: 25,
+    upkeepVolatilesPerHour: 16,
+    consumedOnUse: false,
+    dockFlagship: true,
+    combat: { shield: 1400, shieldRegenPerSec: 30, shieldDelaySec: 5, weapons: [FLAK, { ...MISSILE, ammo: 16 }] },
+    model: { archetype: "capital", lengthM: 1600, hullShape: "brick", engines: 6, hangar: true, turrets: 4 },
+  },
+  {
     id: "freighter",
     nameKey: "ship.freighter.name",
     descriptionKey: "ship.freighter.description",
@@ -475,6 +497,20 @@ export const PROBE = {
   maxRangeLy: 50,
   maxActive: 3,
   scannerRangeLy: 4,
+} as const;
+
+/**
+ * Acople de la nave del Emperador en una nave nodriza (`dockFlagship`) de una
+ * flota propia parada en el mismo sistema: hay que llegar a menos de
+ * `rangeM` de la flota. Acoplada, se repone de la bodega de la flota a este
+ * ritmo (con las mismas equivalencias que en una colonia: `FLAGSHIP_SUPPLIES`).
+ */
+export const FLAGSHIP_DOCK = {
+  rangeM: 4000,
+  fuelPerSec: 20,
+  cannonPerSec: 50,
+  missilesPerSec: 1,
+  hullPerSec: 12,
 } as const;
 
 /** Naves con las que empieza cada Emperador nuevo, como su primera flota. */

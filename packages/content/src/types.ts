@@ -269,6 +269,7 @@ export type ShipClassId =
   | "destroyer"
   | "cruiser"
   | "carrier"
+  | "mothership"
   | "freighter"
   | "hauler"
   | "troopship"
@@ -376,6 +377,8 @@ export interface ShipClassDefinition {
   upkeepVolatilesPerHour: number;
   /** Se consume al cumplir su función (el colonizador al fundar). */
   consumedOnUse: boolean;
+  /** Nave nodriza: la nave del Emperador puede acoplarse en su hangar y reponerse de la bodega de la flota (`FLAGSHIP_DOCK`). */
+  dockFlagship?: boolean;
   /** Combate en tiempo real: escudo y armas. */
   combat: ShipCombat;
   /** Modelo 3D procedural. */
