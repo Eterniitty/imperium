@@ -90,7 +90,8 @@ Hetzner **solo factura el tráfico saliente** (20 TB incluidos, ~1 €/TB adicio
 - [x] Caddy como proxy inverso con HTTPS (certificado de origen de Cloudflare).
 - [x] PostgreSQL (paquete de Ubuntu, solo local, sin exponer puertos al exterior).
 - [ ] Redis (contenedor, sin exponer puertos al exterior).
-- [ ] **Copias de seguridad fuera del servidor** (p. ej. `pg_dump` cifrado a almacenamiento externo), con restauración probada.
+- [x] **Copias de seguridad locales** (21-10-2026): `scripts/backup-db.sh`, temporizador de usuario `aeonarch-backup` (diario, 03:41 UTC; `deploy/aeonarch-backup.*`). `pg_dump` comprimido en `~/backups/aeonarch/` (permisos 700), 14 días (lo promete la política de privacidad). Restauración probada. Restaurar: `pg_restore --clean --if-exists -d imperium <archivo>.dump`. Por decisión del usuario **solo en local, nunca en GitHub**.
+- [ ] Copias **fuera del servidor** (protegen de un fallo del disco): pendiente de que el usuario elija destino (p. ej. Storage Box de Hetzner).
 - [x] Correo real por SMTP (`MAIL_TRANSPORT=smtp`, ver «Correo real»): STARTTLS obligatorio, configuración incompleta = el servidor no arranca, un fallo de envío no revela nada al jugador.
 - [x] Correo: dominio propio con **SPF** (`v=spf1 include:spf.brevo.com ~all`), **DKIM** (`brevo1`/`brevo2._domainkey`) y **DMARC** (`p=quarantine`) en Cloudflare (21-10-2026). En producción, `MAIL_TRANSPORT=smtp` (el servidor ya rechaza `console`) y sin `MAIL_LOG_LINKS` (también la rechaza).
 - [x] `SMTP_PASS` es una clave SMTP del proveedor, solo en `~/imperium/.env` (nunca en el repositorio); si se filtra, revócala en el panel del proveedor y crea otra.

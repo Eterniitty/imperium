@@ -1,0 +1,6 @@
+[Unit]
+Description=Aeonarch: copia de seguridad diaria de la base de datos
+
+[Service]
+Type=oneshot
+ExecStart=%h/imperium/scripts/backup-db.sh
