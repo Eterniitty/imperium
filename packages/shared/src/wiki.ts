@@ -12,7 +12,7 @@
  */
 import type { Locale } from "./i18n/index";
 
-export const WIKI_GROUPS = ["start", "world", "ship", "empire", "war", "people", "lore"] as const;
+export const WIKI_GROUPS = ["start", "world", "ship", "empire", "war", "people", "lore", "books"] as const;
 export type WikiGroup = (typeof WIKI_GROUPS)[number];
 
 /** Artículos del repositorio, en el orden del índice. Para añadir uno: su slug aquí y un `.md` en cada idioma. */
@@ -59,6 +59,8 @@ export const WIKI_SLUG_MAX = 48;
 export const WIKI_BODY_MAX = 60_000;
 export const WIKI_NOTE_MAX = 200;
 export const WIKI_TITLE_MAX = 80;
+/** Firma de un artículo (sobre todo de los libros): «Lyra Venn, Emperador Wasito Suzumiya». */
+export const WIKI_BYLINE_MAX = 120;
 
 export function isValidWikiSlug(s: string): boolean {
   return s.length > 0 && s.length <= WIKI_SLUG_MAX && WIKI_SLUG_RE.test(s);
@@ -73,6 +75,8 @@ export interface WikiPageMeta {
   custom: boolean;
   /** Orden de los artículos nuevos dentro de su grupo (van tras los del repositorio). */
   position: number;
+  /** Firma que se muestra bajo el título (los libros llevan su autor), o null. */
+  byline: string | null;
 }
 
 /** Versión publicada (última revisión) de un artículo en un idioma. */

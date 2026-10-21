@@ -85,6 +85,8 @@ export interface WikiEntry {
   group: WikiGroup;
   hidden: boolean;
   custom: boolean;
+  /** Firma bajo el título (los libros: su autor). */
+  byline: string | null;
 }
 
 /**
@@ -96,12 +98,12 @@ export function wikiIndex(remote: WikiRemote = EMPTY_REMOTE, includeHidden = fal
   const saved = new Map(remote.pages.map((p) => [p.slug, p]));
   const base: WikiEntry[] = WIKI_ARTICLES.map((a) => {
     const p = saved.get(a.slug);
-    return { slug: a.slug, group: p?.group ?? a.group, hidden: p?.hidden ?? false, custom: false };
+    return { slug: a.slug, group: p?.group ?? a.group, hidden: p?.hidden ?? false, custom: false, byline: p?.byline ?? null };
   });
   const custom: WikiEntry[] = remote.pages
     .filter((p) => p.custom && !WIKI_ARTICLES.some((a) => a.slug === p.slug))
     .sort((a, b) => a.position - b.position || a.slug.localeCompare(b.slug))
-    .map((p) => ({ slug: p.slug, group: p.group, hidden: p.hidden, custom: true }));
+    .map((p) => ({ slug: p.slug, group: p.group, hidden: p.hidden, custom: true, byline: p.byline ?? null }));
   const out: WikiEntry[] = [];
   for (const g of WIKI_GROUPS) {
     for (const e of [...base, ...custom]) if (e.group === g && (includeHidden || !e.hidden)) out.push(e);

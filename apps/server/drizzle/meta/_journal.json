@@ -197,6 +197,13 @@
       "when": 1792622934786,
       "tag": "0028_mercenaries",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792626345902,
+      "tag": "0029_libros_wiki",
+      "breakpoints": true
     }
   ]
 }

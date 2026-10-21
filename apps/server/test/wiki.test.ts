@@ -137,7 +137,7 @@ describe.skipIf(!TEST_DATABASE_URL)("Wiki editable", () => {
     const admin = await login("jefa@ejemplo.com");
     expect((await post("/api/wiki/create", { slug: "leyes", group: "start", locale: "es", title: "X" }, admin)).json()).toEqual({ error: "slug_taken" });
     const created = (await post("/api/wiki/create", { slug: "rutas-comerciales", group: "empire", locale: "es", title: "Rutas <b>comerciales</b>" }, admin)).json<WikiPageResponse>();
-    expect(created.page).toEqual({ slug: "rutas-comerciales", group: "empire", hidden: false, custom: true, position: 1 });
+    expect(created.page).toEqual({ slug: "rutas-comerciales", group: "empire", hidden: false, custom: true, position: 1, byline: null });
     // El título es texto: el renderizador de la Wiki lo escapa.
     expect(created.published!.body).toBe("# Rutas <b>comerciales</b>\n\n");
     expect((await post("/api/wiki/create", { slug: "rutas-comerciales", group: "empire", locale: "es", title: "Y" }, admin)).statusCode).toBe(409);
@@ -156,6 +156,14 @@ describe.skipIf(!TEST_DATABASE_URL)("Wiki editable", () => {
     expect((await post("/api/wiki/meta", { slug: "no-existe", hidden: true }, admin)).statusCode).toBe(404);
     const actions = (await database.db.select().from(wikiLog).orderBy(wikiLog.id)).map((l) => l.action);
     expect(actions).toEqual(["create", "save", "hide", "hide", "group"]);
+
+    // Libros: un artículo nuevo en «books», con su firma; texto vacío la quita.
+    await post("/api/wiki/create", { slug: "cronica-del-primer-salto", group: "books", locale: "es", title: "Crónica del primer salto" }, admin);
+    const signed = (await post("/api/wiki/meta", { slug: "cronica-del-primer-salto", byline: "  Lyra Venn, Emperador  " }, admin)).json<WikiPageResponse>();
+    expect(signed.page).toMatchObject({ group: "books", byline: "Lyra Venn, Emperador" });
+    expect((await app.inject({ method: "GET", url: "/api/wiki" })).json<WikiStateResponse>().pages.find((p) => p.slug === "cronica-del-primer-salto")?.byline).toBe("Lyra Venn, Emperador");
+    expect((await post("/api/wiki/meta", { slug: "cronica-del-primer-salto", byline: "" }, admin)).json<WikiPageResponse>().page.byline).toBeNull();
+    expect((await post("/api/wiki/meta", { slug: "cronica-del-primer-salto", byline: "x".repeat(121) }, admin)).statusCode).toBe(400);
   });
 
   it("las revisiones no se pueden modificar ni borrar; al borrar la cuenta quedan sin autor", async () => {

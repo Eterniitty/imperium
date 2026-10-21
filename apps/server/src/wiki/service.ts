@@ -33,7 +33,7 @@ type RevisionRow = typeof wikiRevisions.$inferSelect;
 type PageRow = typeof wikiPages.$inferSelect;
 
 function pageMeta(row: PageRow): WikiPageMeta {
-  return { slug: row.slug, group: row.group as WikiGroup, hidden: row.hidden, custom: row.custom, position: row.position };
+  return { slug: row.slug, group: row.group as WikiGroup, hidden: row.hidden, custom: row.custom, position: row.position, byline: row.byline };
 }
 
 function published(row: Pick<RevisionRow, "id" | "slug" | "locale" | "body" | "createdAt">): WikiPublished {
@@ -197,7 +197,7 @@ export class WikiService {
   }
 
   /** Ocultar o mostrar un artículo, o cambiarlo de grupo en el índice. */
-  async setMeta(author: WikiAuthor, input: { slug: string; hidden?: boolean; group?: WikiGroup }): Promise<WikiPageMeta> {
+  async setMeta(author: WikiAuthor, input: { slug: string; hidden?: boolean; group?: WikiGroup; byline?: string }): Promise<WikiPageMeta> {
     return this.db.transaction(async (tx) => {
       if (!(await this.exists(tx, input.slug))) throw new WikiError(404, "unknown_article");
       const base = WIKI_ARTICLES.find((a) => a.slug === input.slug);
@@ -205,6 +205,7 @@ export class WikiService {
       const next = {
         group: input.group ?? (current?.group as WikiGroup | undefined) ?? base!.group,
         hidden: input.hidden ?? current?.hidden ?? false,
+        byline: input.byline !== undefined ? input.byline.trim() || null : (current?.byline ?? null),
       };
       const [row] = await tx
         .insert(wikiPages)
@@ -216,6 +217,9 @@ export class WikiService {
       }
       if (input.group !== undefined && input.group !== (current?.group ?? base?.group)) {
         await this.log(tx, author, { action: "group", slug: input.slug, detail: input.group });
+      }
+      if (input.byline !== undefined && next.byline !== (current?.byline ?? null)) {
+        await this.log(tx, author, { action: "byline", slug: input.slug, detail: next.byline ?? "" });
       }
       return pageMeta(row!);
     });

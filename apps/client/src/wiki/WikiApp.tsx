@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BASE_LOCALES, translate, type Locale } from "@imperium/shared";
 import { wikiApi } from "./api";
 import { allArticles, EMPTY_REMOTE, getArticle, remoteFrom, wikiIndex, withPage, withPublished, type WikiRemote } from "./articles";
@@ -173,7 +173,7 @@ export function WikiApp() {
     );
   } else if (article && entry) {
     main = (
-      <article className="wiki-article">
+      <article className={entry.group === "books" ? "wiki-article wiki-book" : "wiki-article"}>
         {admin && (
           <div className="wiki-admin-bar">
             {entry.hidden && <span className="wiki-badge">{t("wiki.edit.hidden")}</span>}
@@ -183,7 +183,11 @@ export function WikiApp() {
           </div>
         )}
         {article.blocks.map((b, n) => (
-          <BlockView key={n} b={b} t={t} locale={locale} go={go} />
+          <Fragment key={n}>
+            <BlockView b={b} t={t} locale={locale} go={go} />
+            {/* La firma, bajo el título. */}
+            {n === 0 && entry.byline && <p className="wiki-byline">{t("wiki.byline", { name: entry.byline })}</p>}
+          </Fragment>
         ))}
         <nav className="wiki-pager">
           {prev ? navLink(prev, <>← {titleOf(prev)}</>, "prev") : <span />}
@@ -253,7 +257,8 @@ export function WikiApp() {
               </button>
             </section>
           )}
-          {WIKI_GROUPS.map((g) => (
+          {/* Los grupos vacíos (p. ej. «Libros» antes del primero) no salen en el índice. */}
+          {WIKI_GROUPS.filter((g) => entries.some((e) => e.group === g)).map((g) => (
             <section key={g}>
               <h2>{t(`wiki.group.${g}`)}</h2>
               <ul>

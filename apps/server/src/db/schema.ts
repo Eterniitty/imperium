@@ -961,10 +961,12 @@ export const wikiPages = pgTable(
     custom: boolean("custom").notNull().default(false),
     /** Orden de los artículos nuevos dentro de su grupo. */
     position: integer("position").notNull().default(0),
+    /** Firma bajo el título (los libros: su autor). */
+    byline: text("byline"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [check("wiki_pages_group", sql`${t.group} IN ('start', 'world', 'ship', 'empire', 'war', 'people', 'lore')`)],
+  (t) => [check("wiki_pages_group", sql`${t.group} IN ('start', 'world', 'ship', 'empire', 'war', 'people', 'lore', 'books')`)],
 );
 
 /**
@@ -989,7 +991,7 @@ export const wikiLog = pgTable(
   (t) => [
     index("wiki_log_slug_idx").on(t.slug, t.id),
     index("wiki_log_author_idx").on(t.authorId),
-    check("wiki_log_action", sql`${t.action} IN ('save', 'restore', 'create', 'hide', 'show', 'group')`),
+    check("wiki_log_action", sql`${t.action} IN ('save', 'restore', 'create', 'hide', 'show', 'group', 'byline')`),
   ],
 );
 

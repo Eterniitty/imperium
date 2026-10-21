@@ -5,7 +5,7 @@
  * insertar, y ocultar o cambiar de grupo el artículo.
  */
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { BASE_LOCALES, WIKI_BODY_MAX, WIKI_NOTE_MAX, WIKI_SLUG_MAX, WIKI_TITLE_MAX, isValidWikiSlug, type I18nKey, type Locale, type WikiPageMeta, type WikiPublished, type WikiRevisionInfo } from "@imperium/shared";
+import { BASE_LOCALES, WIKI_BODY_MAX, WIKI_BYLINE_MAX, WIKI_NOTE_MAX, WIKI_SLUG_MAX, WIKI_TITLE_MAX, isValidWikiSlug, type I18nKey, type Locale, type WikiPageMeta, type WikiPublished, type WikiRevisionInfo } from "@imperium/shared";
 import { wikiApi } from "./api";
 import { articleSource, buildArticle, sourceKey, wikiIndex, type WikiRemote } from "./articles";
 import { diffChunks, diffLines } from "./diff";
@@ -143,7 +143,7 @@ export function WikiEditor({
     onPublished(p);
   };
 
-  const setMeta = async (change: { hidden?: boolean; group?: WikiGroup }) => {
+  const setMeta = async (change: { hidden?: boolean; group?: WikiGroup; byline?: string }) => {
     setBusy(true);
     const res = await wikiApi.meta({ slug, ...change });
     setBusy(false);
@@ -284,6 +284,19 @@ export function WikiEditor({
                 </option>
               ))}
             </select>
+          </label>
+          <label>
+            <span>{t("wiki.edit.byline")}</span>
+            <input
+              key={`${entry.slug}:${entry.byline ?? ""}`}
+              defaultValue={entry.byline ?? ""}
+              maxLength={WIKI_BYLINE_MAX}
+              placeholder={t("wiki.edit.bylinePlaceholder")}
+              disabled={busy}
+              onBlur={(e) => {
+                if (e.target.value.trim() !== (entry.byline ?? "")) void setMeta({ byline: e.target.value });
+              }}
+            />
           </label>
           <button className="wiki-btn" disabled={busy} onClick={() => void setMeta({ hidden: !entry.hidden })}>
             {entry.hidden ? t("wiki.edit.show") : t("wiki.edit.hide")}

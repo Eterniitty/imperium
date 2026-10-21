@@ -464,3 +464,11 @@ kbd {
   .wiki-editor-text textarea { min-height: 55vh; font-size: 14px; }
   .wiki-editor-publish .wiki-btn { width: 100%; }
 }
+
+/* Libros (grupo «books»): lectura de libro, con letra serif, más aire y la firma bajo el título. */
+.wiki-book { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-size: 1.08em; line-height: 1.75; max-width: 68ch; }
+.wiki-book h1 { text-align: center; letter-spacing: 0.04em; margin-bottom: 0.2em; }
+.wiki-book h2 { text-align: center; font-weight: 500; margin-top: 2.2em; }
+.wiki-book p { text-indent: 1.4em; margin: 0.4em 0; }
+.wiki-book h1 + .wiki-byline + p, .wiki-book h2 + p { text-indent: 0; }
+.wiki-byline { text-align: center; font-style: italic; opacity: 0.75; margin: 0 0 2em; text-indent: 0 !important; }
