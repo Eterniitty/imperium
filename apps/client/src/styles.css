@@ -699,3 +699,11 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .lineage-actions { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
 .lineage-actions select { font: inherit; font-size: 12px; }
 .lineage-gestate { margin-top: 10px; }
+
+/* Aviso de fotosensibilidad (epilepsia). */
+.photo-notice-backdrop { position: fixed; inset: 0; background: rgba(2, 3, 10, 0.78); display: flex; align-items: center; justify-content: center; z-index: 60; padding: 16px; }
+.photo-notice { width: min(520px, 100%); padding: 18px 22px; line-height: 1.5; font-size: 14px; }
+.photo-notice h2 { margin: 0 0 8px; font-family: var(--font-display); letter-spacing: 0.05em; color: var(--gold); font-size: 20px; }
+.photo-notice p { margin: 0 0 10px; }
+.photo-notice a { color: var(--cyan); }
+.photo-notice .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }

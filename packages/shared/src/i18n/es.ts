@@ -1120,7 +1120,7 @@ export const es = {
   "wiki.edit.articleTitle": "Título",
   "wiki.edit.create": "Crear",
   "wiki.edit.cancel": "Cancelar",
-  // Espacio profundo y minería.
+  // Espacio profundo, minería y aviso de fotosensibilidad.
   "action.mine": "Láser de minería (mantener; espacio profundo)",
   "action.dropOut": "Salir del túnel cuántico (espacio profundo)",
   "quantum.drop": "Salir del túnel aquí ({key})",
@@ -1157,6 +1157,14 @@ export const es = {
   "hold.refine": "Refinar combustible",
   "hold.refining": "Refinando… (parar)",
   "hold.refineTitle": "Convierte despacio los volátiles de la bodega en combustible ({k} volátiles por unidad).",
+  "photo.title": "Aviso de fotosensibilidad",
+  "photo.text": "Aeonarch tiene destellos y luces intermitentes: el salto cuántico y el túnel, las explosiones y los disparos. En un pequeño porcentaje de personas, estos estímulos pueden provocar crisis epilépticas u otros síntomas, aunque nunca antes los hayan tenido.",
+  "photo.advice": "Si tú o alguien de tu familia tiene epilepsia o fotosensibilidad, consulta antes a un médico. Si notas mareo, alteraciones de la vista, espasmos o desorientación, deja de jugar de inmediato.",
+  "photo.settingsHint": "Puedes cambiarlo cuando quieras en Ajustes → Reducir efectos visuales.",
+  "photo.terms": "Condiciones de uso",
+  "photo.reduce": "Activar «Reducir efectos visuales»",
+  "photo.continue": "Continuar",
+  "photo.show": "Ver el aviso de fotosensibilidad",
 } as const;
 
 export type I18nKey = keyof typeof es;

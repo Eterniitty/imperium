@@ -1118,7 +1118,7 @@ export const en: Record<I18nKey, string> = {
   "wiki.edit.articleTitle": "Title",
   "wiki.edit.create": "Create",
   "wiki.edit.cancel": "Cancel",
-  // Espacio profundo y minería.
+  // Espacio profundo, minería y aviso de fotosensibilidad.
   "action.mine": "Mining laser (hold; deep space)",
   "action.dropOut": "Drop out of the quantum tunnel (deep space)",
   "quantum.drop": "Drop out here ({key})",
@@ -1155,4 +1155,12 @@ export const en: Record<I18nKey, string> = {
   "hold.refine": "Refine fuel",
   "hold.refining": "Refining… (stop)",
   "hold.refineTitle": "Slowly turns the volatiles in the hold into fuel ({k} volatiles per unit).",
+  "photo.title": "Photosensitivity warning",
+  "photo.text": "Aeonarch contains flashes and flickering lights: the quantum jump and tunnel, explosions and weapon fire. In a small percentage of people, these can trigger epileptic seizures or other symptoms, even if they have never had them before.",
+  "photo.advice": "If you or anyone in your family has epilepsy or photosensitivity, consult a doctor before playing. If you feel dizzy, have altered vision, twitching or disorientation, stop playing immediately.",
+  "photo.settingsHint": "You can change this at any time in Settings → Reduce visual effects.",
+  "photo.terms": "Terms of use",
+  "photo.reduce": "Turn on “Reduce visual effects”",
+  "photo.continue": "Continue",
+  "photo.show": "Show the photosensitivity warning",
 };

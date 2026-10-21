@@ -7,6 +7,7 @@ import { findSystemSummary, gameStore, useGame, useT } from "../state/store";
 import { LanguageToggle } from "./LanguageToggle";
 import { AcceptTerms, LegalLinks } from "./Legal";
 import { CookieNotice } from "./CookieNotice";
+import { PhotosensitivityNotice } from "./PhotosensitivityNotice";
 
 /** Formulario de acceso o botón de entrada, según el estado de la sesión. */
 function AuthPanel() {
@@ -216,6 +217,7 @@ export function StartScreen() {
         <AuthPanel />
       </div>
       <CookieNotice />
+      <PhotosensitivityNotice />
       <div className="start-footer">
         <span>{t("app.prototype")}</span>
         <LegalLinks />
