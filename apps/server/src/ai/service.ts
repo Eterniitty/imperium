@@ -1,6 +1,7 @@
 import {
   ALIEN_AI,
   effectiveTraits,
+  FACTIONS,
   getAlienShipClass,
   getFaction,
   getSpecies,
@@ -8,7 +9,7 @@ import {
   type SpeciesDefinition,
   type StockId,
 } from "@imperium/content";
-import { coreRing, regionKey, regionMaxRing, type RegionCoord } from "@imperium/procgen";
+import { coreRing, generateSector, regionKey, regionMaxRing, type RegionCoord } from "@imperium/procgen";
 import {
   distance,
   type AlienSighting,
@@ -105,12 +106,22 @@ export class AlienService {
     this.timeScale = config.TIME_SCALE;
   }
 
-  /** Carga los actores y la expansión (una vez). */
+  /**
+   * Carga los actores y la expansión (una vez) y crea los actores que falten,
+   * cada uno en su propia transacción: así nunca se recuerda el id de un actor
+   * creado dentro de una transacción que luego se deshace.
+   */
   ensure(): Promise<void> {
     return (this.loading ??= (async () => {
       await this.territory.ensure();
       const rows = await this.db.select({ id: emperors.id, factionId: emperors.factionId }).from(emperors).where(eq(emperors.kind, "alien"));
       for (const r of rows) if (r.factionId) this.remember(r.factionId, r.id);
+      // Su fila necesita un sistema: el primero del sector de origen (es solo contabilidad; no se ven).
+      const home = generateSector(this.seed, { x: 0, y: 0, z: 0 }).systems[0]!.id;
+      for (const f of FACTIONS) {
+        if (this.actors.has(f.id) || getSpecies(f.speciesId)?.extinct) continue;
+        await this.createActor(f.id, home);
+      }
     })().catch((err: unknown) => {
       this.loading = null;
       throw err;
@@ -140,19 +151,23 @@ export class AlienService {
     return this.actorFactions.get(emperorId) ?? null;
   }
 
-  /** Actor de una facción, creado si no existe (con su sistema de origen). */
-  async actor(tx: Tx | Database, factionId: string, homeSystemId: string): Promise<string> {
-    const known = this.actors.get(factionId);
-    if (known) return known;
-    const [row] = await tx
+  /** Crea (fuera de cualquier otra transacción) el actor de una facción. */
+  private async createActor(factionId: string, homeSystemId: string): Promise<string> {
+    const [row] = await this.db
       .insert(emperors)
       .values({ kind: "alien", factionId, name: factionId, nameKey: `#alien:${factionId}`, visibility: "hidden", systemId: homeSystemId, humans: 0 })
       .onConflictDoNothing()
       .returning({ id: emperors.id });
-    const id = row?.id ?? (await tx.select({ id: emperors.id }).from(emperors).where(eq(emperors.factionId, factionId)).limit(1))[0]?.id;
+    const id = row?.id ?? (await this.db.select({ id: emperors.id }).from(emperors).where(eq(emperors.factionId, factionId)).limit(1))[0]?.id;
     if (!id) throw new Error(`No se pudo crear el actor de ${factionId}`);
     this.remember(factionId, id);
     return id;
+  }
+
+  /** Actor de una facción (creado en `ensure`; si faltase, se crea aparte). */
+  async actor(_tx: Tx | Database, factionId: string, homeSystemId: string): Promise<string> {
+    await this.ensure();
+    return this.actors.get(factionId) ?? this.createActor(factionId, homeSystemId);
   }
 
   private ms(hours: number): number {

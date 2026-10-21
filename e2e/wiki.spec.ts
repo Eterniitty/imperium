@@ -67,3 +67,23 @@ test("la portada del juego enlaza la Wiki", async ({ page }) => {
   await expect(link).toHaveAttribute("href", "/wiki/");
   await expect(link).toHaveAttribute("target", "_blank");
 });
+
+test("Wiki: especies alienígenas e IA y territorios, con tablas generadas", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("/wiki/especies");
+  await expect(page.getByRole("heading", { level: 1, name: "Especies" })).toBeVisible();
+  await expect(page.locator('table[data-table="especies-resumen"]').getByRole("cell", { name: "Los Erradicadores" })).toBeVisible();
+  await expect(page.locator('table[data-table="naves-alienigenas"]').getByRole("cell", { name: "Arca de la Estela" })).toBeVisible();
+  // Ficha ampliada: filosofía, territorio y naves propias.
+  const tharaxi = page.locator(".wiki-card").filter({ hasText: "THARAXI" });
+  await expect(tharaxi.getByText("Filosofía")).toBeVisible();
+  await expect(tharaxi.getByRole("cell", { name: "Zángano" })).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/wiki-especies.png`, fullPage: true });
+  await page.goto("/wiki/ia-territorios");
+  await expect(page.getByRole("heading", { level: 1, name: "IA y territorios" })).toBeVisible();
+  await expect(page.locator('table[data-table="anillos"]')).toBeVisible();
+  await expect(page.locator('table[data-table="ia-emperadores"]').getByRole("cell", { name: "Expansionista" })).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/wiki-ia-territorios.png`, fullPage: true });
+  expect(errors).toEqual([]);
+});

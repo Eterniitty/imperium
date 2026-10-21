@@ -1,6 +1,6 @@
 # Aeonarch — Lore
 
-Texto de referencia del universo, aportado por el autor del juego. Todavía no está integrado en el juego, pero guía el diseño: las especies, sus motivos y la naturaleza de los Emperadores deben respetarlo. Las fichas de especies de `packages/content` se irán alineando con este documento.
+Texto de referencia del universo, aportado por el autor del juego. Guía el diseño: las especies, sus motivos y la naturaleza de los Emperadores deben respetarlo. Las especies del §V ya están en el juego como datos de `packages/content` (con territorio, naves e IA desde la Fase 11; ver la Wiki, «Especies» e «IA y territorios»).
 
 ## I. Un universo antiguo
 

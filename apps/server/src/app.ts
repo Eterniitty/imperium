@@ -112,7 +112,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   const territory = new TerritoryService(deps.db, config);
   const aliens = new AlienService(deps.db, config, territory, fleets, colonies, humanity, (summary) => discoveries.detail(summary));
   // Emperadores humanos de la IA: juegan con las órdenes de un jugador (se crean en index.ts).
-  const aiEmperors = new AiEmperorService(deps.db, config, territory, discoveries, fleets, colonies, market, app.log);
+  const aiEmperors = new AiEmperorService(deps.db, config, territory, discoveries, fleets, colonies, humanity, market, app.log);
   aliens.market = market;
   wars.setAlienHooks(
     (db, a, b, systemId) => aliens.hostile(db, a, b, systemId),

@@ -66,9 +66,10 @@ Orden de construcción de lo que pide [diseno.md](diseno.md). Cada fase se divid
 
 ## Fase 11 — Masividad e inteligencia artificial
 
-- Proceso `apps/ai` con la misma tubería de órdenes que los jugadores.
-- Facciones alienígenas del MVP (Hordas y Máquinas) que ocupan sistemas y atacan.
-- Emperadores IA humanos para que el universo se sienta vivo; gobernadores de jugadores ausentes.
+- ✔ (21-10-2026) **Especies alienígenas del lore** como datos (territorio, flotas, naves propias, IA) y **territorios** en una capa determinista y secreta (no cambia `GENERATOR_VERSION`), visibles en el mapa respetando la niebla de guerra.
+- ✔ **IA de facciones** con la misma tubería de órdenes que los jugadores (flotas, combate por rondas, mercado), sin bucles por tick: regiones que despiertan con humanos cerca (evento `ai.region`), guarnición, patrullas, expansión lenta, respuesta a intrusos según su agresividad, rencor y tributos, Nómadas del Vacío en el mercado. El Núcleo Humano es seguro y hay gracia para los Emperadores nuevos.
+- ✔ **Emperadores IA humanos** (versión básica, evento `ai.emperor`): colonizan, construyen, exploran y comercian. Pendiente: que guerreen, acepten compañeros y gobiernen colonias de jugadores ausentes.
+- Pendiente: proceso aparte `apps/ai` cuando haga falta escalar (hoy es un servicio dentro del servidor que usa la cola de eventos); ataques alienígenas a colonias y Cunas (con la 9b); pactos de los Grises y Custodios protectores; modelos 3D de las naves alienígenas y combate pilotado contra ellas (tras fusionar el pilotaje).
 - Zonas de interés por sector en el WebSocket (cada jugador recibe solo lo cercano) para aguantar cientos de jugadores.
 
 ## Fase 12 — Organizaciones y comunidad

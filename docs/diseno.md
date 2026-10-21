@@ -100,13 +100,13 @@ Las especies alienígenas no son jugables. Se definen como **datos** (`packages/
 | **VESPERI** | La vida local es sagrada | Protectores o resistentes. | Los Custodios (posible aliada) / La Última Frontera |
 | **Carroñeros** | Botín · Supervivencia | Saqueo. **Activos** como piratas de la IA. | Marea de Óxido |
 
-Los nombres de facción y los rasgos numéricos son provisionales. Solo los Carroñeros están en el juego por ahora; el resto se integrará con la IA (Fase 11).
+Los nombres de facción y los rasgos numéricos son provisionales. Desde el 21-10-2026 **todas las especies salvo los Precursores están en el juego** (Fase 11): cada una tiene **territorio** (más lejos del Núcleo Humano cuanto más peligrosa; el Núcleo es seguro), **naves propias** y una **IA** que patrulla, se expande despacio, ataca a los intrusos según su agresividad o comercia (Nómadas del Vacío). Las neutrales solo atacan por **rencor** (interceptar sus flotas, colonizar su territorio), que se puede pagar con **tributos**. Los Precursores dejan ruinas. Ver `docs/arquitectura.md` («Implementado (Fase 11)») y la Wiki («IA y territorios»).
 
 ## 10. Tres capas de IA
 
 1. **Gobernadores** de jugadores ausentes: gestionan colonias según la **doctrina elegida** por el jugador (Herederos).
 2. **Facciones alienígenas**: actúan según la ficha de su especie y facción.
-3. **Emperadores IA humanos**: llenan el universo para que se sienta vivo con pocos jugadores.
+3. **Emperadores IA humanos**: llenan el universo para que se sienta vivo con pocos jugadores (hechos en su versión básica: colonizan, construyen, exploran y comercian; aún no guerrean).
 
 Las tres capas usan **la misma tubería de órdenes validada** que los jugadores humanos: no hacen trampas ni tienen atajos.
 

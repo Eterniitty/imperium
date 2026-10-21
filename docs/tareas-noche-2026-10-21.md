@@ -42,7 +42,14 @@ En orden, siempre de dos en dos agentes, con copia antes de cada cambio grande:
       Hecha: créditos por población, tesoro del Núcleo (10 %), 4 proyectos comunes, mercado con libro
       de órdenes y envíos según la distancia, paneles «Humanidad»/«Mercado», Wiki (`humanidad`, `mercado`),
       migración 0011. La IA en el mercado queda para la Fase 11.
-- [ ] **Otras especies** del lore (`docs/lore.md` §V) como datos en `packages/content`, con naves,
-      territorios y comportamiento propios.
-- [ ] **Otras IA**: facciones alienígenas y Emperadores humanos de la IA (Fase 11 + 9d, `docs/ia-naves.md`).
+- [x] **Otras especies** del lore (`docs/lore.md` §V) como datos en `packages/content`, con naves,
+      territorios y comportamiento propios. Hecho: territorio, flotas, IA, filosofía y actitud por especie,
+      19 naves alienígenas (`aliens.ts`, con datos para el modelo 3D), capa de territorio determinista y
+      secreta en procgen (sin subir `GENERATOR_VERSION`), halos en el mapa respetando la niebla, presencia
+      alienígena en sistemas, flotas y «Batallas», Wiki («Especies» e «IA y territorios»). Migración 0012.
+- [x] **Otras IA**: facciones alienígenas y Emperadores humanos de la IA (Fase 11; `docs/ia-naves.md` §6b).
+      Hecho: `AlienService` (regiones que despiertan, guarnición, patrullas, expansión, respuesta a intrusos,
+      rencor y tributos, Nómadas en el mercado) y `AiEmperorService` (colonizan, construyen, exploran,
+      comercian). Pendiente: IA de pilotaje 3D (9d), modelos 3D alienígenas (tras fusionar el pilotaje),
+      guerra de los Emperadores IA, ataques a colonias (9b).
 - [ ] Fases siguientes de la hoja de ruta: 9b (conquista), 9c, 10 (muerte y linaje).

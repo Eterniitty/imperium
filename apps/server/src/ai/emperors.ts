@@ -23,6 +23,7 @@ import { discoverAround, fleetScannerRangeLy, type DiscoveryService } from "../d
 import { findSystem, nameKey, spawnCandidates, systemsInRange } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
 import type { FleetService } from "../fleet/service";
+import type { HumanityService } from "../humanity/service";
 import type { MarketEffects, MarketService } from "../market/service";
 import type { TerritoryService } from "./territory";
 
@@ -60,6 +61,7 @@ export class AiEmperorService {
     private readonly discoveries: DiscoveryService,
     private readonly fleetService: FleetService,
     private readonly colonyService: ColonyService,
+    private readonly humanity: HumanityService,
     private readonly market: MarketService,
     private readonly log: FastifyBaseLogger | null = null,
     private readonly now: () => number = Date.now,
@@ -149,6 +151,8 @@ export class AiEmperorService {
     const [me] = await this.db.select().from(emperors).where(and(eq(emperors.id, emperorId), eq(emperors.kind, "ai"))).limit(1);
     if (!me) return null;
     const persona = this.personality(me.name);
+    // Su cartera (la crea con el saldo inicial, como al conectarse un jugador): cobra renta y lo que venda.
+    await this.humanity.wallet(emperorId);
     const fx: AiEmperorEffects = { emperorId, colonies: [], fleets: [], wallet: false, market: [] };
     let own = await this.colonyService.list(emperorId);
     const myFleets = await this.fleetService.byEmperor(emperorId);

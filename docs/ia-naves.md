@@ -178,6 +178,7 @@ Los humanos de la IA usan el mismo piloto (§2–§4b), con sus propias personal
 - **Escoltas de convoy**: protegen a los mercantes con el plan de cobertura.
 
 **Emperadores humanos de la IA** (estrategia, Fase 11): no solo pilotan; gobiernan.
+*Hecho el 21-10-2026 en versión básica* (`apps/server/src/ai/emperors.ts`): reclaman, construyen en orden según su personalidad, colonizan con colonizadores, exploran y los mercaderes venden excedentes. Falta: guerra, diplomacia con compañeros, rutas de transporte y gobernadores. Las facciones alienígenas (territorio, flotas, rencor) están en `apps/server/src/ai/service.ts`.
 
 - **Economía**: eligen planetas que reclamar (habitabilidad, riqueza, energía,
   distancia), construyen instalaciones en buen orden (minas → centrales →
