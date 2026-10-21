@@ -441,6 +441,7 @@ export const en: Record<I18nKey, string> = {
   "wiki.group.empire": "Your empire",
   "wiki.group.war": "War",
   "wiki.group.people": "Players and world",
+  "wiki.group.lore": "Lore",
   "wiki.yes": "Yes",
   "wiki.no": "No (used where it is produced)",
   "wiki.unlimited": "Unlimited",

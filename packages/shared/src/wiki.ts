@@ -12,7 +12,7 @@
  */
 import type { Locale } from "./i18n/index";
 
-export const WIKI_GROUPS = ["start", "world", "ship", "empire", "war", "people"] as const;
+export const WIKI_GROUPS = ["start", "world", "ship", "empire", "war", "people", "lore"] as const;
 export type WikiGroup = (typeof WIKI_GROUPS)[number];
 
 /** Artículos del repositorio, en el orden del índice. Para añadir uno: su slug aquí y un `.md` en cada idioma. */
@@ -40,7 +40,7 @@ export const WIKI_ARTICLES = [
   { slug: "especies", group: "people" },
   { slug: "naves-alienigenas", group: "people" },
   { slug: "ia-territorios", group: "people" },
-  { slug: "lore", group: "people" },
+  { slug: "lore", group: "lore" },
 ] as const satisfies ReadonlyArray<{ slug: string; group: WikiGroup }>;
 
 export type WikiSlug = (typeof WIKI_ARTICLES)[number]["slug"];

@@ -144,7 +144,7 @@ describe.skipIf(!TEST_DATABASE_URL)("Wiki editable", () => {
 
     // Ocultar uno del repositorio y el nuevo.
     await post("/api/wiki/save", { slug: "lore", locale: "en", body: "# Lore\n\nsecret", baseRevisionId: null }, admin);
-    expect((await post("/api/wiki/meta", { slug: "lore", hidden: true }, admin)).json<WikiPageResponse>().page).toMatchObject({ slug: "lore", hidden: true, group: "people", custom: false });
+    expect((await post("/api/wiki/meta", { slug: "lore", hidden: true }, admin)).json<WikiPageResponse>().page).toMatchObject({ slug: "lore", hidden: true, group: "lore", custom: false });
     await post("/api/wiki/meta", { slug: "rutas-comerciales", hidden: true, group: "war" }, admin);
     const anon = (await app.inject({ method: "GET", url: "/api/wiki" })).json<WikiStateResponse>();
     expect(anon.pages.map((p) => p.slug)).toEqual(["lore"]);

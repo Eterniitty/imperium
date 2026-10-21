@@ -127,6 +127,13 @@
       "when": 1792580874353,
       "tag": "0018_wiki_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792582885071,
+      "tag": "0019_wiki_grupo_lore",
+      "breakpoints": true
     }
   ]
 }

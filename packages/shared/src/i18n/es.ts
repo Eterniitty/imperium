@@ -443,6 +443,7 @@ export const es = {
   "wiki.group.empire": "Tu imperio",
   "wiki.group.war": "Guerra",
   "wiki.group.people": "Jugadores y mundo",
+  "wiki.group.lore": "Lore",
   "wiki.yes": "Sí",
   "wiki.no": "No (se gasta donde se produce)",
   "wiki.unlimited": "Ilimitada",

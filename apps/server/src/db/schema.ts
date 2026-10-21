@@ -860,7 +860,7 @@ export const wikiPages = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [check("wiki_pages_group", sql`${t.group} IN ('start', 'world', 'ship', 'empire', 'war', 'people')`)],
+  (t) => [check("wiki_pages_group", sql`${t.group} IN ('start', 'world', 'ship', 'empire', 'war', 'people', 'lore')`)],
 );
 
 /**

@@ -1,0 +1,2 @@
+ALTER TABLE "wiki_pages" DROP CONSTRAINT "wiki_pages_group";--> statement-breakpoint
+ALTER TABLE "wiki_pages" ADD CONSTRAINT "wiki_pages_group" CHECK ("wiki_pages"."group" IN ('start', 'world', 'ship', 'empire', 'war', 'people', 'lore'));
