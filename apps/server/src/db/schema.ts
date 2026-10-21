@@ -166,6 +166,27 @@ export const emperors = pgTable("emperors", {
 ]);
 
 /**
+ * Memoria de posición: el último sitio (metros, coordenadas del sistema) donde
+ * estuvo la nave de un Emperador en cada sistema. Se guarda al saltar fuera,
+ * al aparcar y cada cierto tiempo mientras se pilota; al volver a ese sistema,
+ * la nave llega ahí. Los compañeros pueden pedir llegar junto a ella.
+ */
+export const systemParks = pgTable(
+  "system_parks",
+  {
+    emperorId: uuid("emperor_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    systemId: text("system_id").notNull(),
+    x: doublePrecision("x").notNull(),
+    y: doublePrecision("y").notNull(),
+    z: doublePrecision("z").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.emperorId, t.systemId] })],
+);
+
+/**
  * Flotas: grupos de naves de un Emperador que viajan juntos. Igual que los
  * Emperadores, guardan el sistema donde están (o de donde salieron) y el viaje.
  */

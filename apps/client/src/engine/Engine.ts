@@ -22,6 +22,9 @@ import type { View } from "./View";
  * se comunica con la interfaz solo a través del store (estado) y de sus
  * métodos públicos (órdenes de la interfaz).
  */
+/** Si se vuelve a la pestaña más tarde que esto tras la llegada (ms), no se repite la salida de la grieta. */
+const ARRIVAL_REPLAY_MS = 10_000;
+
 export class Engine {
   private renderer: THREE.WebGLRenderer;
   private keyboard: Keyboard;
@@ -34,6 +37,10 @@ export class Engine {
   private active: View;
   private timer = new THREE.Timer();
   private frameId = 0;
+  /** Hora (performance.now) del último fotograma: si el navegador deja de dar fotogramas, la pestaña está en segundo plano. */
+  private lastFrameAt = performance.now();
+  /** Vigilante que hace avanzar el salto sin fotogramas (pestaña oculta o ventana tapada). */
+  private readonly watchdog: ReturnType<typeof setInterval>;
   private resizeObserver: ResizeObserver;
   private fpsAccum = 0;
   private fpsFrames = 0;
@@ -76,7 +83,7 @@ export class Engine {
     this.system = new SystemView(dom, this.keyboard, {
       onExit: () => this.exitSystem(),
       onLeave: (direction) => this.leaveSystem(direction),
-      onQuantumJump: (target) => void this.quantumJump(target),
+      onQuantumJump: (target, near) => void this.quantumJump(target, near),
       notify: (key, action) => {
         const code = action ? settingsStore.getState().bindings[action][0] : undefined;
         this.notify(key, action ? { key: code ? keyLabel(code, gameStore.getState().locale) : "—" } : undefined);
@@ -95,6 +102,9 @@ export class Engine {
     this.resizeObserver.observe(container);
     this.resize();
     this.loop();
+    // El salto no depende de que la pestaña esté a la vista (ver `inBackground`).
+    this.watchdog = setInterval(this.backgroundTick, 1000);
+    document.addEventListener("visibilitychange", this.backgroundTick);
     // Como en No Man's Sky: se empieza a los mandos de la nave, en el sistema del Emperador
     // (o en el túnel cuántico, si está de viaje).
     if (!this.pilot(null) && this.emperor()?.travel) this.enterTunnel();
@@ -206,9 +216,9 @@ export class Engine {
   }
 
   /** Salto cuántico a la estrella seleccionada en el mapa: se vuelve a los mandos y empieza la secuencia. */
-  async jumpToSelected(): Promise<void> {
+  async jumpToSelected(near: string | null = null): Promise<void> {
     const target = gameStore.getState().selected;
-    if (target) this.startQuantum(target);
+    if (target) this.startQuantum(target, near);
   }
 
   /**
@@ -216,7 +226,7 @@ export class Engine {
    * estaba), la nave se alinea con el destino y carga el motor; al terminar,
    * `quantumJump` da la orden al servidor (que comprueba combustible y alcance).
    */
-  startQuantum(target: StarSystemSummary): void {
+  startQuantum(target: StarSystemSummary, near: string | null = null): void {
     const emperor = this.emperor();
     if (!emperor) return;
     gameStore.getState().setQuantumPanel(false);
@@ -224,12 +234,14 @@ export class Engine {
     const here = emperor.travel ? emperor.travel.to : emperor.location;
     if (target.id === here.systemId) return this.notify("error.already_there");
     if (!(this.active === this.system && this.system.isPiloting) && !this.pilot(null)) return;
-    this.system.startQuantum(target, here.position);
+    this.system.startQuantum(target, here.position, near);
+    // Ya en segundo plano (p. ej. se eligió el destino y se cambió de ventana): no se espera a la animación.
+    if (this.inBackground()) this.system.skipQuantumAhead();
   }
 
   /** El motor cuántico está cargado: orden de salto; si el servidor la acepta, al túnel. */
-  private async quantumJump(target: StarSystemSummary): Promise<void> {
-    const error = await authStore.getState().moveEmperor(target.id);
+  private async quantumJump(target: StarSystemSummary, near: string | null): Promise<void> {
+    const error = await authStore.getState().moveEmperor(target.id, near);
     if (error) {
       this.system.cancelQuantum();
       return this.notify(error);
@@ -241,7 +253,28 @@ export class Engine {
       this.rift.jump(this.renderer, this.system.scene, this.system.camera);
       this.enterTunnel();
     });
+    // Sin fotogramas, la entrada en la grieta no avanzaría: al túnel directamente.
+    if (this.inBackground()) this.system.skipQuantumAhead();
   }
+
+  /**
+   * ¿Está el juego en segundo plano? Pestaña oculta, o sin fotogramas desde hace
+   * más de un segundo (ventana minimizada o tapada: algunos navegadores dejan
+   * de dar fotogramas sin marcar la pestaña como oculta).
+   */
+  private inBackground(): boolean {
+    return document.hidden || performance.now() - this.lastFrameAt > 1000;
+  }
+
+  /**
+   * Cada segundo (los temporizadores sí corren en segundo plano, aunque más
+   * despacio) y al ocultarse la pestaña: si no hay fotogramas, la secuencia del
+   * salto se adelanta para que la orden llegue al servidor; el viaje y la
+   * llegada los lleva el servidor por su cuenta.
+   */
+  private backgroundTick = (): void => {
+    if (this.inBackground()) this.system.skipQuantumAhead();
+  };
 
   /** Viaje en curso: la nave deja el sistema y se ve el túnel cuántico hasta llegar. */
   private enterTunnel(): void {
@@ -344,7 +377,10 @@ export class Engine {
     }
     const emperor = this.emperor();
     if (!emperor || isTravelling(emperor, serverNow())) return;
-    const fromTunnel = this.active === this.tunnel;
+    // Volviendo a la pestaña mucho después de llegar: la nave ya está en el destino;
+    // se entra pilotando allí sin repetir la salida de la grieta (los demás ya la ven aparcada).
+    const late = serverNow() - (emperor.travel?.arriveAt ?? 0) > ARRIVAL_REPLAY_MS;
+    const fromTunnel = this.active === this.tunnel && !late;
     if (this.pilot(null) && fromTunnel) {
       // Se abre una grieta en el destino y la nave sale de ella.
       this.system.arriveFromJump();
@@ -490,6 +526,7 @@ export class Engine {
 
   private loop = (time?: number) => {
     this.frameId = requestAnimationFrame(this.loop);
+    this.lastFrameAt = performance.now();
     this.timer.update(time);
     const dt = Math.min(this.timer.getDelta(), 0.1);
     this.checkArrival();
@@ -523,6 +560,8 @@ export class Engine {
 
   dispose(): void {
     cancelAnimationFrame(this.frameId);
+    clearInterval(this.watchdog);
+    document.removeEventListener("visibilitychange", this.backgroundTick);
     this.unsubscribeSettings();
     this.unsubscribeDetail();
     this.resizeObserver.disconnect();

@@ -928,7 +928,10 @@ export const en: Record<I18nKey, string> = {
   "quantum.charging": "Charging quantum drive",
   "quantum.cancelHint": "{key} or Esc: cancel",
   "quantum.travelling": "Quantum travel",
-  "quantum.tunnelHint": "{map}: view the map · you arrive at the edge of the system",
+  "quantum.tunnelHint": "{map}: view the map · you arrive where you last were in the system (or at its edge, the first time)",
+  "quantum.nearHere": "↳ Next to {name} (there now)",
+  "quantum.nearWas": "↳ Next to {name} (was there)",
+  "quantum.nearTitle": "Arrive next to {name}'s ship: where it is now or, if it has left, where it last was in that system",
   "settings.sfx": "Sound effects",
   "settings.sfxHint": "Shots, explosions and quantum drive (separate from the music).",
   // Fase 9b: conquista de planetas.

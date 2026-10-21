@@ -191,7 +191,13 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                   case "emperor.move": {
                     // El salto gasta combustible: primero se guarda el que lleva la nave en memoria.
                     await space.flushSupplies(owner.emperorId);
-                    const res = await emperors.move(owner.accountId, msg.args.systemId);
+                    // Memoria de posición: dónde está ahora la nave (y el compañero junto al que se quiere llegar), en vivo.
+                    const near = msg.args.near ?? null;
+                    const res = await emperors.move(owner.accountId, msg.args.systemId, {
+                      here: space.positionOf(owner.emperorId),
+                      near,
+                      nearLive: near ? space.positionOf(near) : null,
+                    });
                     if (res.ok) {
                       // Al saltar, la nave deja el sistema en el que volaba (y su combustible cambió en la base de datos).
                       space.leave(res.emperor.id, "jump");

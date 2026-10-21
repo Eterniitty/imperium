@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import type { ApiError, SocialResponse } from "@imperium/shared";
+import type { ApiError, CompanionTrailResponse, SocialResponse } from "@imperium/shared";
 import { AllyAddBodySchema, AllyRemoveBodySchema, VisibilityBodySchema } from "@imperium/shared/schemas";
 import { accountFromRequest, sessionCookieName } from "../auth/routes";
 import { RateLimiter } from "../auth/rateLimit";
@@ -47,6 +47,13 @@ export async function socialRoutes(app: FastifyInstance, { config, db, emperors,
     const id = await me(req, reply);
     if (!id) return;
     return (await social.summary(id)) satisfies SocialResponse;
+  });
+
+  // Memoria de posición: dónde están y estuvieron los compañeros (para saltar junto a ellos).
+  app.get("/api/social/trail", async (req, reply) => {
+    const id = await me(req, reply);
+    if (!id) return;
+    return (await social.trail(id)) satisfies CompanionTrailResponse;
   });
 
   app.post("/api/social/visibility", async (req, reply) => {

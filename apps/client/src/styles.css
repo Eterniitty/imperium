@@ -683,6 +683,8 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 /* Salto cuántico. */
 .quantum-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 52vh; overflow-y: auto; }
 .quantum-dest { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 6px 10px; border-radius: 4px; border: 1px solid var(--panel-border); background: rgba(20, 30, 50, 0.55); color: inherit; cursor: pointer; text-align: left; }
+.quantum-near { margin: 2px 0 0 14px; padding: 2px 8px; border-radius: 4px; border: 1px dashed rgba(143, 184, 255, 0.45); background: transparent; color: #bfd0ff; cursor: pointer; text-align: left; }
+.quantum-near:hover { border-style: solid; background: rgba(40, 60, 110, 0.4); }
 .quantum-dest:hover { border-color: rgba(143, 184, 255, 0.7); background: rgba(40, 60, 110, 0.55); }
 .quantum-name { display: flex; gap: 8px; align-items: center; }
 .warn-text { color: #ff8a6a; }

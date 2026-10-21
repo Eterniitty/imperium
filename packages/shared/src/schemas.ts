@@ -129,7 +129,8 @@ export const ClientMessageSchema = z.union([
     t: z.literal("cmd"),
     cmdId: CmdIdSchema,
     op: z.literal("emperor.move"),
-    args: z.object({ systemId: SystemIdSchema }),
+    // `near`: llegar junto a un compañero (memoria de posición).
+    args: z.object({ systemId: SystemIdSchema, near: z.uuid().optional() }),
   }),
   // Espacio profundo y minería: salir del túnel, descargar la bodega, refinería de a bordo.
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("emperor.drop"), args: z.object({}).strict() }),

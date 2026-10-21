@@ -51,7 +51,7 @@ export interface SystemViewEvents {
   /** Esc en modo observar: volver al mapa. */
   onExit(): void;
   /** El motor cuántico terminó de cargar: hay que dar la orden de salto. */
-  onQuantumJump(target: StarSystemSummary): void;
+  onQuantumJump(target: StarSystemSummary, near: string | null): void;
   /** La nave cruzó el borde del sistema: pasar al espacio interestelar. `direction` es hacia dónde salió. */
   onLeave(direction: THREE.Vector3): void;
   /** Aviso breve; `keyAction` añade como parámetro `key` la tecla de esa acción. */
@@ -123,7 +123,16 @@ export class SystemView implements View {
    * Salto cuántico en preparación: la nave se alinea con el destino (`align`),
    * carga el motor (`charge`) y espera la confirmación del servidor (`sent`).
    */
-  private quantum: { target: StarSystemSummary; dir: THREE.Vector3; phase: "align" | "charge" | "sent" | "depart"; t: number; riftSent: boolean; onDeparted?: () => void } | null = null;
+  private quantum: {
+    target: StarSystemSummary;
+    /** Compañero junto al que se quiere llegar (memoria de posición), o null. */
+    near: string | null;
+    dir: THREE.Vector3;
+    phase: "align" | "charge" | "sent" | "depart";
+    t: number;
+    riftSent: boolean;
+    onDeparted?: () => void;
+  } | null = null;
   /**
    * Llegada de un salto: la nave sale de una grieta abierta en `spawn` (donde
    * aparece), desde `L` esloras por detrás; los mandos esperan a que salga.
@@ -614,12 +623,12 @@ export class SystemView implements View {
    * `from` (coordenadas de la galaxia, que en la vista de sistema se usan como
    * direcciones): alinear la nave, cargar el motor y saltar.
    */
-  startQuantum(target: StarSystemSummary, from: WorldPosition): void {
+  startQuantum(target: StarSystemSummary, from: WorldPosition, near: string | null = null): void {
     if (!this.ship || !this.flight) return;
     this.cancelQuantum();
     const dir = new THREE.Vector3(target.position.x - from.x, target.position.y - from.y, target.position.z - from.z).normalize();
     this.flight.pulse = false;
-    this.quantum = { target, dir, phase: "align", t: 0, riftSent: false };
+    this.quantum = { target, near, dir, phase: "align", t: 0, riftSent: false };
     gameStore.getState().setQuantumTarget(target);
   }
 
@@ -684,7 +693,7 @@ export class SystemView implements View {
       shipRig(ship).setThrust(0.3 + 0.7 * k, k > 0.5);
       if (k >= 1) {
         q.phase = "sent";
-        this.events.onQuantumJump(q.target);
+        this.events.onQuantumJump(q.target, q.near);
       }
     } else if (q.phase === "depart") {
       q.t += dt;
@@ -695,6 +704,36 @@ export class SystemView implements View {
         q.onDeparted = undefined;
         done();
       }
+    }
+  }
+
+  /**
+   * Pestaña en segundo plano (el navegador no da fotogramas): la secuencia del
+   * salto no puede depender de la animación. Se salta lo que falte: si aún se
+   * alineaba o cargaba, se da ya la orden de salto (con la grieta anunciada a
+   * los demás); si ya se entraba en la grieta, se pasa al túnel. El servidor
+   * lleva el viaje por su cuenta y, al volver, se dibuja el estado real.
+   */
+  skipQuantumAhead(): void {
+    const q = this.quantum;
+    const ship = this.ship;
+    if (!q) return;
+    if (q.phase === "align" || q.phase === "charge") {
+      if (!q.riftSent && ship) {
+        const at = RiftField.ahead(ship.position, ship.quaternion);
+        const r = ship.quaternion;
+        connection.send({ t: "rift", phase: "charge", at: [at.x, at.y, at.z], q: [r.x, r.y, r.z, r.w] });
+        q.riftSent = true;
+      }
+      stopQuantumCharge();
+      telemetry.quantumAlign = null;
+      telemetry.quantumCharge = null;
+      q.phase = "sent";
+      this.events.onQuantumJump(q.target, q.near);
+    } else if (q.phase === "depart" && q.onDeparted) {
+      const done = q.onDeparted;
+      q.onDeparted = undefined;
+      done();
     }
   }
 

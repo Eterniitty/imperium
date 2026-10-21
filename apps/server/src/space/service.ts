@@ -80,6 +80,8 @@ const PARKED_REFRESH_MS = 5_000;
 const SUPPLIES_SEND_MS = 500;
 /** Cada cuánto se guardan los recursos de las naves que han cambiado. */
 const SUPPLIES_FLUSH_MS = 15_000;
+/** Cada cuánto se recuerda dónde está cada nave pilotada en su sistema (memoria de posición, `system_parks`). */
+const MEMORY_FLUSH_MS = 60_000;
 /** Cada cuánto se repone junto a las colonias y se vuelven a consultar. */
 const RESUPPLY_MS = 2_000;
 const COLONIES_REFRESH_MS = 30_000;
@@ -107,6 +109,7 @@ export class SpaceService {
   private lastShieldBroadcast = 0;
   private lastSuppliesSend = 0;
   private lastSuppliesFlush = 0;
+  private lastMemoryFlush = 0;
   private lastResupply = 0;
   /** Se llama cuando cambian las existencias de una colonia al reponer (para enviarla a su dueño). */
   onColony: (emperorId: string, colonyId: string) => void = () => {};
@@ -605,6 +608,7 @@ export class SpaceService {
     m.dirty = true;
     const id = m.emperorId;
     void this.saveSupplies(id, m.combat);
+    if (!isDeepId(m.systemId)) void this.flagships.rememberPosition(id, m.systemId, p).catch((err: unknown) => this.log.error(err, "Error al recordar la posición de una nave"));
     void this.flagships
       .savePark(id, m.park)
       .then(() => this.onFlagship(id))
@@ -619,6 +623,7 @@ export class SpaceService {
         .filter((m) => m.kind === "emperor" && !m.park)
         .map((m) => this.flagships.savePark(m.emperorId, { p: m.pose.p, at: now }).catch((err: unknown) => this.log.error(err, "Error al guardar la nave aparcada"))),
     );
+    await this.rememberPiloted();
     await Promise.all([...this.combatants].filter(([id]) => !id.startsWith("pirate:")).map(([id, c]) => this.saveSupplies(id, c)));
   }
 
@@ -633,6 +638,25 @@ export class SpaceService {
     }
     this.rooms.delete(systemId);
     this.refreshedAt.delete(systemId);
+  }
+
+  /**
+   * Dónde está ahora la nave de un Emperador en el espacio local (pilotada o
+   * aparcada en un sistema activo), o null si su sistema no está activo.
+   */
+  positionOf(emperorId: string): { systemId: string; p: Vec3 } | null {
+    const m = this.members.get(emperorId);
+    if (!m || m.kind !== "emperor") return null;
+    return { systemId: m.systemId, p: m.park ? parkedPosition(m.park, this.now()) : m.pose.p };
+  }
+
+  /** Memoria de posición: recuerda dónde están las naves pilotadas, por si el proceso se reinicia o el Emperador renace en otro sitio. */
+  private async rememberPiloted(): Promise<void> {
+    await Promise.all(
+      [...this.members.values()]
+        .filter((m) => m.kind === "emperor" && !m.park && !isDeepId(m.systemId))
+        .map((m) => this.flagships.rememberPosition(m.emperorId, m.systemId, m.pose.p).catch((err: unknown) => this.log.error(err, "Error al recordar la posición de una nave"))),
+    );
   }
 
   /** La nave deja su sistema (vuelve al mapa, salta —`jump`, entra en su grieta—, se desconecta, cae…). */
@@ -1001,6 +1025,10 @@ export class SpaceService {
     if (now - this.lastSuppliesFlush >= SUPPLIES_FLUSH_MS) {
       this.lastSuppliesFlush = now;
       for (const [id, c] of this.combatants) if (!id.startsWith("pirate:")) void this.saveSupplies(id, c);
+    }
+    if (now - this.lastMemoryFlush >= MEMORY_FLUSH_MS) {
+      this.lastMemoryFlush = now;
+      void this.rememberPiloted();
     }
     if (now - this.lastResupply >= RESUPPLY_MS) {
       this.lastResupply = now;

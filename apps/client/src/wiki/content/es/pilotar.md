@@ -91,11 +91,14 @@ Vuela hasta el **borde del sistema** (unos miles de kilómetros más allá del �
 
 1. A los mandos, pulsa [[J]]: verás los sistemas **al alcance de tu combustible**, con la distancia, la duración y el combustible del salto. También puedes **seleccionar una estrella en el mapa** y pulsar [[J]] o **Saltar aquí**.
 2. La nave se **alinea** sola con el destino y **carga el motor cuántico** (unos segundos). [[J]] o Esc cancelan. Mientras carga, se abre una **grieta en el espacio** delante del morro: una costura de luz que se alarga, se agrieta y curva el fondo a su alrededor. Al saltar se abre del todo y la nave, acelerando casi a la velocidad de la luz, **se estira hacia ella** hasta ser un hilo de luz y desaparece dentro en medio segundo; al llegar, se abre otra en el destino, **un rayo de luz sale disparado de ella** y se contrae en tu nave con un destello. La cámara acompaña: se abre un poco y tiembla levemente. La grieta está en el espacio, no en tu pantalla: **los demás pilotos del sistema la ven** (cargar, entrar y salir). Si te molestan los destellos, activa **Reducir efectos visuales** en Ajustes: los destellos y el rayo serán más tenues y la cámara no temblará.
-3. Durante el viaje ves el **túnel cuántico** con el tiempo restante; [[M]] alterna entre el túnel y el mapa. Al llegar apareces **en el borde del sistema de destino**, a los mandos.
+3. Durante el viaje ves el **túnel cuántico** con el tiempo restante; [[M]] alterna entre el túnel y el mapa. Al llegar apareces a los mandos **donde estuviste la última vez en ese sistema**; si es la primera vez, **en su borde**, del lado por el que llegas.
 
 - La velocidad de salto está en la tabla de arriba: unos minutos a las estrellas cercanas y hasta unos **40 minutos** el salto más largo. El **alcance** lo marca el combustible: para ir más lejos, salta por etapas y reposta en tus colonias.
 - Al llegar, tu escáner [descubre](/wiki/niebla) el sistema y los que tenga al alcance.
 - Se puede saltar a cualquier estrella al alcance, descubierta o no.
+- **El salto no necesita que mires la pantalla.** Puedes elegir el destino y cambiar de pestaña o de ventana: el salto se da igual (sin la animación) y el viaje y la llegada los lleva el servidor. Al volver, ves el túnel si aún viajas o tu nave ya en el destino.
+- **Memoria de posición:** el juego recuerda dónde estaba tu nave en cada sistema (al saltar fuera, al aparcarla y cada minuto mientras vuelas). Al volver a un sistema, llegas ahí y allí se abre la grieta.
+- **Junto a un compañero:** si un [compañero](/wiki/companeros) está o estuvo en un sistema, en el selector de salto ([[J]]) y en el panel del sistema en el mapa aparece **«Junto a …»**: llegas a su lado, donde está ahora o donde estuvo la última vez.
 
 ### Salir del túnel a mitad de viaje
 

@@ -59,7 +59,8 @@ export interface AuthState {
   /** Retira la solicitud; con `alone`, crea el Emperador en solitario con el nombre pedido. */
   cancelCompanion(alone: boolean): Promise<void>;
   /** Traslada al Emperador al sistema indicado. Devuelve el error, si lo hay. */
-  moveEmperor(systemId: string): Promise<I18nKey | null>;
+  /** Salto cuántico; `near`: llegar junto a ese compañero (memoria de posición). */
+  moveEmperor(systemId: string, near?: string | null): Promise<I18nKey | null>;
   /** Sale del túnel cuántico a mitad de viaje (espacio profundo). */
   dropEmperor(): Promise<I18nKey | null>;
 }
@@ -245,7 +246,7 @@ export const authStore = createStore<AuthState>()((set, get) => ({
   },
 
   // Importación diferida: la conexión importa este módulo.
-  moveEmperor: async (systemId) => (await import("../net/world")).connection.command("emperor.move", { systemId }),
+  moveEmperor: async (systemId, near) => (await import("../net/world")).connection.command("emperor.move", near ? { systemId, near } : { systemId }),
   dropEmperor: async () => (await import("../net/world")).connection.command("emperor.drop", {}),
 }));
 

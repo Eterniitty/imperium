@@ -26,6 +26,12 @@ When you **name your Emperor** (only when signing up) you can ask to start near 
 
 Your Emperor's name is not reserved while you wait: if someone takes it first, you will have to choose another (the accepted request is kept).
 
+## Jumping next to a companion
+
+If a companion **is** in a system, or **was** there, you can arrive **beside them** when you jump there: in the jump selector ([[J]]) or in the system panel on the map, choose **"Next to …"**. You arrive next to their ship (if it is still there) or at the last place they were. Without that option, you arrive where you yourself last were in that system (or at its edge). See [Flying the ship](/wiki/pilotar).
+
+- Only between companions (you have both added each other), and not with someone who chose that **nobody** sees where they are.
+
 ## Who sees where you are
 
 In **Settings → Companions → Who sees where you are** you choose who can see your Emperor's position on the map (where they are and where they are travelling to):

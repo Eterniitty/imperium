@@ -28,6 +28,7 @@ import {
   scheduledEvents,
   sessions,
   ships,
+  systemParks,
 } from "../db/schema";
 import type { ColonyService } from "../colony/service";
 import type { HumanityService } from "../humanity/service";
@@ -104,6 +105,8 @@ export async function accountRoutes(app: FastifyInstance, { config, db, hub, spa
         installations: byColony ? await db.select().from(installations).where(inArray(installations.colonyId, colonyIds)) : [],
         colonyBuilds: byColony ? await db.select().from(colonyBuilds).where(inArray(colonyBuilds.colonyId, colonyIds)) : [],
         discoveries: await db.select().from(discoveries).where(eq(discoveries.emperorId, emperor.id)),
+        // Memoria de posición: el último punto de su nave en cada sistema donde estuvo.
+        systemParks: await db.select().from(systemParks).where(eq(systemParks.emperorId, emperor.id)),
         resourceLedger: await db.select().from(resourceLedger).where(eq(resourceLedger.emperorId, emperor.id)),
         // Batallas en las que ha combatido (bando, resultado y la batalla).
         battles: await db

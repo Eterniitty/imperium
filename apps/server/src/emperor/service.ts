@@ -1,14 +1,15 @@
-import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, getShipClass, HUMANS, STARTING_FLEET } from "@imperium/content";
+import { COMPANION_ARRIVAL_OFFSET_M, EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, getShipClass, HUMANS, STARTING_FLEET } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
-import { deepRegionIdAt, distance, isDeepId, type CommandError, type Emperor, type StarSystemSummary, type WorldPosition } from "@imperium/shared";
-import { arrivalPark, isTravelling, positionAt, quantumFuelCost, regenFuel, travelDurationMs, type SystemLayout } from "@imperium/sim";
-import { eq, ne, sql } from "drizzle-orm";
+import { deepRegionIdAt, distance, isDeepId, type CommandError, type Emperor, type StarSystemSummary, type Vec3, type WorldPosition } from "@imperium/shared";
+import { arrivalPark, arrivalParkAt, besidePoint, defaultPark, isTravelling, parkedPosition, positionAt, quantumFuelCost, regenFuel, sanitizePark, travelDurationMs, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
+import { and, eq, ne, or, sql } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
 import { companionRequests, emperorAllies, emperors, fleets, ships } from "../db/schema";
 import { discoverAround, discoverNear, fleetScannerRangeLy } from "../discovery/service";
-import { schedule } from "../events/queue";
-import { parkColumns } from "../space/flagship";
+import { schedule, type Tx } from "../events/queue";
+import { parkColumns, parkFromRow } from "../space/flagship";
+import { recallPosition, rememberPosition } from "../space/memory";
 import { findSystem, nameKey, pickSpawnNear, pickSpawnSystem, placeFromRow, type PlaceRow } from "./world";
 
 const columns = {
@@ -21,11 +22,23 @@ const columns = {
   arriveAt: emperors.arriveAt,
   deadAt: emperors.deadAt,
 };
+const PARK_SELECT = { parkX: emperors.parkX, parkY: emperors.parkY, parkZ: emperors.parkZ, parkAt: emperors.parkAt };
 type Row = PlaceRow & { name: string; kind: string; deadAt: Date | null };
 
 /** `companionId`: el compañero cerca del que apareció (alta con compañero aceptada). */
 export type CreateResult = { ok: true; emperor: Emperor; companionId: string | null } | { ok: false; error: "emperor_exists" | "name_taken" };
-export type MoveResult = { ok: true; emperor: Emperor } | { ok: false; error: CommandError };
+/** `near`: llega junto al compañero pedido (false si no se pudo y llegó a su sitio de siempre). */
+export type MoveResult = { ok: true; emperor: Emperor; near: boolean } | { ok: false; error: CommandError };
+
+/** Datos en vivo del espacio local que la orden de salto aprovecha (las naves pilotadas no guardan su posición a cada momento). */
+export interface MoveOptions {
+  /** Dónde está ahora la nave propia (en vivo), para recordarla en el sistema que deja. */
+  here?: { systemId: string; p: Vec3 } | null;
+  /** Llegar junto a este compañero: su posición actual en el destino o la última conocida allí. */
+  near?: string | null;
+  /** Dónde está ahora el compañero (en vivo), si vuela o está aparcado en un sistema activo. */
+  nearLive?: { systemId: string; p: Vec3 } | null;
+}
 /** Salida del túnel: el Emperador, la región donde queda y los sistemas que descubre su escáner desde allí. */
 export type DropResult = { ok: true; emperor: Emperor; regionId: string; discovered: string[] } | { ok: false; error: CommandError };
 
@@ -146,13 +159,13 @@ export class EmperorService {
    * Orden de viaje. La fila se bloquea durante la transacción: dos órdenes
    * simultáneas del mismo Emperador se aplican una detrás de otra.
    */
-  async move(accountId: string, systemId: string): Promise<MoveResult> {
+  async move(accountId: string, systemId: string, opts: MoveOptions = {}): Promise<MoveResult> {
     const dest = findSystem(this.seed, systemId);
     if (!dest) return { ok: false, error: "unknown_system" };
 
     return this.db.transaction(async (tx): Promise<MoveResult> => {
       const [row] = await tx
-        .select({ ...columns, fuel: emperors.fuel, fuelAt: emperors.fuelAt })
+        .select({ ...columns, fuel: emperors.fuel, fuelAt: emperors.fuelAt, ...PARK_SELECT })
         .from(emperors)
         .where(eq(emperors.accountId, accountId))
         .for("update")
@@ -170,10 +183,22 @@ export class EmperorService {
       if (cost > fuel) return { ok: false, error: "insufficient_fuel" };
 
       const arriveAt = now + travelDurationMs(current.location.position, dest.position, this.speed);
-      // Aparece en el borde del destino, del lado por el que llega, y desde ahí orbita.
+      // Memoria de posición: dónde queda la nave en el sistema que deja (en vivo si se pilotaba).
+      const leaving = current.location.systemId;
+      const herePos = opts.here?.systemId === leaving ? opts.here.p : this.parkedNow(leaving, row, now);
+      if (herePos) await rememberPosition(tx, row.id, leaving, herePos);
+      // Dónde aparece: junto al compañero pedido; si no, donde estuvo la última vez en el destino;
+      // si nunca estuvo, en el borde, del lado por el que llega. Desde ahí orbita.
       const from = current.location.position;
       const layout = this.layoutOf?.(dest.id) ?? null;
-      const park = layout ? arrivalPark(layout, [from.x - dest.position.x, from.y - dest.position.y, from.z - dest.position.z], arriveAt) : null;
+      let park: ParkedOrbit | null = null;
+      let near = false;
+      if (layout) {
+        const companion = opts.near ? await this.companionSpot(tx, row.id, opts.near, dest.id, layout, opts.nearLive ?? null, now, arriveAt) : null;
+        const spot = companion ? besidePoint(companion, COMPANION_ARRIVAL_OFFSET_M) : await recallPosition(tx, row.id, dest.id);
+        near = companion !== null;
+        park = spot ? arrivalParkAt(layout, spot, arriveAt) : arrivalPark(layout, [from.x - dest.position.x, from.y - dest.position.y, from.z - dest.position.z], arriveAt);
+      }
       const [updated] = await tx
         .update(emperors)
         .set({
@@ -190,8 +215,56 @@ export class EmperorService {
         .returning(columns);
       // La posición se resuelve sola al consultarla; el evento es para descubrir al llegar.
       await schedule(tx, "emperor.arrive", new Date(arriveAt), { emperorId: row.id, systemId: dest.id });
-      return { ok: true, emperor: this.toEmperor(updated!) };
+      return { ok: true, emperor: this.toEmperor(updated!), near };
     });
+  }
+
+  /** Posición ahora de la nave aparcada según la fila (null si no hay órbita guardada). */
+  private parkedNow(systemId: string, row: { parkX: number | null; parkY: number | null; parkZ: number | null; parkAt: Date | null }, now: number): Vec3 | null {
+    const stored = parkFromRow(row);
+    if (!stored || isDeepId(systemId)) return null;
+    const layout = this.layoutOf?.(systemId) ?? null;
+    return parkedPosition(layout ? sanitizePark(layout, stored) : stored, now);
+  }
+
+  /**
+   * Punto del compañero `allyId` en el sistema `systemId` para llegar a su lado:
+   * dónde está ahora (en vivo, o su nave aparcada a la hora de llegada) o, si ya
+   * no está allí, el último punto que se recuerda de él. Solo entre compañeros
+   * mutuos y si el compañero no se ha ocultado (visibilidad «nadie»).
+   */
+  private async companionSpot(
+    tx: Tx,
+    meId: string,
+    allyId: string,
+    systemId: string,
+    layout: SystemLayout,
+    live: { systemId: string; p: Vec3 } | null,
+    now: number,
+    arriveAt: number,
+  ): Promise<Vec3 | null> {
+    if (allyId === meId) return null;
+    const links = await tx
+      .select({ a: emperorAllies.emperorId })
+      .from(emperorAllies)
+      .where(or(and(eq(emperorAllies.emperorId, meId), eq(emperorAllies.allyId, allyId)), and(eq(emperorAllies.emperorId, allyId), eq(emperorAllies.allyId, meId))));
+    if (links.length < 2) return null;
+    const [ally] = await tx
+      .select({ ...columns, visibility: emperors.visibility, ...PARK_SELECT })
+      .from(emperors)
+      .where(eq(emperors.id, allyId))
+      .limit(1);
+    if (!ally || ally.visibility === "hidden") return null;
+    if (live?.systemId === systemId) return live.p;
+    if (!ally.deadAt) {
+      const place = placeFromRow(this.seed, ally, now);
+      // Está allí (o va de camino): su nave aparcada, a la hora en que llegamos.
+      if ((place.travel?.to ?? place.location).systemId === systemId) {
+        const stored = parkFromRow(ally);
+        return parkedPosition(stored ? sanitizePark(layout, stored) : defaultPark(layout), arriveAt);
+      }
+    }
+    return recallPosition(tx, allyId, systemId);
   }
 
   /**
