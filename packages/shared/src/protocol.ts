@@ -367,6 +367,8 @@ export type ServerMessage =
   | { t: "remoteEnded"; reason: "destroyed" | "left" }
   /** La nave del Emperador se ha desacoplado sola de su nave nodriza (la flota se fue o la nave se alejó). */
   | { t: "undocked" }
+  /** Llegó de un viaje acoplado: sigue en el hangar de la nodriza de esta flota. */
+  | { t: "docked"; fleetId: string }
   /** Estado de tus armas: munición restante y cuándo vuelven a estar listas (hora del servidor). */
   | { t: "weapons"; weapons: Array<{ kind: WeaponKind; ammo: number | null; ammoMax: number | null; readyAt: number }> }
   /**

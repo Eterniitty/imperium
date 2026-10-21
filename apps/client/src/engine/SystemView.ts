@@ -161,6 +161,8 @@ export class SystemView implements View {
   private ownRadius = FLAGSHIP_HIT_RADIUS_M;
   /** Se pilota a distancia una nave de flota (no salta, no aparca ni mina). */
   private remotePiloting = false;
+  /** Acoplada pero sin ver aún su nodriza (recién llegada de un viaje con la flota). */
+  private dockMissingSince: number | null = null;
   /** Cúpula del escudo propio y el escudo que tenía en el fotograma anterior (para ver los impactos). */
   private dome: ShieldDome | null = null;
   private lastShield = -1;
@@ -951,11 +953,22 @@ export class SystemView implements View {
       return this.events.notify("dock.released");
     }
     if (!docked || !this.ship) return;
+    // Acoplada (también al llegar de un viaje con la flota): los mandos, quietos.
+    if (this.flight?.enabled) {
+      this.flight.pulse = false;
+      this.flight.stop();
+      this.flight.enabled = false;
+    }
     const m = this.fleetScene.mothership(docked.fleetId);
     if (!m) {
+      // Al llegar de un viaje acoplado la flota tarda un momento en aparecer parada: se espera un poco.
+      this.dockMissingSince ??= performance.now();
+      if (performance.now() - this.dockMissingSince < 20_000) return;
+      this.dockMissingSince = null;
       this.undock(true);
       return this.events.notify("dock.released");
     }
+    this.dockMissingSince = null;
     const up = new THREE.Vector3(0, 1, 0).applyQuaternion(m.q);
     this.ship.position.copy(m.at).addScaledVector(up, m.lengthM * 0.04);
     this.ship.quaternion.copy(m.q);

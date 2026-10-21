@@ -1030,6 +1030,7 @@ export const es = {
   "probe.limit": "ya tienes {max} sondas en vuelo",
   "probe.flying": "Sonda en camino: llega en {time}.",
   "probe.inFlight": "Sonda a {system}: {time}",
+  "dock.carried": "Viajas acoplado en la nave nodriza con su flota.",
   "dock.noMothership": "No hay ninguna nave nodriza de tus flotas en este sistema.",
   "dock.tooFar": "Acércate a la nave nodriza (a menos de {km} km) para acoplarte.",
   "dock.docked": "Acoplada en la nave nodriza de la Flota {n}: se repone de su bodega. Pulsa otra vez la tecla de acoplar para salir.",

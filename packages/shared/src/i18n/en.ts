@@ -1028,6 +1028,7 @@ export const en: Record<I18nKey, string> = {
   "probe.limit": "you already have {max} probes in flight",
   "probe.flying": "Probe on its way: arrives in {time}.",
   "probe.inFlight": "Probe to {system}: {time}",
+  "dock.carried": "You travel docked in the mothership with its fleet.",
   "dock.noMothership": "None of your fleets has a mothership in this system.",
   "dock.tooFar": "Get closer to the mothership (within {km} km) to dock.",
   "dock.docked": "Docked in Fleet {n}'s mothership: resupplying from its hold. Press the dock key again to leave.",

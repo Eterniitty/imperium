@@ -95,6 +95,16 @@ El usuario delegó el orden: se sigue esta cola sin pedir permiso, un solo agent
 9. [x] **Emperadores IA completos**: ✔ guerra (9b), ✔ aceptan compañeros según su personalidad (`AI_COMPANIONS`), ✔ autogestión de las colonias de un jugador ausente (`colony.autoGovern`, evento `colony.govern`).
 10. [x] **Zonas de interés** en el WebSocket (`INTEREST.rangeLy`: el tema `emperors` solo lleva los Emperadores públicos cercanos; compañeros siempre; al moverse, lista nueva).
 
+## Plan de juego (21-10-2026): conquistar el universo y sobrevivir
+
+Informe completo en Claude Docs («Aeonarch — Plan de juego»). Cinco fases, cada una cerrada con una prueba del usuario jugando:
+
+1. [ ] **Nave nodriza completa**: ✔ viaje acoplado con su flota (se llega acoplado); pendiente: puente de mando a bordo, taller y refinería para la flota, hangar con cazas que salen a combatir, cápsula de escape si cae, módulos.
+2. [ ] **La galaxia contraataca**: nivel de amenaza por facción, incursiones a colonias y rutas, flotas de castigo, jefes Carroñeros, guaridas, emboscadas en las salidas de salto.
+3. [ ] **Aliados de verdad**: petición de ayuda, pactos con Emperadores de la IA, refuerzos de la milicia, mercenarios, reputación.
+4. [ ] **Guerra que evoluciona**: tecnología por niveles, módulos de nave, armas nuevas, formaciones, comandantes, batallas de flotas en 3D.
+5. [ ] **Metas**: prestigio y clasificación, objetivos de era, crisis galácticas, victoria y derrota con legado.
+
 ## Antes de abrir al público (obligatorio, en paralelo)
 
 Lista de `docs/despliegue.md`: estáticos desde Cloudflare, 80/443 solo desde Cloudflare, límites por IP y cuenta, vigilante de tráfico saliente con corte automático. Además: dominio propio, HTTPS, correo real (SMTP con SPF/DKIM/DMARC) y `APP_ENV=production`.

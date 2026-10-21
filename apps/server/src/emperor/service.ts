@@ -35,6 +35,8 @@ export type MoveResult = { ok: true; emperor: Emperor; near: boolean } | { ok: f
 
 /** Datos en vivo del espacio local que la orden de salto aprovecha (las naves pilotadas no guardan su posición a cada momento). */
 export interface MoveOptions {
+  /** Viaje acoplado en una nave nodriza: llega cuando su flota y no gasta combustible. */
+  withFleet?: { arriveAt: number; at: Vec3 | null };
   /** Dónde está ahora la nave propia (en vivo), para recordarla en el sistema que deja. */
   here?: { systemId: string; p: Vec3 } | null;
   /** Llegar junto a este compañero: su posición actual en el destino o la última conocida allí. */
@@ -200,10 +202,11 @@ export class EmperorService {
       // El motor cuántico gasta combustible según la distancia: el depósito marca el alcance.
       const fuel = regenFuel(row.fuel, (now - row.fuelAt.getTime()) / 1000);
       // Cuenta de pruebas: el salto no gasta combustible.
-      const cost = row.infiniteFuel ? 0 : quantumFuelCost(distance(current.location.position, dest.position));
+      // Acoplada en una nodriza, la lleva su flota: tampoco gasta.
+      const cost = row.infiniteFuel || opts.withFleet ? 0 : quantumFuelCost(distance(current.location.position, dest.position));
       if (cost > fuel) return { ok: false, error: "insufficient_fuel" };
 
-      const arriveAt = now + travelDurationMs(current.location.position, dest.position, this.speed);
+      const arriveAt = opts.withFleet ? Math.max(now + 1000, opts.withFleet.arriveAt) : now + travelDurationMs(current.location.position, dest.position, this.speed);
       // Memoria de posición: dónde queda la nave en el sistema que deja (en vivo si se pilotaba).
       const leaving = current.location.systemId;
       const herePos = opts.here?.systemId === leaving ? opts.here.p : this.parkedNow(leaving, row, now);
@@ -216,7 +219,8 @@ export class EmperorService {
       let near = false;
       if (layout) {
         const companion = opts.near ? await this.companionSpot(tx, row.id, opts.near, dest.id, layout, opts.nearLive ?? null, now, arriveAt) : null;
-        const spot = companion ? besidePoint(companion, COMPANION_ARRIVAL_OFFSET_M) : await recallPosition(tx, row.id, dest.id);
+        // Acoplada en una nodriza, llega dentro de su hangar (donde esperará la flota).
+        const spot = opts.withFleet?.at ?? (companion ? besidePoint(companion, COMPANION_ARRIVAL_OFFSET_M) : await recallPosition(tx, row.id, dest.id));
         near = companion !== null;
         park = spot ? arrivalParkAt(layout, spot, arriveAt) : arrivalPark(layout, [from.x - dest.position.x, from.y - dest.position.y, from.z - dest.position.z], arriveAt);
       }

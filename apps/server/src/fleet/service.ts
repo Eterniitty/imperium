@@ -183,6 +183,18 @@ export class FleetService {
       .map(({ size: _size, ...r }) => r);
   }
 
+  /**
+   * Dónde esperará una flota que llega a `systemId`: su sitio entre las flotas
+   * paradas allí (irá detrás de las que ya están) y la colonia propia de menor
+   * índice del sistema (punto de reunión). Para llegar acoplado en su nodriza.
+   */
+  async arrivalSlot(emperorId: string, fleetId: string, systemId: string): Promise<{ slot: number; colonyPlanet: number | null }> {
+    const all = await this.byEmperor(emperorId);
+    const slot = all.filter((f) => f.id !== fleetId && !f.travel && !f.battleId && f.location.systemId === systemId).length;
+    const own = await this.db.select({ planetIndex: colonies.planetIndex }).from(colonies).where(and(eq(colonies.emperorId, emperorId), eq(colonies.systemId, systemId)));
+    return { slot, colonyPlanet: own.length ? Math.min(...own.map((c) => c.planetIndex)) : null };
+  }
+
   /** Casco de una nave tras pilotarla a distancia. */
   async setShipHull(fleetId: string, shipId: string, hull: number): Promise<void> {
     await this.db.update(ships).set({ hull: Math.max(1, Math.round(hull)) }).where(and(eq(ships.id, shipId), eq(ships.fleetId, fleetId)));

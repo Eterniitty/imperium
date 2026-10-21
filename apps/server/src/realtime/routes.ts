@@ -24,6 +24,7 @@ import type { WarService } from "../war/service";
 import type { HumanityService } from "../humanity/service";
 import type { ProbeService } from "../probe/service";
 import { FLAGSHIP_DOCK } from "@imperium/content";
+import { fleetRallyPoint, fleetSlotPosition } from "@imperium/sim";
 import type { MarketService } from "../market/service";
 import type { AlienService } from "../ai/service";
 import type { SiegeService } from "../war/siege";
@@ -247,7 +248,26 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     return { ok: true } as const;
                   }
                   case "fleet.move": {
+                    // Viaje acoplado: si la nave del Emperador va en el hangar de esta flota, viaja con ella.
+                    const carried = space.dockedFleet(owner.emperorId) === msg.args.fleetId;
+                    const here = carried ? space.positionOf(owner.emperorId) : null;
+                    if (carried) await space.flushSupplies(owner.emperorId);
                     const res = await fleets.move(owner.emperorId, msg.args.fleetId, msg.args.systemId);
+                    if (res.ok && carried && res.fleet.travel) {
+                      const dest = res.fleet.travel.to.systemId;
+                      const arriveAt = res.fleet.travel.arriveAt;
+                      const slot = await fleets.arrivalSlot(owner.emperorId, res.fleet.id, dest);
+                      const layout = flagships.layout(dest);
+                      const at = layout ? fleetSlotPosition(fleetRallyPoint(layout, slot.colonyPlanet, arriveAt), slot.slot) : null;
+                      const ride = await emperors.move(owner.accountId, dest, { here, withFleet: { arriveAt, at } });
+                      if (ride.ok) {
+                        space.expectDock(ride.emperor.id, { systemId: dest, fleetId: res.fleet.id, slot: slot.slot, colonyPlanet: slot.colonyPlanet });
+                        space.leave(ride.emperor.id, "jump");
+                        space.suppliesChanged(ride.emperor.id);
+                        await hub.publish(ride.emperor.id);
+                        await hub.publishFlagship(ride.emperor.id);
+                      }
+                    }
                     if (res.ok) {
                       space.releaseFleet(res.fleet.id);
                       // Una orden de viaje a mano saca a la flota de su ruta automática (y de su batalla: huye).

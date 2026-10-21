@@ -457,6 +457,18 @@ export class SpaceService {
     return layout ? fleetSlotPosition(fleetRallyPoint(layout, colonyPlanet, now), slot) : null;
   }
 
+  /** Viajes acoplados en curso: al tomar los mandos en el destino, la nave sigue en el hangar de su flota. */
+  private expectedDocks = new Map<string, { systemId: string; fleetId: string; slot: number; colonyPlanet: number | null }>();
+
+  expectDock(emperorId: string, dock: { systemId: string; fleetId: string; slot: number; colonyPlanet: number | null }): void {
+    this.expectedDocks.set(emperorId, dock);
+  }
+
+  /** Flota en cuya nave nodriza está acoplada la nave de este Emperador, o null. */
+  dockedFleet(emperorId: string): string | null {
+    return this.members.get(emperorId)?.dock?.fleetId ?? null;
+  }
+
   undock(client: Client): void {
     const m = this.members.get(client.emperorId);
     if (m) m.dock = null;
@@ -815,6 +827,15 @@ export class SpaceService {
     const arrival = this.riftArrivals.take(m.emperorId, now);
     if (arrival) this.relayRift(m, arrival);
     void this.sendHold(m);
+    // Llegó acoplada en una nodriza (viaje con su flota): sigue en el hangar.
+    const carried = this.expectedDocks.get(m.emperorId);
+    if (carried) {
+      this.expectedDocks.delete(m.emperorId);
+      if (carried.systemId === m.systemId) {
+        m.dock = { fleetId: carried.fleetId, slot: carried.slot, colonyPlanet: carried.colonyPlanet, reach: FLAGSHIP_DOCK.rangeM + 1600 };
+        client.send({ t: "docked", fleetId: carried.fleetId });
+      }
+    }
     void this.spawnEscorts(m);
     // Espacio profundo: el contenido de la región (secreto: solo a quien está en ella).
     if (isDeepId(m.systemId) && this.deep) {
@@ -1006,7 +1027,7 @@ export class SpaceService {
     const ahead = Math.min(0.5, Math.max(0, (now - m.poseAt) / 1000));
     const p: Vec3 = [m.pose.p[0] + m.pose.v[0] * ahead, m.pose.p[1] + m.pose.v[1] * ahead, m.pose.p[2] + m.pose.v[2] * ahead];
     m.park = { p, at: now };
-    m.dock = null;
+    // Acoplada en una nodriza, sigue acoplada aunque se deje de pilotar (para viajar con su flota).
     this.dismissEscorts(m.emperorId);
     m.pose = { p, q: m.pose.q, v: parkedVelocity(m.park, now) };
     m.poseAt = now;
@@ -1697,7 +1718,8 @@ export class SpaceService {
   private resupplyDocked(m: Member, now: number): void {
     const dock = m.dock!;
     const at = this.dockPoint(m.systemId, dock.slot, dock.colonyPlanet, now);
-    if (m.park || !at || distance(m.pose.p, at) > dock.reach * 2) {
+    // Aparcada dentro del hangar no se aleja; pilotada, si se aleja, se desacopla.
+    if (!at || (!m.park && distance(m.pose.p, at) > dock.reach * 2)) {
       m.dock = null;
       this.sendTo(m, { t: "undocked" });
       return;

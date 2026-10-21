@@ -104,7 +104,7 @@ The **mothership** is the biggest ship you can build (1600 m, in an orbital dryd
 - While docked your ship does not move on its own; press [[Enter]] again to leave.
 - You undock automatically if the fleet sets off or your ship moves away.
 
-> [!dev] Travelling docked with the fleet from one system to another is not possible yet.
+- **Travelling docked**: with your ship in the hangar, open the map ([[M]]) and give the mothership's fleet a travel order. You travel with it through the tunnel, spending no fuel, and arrive **still docked**, next to the fleet at the destination.
 
 ## Remotely piloting your fleets' ships
 

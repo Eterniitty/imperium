@@ -357,6 +357,11 @@ class Connection {
       case "undocked":
         spaceStore.setState({ undocked: true });
         return;
+      case "docked": {
+        const fleet = worldStore.getState().fleets[msg.fleetId];
+        spaceStore.setState({ docked: { fleetId: msg.fleetId, number: fleet?.number ?? 0 }, undocked: false });
+        return;
+      }
       // Espacio profundo y minería.
       case "field":
         spaceStore.setState({ field: msg.region });

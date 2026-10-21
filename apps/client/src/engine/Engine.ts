@@ -181,6 +181,20 @@ export class Engine {
     else if (!this.pilot(null)) this.exitSystem();
   }
 
+  /**
+   * Viaje acoplado: la nave iba en el hangar de una nodriza y su flota se puso en
+   * marcha (orden de viaje desde el mapa), así que el Emperador viaja con ella sin
+   * haber saltado desde los mandos: se pasa al túnel.
+   */
+  private checkCarried(): void {
+    const emperor = this.emperor();
+    if (!emperor?.travel || this.jumping || this.active === this.tunnel || this.system.quantumActive || this.system.isRemote) return;
+    if (!isTravelling(emperor, serverNow())) return;
+    if (this.active === this.system && this.system.isPiloting) this.system.stopPiloting();
+    this.enterTunnel();
+    this.notify("dock.carried");
+  }
+
   /** El servidor terminó el pilotaje a distancia (la nave cayó o la flota se fue). */
   private checkRemote(): void {
     const ended = spaceStore.getState().remoteEnded;
@@ -627,6 +641,7 @@ export class Engine {
     this.checkArrival();
     this.checkDestroyed();
     this.checkRemote();
+    this.checkCarried();
     this.active.update(dt);
     const prefs = settingsStore.getState().prefs;
     const charge = this.active === this.system ? telemetry.quantumCharge : null;
