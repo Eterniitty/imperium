@@ -672,6 +672,7 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .death-card h2 { font-family: var(--font-display); letter-spacing: 0.1em; margin: 0; color: #ff9f8a; }
 .death-law { font-style: italic; color: #c3cbd9; margin: 0 0 6px; }
 .death-timer { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; }
+.death-timer .meter { width: 100%; }
 .death-time { font-size: 28px; color: var(--gold); }
 .death-heirs { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
 .death-heirs h4 { margin: 4px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--gold); }

@@ -36,7 +36,7 @@ In the **Lineage** panel you see your **streak**, your **generation** (it goes u
 
 The **Lineage Cradle** is a colony installation (built from the planet panel, like the others): it is **where you are reborn** and where your **Heirs** are gestated. When you fall, you are reborn in your **preferred Cradle** (chosen in the Lineage panel) or, if you have not chosen, in the **closest** to where you fell. The new ship appears **next to the Cradle's planet**.
 
-Cradles are **military targets**: if you lose the colony (or the Cradle is destroyed in the capture), you can no longer be reborn there. If that happens during gestation, you are reborn in another of your Cradles or, without any, in the Human Core.
+Cradles are **military targets**: if you lose the colony (or the Cradle is destroyed in the capture), you can no longer be reborn there. The **Eradicators** hunt them: in their territory, they besiege colonies with a Cradle first (see [AI and territories](/wiki/ia-territorios)). If that happens during gestation, you are reborn in another of your Cradles or, without any, in the Human Core.
 
 {{tabla:instalaciones}}
 

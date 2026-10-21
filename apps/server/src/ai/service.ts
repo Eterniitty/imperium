@@ -1,6 +1,7 @@
 import {
   ALIEN_AI,
   ALIEN_SIEGE,
+  CRADLE_HUNTERS,
   effectiveTraits,
   FACTIONS,
   getAlienShipClass,
@@ -28,7 +29,7 @@ import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import type { ColonyService } from "../colony/service";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { alienFleets, alienRegions, alienStandings, colonies, emperors, emperorWallets, fleets, marketOrders, resourceLedger, ships } from "../db/schema";
+import { alienFleets, alienRegions, alienStandings, colonies, emperors, emperorWallets, fleets, installations, marketOrders, resourceLedger, ships } from "../db/schema";
 import type { DiscoveryService } from "../discovery/service";
 import { findSystem, inHumanCore, placeFromRow, systemsInRange } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
@@ -527,6 +528,18 @@ export class AlienService {
       .from(colonies)
       .leftJoin(emperors, eq(emperors.id, colonies.emperorId))
       .where(inArray(colonies.systemId, [...inRegion]));
+    // Fase 10: los que persiguen las Cunas de linaje miran primero las colonias que tienen una.
+    if (CRADLE_HUNTERS.includes(info.species.id) && targets.length > 1) {
+      const cradles = new Set(
+        (
+          await tx
+            .select({ id: installations.colonyId })
+            .from(installations)
+            .where(and(eq(installations.kind, "lineage_cradle"), inArray(installations.colonyId, targets.map((t) => t.id))))
+        ).map((r) => r.id),
+      );
+      targets.sort((a, b) => Number(cradles.has(b.id)) - Number(cradles.has(a.id)));
+    }
     const chance = effectiveTraits(info.faction).aggression * ALIEN_SIEGE.chancePerTick;
     for (const t of targets) {
       if (t.emperorId === actorId || (t.emperorId && this.isActor(t.emperorId)) || sieging.has(t.systemId) || inHumanCore(t.systemId)) continue;

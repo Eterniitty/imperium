@@ -36,7 +36,7 @@ En el panel **Linaje** ves tu **racha**, tu **generación** (sube con cada cuerp
 
 La **Cuna de linaje** es una instalación de colonia (se construye en el panel del planeta, como las demás): es **donde renaces** y donde se gestan tus **Herederos**. Al caer, renaces en tu **Cuna preferida** (la eliges en el panel Linaje) o, si no has elegido, en la **más cercana** a donde caíste. La nave nueva aparece **junto al planeta de la Cuna**.
 
-Las Cunas son **objetivos militares**: si pierdes la colonia (o la Cuna cae en la captura), dejas de poder renacer allí. Si eso pasa durante la gestación, renaces en otra Cuna tuya o, sin ninguna, en el Núcleo Humano.
+Las Cunas son **objetivos militares**: si pierdes la colonia (o la Cuna cae en la captura), dejas de poder renacer allí. Los **Erradicadores** las persiguen: en su territorio, asedian primero las colonias con Cuna (ver [IA y territorios](/wiki/ia-territorios)). Si eso pasa durante la gestación, renaces en otra Cuna tuya o, sin ninguna, en el Núcleo Humano.
 
 {{tabla:instalaciones}}
 

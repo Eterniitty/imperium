@@ -118,6 +118,13 @@ export const HEIR_NAMES: readonly string[] = [
   "Rhea", "Silvio", "Tania", "Ulric", "Vera", "Xenia", "Yago", "Zoe",
 ];
 
+/**
+ * Especies que persiguen las Cunas (lore: los Erradicadores destruyen las
+ * instalaciones de reconstrucción): al elegir qué colonia asediar en su
+ * territorio, prefieren las que tienen Cuna de linaje.
+ */
+export const CRADLE_HUNTERS: readonly string[] = ["eradicators"];
+
 /** Uso del linaje por los Emperadores humanos de la IA (Fase 10). */
 export interface AiLineageDefinition {
   /** Construye una Cuna en su capital. */

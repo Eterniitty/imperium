@@ -64,14 +64,15 @@ Orden de construcción de lo que pide [diseno.md](diseno.md). Cada fase se divid
 ## Fase 10 — Muerte y linaje ✔ (21-10-2026)
 
 - ✔ La nave del Emperador puede caer (combate pilotado y batallas por rondas, en las que ahora también combate; el casco se guarda y se repara). Cunas de linaje (instalación) con gestación que crece con las muertes seguidas y se olvida con el tiempo. Sin Cunas, reaparece en el Núcleo Humano. Se pierden los humanos de a bordo, el combustible y la munición. Herederos que gobiernan colonias con una doctrina (extracción, defensa, obras) y en los que el jugador puede encarnarse (vivo o muerto). Los Emperadores de la IA también lo usan. Pantalla de muerte con la gestación y panel «Linaje»; Wiki «Muerte y linaje». Migración `0017`, `PROTOCOL_VERSION` 11.
-- Pendiente: ataques alienígenas dirigidos a las Cunas (los Erradicadores, Fase 11), conquista instalación a instalación (la Cuna como objetivo propio, 9b) y gobernadores que también recluten y defiendan.
+- ✔ Los Erradicadores (`CRADLE_HUNTERS`) asedian primero las colonias con Cuna de su territorio.
+- Pendiente: conquista instalación a instalación (la Cuna como objetivo propio, 9b) y gobernadores que también recluten y defiendan.
 
 ## Fase 11 — Masividad e inteligencia artificial
 
 - ✔ (21-10-2026) **Especies alienígenas del lore** como datos (territorio, flotas, naves propias, IA) y **territorios** en una capa determinista y secreta (no cambia `GENERATOR_VERSION`), visibles en el mapa respetando la niebla de guerra.
 - ✔ **IA de facciones** con la misma tubería de órdenes que los jugadores (flotas, combate por rondas, mercado), sin bucles por tick: regiones que despiertan con humanos cerca (evento `ai.region`), guarnición, patrullas, expansión lenta, respuesta a intrusos según su agresividad, rencor y tributos, Nómadas del Vacío en el mercado. El Núcleo Humano es seguro y hay gracia para los Emperadores nuevos.
 - ✔ **Emperadores IA humanos** (versión básica, evento `ai.emperor`): colonizan, construyen, exploran y comercian. Pendiente: que guerreen, acepten compañeros y gobiernen colonias de jugadores ausentes.
-- Pendiente: proceso aparte `apps/ai` cuando haga falta escalar (hoy es un servicio dentro del servidor que usa la cola de eventos); ataques alienígenas a Cunas (los ataques a colonias, hechos con la 9b); pactos de los Grises y Custodios protectores; modelos 3D de las naves alienígenas y combate pilotado contra ellas (tras fusionar el pilotaje).
+- Pendiente: proceso aparte `apps/ai` cuando haga falta escalar (hoy es un servicio dentro del servidor que usa la cola de eventos); pactos de los Grises y Custodios protectores; modelos 3D de las naves alienígenas y combate pilotado contra ellas (tras fusionar el pilotaje).
 - Zonas de interés por sector en el WebSocket (cada jugador recibe solo lo cercano) para aguantar cientos de jugadores.
 
 ## Fase 12 — Organizaciones y comunidad
