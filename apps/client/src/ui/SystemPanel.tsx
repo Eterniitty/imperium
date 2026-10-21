@@ -8,6 +8,8 @@ import { gameStore, useGame, useT } from "../state/store";
 import { useClaims } from "../state/claims";
 import { ownColonyAt, planetLabel } from "./colonies";
 import { DepositChips, Meter, RESOURCE_COLORS, starColorCss } from "./common";
+import { AlienPresence } from "./AlienPresence";
+import { factionName } from "./aliens";
 import { FleetLogistics } from "./FleetLogistics";
 import { PlanetColony } from "./PlanetColony";
 import { formatDuration, useServerNow } from "./useNow";
@@ -15,6 +17,7 @@ import { formatDuration, useServerNow } from "./useNow";
 export function SystemPanel() {
   const t = useT();
   const selected = useGame((s) => s.selected);
+  const locale = useGame((s) => s.locale);
   const detail = useGame((s) => s.detail);
   const detailStatus = useGame((s) => s.detailStatus);
   const focus = useGame((s) => s.focusWorld);
@@ -145,7 +148,9 @@ export function SystemPanel() {
                   {own ? (
                     <span className="planet-owner own">{t("colony.yours")}</span>
                   ) : claim ? (
-                    <span className="planet-owner">{claim.ownerName ?? t("colony.independent")}</span>
+                    <span className="planet-owner">
+                      {claim.ownerFactionId ? factionName(locale, claim.ownerFactionId) : (claim.ownerName ?? t("colony.independent"))}
+                    </span>
                   ) : (
                     <span className="muted small">{t(`planet.${pl.type}`)}</span>
                   )}
@@ -168,6 +173,9 @@ export function SystemPanel() {
       ) : (
         detailStatus === "unexplored" && <p className="muted small">{t("system.unexploredHint")}</p>
       )}
+
+      {/* Fase 11: territorio, ruinas y flotas alienígenas (solo sistemas descubiertos). */}
+      <AlienPresence systemId={selected.id} />
 
       {(here.length > 0 || coming.length > 0) && (
         <>

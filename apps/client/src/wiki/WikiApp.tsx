@@ -156,13 +156,50 @@ function BlockView({ b, t, locale, go }: { b: Block; t: T; locale: Locale; go: (
       return (
         <div className="wiki-cards" data-cards={b.id}>
           {cards.map((c) => (
-            <section key={c.title} className="wiki-card">
+            <section key={c.title} className="wiki-card" style={c.color ? { borderLeft: `3px solid ${c.color}` } : undefined}>
               <header>
+                {c.color && <span className="wiki-card-dot" style={{ background: c.color, boxShadow: `0 0 10px ${c.color}` }} />}
                 <h3 id={anchorFor(c.title)}>{c.title}</h3>
                 <span className="wiki-badge">{c.badge}</span>
               </header>
               <p className="wiki-card-motto">{c.subtitle}</p>
               <p>{c.text}</p>
+              {c.facts && c.facts.length > 0 && (
+                <dl className="wiki-card-facts">
+                  {c.facts.map(([k, v]) => (
+                    <div key={k}>
+                      <dt>{k}</dt>
+                      <dd>{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+              {c.table && (
+                <div className="wiki-table-wrap">
+                  <table className="wiki-gen">
+                    <thead>
+                      <tr>
+                        {c.table.head.map((h, n) => (
+                          <th key={n} className={c.table!.numeric?.includes(n) ? "num" : undefined}>
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {c.table.rows.map((r, i) => (
+                        <tr key={i}>
+                          {r.map((cell, n) => (
+                            <td key={n} className={c.table!.numeric?.includes(n) ? "num" : undefined}>
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
               {c.items.length > 0 && (
                 <ul>
                   {c.items.map((i) => (

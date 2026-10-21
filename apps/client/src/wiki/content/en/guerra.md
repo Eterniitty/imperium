@@ -58,6 +58,10 @@ Pick one of your fleets and press **Intercept**: it travels to the contact's **d
 
 It shows your ongoing battles and those that ended in the last hour: the enemy, the system, the ships on each side, the round, the damage dealt and taken in the last round, and the result.
 
+## Against aliens
+
+Alien faction fleets fight **just like an Emperor's**, in rounds. A battle with them starts when you meet in a system **of their territory** and the faction **is hostile to you** (by nature or because of [grudge](/wiki/ia-territorios#grudge-and-tribute)); never in the Human Core. In the panel they show their faction's name. See [AI and territories](/wiki/ia-territorios).
+
 ## Independent colonies
 
 The planets of players who delete their account remain as **independent colonies**, frozen and ownerless. See [Colonies](/wiki/colonias#independent-colonies).

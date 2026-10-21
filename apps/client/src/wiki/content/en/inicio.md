@@ -32,3 +32,4 @@ Aeonarch is a space MMO in the browser. You are an **immortal Emperor**: you fly
 - [Companions and privacy](/wiki/companeros): who can see where you are.
 - [Account and data](/wiki/cuenta): email sign-in, data download and deletion.
 - [Species](/wiki/especies) and [lore](/wiki/lore): who else lives in the universe and why humanity is an anomaly.
+- [AI and territories](/wiki/ia-territorios): where alien factions live, when they attack, grudges and tribute.

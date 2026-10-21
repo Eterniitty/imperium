@@ -549,6 +549,12 @@ a.btn-link { color: inherit; text-decoration: none; }
 .route-carry { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .route-tag { color: #5fd3e6; }
 .battle-tag { color: #ff7a6b; }
+/* Fase 11: especies alienígenas */
+.alien-presence p { margin: 4px 0; }
+.alien-presence .anomaly { color: #e6d38a; }
+.alien-hostile { color: #ff7a6b; }
+.alien-standings .dot, .war-contacts .dot { width: 8px; height: 8px; display: inline-block; vertical-align: middle; }
+.legend .territory-swatch { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 138, 92, 0.75), rgba(199, 146, 255, 0.15)); }
 .war .battle, .war .contact { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border: 1px solid var(--panel-border); border-radius: 4px; }
 .war .battle strong { color: #ff7a6b; }
 .war .battle-won strong { color: #7ee08a; }

@@ -5,6 +5,9 @@
  * insertan con `{{tabla:<id>}}`.
  */
 import {
+  ALIEN_AI,
+  ALIEN_SHIP_CLASSES,
+  alienShipsOf,
   CONTACT_SENSORS,
   CREDITS,
   HUMANITY,
@@ -31,7 +34,7 @@ import {
   type WeaponDefinition,
 } from "@imperium/content";
 import { DEPOSIT_TABLE, STAR_CLASSES } from "@imperium/procgen";
-import { translate, type I18nKey, type Locale, type PlanetType, type StarClass } from "@imperium/shared";
+import { SECTOR_SIZE, translate, type I18nKey, type Locale, type PlanetType, type StarClass } from "@imperium/shared";
 import {
   PILOT_BOOST,
   PILOT_SPEED,
@@ -97,6 +100,11 @@ const range = (locale: Locale, [a, b]: readonly [number, number]) => (a === b ? 
 
 function shipHumans(s: ShipClassDefinition): number {
   return SHIP_HUMAN_CAPACITY[s.id] ?? 0;
+}
+
+/** Distancia mínima al centro del Núcleo Humano de un anillo de sectores (a.l.). */
+function ringDistance(ring: number): number {
+  return Math.max(0, ring * SECTOR_SIZE - SECTOR_SIZE / 2);
 }
 
 /** Instalaciones de la colonia del ejemplo de economía. */
@@ -357,6 +365,82 @@ export const GEN_TABLES: Record<string, Builder> = {
       ["wiki.k.history", t("colony.costHours", { h: num(locale, MARKET.historyHours) })],
     ]),
 
+  // Fase 11: especies alienígenas, territorios e IA.
+  "especies-resumen": (t, locale) => {
+    const d = contentDictionaries[locale];
+    return {
+      head: [t("wiki.col.species"), t("wiki.col.stance"), t("wiki.col.ring"), t("wiki.col.response"), t("wiki.col.expansion"), t("wiki.k.fleetStyle")],
+      rows: SPECIES.map((s) => [
+        d[s.nameKey] ?? s.id,
+        t(`wiki.stance.${s.stance}`),
+        `${num(locale, s.territory.minCoreRing)} (${t("wiki.v.ringDistance", { ly: num(locale, ringDistance(s.territory.minCoreRing)) })})`,
+        t(`wiki.response.${s.ai.intruders}`),
+        t("wiki.v.perDay", { n: num(locale, s.ai.expansionPerDay) }),
+        t(`wiki.fleetStyle.${s.fleet.style}`),
+      ]),
+    };
+  },
+
+  "naves-alienigenas": (t, locale) => {
+    const d = contentDictionaries[locale];
+    return {
+      head: [t("wiki.col.ship"), t("wiki.col.species"), t("wiki.col.role"), t("combat.hull"), t("wiki.col.attack"), t("wiki.col.battleShield"), t("wiki.col.speed"), t("wiki.col.scanner")],
+      rows: ALIEN_SHIP_CLASSES.map((s) => [
+        shipName(locale, s.id),
+        d[`species.${s.speciesId}.name`] ?? s.speciesId,
+        t(`wiki.role.${s.role}`),
+        num(locale, s.hull),
+        num(locale, s.attack),
+        num(locale, s.battleShield),
+        t("wiki.v.lyh", { n: num(locale, s.speedLyPerHour) }),
+        t("wiki.v.ly", { n: num(locale, s.scannerRangeLy) }),
+      ]),
+      numeric: [3, 4, 5],
+    };
+  },
+
+  anillos: (t, locale) => {
+    const d = contentDictionaries[locale];
+    const rings = [...new Set(SPECIES.map((s) => s.territory.minCoreRing))].sort((a, b) => a - b);
+    return {
+      head: [t("wiki.col.ring"), t("wiki.col.distance"), t("wiki.col.speciesThere")],
+      rows: [
+        ["0–1", t("wiki.v.coreRing"), "—"],
+        ...rings.map((r) => [
+          `${num(locale, r)}+`,
+          t("wiki.v.ringDistance", { ly: num(locale, ringDistance(r)) }),
+          SPECIES.filter((s) => s.territory.minCoreRing <= r).map((s) => d[s.nameKey] ?? s.id).join(", "),
+        ]),
+      ],
+    };
+  },
+
+  "ia-alienigena": (t, locale) => {
+    const g = ALIEN_AI.grudge;
+    const h = (n: number) => t("colony.costHours", { h: num(locale, n) });
+    return kv(t, [
+      ["wiki.k.regionSize", t("wiki.v.sectors", { n: num(locale, ALIEN_AI.regionSizeSectors), ly: num(locale, ALIEN_AI.regionSizeSectors * SECTOR_SIZE) })],
+      ["wiki.k.aiTick", t("wiki.v.minutes", { n: num(locale, ALIEN_AI.tickGameMinutes) })],
+      ["wiki.k.activeHours", h(ALIEN_AI.activeHours)],
+      ["wiki.k.reinforce", h(ALIEN_AI.reinforceHours)],
+      ["wiki.k.patrolRange", t("wiki.v.ly", { n: num(locale, ALIEN_AI.patrolRangeLy) })],
+      ["wiki.k.responseRange", t("wiki.v.ly", { n: num(locale, ALIEN_AI.responseRangeLy) })],
+      ["wiki.k.expansionRange", t("wiki.v.ly", { n: num(locale, ALIEN_AI.expansionRangeLy) })],
+      ["wiki.k.novice", h(ALIEN_AI.noviceGraceHours)],
+      ["wiki.k.hostileAt", num(locale, g.hostileAt)],
+      ["wiki.k.interceptGrudge", num(locale, g.intercept)],
+      ["wiki.k.grudgeDecay", num(locale, g.decayPerDay)],
+      ["wiki.k.tribute", `₢ ${num(locale, g.tributeCreditsPerPoint)}`],
+      ["wiki.k.minTribute", `₢ ${num(locale, g.minTribute)}`],
+      [
+        "wiki.k.tradeSells",
+        `${ALIEN_AI.trade.sells.map((r) => t(`resource.${r}`)).join(", ")} / ${ALIEN_AI.trade.buys.map((r) => t(`resource.${r}`)).join(", ")}`,
+      ],
+      ["wiki.k.tradeSpread", `± ${num(locale, ALIEN_AI.trade.spread * 100)} %`],
+      ["wiki.k.tradeOrders", num(locale, ALIEN_AI.trade.maxOpenOrders)],
+    ]);
+  },
+
   "teclas-vuelo": (t, locale) => keysTable(t, locale, "flight"),
   "teclas-mapa": (t, locale) => keysTable(t, locale, "map"),
   "teclas-general": (t, locale) => keysTable(t, locale, "general"),
@@ -375,6 +459,12 @@ export interface GenCard {
   badge: string;
   text: string;
   items: Array<{ name: string; badge: string; text: string }>;
+  /** Color de la ficha (el de la especie). */
+  color?: string;
+  /** Datos «concepto · valor» (territorio, flotas, IA…). */
+  facts?: Array<[string, string]>;
+  /** Tabla propia (sus naves). */
+  table?: GenTable;
 }
 
 type CardBuilder = (t: T, locale: Locale) => GenCard[];
@@ -382,17 +472,60 @@ type CardBuilder = (t: T, locale: Locale) => GenCard[];
 export const GEN_CARDS: Record<string, CardBuilder> = {
   especies: (t, locale) => {
     const d = contentDictionaries[locale];
-    return SPECIES.map((s) => ({
-      title: d[s.nameKey] ?? s.id,
-      subtitle: d[s.mottoKey] ?? "",
-      badge: t(s.extinct ? "wiki.species.extinct" : s.enabledInMvp ? "wiki.species.active" : "wiki.species.notYet"),
-      text: d[s.descriptionKey] ?? "",
-      items: FACTIONS.filter((f) => f.speciesId === s.id).map((f) => ({
-        name: d[f.nameKey] ?? f.id,
-        badge: t(`wiki.relation.${f.relation}`),
-        text: d[f.descriptionKey] ?? "",
-      })),
-    }));
+    const stars = (list: readonly StarClass[]) => list.join(", ");
+    return SPECIES.map((s) => {
+      const ships = alienShipsOf(s.id);
+      const facts: Array<[string, string]> = [
+        [t("wiki.k.philosophy"), d[s.philosophyKey] ?? ""],
+        [t("wiki.k.attitude"), d[s.attitudeKey] ?? ""],
+        [
+          t("wiki.k.territory"),
+          s.extinct
+            ? t("wiki.v.relics", { stars: stars(s.geography.preferredStarClasses), ring: num(locale, s.territory.minCoreRing), ly: num(locale, ringDistance(s.territory.minCoreRing)) })
+            : t("wiki.v.territory", {
+                ring: num(locale, s.territory.minCoreRing),
+                ly: num(locale, ringDistance(s.territory.minCoreRing)),
+                stars: stars(s.geography.preferredStarClasses),
+                region: t(`wiki.region.${s.territory.region}`),
+              }),
+        ],
+      ];
+      if (!s.extinct) {
+        facts.push(
+          [t("wiki.k.fleetStyle"), t("wiki.v.fleet", { style: t(`wiki.fleetStyle.${s.fleet.style}`), ships: range(locale, s.fleet.shipsPerFleet), fleets: range(locale, s.fleet.fleetsPerRegion) })],
+          [
+            t("wiki.k.ai"),
+            t("wiki.v.ai", {
+              intruders: t(`wiki.intruders.${s.ai.intruders}`, { n: num(locale, s.ai.responders) }),
+              patrol: num(locale, s.ai.patrol * 100),
+              exp: num(locale, s.ai.expansionPerDay),
+              trade: s.ai.trades ? t("wiki.v.trades") : "",
+            }),
+          ],
+          [t("wiki.k.diplomacy"), t("wiki.v.diplomacy", { diplomacy: t(`wiki.diplomacy.${s.diplomacy}`), grudge: num(locale, s.ai.grudgePerColony) })],
+        );
+      }
+      return {
+        title: d[s.nameKey] ?? s.id,
+        subtitle: d[s.mottoKey] ?? "",
+        badge: t(s.extinct ? "wiki.species.extinct" : s.enabledInMvp ? "wiki.species.active" : "wiki.species.notYet"),
+        text: d[s.descriptionKey] ?? "",
+        color: s.visual.emissiveColor,
+        facts,
+        table: ships.length
+          ? {
+              head: [t("wiki.k.ships"), t("wiki.col.role"), t("combat.hull"), t("wiki.col.attack"), t("wiki.col.battleShield"), t("wiki.col.speed")],
+              rows: ships.map((a) => [shipName(locale, a.id), t(`wiki.role.${a.role}`), num(locale, a.hull), num(locale, a.attack), num(locale, a.battleShield), t("wiki.v.lyh", { n: num(locale, a.speedLyPerHour) })]),
+              numeric: [2, 3, 4],
+            }
+          : undefined,
+        items: FACTIONS.filter((f) => f.speciesId === s.id).map((f) => ({
+          name: d[f.nameKey] ?? f.id,
+          badge: t(`wiki.relation.${f.relation}`),
+          text: d[f.descriptionKey] ?? "",
+        })),
+      };
+    });
   },
 };
 
@@ -409,5 +542,9 @@ export function generatedText(kind: "gen" | "cards", id: string, locale: Locale)
     return table ? [table.head.join(" "), ...table.rows.map((r) => r.join(" "))].join(" \n") : "";
   }
   const cards = buildCards(id, locale) ?? [];
-  return cards.map((c) => [c.title, c.subtitle, c.text, ...c.items.flatMap((i) => [i.name, i.text])].join(" \n")).join(" \n");
+  return cards
+    .map((c) =>
+      [c.title, c.subtitle, c.text, ...(c.facts ?? []).flat(), ...(c.table?.rows.map((r) => r.join(" ")) ?? []), ...c.items.flatMap((i) => [i.name, i.text])].join(" \n"),
+    )
+    .join(" \n");
 }

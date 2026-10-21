@@ -2,6 +2,8 @@ import { useState } from "react";
 import type { Fleet } from "@imperium/shared";
 import { engineRef } from "../engineRef";
 import { useWorld } from "../net/world";
+import { useAliens } from "../state/aliens";
+import { factionName, speciesColor } from "./aliens";
 import { useGame, useT } from "../state/store";
 import { cargoSummary } from "./FleetLogistics";
 import { contentText, shipCounts } from "./fleets";
@@ -12,6 +14,7 @@ export function FleetsPanel() {
   const t = useT();
   const locale = useGame((s) => s.locale);
   const fleets = useWorld((s) => s.fleets);
+  const territory = useAliens((s) => s.territory);
   const now = useServerNow();
   const [open, setOpen] = useState(true);
   const list = (Object.values(fleets) as Fleet[]).sort((a, b) => a.number - b.number);
@@ -44,6 +47,12 @@ export function FleetsPanel() {
                   {cargoSummary(f).resources + cargoSummary(f).humans > 0 && (
                     <span className="muted small">
                       {t("logistics.carrying", { n: Math.round(cargoSummary(f).resources), h: Math.round(cargoSummary(f).humans) })}
+                    </span>
+                  )}
+                  {/* Fase 11: territorio alienígena donde está la flota. */}
+                  {!moving && territory[at.systemId] && (
+                    <span className="small" style={{ color: speciesColor(territory[at.systemId]!.speciesId) }}>
+                      {t("fleet.inTerritory", { faction: factionName(locale, territory[at.systemId]!.factionId) })}
                     </span>
                   )}
                   {f.route && <span className="small route-tag">{t("logistics.onRoute")}</span>}

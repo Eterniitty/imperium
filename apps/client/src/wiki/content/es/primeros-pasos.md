@@ -33,4 +33,4 @@ Más sobre la sesión y tus datos en [Cuenta y datos](/wiki/cuenta).
 5. Envía tu **Explorador** a una estrella cercana para levantar la niebla de guerra (selecciónala en el mapa y pulsa *Enviar Flota 1 aquí*).
 6. Cuando estés listo, **salta** con tu nave a otra estrella: selecciónala y pulsa [[J]].
 
-> [!nota] Fuera del Núcleo Humano hay piratas **Carroñeros**. En el Núcleo no los hay. Ver [Combate](/wiki/combate).
+> [!nota] Fuera del Núcleo Humano hay piratas **Carroñeros** y, más lejos, [territorios alienígenas](/wiki/ia-territorios). En el Núcleo no hay nada de eso. Ver [Combate](/wiki/combate).

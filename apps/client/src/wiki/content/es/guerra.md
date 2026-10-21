@@ -58,6 +58,10 @@ Elige una flota tuya y pulsa **Interceptar**: viaja al **destino** del contacto 
 
 Muestra tus batallas en curso y las acabadas en la última hora: el enemigo, el sistema, las naves de cada lado, la ronda, el daño hecho y recibido en la última ronda y el resultado.
 
+## Contra alienígenas
+
+Las flotas de las facciones alienígenas combaten **igual que las de un Emperador**, por rondas. Una batalla con ellas empieza cuando coincidís en un sistema **de su territorio** y la facción **te es hostil** (por naturaleza o por [rencor](/wiki/ia-territorios#rencor-y-tributos)); nunca en el Núcleo Humano. En el panel salen con el nombre de su facción. Ver [IA y territorios](/wiki/ia-territorios).
+
 ## Colonias independientes
 
 Los planetas de los jugadores que borran su cuenta quedan como **colonias independientes**, congeladas y sin dueño. Ver [Colonias](/wiki/colonias#colonias-independientes).

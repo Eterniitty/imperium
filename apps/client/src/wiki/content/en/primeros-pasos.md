@@ -33,4 +33,4 @@ More about sessions and your data in [Account and data](/wiki/cuenta).
 5. Send your **Explorer** to a nearby star to lift the fog of war (select it on the map and press *Send Fleet 1 here*).
 6. When you are ready, **jump** with your ship to another star: select it and press [[J]].
 
-> [!nota] Outside the Human Core there are **Scavenger** pirates. There are none in the Core. See [Combat](/wiki/combate).
+> [!nota] Outside the Human Core there are **Scavenger** pirates and, farther out, [alien territories](/wiki/ia-territorios). There is none of that in the Core. See [Combat](/wiki/combate).

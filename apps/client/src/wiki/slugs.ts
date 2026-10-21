@@ -28,6 +28,7 @@ export const WIKI_ARTICLES = [
   { slug: "companeros", group: "people" },
   { slug: "cuenta", group: "people" },
   { slug: "especies", group: "people" },
+  { slug: "ia-territorios", group: "people" },
   { slug: "lore", group: "people" },
 ] as const satisfies ReadonlyArray<{ slug: string; group: WikiGroup }>;
 

@@ -32,3 +32,4 @@ Aeonarch es un MMO espacial en el navegador. Eres un **Emperador inmortal**: pil
 - [Compañeros y privacidad](/wiki/companeros): quién ve dónde estás.
 - [Cuenta y datos](/wiki/cuenta): acceso por correo, descarga y borrado de datos.
 - [Especies](/wiki/especies) y [lore](/wiki/lore): quién más habita el universo y por qué la humanidad es una anomalía.
+- [IA y territorios](/wiki/ia-territorios): dónde viven las facciones alienígenas, cuándo atacan, el rencor y los tributos.

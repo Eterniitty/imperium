@@ -16,6 +16,11 @@ export function Legend() {
             {t(`star.${c}`)}
           </li>
         ))}
+        {/* Fase 11: halos del color de cada especie alrededor de su territorio descubierto. */}
+        <li>
+          <span className="territory-swatch" />
+          {t("legend.territory")}
+        </li>
       </ul>
     </div>
   );

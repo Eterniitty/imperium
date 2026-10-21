@@ -75,6 +75,8 @@ export interface CommandArgs {
    * destino de la otra y combaten allí al coincidir.
    */
   "fleet.intercept": { fleetId: string; targetFleetId: string };
+  /** Fase 11: tributo a una facción alienígena para borrar su rencor (diplomacia básica). */
+  "alien.tribute": { factionId: string; credits: number };
 }
 export type CommandOp = keyof CommandArgs;
 

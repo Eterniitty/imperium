@@ -16,6 +16,7 @@ import { EmperorMarkers } from "./EmperorMarkers";
 import { FlightController } from "./FlightController";
 import type { Keyboard } from "./input";
 import { SectorManager } from "./SectorManager";
+import { TerritoryMarkers } from "./TerritoryMarkers";
 import { ringTexture } from "./textures";
 import type { View } from "./View";
 
@@ -51,6 +52,8 @@ export class GalaxyView implements View {
   private selectRing: THREE.Sprite;
   private hoverRing: THREE.Sprite;
   private emperors: EmperorMarkers;
+  /** Territorios alienígenas descubiertos (Fase 11). */
+  private territory: TerritoryMarkers;
   private link: THREE.Line;
   private fly: FlyAnimation | null = null;
   private lastSector: SectorCoord | null = null;
@@ -108,6 +111,7 @@ export class GalaxyView implements View {
 
     // Emperadores (el propio y los demás): siempre visibles, por encima de todo.
     this.emperors = new EmperorMarkers(this.sectors);
+    this.territory = new TerritoryMarkers(this.sectors);
 
     // Línea del foco a la selección: muestra distancia y dirección.
     const linkGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
@@ -118,7 +122,7 @@ export class GalaxyView implements View {
     this.link.visible = false;
     this.link.frustumCulled = false;
 
-    this.scene.add(this.selectRing, this.hoverRing, this.emperors.group, this.link);
+    this.scene.add(this.territory.group, this.selectRing, this.hoverRing, this.emperors.group, this.link);
   }
 
   activate(): void {
@@ -361,6 +365,7 @@ export class GalaxyView implements View {
       this.link.visible = false;
     }
     this.emperors.update(this.camera);
+    this.territory.update();
     if (hovered && hovered.id !== selected?.id && this.controls.enabled) {
       this.hoverRing.position.copy(this.sectors.toScene(hovered.position));
       this.hoverRing.visible = true;
@@ -408,6 +413,7 @@ export class GalaxyView implements View {
 
   dispose(): void {
     this.emperors.dispose();
+    this.territory.dispose();
     this.flight.dispose();
     this.controls.dispose();
     this.sectors.clear();
