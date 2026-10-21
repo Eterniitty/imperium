@@ -53,6 +53,8 @@ test("Wiki en el móvil: el índice se abre con el botón de menú", async ({ pa
   await nav.getByRole("link", { name: "Guerra entre flotas" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Guerra entre flotas" })).toBeVisible();
   await page.getByRole("button", { name: "Índice" }).click();
+  // Espera a que acabe la animación de entrada del índice.
+  await page.waitForTimeout(400);
   await page.screenshot({ path: `${SHOTS}/wiki-movil-indice.png`, fullPage: false });
   // Sin desbordamiento horizontal de la página.
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
