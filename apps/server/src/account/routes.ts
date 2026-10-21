@@ -25,6 +25,7 @@ import {
   sessions,
   ships,
 } from "../db/schema";
+import type { ColonyService } from "../colony/service";
 import type { Hub } from "../realtime/hub";
 import type { SpaceService } from "../space/service";
 import { maskEmail } from "../auth/tokens";
@@ -34,6 +35,7 @@ export interface AccountDeps {
   db: Database;
   hub: Hub;
   space: SpaceService;
+  colonies: ColonyService;
 }
 
 function fail(reply: FastifyReply, status: number, error: ApiError["error"]) {
@@ -44,7 +46,7 @@ function fail(reply: FastifyReply, status: number, error: ApiError["error"]) {
  * Derechos del RGPD que el jugador ejerce solo (ver /legal/privacidad.html):
  * descargar sus datos (art. 15 y 20) y borrar su cuenta (art. 17).
  */
-export async function accountRoutes(app: FastifyInstance, { config, db, hub, space }: AccountDeps) {
+export async function accountRoutes(app: FastifyInstance, { config, db, hub, space, colonies: colonyService }: AccountDeps) {
   const cookieName = sessionCookieName(config);
   const cookieOptions = { path: "/", httpOnly: true, secure: config.COOKIE_SECURE, sameSite: "lax" } as const;
   // La exportación lee muchas tablas: pocas por cuenta.
@@ -129,10 +131,13 @@ export async function accountRoutes(app: FastifyInstance, { config, db, hub, spa
               buildIds.length ? inArray(sql`${scheduledEvents.payload}->>'buildId'`, buildIds) : undefined,
             ),
           );
+        // Lo hecho en el universo se queda: sus colonias pasan a ser independientes
+        // (congeladas, con su nombre, población e instalaciones; conquistables en la Fase 9b).
+        await colonyService.makeIndependent(tx, emperor.id, Date.now());
       }
       // Enlaces de acceso pendientes o usados (guardan el correo).
       await tx.delete(magicLinkTokens).where(eq(magicLinkTokens.email, account.email));
-      // En cascada: sesiones, Emperador, flotas, naves, colonias, descubrimientos, compañeros…
+      // En cascada: sesiones, Emperador, flotas, naves, descubrimientos, compañeros, bandos de batallas…
       // El libro de recursos se queda (no admite borrados) solo con identificadores internos.
       await tx.delete(accounts).where(eq(accounts.id, account.id));
       return emperor?.id ?? null;

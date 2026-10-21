@@ -104,7 +104,7 @@ export function PlanetColony({ detail, planet }: { detail: StarSystemDetail; pla
     <div className="colony">
       <dl className="facts">
         <dt>{t("colony.owner")}</dt>
-        <dd className={own ? "owner-own" : claim ? "owner-other" : "muted"}>{own ? t("colony.yours") : claim ? claim.ownerName : t("colony.free")}</dd>
+        <dd className={own ? "owner-own" : claim ? "owner-other" : "muted"}>{own ? t("colony.yours") : claim ? (claim.ownerName ?? t("colony.independent")) : t("colony.free")}</dd>
       </dl>
 
       {!owned && (

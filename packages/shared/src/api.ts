@@ -262,8 +262,9 @@ export interface PlanetClaim {
   planetIndex: number;
   /** Nombre personalizado; null = la designación del planeta. */
   name: string | null;
-  ownerId: string;
-  ownerName: string;
+  /** Dueño; null = colonia independiente (su Emperador borró la cuenta). */
+  ownerId: string | null;
+  ownerName: string | null;
 }
 
 /** Respuesta de `GET /api/systems/:systemId/claims`: planetas con dueño de un sistema descubierto. */

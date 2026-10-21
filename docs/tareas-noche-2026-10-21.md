@@ -28,3 +28,16 @@ Copia inicial: `proyecto/imperium-20261021-051653-antes-noche.tar.gz` + `imperiu
 - [ ] `pnpm build`, `pnpm e2e` completo (cierre de fase y cambios en motor 3D), revisar capturas.
 - [ ] Copia de seguridad de la base de producción → desplegar servidor y cliente.
 - [ ] Actualizar CLAUDE.md y este archivo con el resultado.
+
+## Ampliación del usuario (05:25): seguir mejorando el juego sin esperar órdenes
+En orden, siempre de dos en dos agentes, con copia antes de cada cambio grande:
+- [ ] **Wiki** (se llama «Wiki», no «Ayuda»): página propia y separada del juego (ruta `/wiki`,
+      también enlazada desde la barra superior), con todo detallado: controles, pilotaje, combate,
+      economía, logística, guerra, especies, IA, lore. Se actualiza con cada sistema nuevo.
+- [ ] **Economía de la humanidad y global**: además de la de cada colonia, una economía de toda la
+      humanidad (agregados, impuestos/aportes al Núcleo Humano, proyectos comunes) y un mercado
+      global entre jugadores e IA (precios por oferta y demanda, comercio entre sistemas).
+- [ ] **Otras especies** del lore (`docs/lore.md` §V) como datos en `packages/content`, con naves,
+      territorios y comportamiento propios.
+- [ ] **Otras IA**: facciones alienígenas y Emperadores humanos de la IA (Fase 11 + 9d, `docs/ia-naves.md`).
+- [ ] Fases siguientes de la hoja de ruta: 9b (conquista), 9c, 10 (muerte y linaje).

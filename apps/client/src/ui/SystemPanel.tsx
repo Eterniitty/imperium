@@ -145,7 +145,7 @@ export function SystemPanel() {
                   {own ? (
                     <span className="planet-owner own">{t("colony.yours")}</span>
                   ) : claim ? (
-                    <span className="planet-owner">{claim.ownerName}</span>
+                    <span className="planet-owner">{claim.ownerName ?? t("colony.independent")}</span>
                   ) : (
                     <span className="muted small">{t(`planet.${pl.type}`)}</span>
                   )}

@@ -207,9 +207,12 @@ export const colonies = pgTable(
   "colonies",
   {
     id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-    emperorId: uuid("emperor_id")
-      .notNull()
-      .references(() => emperors.id, { onDelete: "cascade" }),
+    /**
+     * Dueño. Null = colonia independiente: su Emperador borró la cuenta. Queda
+     * congelada (nadie la resuelve: ni produce ni gasta) hasta que alguien la
+     * conquiste (Fase 9b), que debe poner `resolved_at` a la hora de la conquista.
+     */
+    emperorId: uuid("emperor_id").references(() => emperors.id, { onDelete: "set null" }),
     systemId: text("system_id").notNull(),
     planetIndex: integer("planet_index").notNull(),
     /** Nombre puesto por el dueño (normalizado a NFC); null = la designación del planeta. */
@@ -283,7 +286,7 @@ export const resourceLedger = pgTable(
     id: bigserial("id", { mode: "number" }).primaryKey(),
     emperorId: uuid("emperor_id"),
     colonyId: uuid("colony_id"),
-    /** foundation | build | colonizer_boarding… */
+    /** foundation | build | colonizer_boarding | cancel | battle_loss | independence… */
     reason: text("reason").notNull(),
     /** Detalle: id de la instalación o clase de nave, de la flota… */
     ref: text("ref"),

@@ -117,7 +117,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   await app.register(warRoutes, { config, db: deps.db, emperors, wars });
   await app.register(socialRoutes, { config, db: deps.db, emperors, social, hub });
   await app.register(discoveryRoutes, { config, db: deps.db, emperors, discoveries });
-  await app.register(accountRoutes, { config, db: deps.db, hub, space });
+  await app.register(accountRoutes, { config, db: deps.db, hub, space, colonies });
   await app.register(colonyRoutes, { config, db: deps.db, emperors, discoveries, colonies });
 
   // Cola de eventos programados: llegadas de flotas y del Emperador (y, más adelante, construcciones…).

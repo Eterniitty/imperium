@@ -67,6 +67,12 @@ const FINISH_TOLERANCE_MS = 1_000;
 /** Detalles de sistema guardados en memoria (se generan con la semilla secreta y no cambian). */
 const DETAIL_CACHE = 2_000;
 
+/** Reembolso al cancelar un encargo: todo si no había empezado, una parte si sí. */
+function refundOf(build: { kind: string; itemId: string; startedAt: Date | null }): StockAmounts {
+  const def = build.kind === "installation" ? getInstallation(build.itemId) : getShipClass(build.itemId as ShipClassId);
+  const cost: StockAmounts = def ? { ...{ metal: 0, volatiles: 0, crystal: 0, alloys: 0 }, ...def.cost } : { metal: 0, volatiles: 0, crystal: 0, alloys: 0 };
+  return scaled(cost, build.startedAt ? ECONOMY.cancelRefundStarted : 1);
+}
 const stockOf = (r: Pick<ColonyRow, "metal" | "volatiles" | "crystal" | "alloys">): StockAmounts => ({ metal: r.metal, volatiles: r.volatiles, crystal: r.crystal, alloys: r.alloys });
 const negate = (s: StockAmounts): StockAmounts => ({ metal: -s.metal, volatiles: -s.volatiles, crystal: -s.crystal, alloys: -s.alloys });
 const scaled = (s: StockAmounts, k: number): StockAmounts => ({ metal: s.metal * k, volatiles: s.volatiles * k, crystal: s.crystal * k, alloys: s.alloys * k });
@@ -181,6 +187,7 @@ export class ColonyService {
 
   /** Mantenimiento extra de una colonia: el de las flotas si es la capital, si no 0. */
   private async extraUpkeepOf(db: Database | Tx, row: ColonyRow): Promise<number> {
+    if (!row.emperorId) return 0;
     return (await this.capitalId(db, row.emperorId)) === row.id ? this.fleetUpkeep(db, row.emperorId) : 0;
   }
 
@@ -255,19 +262,20 @@ export class ColonyService {
     // Capital y mantenimiento de flotas de cada Emperador que aparece.
     const capitals = new Map<string, { id: string | null; upkeep: number }>();
     for (const emperorId of new Set(rows.map((r) => r.emperorId))) {
+      if (!emperorId) continue;
       capitals.set(emperorId, { id: await this.capitalId(this.db, emperorId), upkeep: await this.fleetUpkeep(this.db, emperorId) });
     }
     const now = this.now();
     const out: Colony[] = [];
     for (const r of rows) {
-      const cap = capitals.get(r.emperorId)!;
-      const isCapital = cap.id === r.id;
+      const cap = r.emperorId ? capitals.get(r.emperorId) : undefined;
+      const isCapital = cap?.id === r.id;
       const c = this.toColony(
         r,
         counts.get(r.id) ?? {},
         builds.filter((b) => b.colonyId === r.id),
         now,
-        isCapital ? cap.upkeep : 0,
+        isCapital ? cap!.upkeep : 0,
         isCapital,
       );
       if (c) out.push(c);
@@ -299,7 +307,8 @@ export class ColonyService {
     const rows = await this.db
       .select({ planetIndex: colonies.planetIndex, name: colonies.name, ownerId: colonies.emperorId, ownerName: emperors.name })
       .from(colonies)
-      .innerJoin(emperors, eq(emperors.id, colonies.emperorId))
+      // Sin dueño (cuenta borrada): colonia independiente, con ownerId y ownerName null.
+      .leftJoin(emperors, eq(emperors.id, colonies.emperorId))
       .where(eq(colonies.systemId, systemId))
       .orderBy(asc(colonies.planetIndex));
     return rows;
@@ -497,7 +506,9 @@ export class ColonyService {
       return null;
     }
     const [row] = await tx.select().from(colonies).where(eq(colonies.id, build.colonyId)).for("update").limit(1);
-    if (!row) return null;
+    // Las colonias independientes no construyen (sus encargos se cancelan al quedarse sin dueño).
+    if (!row?.emperorId) return null;
+    const emperorId = row.emperorId;
     const counts = (await this.installationCounts(tx, [row.id])).get(row.id) ?? {};
     const site = this.site(row, counts, await this.extraUpkeepOf(tx, row));
     if (!site) return null;
@@ -515,25 +526,25 @@ export class ColonyService {
       const cls = getShipClass(build.itemId as ShipClassId);
       if (cls) {
         // La nave nueva cuesta mantenimiento desde ya: la capital (si es otra colonia) se cobra hasta aquí.
-        capitalId = await this.settleCapital(tx, row.emperorId, at, row.id);
+        capitalId = await this.settleCapital(tx, emperorId, at, row.id);
         // Los colonos embarcan de la colonia, dejando siempre a algunos.
         const capacity = SHIP_HUMAN_CAPACITY[cls.id] ?? 0;
         const boarding = Math.max(0, Math.min(capacity, Math.floor(population - HUMANS.colonyKeep)));
         population -= boarding;
-        const [last] = await tx.select({ n: sql<number>`coalesce(max(${fleets.number}), 0)::int` }).from(fleets).where(eq(fleets.emperorId, row.emperorId));
+        const [last] = await tx.select({ n: sql<number>`coalesce(max(${fleets.number}), 0)::int` }).from(fleets).where(eq(fleets.emperorId, emperorId));
         const [fleet] = await tx
           .insert(fleets)
-          .values({ emperorId: row.emperorId, number: (last?.n ?? 0) + 1, systemId: row.systemId })
+          .values({ emperorId: emperorId, number: (last?.n ?? 0) + 1, systemId: row.systemId })
           .returning({ id: fleets.id });
         await tx.insert(ships).values({ fleetId: fleet!.id, classId: cls.id, hull: cls.hull, humans: boarding });
         if (boarding > 0) {
-          await tx.insert(resourceLedger).values({ emperorId: row.emperorId, colonyId: row.id, reason: "colonizer_boarding", ref: `fleet:${fleet!.id}`, humans: -boarding });
+          await tx.insert(resourceLedger).values({ emperorId: emperorId, colonyId: row.id, reason: "colonizer_boarding", ref: `fleet:${fleet!.id}`, humans: -boarding });
         }
         fleetId = fleet!.id;
         const system = findSystem(this.seed, row.systemId);
         if (system) {
-          const systemIds = await discoverAround(tx, this.seed, row.emperorId, system, cls.scannerRangeLy);
-          discovered = { emperorId: row.emperorId, systemIds };
+          const systemIds = await discoverAround(tx, this.seed, emperorId, system, cls.scannerRangeLy);
+          discovered = { emperorId: emperorId, systemIds };
         }
       }
     }
@@ -554,7 +565,7 @@ export class ColonyService {
         .where(eq(colonyBuilds.id, next.id));
       await schedule(tx, "colony.build", new Date(nextFinish), { buildId: next.id });
     }
-    return { emperorId: row.emperorId, colonyId: row.id, fleetId, discovered, capitalId };
+    return { emperorId: emperorId, colonyId: row.id, fleetId, discovered, capitalId };
   }
 
   /**
@@ -577,9 +588,7 @@ export class ColonyService {
         .for("update")
         .limit(1);
       if (!build) return { ok: false, error: "no_build" };
-      const def = build.kind === "installation" ? getInstallation(build.itemId) : getShipClass(build.itemId as ShipClassId);
-      const cost: StockAmounts = def ? { ...{ metal: 0, volatiles: 0, crystal: 0, alloys: 0 }, ...def.cost } : { metal: 0, volatiles: 0, crystal: 0, alloys: 0 };
-      const refund = scaled(cost, build.startedAt ? ECONOMY.cancelRefundStarted : 1);
+      const refund = refundOf(build);
 
       const counts = (await this.installationCounts(tx, [row.id])).get(row.id) ?? {};
       const site = this.site(row, counts, await this.extraUpkeepOf(tx, row));
@@ -681,6 +690,35 @@ export class ColonyService {
   /** Guarda el estado de una colonia resuelto a la hora `at`. */
   async writeState(tx: Tx, colonyId: string, state: ColonyState, at: number): Promise<void> {
     await tx.update(colonies).set({ population: state.population, ...state.stock, resolvedAt: new Date(at) }).where(eq(colonies.id, colonyId));
+  }
+
+  /**
+   * Al borrar una cuenta, sus colonias se quedan en el universo como
+   * independientes: se resuelven hasta `at` (lo producido hasta entonces se
+   * queda), se cancelan sus encargos (con el reembolso de siempre, asentado en
+   * el libro) y pierden el dueño. Desde ahí, congeladas: nadie las resuelve.
+   * Los eventos `colony.build` los borra quien llama. Devuelve cuántas son.
+   */
+  async makeIndependent(tx: Tx, emperorId: string, at: number): Promise<number> {
+    const rows = await tx.select().from(colonies).where(eq(colonies.emperorId, emperorId)).for("update");
+    for (const row of rows) {
+      const counts = (await this.installationCounts(tx, [row.id])).get(row.id) ?? {};
+      const site = this.site(row, counts, await this.extraUpkeepOf(tx, row));
+      const state = site ? this.resolve(row, site, at) : { population: row.population, stock: stockOf(row) };
+      const stock = { ...state.stock };
+      for (const build of await tx.select().from(colonyBuilds).where(eq(colonyBuilds.colonyId, row.id)).orderBy(asc(colonyBuilds.seq))) {
+        const refund = refundOf(build);
+        for (const k of Object.keys(stock) as Array<keyof StockAmounts>) stock[k] = Math.min(ECONOMY.storage[k], stock[k] + refund[k]);
+        await tx.insert(resourceLedger).values({ emperorId, colonyId: row.id, reason: "cancel", ref: `${build.kind}:${build.itemId}`, ...refund });
+      }
+      await tx.delete(colonyBuilds).where(eq(colonyBuilds.colonyId, row.id));
+      await tx
+        .update(colonies)
+        .set({ emperorId: null, population: state.population, ...stock, resolvedAt: new Date(Math.max(at, row.resolvedAt.getTime())) })
+        .where(eq(colonies.id, row.id));
+      await tx.insert(resourceLedger).values({ emperorId, colonyId: row.id, reason: "independence", ref: null });
+    }
+    return rows.length;
   }
 
   /** Asientos del libro de una colonia, en orden (para auditar y para los tests). */
