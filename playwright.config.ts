@@ -3,7 +3,7 @@ import { CLIENT_PORT, SERVER_PORT, STORAGE_STATE } from "./e2e/ports";
 
 /**
  * Pruebas de navegador (`pnpm e2e`). Arrancan su propio servidor de juego en el
- * puerto 3100 contra TEST_DATABASE_URL (que se vacía) y un cliente Vite en el
+ * puerto 3100 contra E2E_DATABASE_URL (o TEST_DATABASE_URL; se vacía) y un cliente Vite en el
  * 5174: no tocan el juego desplegado. No se pueden ejecutar a la vez que `pnpm test`,
  * porque comparten la base de datos de pruebas.
  */

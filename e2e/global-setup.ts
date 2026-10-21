@@ -19,8 +19,9 @@ export default async function globalSetup() {
   } catch {
     // Sin .env: solo las variables del entorno.
   }
-  const databaseUrl = process.env.TEST_DATABASE_URL;
-  if (!databaseUrl) throw new Error("Las pruebas de navegador necesitan TEST_DATABASE_URL (se vacía en cada ejecución)");
+  // Base propia (E2E_DATABASE_URL) para poder pasar a la vez `pnpm test`, que vacía TEST_DATABASE_URL.
+  const databaseUrl = process.env.E2E_DATABASE_URL || process.env.TEST_DATABASE_URL;
+  if (!databaseUrl) throw new Error("Las pruebas de navegador necesitan E2E_DATABASE_URL o TEST_DATABASE_URL (se vacía en cada ejecución)");
 
   const database = createDb(databaseUrl);
   await resetTestDatabase(database);

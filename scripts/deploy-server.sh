@@ -14,9 +14,7 @@ git pull --ff-only
 echo "==> Instalando dependencias"
 pnpm install --frozen-lockfile
 
-echo "==> Comprobando (tests y tipos)"
-pnpm test
-pnpm typecheck
+./scripts/verify.sh
 
 echo "==> Compilando el servidor"
 pnpm --filter @imperium/server build

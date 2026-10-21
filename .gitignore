@@ -20,3 +20,4 @@ Thumbs.db
 
 # Copias de trabajo de agentes (git worktree)
 .claude/worktrees/
+.verificado
