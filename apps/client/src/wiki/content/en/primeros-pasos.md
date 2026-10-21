@@ -5,7 +5,9 @@
 1. On the start page, enter your **email address**, tick the box (you are at least 16 and accept the terms of use and the privacy policy) and press **Send sign-in link**.
 2. You receive an email with a single-use link that **expires after 15 minutes**. Open it in the same browser and press **Sign in**. There are no passwords.
 3. The first time, **name your Emperor** (3 to 24 characters: letters, digits, spaces, hyphens and apostrophes). Other players will see this name and it **cannot be changed**. Press **Crown**.
-4. Press **Awaken**: you start at the controls of your ship, inside your home system.
+   - To start next to a friend, also enter their Emperor's name under **Start near a companion** and press **Send request**. Once they accept, you start near their empire (see [Companions](/wiki/companeros)).
+4. Before you play, just once, the **photosensitivity warning** appears (the game has flashes): you can turn on **Reduce visual effects** or continue. You can see it again and change it in Settings → General.
+5. Press **Awaken**: you start at the controls of your ship, inside your home system.
 
 More about sessions and your data in [Account and data](/wiki/cuenta).
 
@@ -14,7 +16,7 @@ More about sessions and your data in [Account and data](/wiki/cuenta).
 - **Your ship**, the Emperor's. You always travel in it: you fly it, jump between stars and fight with it. Its figures are in [Combat](/wiki/combate#the-emperor-s-ship).
 - **Humans on board**, which your ship generates by itself over time ([Law II](/wiki/humanos)). You found colonies with them.
 - **A starting fleet** ("Fleet 1") with an Explorer, in your system.
-- A **home system** picked at random among the Sun-like stars (classes F, G and K) of the **Human Core**, humanity's central region. You already know that system and every system within your scanners' reach (see [Fog of war](/wiki/niebla)).
+- A **home system** picked at random among the Sun-like stars (classes F, G and K) of the **Human Core**, humanity's central region (if you start with a companion, one of the closest to theirs). You already know that system and every system within your scanners' reach (see [Fog of war](/wiki/niebla)).
 
 {{tabla:nave-emperador}}
 

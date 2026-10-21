@@ -43,6 +43,24 @@ export function pickSpawnSystem(universeSeed: number, pick: (n: number) => numbe
   return chosen;
 }
 
+/** Alta con compañero: entre cuántos sistemas iniciales más cercanos al compañero se elige. */
+export const COMPANION_SPAWN_CHOICES = 3;
+
+/**
+ * Alta con compañero: un sistema inicial (mismas reglas que `pickSpawnSystem`)
+ * de los más cercanos a `near`, al azar entre los `COMPANION_SPAWN_CHOICES`
+ * primeros. Si el compañero está fuera del Núcleo, el del Núcleo más próximo.
+ */
+export function pickSpawnNear(universeSeed: number, near: WorldPosition, pick: (n: number) => number = randomInt): StarSystemSummary {
+  const sorted = spawnCandidates(universeSeed)
+    .map((s) => ({ s, d: distance(near, s.position) }))
+    .sort((a, b) => a.d - b.d || (a.s.id < b.s.id ? -1 : 1));
+  const choices = sorted.slice(0, COMPANION_SPAWN_CHOICES);
+  const chosen = choices[pick(choices.length)];
+  if (!chosen) throw new Error("El Núcleo Humano no tiene sistemas donde aparecer");
+  return chosen.s;
+}
+
 /** Busca un sistema por su identificador. Devuelve null si no existe en el universo. */
 export function findSystem(universeSeed: number, systemId: string): StarSystemSummary | null {
   let parsed: ReturnType<typeof parseSystemId>;

@@ -166,6 +166,40 @@ export interface SocialResponse {
   requests: AllyEntry[];
 }
 
+/**
+ * Alta con compañero: horas que una solicitud sin respuesta sigue viva. Pasado
+ * ese tiempo, el compañero deja de verla y quien la envió puede empezar solo.
+ */
+export const COMPANION_REQUEST_TTL_HOURS = 24;
+
+/** Estado de una solicitud de alta con compañero («expired»: sin respuesta a tiempo). */
+export type CompanionRequestStatus = "pending" | "accepted" | "rejected" | "expired";
+
+/** Respuesta de `GET /api/emperor/companion` (cuenta aún sin Emperador) y de `POST`. */
+export interface CompanionRequestResponse {
+  request: {
+    /** Nombre del Emperador cerca del que quiere aparecer. */
+    companion: string;
+    /** Nombre que quiere para su Emperador. */
+    name: string;
+    status: CompanionRequestStatus;
+    createdAt: number;
+  } | null;
+}
+
+/** Solicitud de alta recibida por un Emperador: alguien quiere empezar cerca de él. */
+export interface CompanionInboxEntry {
+  id: string;
+  /** Nombre que quiere para su Emperador. */
+  name: string;
+  createdAt: number;
+}
+
+/** Respuesta de `GET /api/companion-requests` y de `POST /api/companion-requests/respond`. */
+export interface CompanionInboxResponse {
+  requests: CompanionInboxEntry[];
+}
+
 /** Códigos de error de la API; el cliente los traduce con claves `error.*`. */
 export type ApiErrorCode =
   | "invalid_request"

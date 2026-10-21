@@ -247,6 +247,32 @@ export const emperorAllies = pgTable(
 );
 
 /**
+ * Alta con compañero: una cuenta sin Emperador pide aparecer cerca de un
+ * Emperador existente. Una por cuenta (se reemplaza al pedir otra). Si el
+ * compañero acepta, al crear el Emperador aparece en un sistema inicial
+ * cercano al suyo y quedan como compañeros; la fila se borra entonces.
+ */
+export const companionRequests = pgTable(
+  "companion_requests",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    accountId: uuid("account_id")
+      .notNull()
+      .unique()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    targetId: uuid("target_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    /** Nombre que quiere para su Emperador (para que el compañero sepa quién es; no lo reserva). */
+    name: text("name").notNull(),
+    status: text("status").notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    respondedAt: timestamp("responded_at", { withTimezone: true }),
+  },
+  (t) => [index("companion_requests_target_id_idx").on(t.targetId), check("companion_requests_status", sql`${t.status} IN ('pending', 'accepted', 'rejected')`)],
+);
+
+/**
  * Niebla de guerra: sistemas que ha descubierto cada Emperador (con su nave o
  * sus flotas). Solo de estos puede pedir el detalle (planetas, recursos…).
  */

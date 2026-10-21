@@ -5,7 +5,9 @@
 1. En la portada escribe tu **correo electrónico**, marca la casilla (tener al menos 16 años y aceptar los términos de uso y la política de privacidad) y pulsa **Enviar enlace de acceso**.
 2. Te llega un correo con un enlace de un solo uso que **caduca a los 15 minutos**. Ábrelo en el mismo navegador y pulsa **Entrar**. No hay contraseñas.
 3. Si es tu primera vez, **nombra a tu Emperador** (de 3 a 24 caracteres: letras, cifras, espacios, guiones y apóstrofos). Es el nombre que verán los demás y **no se puede cambiar**. Pulsa **Coronar**.
-4. Pulsa **Despertar**: empiezas a los mandos de tu nave, dentro de tu sistema de origen.
+   - Si quieres empezar junto a un amigo, escribe también el nombre de su Emperador en **Aparecer cerca de un compañero** y pulsa **Enviar solicitud**. Cuando la acepte, apareces cerca de su imperio (ver [Compañeros](/wiki/companeros)).
+4. Antes de jugar, una sola vez, sale el **aviso de fotosensibilidad** (el juego tiene destellos): puedes activar **Reducir efectos visuales** o continuar. Puedes volver a verlo y cambiarlo en Ajustes → General.
+5. Pulsa **Despertar**: empiezas a los mandos de tu nave, dentro de tu sistema de origen.
 
 Más sobre la sesión y tus datos en [Cuenta y datos](/wiki/cuenta).
 
@@ -14,7 +16,7 @@ Más sobre la sesión y tus datos en [Cuenta y datos](/wiki/cuenta).
 - **Tu nave**, la del Emperador. Vas siempre en ella: con ella pilotas, saltas entre estrellas y combates. Sus datos están en [Combate](/wiki/combate#la-nave-del-emperador).
 - **Humanos a bordo**, que tu nave genera sola con el tiempo ([Ley II](/wiki/humanos)). Con ellos fundas colonias.
 - **Una flota inicial** («Flota 1») con un Explorador, en tu mismo sistema.
-- Un **sistema de origen** elegido al azar entre las estrellas parecidas al Sol (clases F, G y K) del **Núcleo Humano**, la zona central de la humanidad. Ya conoces ese sistema y todos los que alcanzan tus escáneres (ver [Niebla de guerra](/wiki/niebla)).
+- Un **sistema de origen** elegido al azar entre las estrellas parecidas al Sol (clases F, G y K) del **Núcleo Humano**, la zona central de la humanidad (si empiezas con un compañero, uno de los más cercanos al suyo). Ya conoces ese sistema y todos los que alcanzan tus escáneres (ver [Niebla de guerra](/wiki/niebla)).
 
 {{tabla:nave-emperador}}
 

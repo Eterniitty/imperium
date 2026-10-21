@@ -1,19 +1,23 @@
 import { LEGAL_PAGES } from "@imperium/shared";
-import { settingsStore, useSettings } from "../state/settings";
+import { closePhotoNotice, usePhotoNoticeOpen } from "../state/photoNotice";
+import { settingsStore } from "../state/settings";
 import { useGame, useT } from "../state/store";
 
 /**
- * Aviso de fotosensibilidad (epilepsia) la primera vez que se entra (y desde
- * Ajustes): el juego tiene destellos (salto cuántico, explosiones). Permite
- * activar «Reducir efectos visuales» o continuar; la elección se recuerda
- * en los ajustes del navegador.
+ * Aviso de fotosensibilidad (epilepsia): sale una vez al terminar el alta (al
+ * crear el Emperador, antes de entrar a jugar) y desde Ajustes. El juego tiene
+ * destellos (salto cuántico, explosiones). Permite activar «Reducir efectos
+ * visuales» (se guarda en los ajustes del navegador) o continuar.
  */
 export function PhotosensitivityNotice() {
   const t = useT();
-  const ack = useSettings((s) => s.prefs.photosensitivityAck);
+  const open = usePhotoNoticeOpen();
   const pages = LEGAL_PAGES[useGame((s) => s.locale)];
-  if (ack) return null;
-  const choose = (reduce: boolean) => settingsStore.getState().setPrefs({ photosensitivityAck: true, ...(reduce ? { reduceEffects: true } : {}) });
+  if (!open) return null;
+  const choose = (reduce: boolean) => {
+    if (reduce) settingsStore.getState().setPrefs({ reduceEffects: true });
+    closePhotoNotice();
+  };
   return (
     <div className="photo-notice-backdrop">
       <div className="photo-notice panel" role="alertdialog" aria-modal="true" aria-labelledby="photo-notice-title">

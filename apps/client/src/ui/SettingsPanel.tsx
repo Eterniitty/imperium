@@ -19,6 +19,7 @@ import { SocialTab } from "./SocialTab";
 import { AccountTab } from "./AccountTab";
 import { LanguageToggle } from "./LanguageToggle";
 import { gameStore, useGame, useT } from "../state/store";
+import { openPhotoNotice } from "../state/photoNotice";
 
 const QUALITIES: Quality[] = ["auto", "high", "medium", "low"];
 
@@ -100,7 +101,7 @@ function GeneralTab() {
       <dd>
         <input id="pref-reduce-fx" type="checkbox" checked={prefs.reduceEffects} onChange={(e) => set({ reduceEffects: e.target.checked })} />
         <div className="muted small">{t("settings.reduceEffectsHint")}</div>
-        <button className="link-btn small" type="button" onClick={() => set({ photosensitivityAck: false })}>
+        <button className="link-btn small" type="button" onClick={openPhotoNotice}>
           {t("photo.show")}
         </button>
       </dd>

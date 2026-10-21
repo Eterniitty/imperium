@@ -182,12 +182,10 @@ export interface Preferences {
   sfxVolume: number;
   /** Accesibilidad: efectos visuales suaves, sin destellos fuertes ni sacudidas. */
   reduceEffects: boolean;
-  /** Ya se vio (y se respondió) el aviso de fotosensibilidad; en falso, se vuelve a mostrar. */
-  photosensitivityAck: boolean;
   flight: FlightPrefs;
 }
 
-const DEFAULT_PREFERENCES: Preferences = { quality: "auto", uiScale: "auto", musicVolume: 0.5, sfxVolume: 0.6, reduceEffects: false, photosensitivityAck: false, flight: DEFAULT_FLIGHT_PREFS };
+const DEFAULT_PREFERENCES: Preferences = { quality: "auto", uiScale: "auto", musicVolume: 0.5, sfxVolume: 0.6, reduceEffects: false, flight: DEFAULT_FLIGHT_PREFS };
 const PREFS_KEY = "imperium.prefs";
 
 function loadPrefs(): Preferences {
@@ -202,7 +200,6 @@ function loadPrefs(): Preferences {
       musicVolume: typeof volume === "number" && volume >= 0 && volume <= 1 ? volume : DEFAULT_PREFERENCES.musicVolume,
       sfxVolume: typeof sfx === "number" && sfx >= 0 && sfx <= 1 ? sfx : DEFAULT_PREFERENCES.sfxVolume,
       reduceEffects: saved?.reduceEffects === true,
-      photosensitivityAck: saved?.photosensitivityAck === true,
       flight: loadFlightPrefs(saved?.flight),
     };
   } catch {
