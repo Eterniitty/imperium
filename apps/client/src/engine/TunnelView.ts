@@ -17,6 +17,13 @@ const SCROLL_SPEED = L * 70;
 /** El desplazamiento da la vuelta en un múltiplo exacto de la separación de los anillos (no se nota el salto). */
 const SCROLL_WRAP = RING_SPACING * 400;
 const STREAKS = 420;
+/**
+ * Cuánto se tuerce el túnel al fondo (en esloras). Por debajo de un par de
+ * radios del túnel: más, y el fondo se dobla sobre sí mismo y sus tramos se
+ * ven superpuestos.
+ */
+const BEND_X = 4.5;
+const BEND_Y = 3;
 /** Las frecuencias del ruido y de la curva se pensaron para una nave de 46 m: se escalan con la eslora. */
 const ZS = 46 / L;
 
@@ -28,13 +35,13 @@ const BEND_GLSL = /* glsl */ `
 vec2 bend(float z, float t) {
   float d = clamp(-z / ${LENGTH.toFixed(1)}, 0.0, 1.0);
   float k = d * d;
-  return vec2(sin(t * 0.21 + z * ${(0.0009 * ZS).toExponential(4)}) * ${(L * 9).toFixed(1)}, cos(t * 0.17 + z * ${(0.0007 * ZS).toExponential(4)}) * ${(L * 6).toFixed(1)}) * k;
+  return vec2(sin(t * 0.21 + z * ${(0.0009 * ZS).toExponential(4)}) * ${(L * BEND_X).toFixed(1)}, cos(t * 0.17 + z * ${(0.0007 * ZS).toExponential(4)}) * ${(L * BEND_Y).toFixed(1)}) * k;
 }
 `;
 function bend(z: number, t: number, out: THREE.Vector2): THREE.Vector2 {
   const d = Math.min(1, Math.max(0, -z / LENGTH));
   const k = d * d;
-  return out.set(Math.sin(t * 0.21 + z * 0.0009 * ZS) * L * 9 * k, Math.cos(t * 0.17 + z * 0.0007 * ZS) * L * 6 * k);
+  return out.set(Math.sin(t * 0.21 + z * 0.0009 * ZS) * L * BEND_X * k, Math.cos(t * 0.17 + z * 0.0007 * ZS) * L * BEND_Y * k);
 }
 
 const WALL_VERTEX = /* glsl */ `
@@ -103,9 +110,10 @@ void main() {
   col += mix(uColB, vec3(1.0), 0.35) * fil * (0.6 + cloud);
   col += uColA * fil2 * cloud;
   col += vec3(0.6, 0.7, 1.0) * ribs * cloud;
-  col += mix(uDest, vec3(1.0), 0.4) * ring * 1.3;
   // A lo lejos se funde con el resplandor del destino; muy cerca, se apaga.
   float far = smoothstep(${(-LENGTH * 0.35).toFixed(1)}, ${(-LENGTH).toFixed(1)}, z);
+  // Los anillos lejanos se desvanecen (si no, al fondo se amontonan en círculos concéntricos).
+  col += mix(uDest, vec3(1.0), 0.4) * ring * 1.3 * (1.0 - smoothstep(${(-LENGTH * 0.12).toFixed(1)}, ${(-LENGTH * 0.45).toFixed(1)}, z));
   col = mix(col, uDest * 0.9, far);
   float fade = smoothstep(${NEAR.toFixed(1)}, ${(NEAR * 0.2).toFixed(1)}, z) * smoothstep(${(-LENGTH).toFixed(1)}, ${(-LENGTH * 0.9).toFixed(1)}, z);
   gl_FragColor = vec4(col * fade, 1.0);
@@ -169,7 +177,8 @@ export class TunnelView implements View {
     geo.translate(0, 0, -(LENGTH - NEAR) / 2);
     this.tunnel = new THREE.Mesh(
       geo,
-      new THREE.ShaderMaterial({ uniforms: this.uniforms, side: THREE.BackSide, depthWrite: false, depthTest: false, vertexShader: WALL_VERTEX, fragmentShader: WALL_FRAGMENT }),
+      // Con profundidad: donde el túnel se curva, el tramo cercano tapa al lejano (sin ella se veían superpuestos).
+      new THREE.ShaderMaterial({ uniforms: this.uniforms, side: THREE.BackSide, vertexShader: WALL_VERTEX, fragmentShader: WALL_FRAGMENT }),
     );
     this.tunnel.renderOrder = -1;
     this.tunnel.frustumCulled = false;
@@ -191,8 +200,9 @@ export class TunnelView implements View {
     this.streaks.frustumCulled = false;
     this.scene.add(this.streaks);
 
-    this.destGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: 0xfff1c4, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, transparent: true }));
-    this.destGlow.renderOrder = 0;
+    // El resplandor del destino, dentro del túnel al fondo (las paredes que se interponen lo tapan).
+    this.destGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: 0xfff1c4, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+    this.destGlow.renderOrder = 1;
     this.scene.add(this.destGlow);
 
     this.ship = createFlagship(0xc792ff);
@@ -261,7 +271,8 @@ export class TunnelView implements View {
     // Resplandor del destino al fondo: crece al acercarse.
     bend(-LENGTH * 0.95, this.time % 1000, b);
     this.destGlow.position.set(b.x, b.y, -LENGTH * 0.95);
-    this.destGlow.scale.setScalar(RADIUS * (3 + 5 * k));
+    // Del ancho del túnel: más grande, las paredes lo recortarían con un borde duro.
+    this.destGlow.scale.setScalar(RADIUS * (2.2 + 1.6 * k));
     this.destGlow.material.color.copy(u.uDest.value);
     this.destGlow.material.opacity = 0.5 + 0.4 * k;
 
