@@ -25,6 +25,7 @@ export const GATE_PAGE = /* html */ `<!doctype html>
   button { margin-top: 22px; width: 100%; padding: 12px; font: inherit; font-size: 15px; letter-spacing: 0.18em; text-transform: uppercase; color: #120c02; background: var(--gold); border: 0; border-radius: 6px; cursor: pointer; font-weight: 600; }
   button:disabled { opacity: 0.6; cursor: default; }
   .error { min-height: 20px; margin: 14px 0 0; color: var(--error); font-size: 14px; text-align: center; }
+  .device { margin: 18px 0 0; padding: 12px; border: 1px solid var(--line); border-radius: 6px; text-align: center; font-size: 15px; line-height: 1.4; }
   .foot { margin-top: 18px; text-align: center; font-size: 12px; color: var(--muted); }
   .foot a { color: var(--muted); }
   @media (prefers-reduced-motion: reduce) { canvas { display: none; } }
@@ -42,6 +43,7 @@ export const GATE_PAGE = /* html */ `<!doctype html>
     <input id="password" name="password" type="password" autocomplete="current-password" required />
     <button type="submit" data-t="enter">Entrar</button>
     <p class="error" id="error" role="alert"></p>
+    <p class="device" id="device" hidden data-t="device">Aeonarch solo se puede jugar desde el navegador de un ordenador.</p>
     <p class="foot"><a id="imprint" href="/legal/aviso-legal.html" data-t="imprint">Aviso legal (Impressum)</a> · <a id="privacy" href="/legal/privacidad.html" data-t="privacy">Privacidad (Datenschutz)</a></p>
   </form>
 </main>
@@ -49,8 +51,8 @@ export const GATE_PAGE = /* html */ `<!doctype html>
 (() => {
   const en = !/^es\\b/i.test(navigator.language || "es");
   const T = en
-    ? { sub: "Alpha · private access", user: "User", password: "Password", enter: "Enter", imprint: "Legal notice (Impressum)", privacy: "Privacy (Datenschutz)", wrong: "Wrong user or password.", limited: "Too many attempts. Wait a few minutes.", fail: "Could not connect. Try again." }
-    : { sub: "Alfa · acceso privado", user: "Usuario", password: "Contraseña", enter: "Entrar", imprint: "Aviso legal (Impressum)", privacy: "Privacidad (Datenschutz)", wrong: "Usuario o contraseña incorrectos.", limited: "Demasiados intentos. Espera unos minutos.", fail: "No se pudo conectar. Inténtalo de nuevo." };
+    ? { sub: "Alpha · private access", user: "User", password: "Password", enter: "Enter", imprint: "Legal notice (Impressum)", privacy: "Privacy (Datenschutz)", wrong: "Wrong user or password.", limited: "Too many attempts. Wait a few minutes.", fail: "Could not connect. Try again.", device: "Aeonarch can only be played from a computer's web browser." }
+    : { sub: "Alfa · acceso privado", user: "Usuario", password: "Contraseña", enter: "Entrar", imprint: "Aviso legal (Impressum)", privacy: "Privacidad (Datenschutz)", wrong: "Usuario o contraseña incorrectos.", limited: "Demasiados intentos. Espera unos minutos.", fail: "No se pudo conectar. Inténtalo de nuevo.", device: "Aeonarch solo se puede jugar desde el navegador de un ordenador." };
   document.documentElement.lang = en ? "en" : "es";
   for (const el of document.querySelectorAll("[data-t]")) el.textContent = T[el.dataset.t];
   if (en) {
@@ -59,6 +61,14 @@ export const GATE_PAGE = /* html */ `<!doctype html>
   }
 
   const form = document.getElementById("gate");
+  // Solo ordenadores: también las tabletas que se presentan como un Mac (pantalla táctil).
+  const ua = navigator.userAgent;
+  const touchMac = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+  const mobile = (navigator.userAgentData && navigator.userAgentData.mobile) || /Mobi|Android|iPhone|iPad|iPod|PlayStation|Xbox|Nintendo|SmartTV|SMART-TV|Tizen|webOS|Web0S|CrKey/i.test(ua);
+  if (touchMac || mobile || new URLSearchParams(location.search).has("dispositivo")) {
+    for (const el of form.querySelectorAll("label, input, button")) el.hidden = true;
+    document.getElementById("device").hidden = false;
+  }
   const error = document.getElementById("error");
   const button = form.querySelector("button");
   const next = new URLSearchParams(location.search).get("next") || "/";
@@ -77,7 +87,7 @@ export const GATE_PAGE = /* html */ `<!doctype html>
         location.replace(data.next || "/");
         return;
       }
-      error.textContent = res.status === 429 ? T.limited : res.status === 401 ? T.wrong : T.fail;
+      error.textContent = res.status === 429 ? T.limited : res.status === 401 ? T.wrong : res.status === 403 ? T.device : T.fail;
     } catch {
       error.textContent = T.fail;
     }

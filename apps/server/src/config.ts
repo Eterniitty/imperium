@@ -57,6 +57,9 @@ const EnvSchema = z
     // Más credenciales de la puerta (una por persona invitada): archivo JSON fuera del
     // repositorio que gestiona scripts/gate-user.mjs. Se relee al cambiar.
     GATE_USERS_FILE: z.string().trim().min(1).optional(),
+    // Registro de accesos a la puerta (una línea JSON por intento; se guardan 30 días).
+    // Por defecto, gate-access.log junto a GATE_USERS_FILE.
+    GATE_LOG_FILE: z.string().trim().min(1).optional(),
     MAIL_TRANSPORT: z.enum(["console", "smtp"]).default("console"),
     // Correo real (MAIL_TRANSPORT=smtp): servidor del proveedor de correo transaccional.
     // Con smtp, SMTP_HOST, SMTP_USER, SMTP_PASS y MAIL_FROM son obligatorias.

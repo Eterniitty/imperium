@@ -1,5 +1,6 @@
 import { createHmac, scryptSync, timingSafeEqual } from "node:crypto";
-import { readFileSync, statSync } from "node:fs";
+import { appendFileSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { ipRateKey, RateLimiter } from "../auth/rateLimit";
@@ -86,11 +87,53 @@ function safeNext(next: unknown): string {
   return typeof next === "string" && /^\/(?!\/)[^\s\\]*$/.test(next) && !next.startsWith("/puerta") ? next : "/";
 }
 
+/**
+ * Solo ordenadores (petición del usuario, 21-10-2026): fuera móviles, tabletas,
+ * consolas, televisores y visores. Se mira el agente de usuario en el servidor; la
+ * página de la puerta además descarta las tabletas que se hacen pasar por un Mac.
+ */
+const NOT_DESKTOP = /Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry|BB10|Opera Mini|IEMobile|PlayStation|Xbox|Nintendo|SMART-?TV|SmartTV|Tizen|Web0S|webOS|CrKey|AppleTV|HbbTV|Silk|Kindle|KFAPWI|Oculus|Quest|Pico/i;
+export function isDesktop(userAgent: string | undefined): boolean {
+  return !!userAgent && userAgent.length > 10 && !NOT_DESKTOP.test(userAgent);
+}
+
+/** Días que se guarda el registro de accesos. */
+const LOG_DAYS = 30;
+
+/** Registro de accesos (JSON por línea): quién entra, cuándo, desde qué IP y navegador; se recorta a `LOG_DAYS`. */
+function accessLog(path: string | undefined): (entry: Record<string, unknown>) => void {
+  let writes = 0;
+  return (entry) => {
+    if (!path) return;
+    try {
+      appendFileSync(path, JSON.stringify({ at: new Date().toISOString(), ...entry }) + "\n", { mode: 0o600 });
+      // De vez en cuando, fuera lo que pasa de LOG_DAYS.
+      if (++writes % 50 === 1) {
+        const limit = Date.now() - LOG_DAYS * 864e5;
+        const keep = readFileSync(path, "utf8").split("\n").filter((l) => {
+          if (!l) return false;
+          try {
+            return Date.parse((JSON.parse(l) as { at: string }).at) >= limit;
+          } catch {
+            return false;
+          }
+        });
+        writeFileSync(path, keep.join("\n") + (keep.length ? "\n" : ""), { mode: 0o600 });
+      }
+    } catch {
+      // El registro no debe impedir entrar.
+    }
+  };
+}
+
 const LoginBody = z.object({ user: z.string().max(100), password: z.string().max(200), next: z.string().max(500).optional() });
 
 export async function gateRoutes(app: FastifyInstance, { config }: { config: ServerConfig }) {
   const secret = config.GATE_SECRET;
   const fileUsers = usersFile(config.GATE_USERS_FILE);
+  const log = accessLog(config.GATE_LOG_FILE ?? (config.GATE_USERS_FILE ? join(dirname(config.GATE_USERS_FILE), "gate-access.log") : undefined));
+  /** IP real del jugador (Cloudflare la pone en CF-Connecting-IP; Caddy la pasa en X-Forwarded-For). */
+  const ipOf = (req: FastifyRequest) => (typeof req.headers["cf-connecting-ip"] === "string" ? req.headers["cf-connecting-ip"] : req.ip);
   /** Hash de la contraseña de un usuario (el del .env o los del archivo). */
   const hashOf = (name: string): string | null => {
     if (config.GATE_USER && config.GATE_PASSWORD_HASH && sameText(name, config.GATE_USER)) return config.GATE_PASSWORD_HASH;
@@ -108,8 +151,13 @@ export async function gateRoutes(app: FastifyInstance, { config }: { config: Ser
 
   // Caddy (forward_auth): 2xx deja pasar; si no, el navegador va a la puerta.
   app.get("/puerta/check", async (req, reply: FastifyReply) => {
-    if (allowed(req)) return reply.code(204).send();
     const uri = typeof req.headers["x-forwarded-uri"] === "string" ? req.headers["x-forwarded-uri"] : "/";
+    // Solo ordenadores: aunque traiga la cookie.
+    if (!isDesktop(req.headers["user-agent"])) {
+      if (uri.startsWith("/api/") || uri.startsWith("/ws")) return reply.code(403).send();
+      return reply.redirect("/puerta/?dispositivo=1", 302);
+    }
+    if (allowed(req)) return reply.code(204).send();
     // La API y el WebSocket no son páginas: un 401 basta.
     if (uri.startsWith("/api/") || uri.startsWith("/ws")) return reply.code(401).send();
     return reply.redirect(`/puerta/?next=${encodeURIComponent(safeNext(uri))}`, 302);
@@ -126,8 +174,17 @@ export async function gateRoutes(app: FastifyInstance, { config }: { config: Ser
     const parsed = LoginBody.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: "invalid_request" });
     const name = parsed.data.user.trim();
+    const ua = req.headers["user-agent"] ?? "";
+    if (!isDesktop(ua)) {
+      log({ user: name.slice(0, 60), ok: false, reason: "device", ip: ipOf(req), ua: ua.slice(0, 300) });
+      return reply.code(403).send({ error: "device" });
+    }
     const hash = secret ? hashOf(name) : null;
-    if (!hash || !checkPassword(parsed.data.password, hash)) return reply.code(401).send({ error: "wrong" });
+    if (!hash || !checkPassword(parsed.data.password, hash)) {
+      log({ user: name.slice(0, 60), ok: false, reason: "wrong", ip: ipOf(req), ua: ua.slice(0, 300) });
+      return reply.code(401).send({ error: "wrong" });
+    }
+    log({ user: name, ok: true, ip: ipOf(req), ua: ua.slice(0, 300) });
     const until = Date.now() + COOKIE_DAYS * 24 * 3600_000;
     reply.setCookie(COOKIE, cookieValue(secret!, name, until), {
       path: "/",
