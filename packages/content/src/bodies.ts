@@ -41,18 +41,20 @@ export const WORLD_SCALE = {
    * Metros por unidad astronómica a la potencia `orbitExponent`. Las órbitas se
    * comprimen con la raíz cuadrada (conservan el orden y la proporción entre
    * planetas interiores y exteriores) para cruzar el sistema con el pulso en uno
-   * o dos minutos.
+   * o dos minutos. Con 270 000 km (21-10-2026, antes 18 000 km: el Sol se veía
+   * de 16° desde una órbita como la de la Tierra), una estrella como el Sol se ve
+   * de ~1° desde 1 UA: casi como el real (0,5°), algo mayor para que impresione.
    */
-  auM: 18_000_000,
+  auM: 270_000_000,
   orbitExponent: 0.5,
   /** Hueco mínimo entre las esferas de influencia de dos cuerpos vecinos (m). */
-  orbitGapM: 2_000_000,
+  orbitGapM: 30_000_000,
   /** Media anchura de un cinturón de asteroides (m). */
-  beltHalfWidthM: 800_000,
+  beltHalfWidthM: 12_000_000,
   /** Periodo de rotación de los planetas (horas reales), entre estos extremos. */
   spinHours: [14, 60],
   /** Margen entre el último cuerpo y el borde del sistema (m). */
-  boundaryMarginM: 6_000_000,
+  boundaryMarginM: 90_000_000,
   /** Esfera de influencia de la estrella, en radios estelares (dentro no hay planetas). */
   starInfluenceRadii: 6,
   /** Esfera de influencia mínima de un planeta, en radios del planeta. */
@@ -65,13 +67,13 @@ export const WORLD_SCALE = {
   /** Radio mínimo de una luna (m): las más pequeñas siguen siendo cientos de veces la nave. */
   minMoonRadiusM: 4_000,
   /**
-   * Velocidad orbital de referencia (m/s) de un planeta a 10 000 km de la
+   * Velocidad orbital de referencia (m/s) de un planeta a 150 000 km de la
    * estrella. Las órbitas siguen la ley de Kepler (T ∝ r^1,5) pero mucho más
    * despacio que la real: así un planeta nunca se escapa de una nave que
    * maniobra (250 m/s) y todos lo ven en el mismo sitio.
    */
   orbitSpeedRefMs: 25,
-  orbitSpeedRefRadiusM: 10_000_000,
+  orbitSpeedRefRadiusM: 150_000_000,
   /** Velocidad orbital de las lunas (m/s) en su primera órbita; las de fuera, más despacio. */
   moonOrbitSpeedMs: 12,
   /** Aceleración de la gravedad en la superficie de un cuerpo de 1 g (m/s²). */

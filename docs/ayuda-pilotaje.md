@@ -62,7 +62,7 @@ Dentro del sistema (o en el espacio profundo), la nave puede ir sola:
 - **Motor de pulso (P)**, al estilo del supercrucero: solo hacia delante y sin disparar. Se puede encender **siempre**, también junto a un planeta. Su velocidad máxima depende de lo cerca que estés del cuerpo más próximo (estrella o planeta):
   - pegado a un planeta y **de frente** hacia él, va despacio (unos cientos de m/s) y frena solo al acercarse;
   - si **te alejas** del planeta, el límite es varias veces mayor y la nave acelera de forma progresiva;
-  - en el espacio abierto llega hasta unos **2000 km/s**.
+  - en el espacio abierto llega hasta unos **30 000 km/s** (tras cargarse 5 s, acelera casi de golpe).
   
   Acelera y frena suavemente, sin saltos: cruzar el sistema de un planeta a otro lleva **uno o dos minutos**. El HUD muestra la velocidad, el límite actual del pulso y el **tiempo estimado** hasta el planeta seleccionado, la nave fijada o el cuerpo que tengas de frente. Al apagar el pulso, la nave frena en un par de segundos.
 - El pulso gasta **combustible** y algo de **energía**. Sin combustible no funciona.

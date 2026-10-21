@@ -15,10 +15,10 @@ export const PILOT_BOOST = FLIGHT_MODEL.boostFactor;
  * disparar. Se puede encender siempre, también junto a un planeta. Su velocidad
  * máxima depende de la distancia al cuerpo más cercano (cerca, cientos de m/s;
  * en el espacio abierto, hasta `PULSE_MAX_SPEED`) y de si se va hacia él o se
- * aleja. Acelera y frena de forma suave, nunca a saltos.
+ * aleja. Tras una carga de unos segundos acelera casi de golpe; frena suave.
  */
 export const PULSE_MIN_SPEED = 300;
-export const PULSE_MAX_SPEED = 2_000_000;
+export const PULSE_MAX_SPEED = 30_000_000;
 /**
  * Segundos "hasta la superficie" que deja el límite al ir de frente hacia un
  * cuerpo: la velocidad máxima es la distancia entre este tiempo. Así la nave
