@@ -522,6 +522,16 @@ export const INTEREST = {
   rangeLy: 400,
 } as const;
 
+/**
+ * Taller de la nave nodriza: cada minuto repara `hullPerMinute` de casco de
+ * cada nave dañada de su flota (fuera de batalla), con `alloysPerHull`
+ * aleaciones de la bodega de la flota por punto. Sin aleaciones, no repara.
+ */
+export const MOTHERSHIP_WORKSHOP = {
+  hullPerMinute: 25,
+  alloysPerHull: 0.25,
+} as const;
+
 /** Naves con las que empieza cada Emperador nuevo, como su primera flota. */
 export const STARTING_FLEET: readonly ShipClassId[] = ["explorer"];
 

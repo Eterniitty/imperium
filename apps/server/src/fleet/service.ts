@@ -1,11 +1,11 @@
-import { anyFleetSpeedLyPerHour, FLEET_TACTICS, getAnyShipClass, getShipClass, SHIP_PASSENGERS, type ShipClassId } from "@imperium/content";
+import { anyFleetSpeedLyPerHour, FLEET_TACTICS, getAnyShipClass, getShipClass, MOTHERSHIP_WORKSHOP, SHIP_CLASSES, SHIP_PASSENGERS, type ShipClassId } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import type { Cargo, CommandError, Fleet, FleetRoute, FleetTactic } from "@imperium/shared";
 import { isTravelling, travelDurationMs } from "@imperium/sim";
 import { and, asc, eq, inArray, isNull, lte, or } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { colonies, emperors, fleetCargo, fleetRoutes, fleets, ships } from "../db/schema";
+import { colonies, emperors, fleetCargo, fleetRoutes, fleets, resourceLedger, ships } from "../db/schema";
 import type { RemotePilot } from "../realtime/hub";
 import { findSystem, placeFromRow } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
@@ -193,6 +193,45 @@ export class FleetService {
     const slot = all.filter((f) => f.id !== fleetId && !f.travel && !f.battleId && f.location.systemId === systemId).length;
     const own = await this.db.select({ planetIndex: colonies.planetIndex }).from(colonies).where(and(eq(colonies.emperorId, emperorId), eq(colonies.systemId, systemId)));
     return { slot, colonyPlanet: own.length ? Math.min(...own.map((c) => c.planetIndex)) : null };
+  }
+
+  /**
+   * Taller de las naves nodriza (`MOTHERSHIP_WORKSHOP`, cada minuto): en cada
+   * flota con nodriza y fuera de batalla, repara el casco de sus naves dañadas
+   * con las aleaciones de su bodega. Devuelve las flotas que cambiaron.
+   */
+  async repairInMotherships(): Promise<Array<{ emperorId: string; fleetId: string }>> {
+    const motherIds = SHIP_CLASSES.filter((c) => c.dockFlagship).map((c) => c.id);
+    if (motherIds.length === 0) return [];
+    const holders = await this.db
+      .selectDistinct({ fleetId: fleets.id, emperorId: fleets.emperorId })
+      .from(fleets)
+      .innerJoin(ships, eq(ships.fleetId, fleets.id))
+      .where(and(inArray(ships.classId, motherIds), isNull(fleets.battleId)));
+    const changed: Array<{ emperorId: string; fleetId: string }> = [];
+    for (const h of holders) {
+      const did = await this.db.transaction(async (tx) => {
+        const [cargo] = await tx.select().from(fleetCargo).where(eq(fleetCargo.fleetId, h.fleetId)).for("update").limit(1);
+        if (!cargo || cargo.alloys <= 0) return false;
+        let alloys = cargo.alloys;
+        const list = await tx.select({ id: ships.id, classId: ships.classId, hull: ships.hull }).from(ships).where(eq(ships.fleetId, h.fleetId));
+        let any = false;
+        for (const s of list) {
+          const max = getShipClass(s.classId as ShipClassId)?.hull ?? s.hull;
+          const want = Math.min(max - s.hull, MOTHERSHIP_WORKSHOP.hullPerMinute, Math.floor(alloys / MOTHERSHIP_WORKSHOP.alloysPerHull));
+          if (want <= 0) continue;
+          alloys -= want * MOTHERSHIP_WORKSHOP.alloysPerHull;
+          await tx.update(ships).set({ hull: s.hull + want }).where(eq(ships.id, s.id));
+          any = true;
+        }
+        if (!any) return false;
+        await tx.update(fleetCargo).set({ alloys }).where(eq(fleetCargo.fleetId, h.fleetId));
+        await tx.insert(resourceLedger).values({ emperorId: h.emperorId, reason: "mothership_repair", ref: `fleet:${h.fleetId}`, alloys: alloys - cargo.alloys });
+        return true;
+      });
+      if (did) changed.push(h);
+    }
+    return changed;
   }
 
   /** Casco de una nave tras pilotarla a distancia. */

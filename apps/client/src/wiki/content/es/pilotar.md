@@ -103,6 +103,9 @@ La **nave nodriza** es la nave más grande que puedes construir (1600 m, en un d
 
 - Mientras estás acoplada la nave no se mueve por su cuenta; vuelve a pulsar [[Enter]] para salir. Si dejas de pilotar (por ejemplo, para abrir el mapa), tu nave sigue en el hangar.
 - Te desacoplas sola si la flota se pone en marcha o si tu nave se aleja.
+- **Taller**: la nodriza repara cada minuto el casco de las naves dañadas de su flota (fuera de batalla), con las aleaciones de la bodega de la flota.
+
+{{tabla:taller}}
 
 - **Viajar acoplado**: con tu nave en el hangar, abre el mapa ([[M]]) y da a la flota de la nodriza una orden de viaje. Viajas con ella por el túnel, sin gastar combustible, y llegas **todavía acoplado**, junto a la flota en el destino.
 

@@ -39,6 +39,7 @@ import {
   ALIEN_LOCAL,
   CORE_MILITIA,
   INTEREST,
+  MOTHERSHIP_WORKSHOP,
   FLEET_TACTIC_IDS,
   STAR_HEAT_LETHAL_DPS,
   FLEET_BATTLE,
@@ -513,6 +514,12 @@ export const GEN_TABLES: Record<string, Builder> = {
     }),
     numeric: [1, 2],
   }),
+
+  taller: (t, locale) =>
+    kv(t, [
+      ["wiki.k.workshopHull", `${num(locale, MOTHERSHIP_WORKSHOP.hullPerMinute)}/min`],
+      ["wiki.k.workshopAlloys", num(locale, MOTHERSHIP_WORKSHOP.alloysPerHull)],
+    ]),
 
   interes: (t, locale) => kv(t, [["wiki.k.interestRange", `${num(locale, INTEREST.rangeLy)} a.l.`]]),
 

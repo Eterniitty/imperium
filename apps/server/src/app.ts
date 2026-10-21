@@ -213,6 +213,16 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   space.onColony = (emperorId, colonyId) => void hub.publishColony(emperorId, colonyId);
   hub.sieges = sieges;
   app.addHook("onClose", async () => space.stop());
+  // Taller de las naves nodriza: repara las naves de su flota cada minuto.
+  const workshop = setInterval(() => {
+    void fleets.repairInMotherships().then(
+      (list) => {
+        for (const f of list) void hub.publishFleet(f.emperorId, f.fleetId);
+      },
+      (err: unknown) => app.log.error(err, "Error en el taller de las naves nodriza"),
+    );
+  }, 60_000);
+  app.addHook("onClose", async () => clearInterval(workshop));
   // Antes de cerrar conexiones: dejar de difundir y parar la cola de eventos, para que
   // nada use la base de datos mientras se apaga.
   app.addHook("preClose", async () => {
