@@ -1,6 +1,7 @@
 import { createStore } from "zustand/vanilla";
 import { contentDictionaries } from "@imperium/content";
 import { translate, type DeepRegionView, type Locale, type Quat, type RiftPhase, type ServerMessage, type ShipPose, type ShipState, type StockId, type Vec3, type WeaponKind } from "@imperium/shared";
+import { factionName } from "../ui/aliens";
 
 /**
  * Grieta del salto cuántico de otra nave, pendiente de dibujar. `jump`: la nave
@@ -104,7 +105,9 @@ export function shipName(state: Pick<ShipState, "kind" | "name" | "classId">, lo
   // Nave de flota pilotada a distancia: «Emperador · Fragata».
   if (state.kind === "fleet") {
     const cls = state.classId ? contentDictionaries[locale][`ship.${state.classId}.name`] : undefined;
-    return cls ? `${state.name} · ${cls}` : state.name;
+    // Nave alienígena: «Facción · clase».
+    const owner = state.name.startsWith("#alien:") ? factionName(locale, state.name.slice(7)) : state.name;
+    return cls ? `${owner} · ${cls}` : owner;
   }
   if (state.kind !== "pirate") return state.name;
   // «Carroñero · Arponero»: el pueblo y su clase de nave.

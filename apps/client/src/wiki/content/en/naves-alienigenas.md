@@ -19,4 +19,13 @@ Every ship is generated in 3D from its hull shape, length and engines, with the 
 
 Human ships have their own style: a light panelled hull, coloured stripes and blue flames (see [Human ships](/wiki/naves)).
 
-> [!dev] For now, the 3D models are seen on the Scavengers of local space and on the ships of fleet battles. Piloted combat against the other species will come with the ship AI.
+## In local space
+
+The ships of alien fleets waiting in a system **come out in 3D** when you fly there (the biggest ones, up to the cap in the table). They fly with the same pilot as the [Scavengers](/wiki/carroneros#how-they-fight): in packs, surrounding their prey, jinking and fleeing with low hull.
+
+- **They attack you if their faction is hostile to you** (by nature or by grudge; see [AI and territories](/wiki/ia-territorios)). Otherwise they leave you alone.
+- **If you shoot them**, that ship and its pack come after you from then on, and their faction holds a **grudge**.
+- Your [escorts](/wiki/pilotar#escorts) also attack hostile alien ships.
+- Whatever you destroy, their fleet really loses.
+
+{{tabla:alienigenas-local}}

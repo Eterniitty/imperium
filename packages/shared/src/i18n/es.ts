@@ -560,6 +560,8 @@ export const es = {
   "wiki.k.escortEngage": "Atacan a los Carroñeros a esta distancia de ti",
   "wiki.k.escortSpeed": "Velocidad de las escoltas",
   "wiki.k.escortCatchUp": "Se reúnen de un salto si se quedan a más de",
+  "wiki.k.alienLocalMax": "Naves alienígenas en 3D por sistema",
+  "wiki.k.alienGrudgeAttack": "Rencor por disparar a una de sus naves",
   "wiki.k.heatLethal": "Zona mortal (aviso y corte del pulso) desde",
   "wiki.col.heatZone": "Zona de calor (radios estelares)",
   "wiki.col.heatSurface": "Daño en la superficie",

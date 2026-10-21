@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { distance, isDeepId, translate, type I18nKey, type SectorCoord, type StarSystemSummary, type WorldPosition } from "@imperium/shared";
-import { naturalCause } from "../ui/deathCause";
+import { killerLabel, naturalCause } from "../ui/deathCause";
 import { isTravelling, positionAt, quantumFuelCost, regenFuel } from "@imperium/sim";
 import { STAR_CLASSES } from "@imperium/procgen";
 import { spaceStore } from "../net/space";
@@ -423,7 +423,7 @@ export class Engine {
       this.system.explodeOwnShip();
       const cause = naturalCause(destroyed.by);
       if (cause) this.notify(cause.notice);
-      else this.notify("combat.destroyed", { by: destroyed.by || translate(gameStore.getState().locale, "npc.pirate") });
+      else this.notify("combat.destroyed", { by: killerLabel(destroyed.by, gameStore.getState().locale) });
     }
     const emperor = this.emperor();
     const now = performance.now();

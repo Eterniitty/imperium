@@ -452,6 +452,12 @@ export class AlienService {
     await this.addGrudge(tx, emperorId, factionId, ALIEN_SIEGE.grudge);
   }
 
+  /** Un Emperador disparó a una nave de la facción en el espacio local (Fase 9d): rencor. */
+  async onLocalAttack(emperorId: string, factionId: string): Promise<void> {
+    if (!getFaction(factionId)) return;
+    await this.db.transaction((tx) => this.addGrudge(tx, emperorId, factionId, ALIEN_AI.grudge.attack));
+  }
+
   /** Interceptar una flota alienígena: rencor de su facción (lo llama `WarService`). */
   async onIntercept(tx: Tx, emperorId: string, factionId: string): Promise<void> {
     await this.addGrudge(tx, emperorId, factionId, ALIEN_AI.grudge.intercept);

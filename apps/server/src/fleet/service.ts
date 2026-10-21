@@ -2,7 +2,7 @@ import { anyFleetSpeedLyPerHour, FLEET_TACTICS, getAnyShipClass, getShipClass, S
 import { universeSeedFromString } from "@imperium/procgen";
 import type { Cargo, CommandError, Fleet, FleetRoute, FleetTactic } from "@imperium/shared";
 import { isTravelling, travelDurationMs } from "@imperium/sim";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lte, or } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
 import { colonies, emperors, fleetCargo, fleetRoutes, fleets, ships } from "../db/schema";
@@ -161,6 +161,26 @@ export class FleetService {
       }
     }
     return out.sort((a, b) => b.size - a.size || (a.shipId < b.shipId ? -1 : 1)).slice(0, max).map(({ size: _size, ...e }) => e);
+  }
+
+  /**
+   * Naves de las flotas alienígenas paradas en un sistema (fuera de batalla),
+   * para sacarlas al espacio local; las más grandes primero, como mucho `max`.
+   */
+  async alienShipsIn(systemId: string, max: number): Promise<Array<{ actorId: string; factionId: string; fleetId: string; shipId: string; classId: string; hull: number }>> {
+    const now = new Date(this.now());
+    const rows = await this.db
+      .select({ actorId: fleets.emperorId, factionId: emperors.factionId, fleetId: fleets.id, shipId: ships.id, classId: ships.classId, hull: ships.hull })
+      .from(fleets)
+      .innerJoin(emperors, eq(emperors.id, fleets.emperorId))
+      .innerJoin(ships, eq(ships.fleetId, fleets.id))
+      .where(and(eq(emperors.kind, "alien"), isNull(fleets.battleId), or(and(isNull(fleets.destSystemId), eq(fleets.systemId, systemId)), and(eq(fleets.destSystemId, systemId), lte(fleets.arriveAt, now)))));
+    return rows
+      .filter((r): r is typeof r & { factionId: string } => r.factionId !== null)
+      .map((r) => ({ ...r, size: getAnyShipClass(r.classId)?.hull ?? 0 }))
+      .sort((a, b) => b.size - a.size || (a.shipId < b.shipId ? -1 : 1))
+      .slice(0, max)
+      .map(({ size: _size, ...r }) => r);
   }
 
   /** Casco de una nave tras pilotarla a distancia. */

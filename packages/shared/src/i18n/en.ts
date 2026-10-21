@@ -558,6 +558,8 @@ export const en: Record<I18nKey, string> = {
   "wiki.k.escortEngage": "They attack Scavengers within this distance of you",
   "wiki.k.escortSpeed": "Escort speed",
   "wiki.k.escortCatchUp": "They rejoin in one jump if further behind than",
+  "wiki.k.alienLocalMax": "Alien ships in 3D per system",
+  "wiki.k.alienGrudgeAttack": "Grudge for shooting one of their ships",
   "wiki.k.heatLethal": "Lethal zone (warning and pulse cut) from",
   "wiki.col.heatZone": "Heat zone (stellar radii)",
   "wiki.col.heatSurface": "Damage at the surface",

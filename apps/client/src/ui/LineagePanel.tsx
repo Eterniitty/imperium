@@ -4,7 +4,7 @@ import type { Colony, HeirDoctrineId, HeirView, I18nKey, LineageStatus } from "@
 import { connection, useWorld } from "../net/world";
 import { gameStore, useGame, useT } from "../state/store";
 import { fmtInt } from "./colonies";
-import { naturalCause } from "./deathCause";
+import { killerLabel, naturalCause } from "./deathCause";
 import { formatDuration, useServerNow } from "./useNow";
 
 type Run = (op: Promise<I18nKey | null>) => void;
@@ -66,6 +66,7 @@ export function LineagePanel() {
 
 function LineageBody({ lineage }: { lineage: LineageStatus }) {
   const t = useT();
+  const locale = useGame((s) => s.locale);
   const now = useServerNow();
   const colonies = useWorld((s) => s.colonies);
   const { busy, error, run } = useRunner();
@@ -154,7 +155,7 @@ function LineageBody({ lineage }: { lineage: LineageStatus }) {
                 <td>
                   {d.systemName} <span className="muted small">({t(d.cause === "battle" ? "lineage.cause.battle" : "lineage.cause.combat")})</span>
                 </td>
-                <td>{d.by === null ? "—" : naturalCause(d.by) ? t(naturalCause(d.by)!.short) : d.by || t("npc.pirate")}</td>
+                <td>{d.by === null ? "—" : naturalCause(d.by) ? t(naturalCause(d.by)!.short) : killerLabel(d.by, locale)}</td>
                 <td className="mono">{d.streak}</td>
                 <td>{d.rebirthKind ? t(`lineage.kind.${d.rebirthKind}`) : t("lineage.kind.pending")}</td>
               </tr>

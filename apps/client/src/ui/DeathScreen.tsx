@@ -5,7 +5,7 @@ import { spaceStore } from "../net/space";
 import { connection, useWorld } from "../net/world";
 import { gameStore, useGame, useT } from "../state/store";
 import { Meter } from "./common";
-import { naturalCause } from "./deathCause";
+import { killerLabel, naturalCause } from "./deathCause";
 import { formatDuration, useServerNow } from "./useNow";
 
 /**
@@ -16,6 +16,7 @@ import { formatDuration, useServerNow } from "./useNow";
  */
 export function DeathScreen() {
   const t = useT();
+  const locale = useGame((s) => s.locale);
   const lineage = useWorld((s) => s.lineage);
   const destroyed = useStore(spaceStore, (s) => s.destroyed);
   const view = useGame((s) => s.view);
@@ -38,7 +39,7 @@ export function DeathScreen() {
       <div className="death-card panel">
         <h2 id="death-title">{t("lineage.dead.title")}</h2>
         <p className="death-law">{t("lineage.dead.law")}</p>
-        {by !== null && <p>{naturalCause(by) ? t(naturalCause(by)!.dead) : t("lineage.dead.by", { by: by || t("npc.pirate") })}</p>}
+        {by !== null && <p>{naturalCause(by) ? t(naturalCause(by)!.dead) : t("lineage.dead.by", { by: killerLabel(by, locale) })}</p>}
         <p>{place}</p>
         <div className="death-timer">
           <span className="stat-label">{t("lineage.dead.gestation")}</span>

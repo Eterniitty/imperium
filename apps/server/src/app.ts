@@ -147,6 +147,11 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   // Espacio profundo: contenido secreto de las regiones y minería de sus asteroides.
   space.deep = new DeepSpaceService(deps.db, config);
   space.onFleetCargo = (emperorId, fleetId) => void hub.publishFleet(emperorId, fleetId);
+  // Naves alienígenas en el espacio local: hostilidad de su facción y rencor si se les dispara.
+  space.aliens = {
+    hostile: (factionId, emperorId) => aliens.isHostileTo(deps.db, factionId, emperorId),
+    provoked: (factionId, emperorId) => aliens.onLocalAttack(emperorId, factionId),
+  };
   // Naves de flota pilotadas a distancia: su casco vuelve a la flota; si caen, la flota la pierde.
   space.fleetShips = {
     saveHull: async (emperorId, fleetId, shipId, hull) => {
@@ -158,6 +163,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
       await hub.publishFleet(emperorId, fleetId);
     },
     escorts: (emperorId, systemId, max) => fleets.escorts(emperorId, systemId, max),
+    aliensIn: (systemId, max) => fleets.alienShipsIn(systemId, max),
   };
   // Fase 10: muerte y linaje (Cunas, gestación, Herederos y encarnación).
   const lineage = new LineageService(deps.db, config, colonies, app.log);

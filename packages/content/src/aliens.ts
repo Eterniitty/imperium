@@ -351,6 +351,19 @@ export const ESCORT = {
   aimJitter: 0.03,
 } as const;
 
+/**
+ * Naves alienígenas en el espacio local (Fase 9d): las de las flotas de una
+ * facción paradas en el sistema salen en 3D (hasta `maxShips` por sistema) y
+ * vuelan con el mismo piloto que los Carroñeros; atacan a quien su facción es
+ * hostil o a quien les dispare. `aimJitter`: su error de puntería (radianes).
+ */
+export const ALIEN_LOCAL = {
+  maxShips: 8,
+  aimJitter: 0.035,
+  /** Segundos que vale la hostilidad consultada de una facción hacia un Emperador. */
+  hostilityCacheSec: 30,
+} as const;
+
 /** Nivel de peligro de los Carroñeros de un sistema (según su distancia al Núcleo Humano). */
 export interface ScavengerDangerLevel {
   /** Anillo mínimo (distancia al Núcleo en sectores, como en el territorio). */
@@ -441,6 +454,8 @@ export const ALIEN_AI = {
     hostileAt: 1,
     /** Interceptar una de sus flotas. */
     intercept: 1,
+    /** Disparar a una de sus naves en el espacio local (una vez por nave y Emperador). */
+    attack: 1,
     /** Rencor que se olvida por día de juego. */
     decayPerDay: 0.25,
     /** Créditos de tributo que borran un punto de rencor (diplomacia básica). */

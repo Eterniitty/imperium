@@ -36,6 +36,7 @@ import {
   FLEET_TACTICS,
   PROBE,
   ESCORT,
+  ALIEN_LOCAL,
   FLEET_TACTIC_IDS,
   STAR_HEAT_LETHAL_DPS,
   FLEET_BATTLE,
@@ -510,6 +511,12 @@ export const GEN_TABLES: Record<string, Builder> = {
     }),
     numeric: [1, 2],
   }),
+
+  "alienigenas-local": (t, locale) =>
+    kv(t, [
+      ["wiki.k.alienLocalMax", num(locale, ALIEN_LOCAL.maxShips)],
+      ["wiki.k.alienGrudgeAttack", num(locale, ALIEN_AI.grudge.attack)],
+    ]),
 
   escoltas: (t, locale) =>
     kv(t, [

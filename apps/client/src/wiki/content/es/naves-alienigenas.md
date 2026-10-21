@@ -19,4 +19,13 @@ Cada nave se genera en 3D a partir de su forma de casco, su eslora y sus motores
 
 Las naves humanas usan su propio estilo: casco claro de paneles, franjas de color y llamas azules (ver [Naves humanas](/wiki/naves)).
 
-> [!dev] Por ahora, en 3D se ven los Carroñeros del espacio local y las naves de las batallas de flotas. El combate pilotado contra las demás especies llegará con la IA de naves.
+## En el espacio local
+
+Las naves de las flotas alienígenas que esperan en un sistema **salen en 3D** cuando pilotas allí (las más grandes, hasta el tope de la tabla). Vuelan con el mismo piloto que los [Carroñeros](/wiki/carroneros#como-pelean): en manada, rodeando a su presa, esquivando y huyendo con el casco bajo.
+
+- **Te atacan si su facción te es hostil** (por naturaleza o por rencor; ver [IA y territorios](/wiki/ia-territorios)). Si no, te dejan en paz.
+- **Si les disparas**, esa nave y su manada van a por ti desde ese momento, y su facción te guarda **rencor**.
+- Tus [escoltas](/wiki/pilotar#escoltas) atacan también a las naves alienígenas hostiles.
+- Lo que destruyas, su flota lo pierde de verdad.
+
+{{tabla:alienigenas-local}}
