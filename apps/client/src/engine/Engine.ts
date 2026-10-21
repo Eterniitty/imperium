@@ -239,6 +239,23 @@ export class Engine {
     if (this.inBackground()) this.system.skipQuantumAhead();
   }
 
+  /** Piloto automático de crucero (al pilotar): destinos posibles, destino actual, activar y cancelar. */
+  cruiseOptions() {
+    return this.isPiloting ? this.system.cruiseOptions() : [];
+  }
+
+  get cruiseTarget() {
+    return this.isPiloting ? this.system.cruiseTarget : null;
+  }
+
+  cruiseTo(id: string): void {
+    if (this.isPiloting) this.system.cruiseTo(id);
+  }
+
+  cancelCruise(): void {
+    this.system.cancelCruise("cruise.cancelled");
+  }
+
   /** El motor cuántico está cargado: orden de salto; si el servidor la acepta, al túnel. */
   private async quantumJump(target: StarSystemSummary, near: string | null): Promise<void> {
     const error = await authStore.getState().moveEmperor(target.id, near);

@@ -4,6 +4,8 @@ import { gameStore, useGame, useT } from "../state/store";
 import { ownColonyAt, planetLabel } from "./colonies";
 import { Deposits, DepositChips, Meter, RESOURCE_COLORS } from "./common";
 import { PlanetColony } from "./PlanetColony";
+import { engineRef } from "../engineRef";
+import { useKeyLabels } from "./keys";
 
 export function PlanetPanel() {
   const t = useT();
@@ -13,6 +15,9 @@ export function PlanetPanel() {
   const selectedPlanet = useGame((s) => s.selectedPlanet);
   const colonies = useWorld((s) => s.colonies);
   const claims = useClaims();
+  // Pilotando en este sistema: el planeta elegido se puede usar como destino del piloto automático.
+  const piloting = useGame((s) => s.flight && s.view === "system");
+  const keys = useKeyLabels();
   if (!detail) {
     // Sin explorar (o el detalle aún no ha llegado): solo se sabe la estrella.
     if (!selected) return null;
@@ -63,6 +68,11 @@ export function PlanetPanel() {
         <div className="planet-detail">
           <h3>{label(planet)}</h3>
           <div className="muted">{t(`planet.${planet.type}`)}</div>
+          {piloting && (
+            <button className="btn small" onClick={() => engineRef.current?.cruiseTo(`planet:${planet.index}`)}>
+              {t("cruise.goHere", { key: keys.cruise })}
+            </button>
+          )}
           <dl className="facts">
             <dt>{t("system.orbit")}</dt>
             <dd className="mono">

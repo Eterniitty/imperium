@@ -54,6 +54,16 @@ El motor de pulso ([[P]], encender y apagar) es un **supercrucero** para cruzar 
 - Acelera y frena **de forma suave**. El panel de abajo muestra el límite actual y el **tiempo estimado** hasta el planeta seleccionado, la nave fijada o el cuerpo que tienes de frente.
 - Gasta **combustible** y algo de **energía**: sin combustible no funciona.
 
+## Piloto automático de crucero
+
+Dentro de un sistema (o de una región de espacio profundo) la nave puede ir sola a un sitio o seguir a otra nave. Mueve los mismos mandos que tú —giros, propulsores, impulso y pulso—, así que va a las mismas velocidades y los demás la ven volar con normalidad.
+
+- **Elegir destino**: [[N]] abre la lista con los planetas, las lunas, los cinturones de asteroides, la anomalía del sistema y, en el espacio profundo, los asteroides más cercanos, además de las naves a la vista (primero tus [compañeros](/wiki/companeros)). También puedes pulsar **Crucero hasta aquí** en el panel del planeta seleccionado o hacer **doble clic** en la vista sobre un planeta, una luna, una nave o un punto vacío del plano del sistema (un punto marcado).
+- **Ir a un sitio**: la nave se orienta, enciende el pulso si el destino está lejos (y lo modera para frenar a tiempo), lo apaga cerca y termina con los propulsores hasta **detenerse a una distancia segura** (sobre un planeta o una luna, a la mitad de su radio de altura, entre 5 y 120 km; junto a un asteroide, a tiro del láser de minería). Rodea la estrella, los planetas y las lunas que se crucen en el camino. Al llegar se desactiva y te avisa.
+- **Seguir una nave**: [[H]] sigue a la nave fijada ([[X]]) o, si no hay, a la nave a la vista más cercana (primero los compañeros); pulsarla otra vez pasa a la siguiente. La tuya se pone en formación detrás y a un lado, igualando su velocidad (con pulso si ella lo lleva). Si salta fuera del sistema o deja de verse, el piloto automático se desactiva con un aviso.
+- **Cancelar**: [[N]], Esc o **cualquier mando de pilotaje** (moverse, girar, impulso, pulso, motores; en vuelo con ratón, mover el cursor fuera de la zona muerta). Un aviso en el HUD muestra el modo, el destino, la distancia y la tecla para cancelar.
+- Si los motores están apagados, se arrancan solos. Sin combustible, va solo con los propulsores (mucho más despacio). Disparar y minar no lo cancelan.
+
 ## Gravedad
 
 Los planetas, las lunas y la estrella **atraen la nave**, pero solo dentro de su **esfera de influencia** (unas ocho veces su radio, más si tiene lunas): en el espacio entre planetas no hay gravedad y no caes hacia nada. El HUD muestra la región en la que estás:
