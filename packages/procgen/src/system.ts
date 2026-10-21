@@ -23,7 +23,7 @@ function richness(rng: Rng, min: number, max: number): Richness {
 }
 
 /** Rangos [mín, máx] de riqueza de metal y volátiles por tipo de cuerpo. */
-const DEPOSIT_TABLE: Record<PlanetType, { metal: [number, number]; volatiles: [number, number] }> = {
+export const DEPOSIT_TABLE: Record<PlanetType, { metal: [number, number]; volatiles: [number, number] }> = {
   lava: { metal: [2, 3], volatiles: [0, 0] },
   barren: { metal: [1, 3], volatiles: [0, 0] },
   rocky: { metal: [1, 2], volatiles: [0, 1] },

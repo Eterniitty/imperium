@@ -1,12 +1,15 @@
 import { LEGAL_PAGES } from "@imperium/shared";
 import { useGame, useT } from "../state/store";
 
-/** Enlaces a las páginas legales (se abren en otra pestaña para no perder la partida). */
+/** Enlaces a la Wiki y a las páginas legales (se abren en otra pestaña para no perder la partida). */
 export function LegalLinks() {
   const t = useT();
   const pages = LEGAL_PAGES[useGame((s) => s.locale)];
   return (
     <nav className="legal-links">
+      <a href="/wiki/" target="_blank" rel="noopener" title={t("wiki.openTitle")}>
+        {t("wiki.title")}
+      </a>
       <a href={pages.terms} target="_blank" rel="noopener">
         {t("legal.terms")}
       </a>

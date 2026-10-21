@@ -178,6 +178,7 @@ kbd {
   transition: border-color 0.15s, background 0.15s;
 }
 .btn:hover { border-color: rgba(63, 208, 255, 0.55); background: rgba(30, 48, 80, 0.8); }
+a.btn-link { color: inherit; text-decoration: none; }
 .btn:disabled, .btn:disabled:hover { opacity: 0.45; cursor: not-allowed; border-color: var(--panel-border); background: rgba(20, 30, 50, 0.6); }
 .btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 .btn-primary {

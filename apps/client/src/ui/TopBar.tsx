@@ -128,6 +128,10 @@ export function TopBar() {
           </div>
         )}
         <ServerStatus />
+        {/* La Wiki es una página aparte: en otra pestaña, para no perder la partida. */}
+        <a className="btn btn-link" href="/wiki/" target="_blank" rel="noopener" title={t("wiki.openTitle")}>
+          {t("wiki.open")}
+        </a>
         <button className="icon-btn" onClick={() => gameStore.getState().setSettingsOpen(true)} aria-label={t("settings.open")} title={t("settings.title")}>
           ⚙
         </button>

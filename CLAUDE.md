@@ -23,6 +23,7 @@ Idioma de trabajo: **español** (código y comentarios en español; identificado
 - Legal (Alemania/RGPD): páginas estáticas en `apps/client/public/legal/` (es/en: aviso legal, privacidad, términos), servidas sin `basicauth`. Al pedir enlace se aceptan (versión `LEGAL_VERSION` en `packages/shared/src/api.ts`: súbela si cambias esos textos). Ajustes → Cuenta permite descargar los datos (`GET /api/account/export`) y borrar la cuenta (`POST /api/account/delete`). Si añades tablas con datos de un jugador, inclúyelas en la exportación y comprueba que se borran en cascada.
 - Legal completo (21-10-2026): contrato de encargo (art. 28) firmado con Hetzner; los de Cloudflare y Brevo van incluidos en sus condiciones. Datos del responsable en las páginas legales: {{LEGAL_NAME}}, {{LEGAL_STREET}}, {{LEGAL_CITY}}, {{LEGAL_EMAIL}}.
 - Copias de seguridad: diarias y **solo en local** (`~/backups/aeonarch/`, 14 días, temporizador de usuario `aeonarch-backup`). El usuario no quiere copias en GitHub.
+- **Wiki** (`/wiki`, página aparte del juego, segunda entrada de Vite `apps/client/wiki/index.html`): al compilar se copia a `dist/wiki/<tema>/index.html` por artículo, así Caddy la sirve como archivos estáticos (detrás del `basicauth`, como el juego) sin cambiar el Caddyfile. Enlazada desde la barra superior y la portada.
 - Diseño de la IA de naves (Fase 9d: pilotaje, tácticas de grupo, emboscadas, Carroñeros, milicia y Emperadores humanos de la IA) en `docs/ia-naves.md`. El usuario quiere una IA buena y completa.
 
 - El cliente aún genera el mapa estelar (posiciones y clases de estrella) localmente; servidor y cliente deben usar la misma semilla (`UNIVERSE_SEED` / `VITE_UNIVERSE_SEED`).
@@ -48,6 +49,7 @@ Idioma de trabajo: **español** (código y comentarios en español; identificado
    - `pnpm e2e` completo (~15 min: resoluciones, planetas, multijugador, colonias) solo al cerrar una fase o si se toca el motor 3D, la interfaz general o el multijugador; mejor en segundo plano mientras se sigue trabajando. Mira las capturas si cambió la interfaz.
 7. Nunca subas credenciales. `.env` está en `.gitignore`; las variables se documentan en `.env.example`.
 8. Commits en español, descriptivos.
+9. **Cada sistema nuevo o cambiado se documenta en la Wiki** (`/wiki`): artículos en `apps/client/src/wiki/content/es/*.md` y `en/*.md` (los dos idiomas), índice en `apps/client/src/wiki/slugs.ts`. Las cifras no se copian a mano: se muestran con tablas generadas desde `packages/content` (`apps/client/src/wiki/tables.ts`, `{{tabla:<id>}}`). Lo que aún no existe se marca con `> [!dev]` («En desarrollo»). `apps/client/test/wiki.test.ts` comprueba idiomas, enlaces y tablas.
 
 ## Servidor de producción (Hetzner CPX22, Ubuntu 26.04)
 - Usuario de trabajo: `imperium` (sudo con contraseña). Root bloqueado por SSH; solo clave SSH.

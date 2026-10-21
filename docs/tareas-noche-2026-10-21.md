@@ -22,7 +22,7 @@ Copia inicial: `proyecto/imperium-20261021-051653-antes-noche.tar.gz` + `imperiu
 
 ## Después (orquestador)
 - [ ] Copia de seguridad → fusionar rama de pilotaje en `main`, typecheck y `pnpm test`.
-- [ ] Ventana de ayuda detallada (economía con números reales, controles, combate, logística, lore,
+- [x] Ventana de ayuda detallada (sustituida por la Wiki, ver abajo) (economía con números reales, controles, combate, logística, lore,
       pilotaje nuevo). Se paró para respetar el límite de dos agentes; se relanza al quedar un hueco.
 - [ ] Tipos de nave (ver Agente 1, punto 3).
 - [ ] `pnpm build`, `pnpm e2e` completo (cierre de fase y cambios en motor 3D), revisar capturas.
@@ -31,9 +31,11 @@ Copia inicial: `proyecto/imperium-20261021-051653-antes-noche.tar.gz` + `imperiu
 
 ## Ampliación del usuario (05:25): seguir mejorando el juego sin esperar órdenes
 En orden, siempre de dos en dos agentes, con copia antes de cada cambio grande:
-- [ ] **Wiki** (se llama «Wiki», no «Ayuda»): página propia y separada del juego (ruta `/wiki`,
+- [x] **Wiki** (se llama «Wiki», no «Ayuda»): página propia y separada del juego (ruta `/wiki`,
       también enlazada desde la barra superior), con todo detallado: controles, pilotaje, combate,
       economía, logística, guerra, especies, IA, lore. Se actualiza con cada sistema nuevo.
+      Hecha: `/wiki` y `/wiki/<tema>/` (16 artículos es/en, tablas generadas desde `packages/content`,
+      buscador, móvil); regla añadida en CLAUDE.md. El artículo «Pilotar» se ampliará al fusionar el pilotaje nuevo.
 - [ ] **Economía de la humanidad y global**: además de la de cada colonia, una economía de toda la
       humanidad (agregados, impuestos/aportes al Núcleo Humano, proyectos comunes) y un mercado
       global entre jugadores e IA (precios por oferta y demanda, comercio entre sistemas).

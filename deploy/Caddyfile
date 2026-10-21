@@ -30,6 +30,8 @@ aeonarch.de, www.aeonarch.de {
 		}
 	}
 
+	# La Wiki (/wiki/, /wiki/<tema>/) son archivos del cliente compilado
+	# (wiki/<tema>/index.html): no necesita reglas propias y queda tras basicauth.
 	# Todo lo demás: el cliente compilado. Los archivos con huella en el nombre
 	# (assets/*) no cambian nunca: caché larga en Cloudflare y en el navegador.
 	@assets path /assets/*
