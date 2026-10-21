@@ -327,4 +327,18 @@ export interface ShipCombat {
   shieldRegenPerSec: number;
   shieldDelaySec: number;
   weapons: WeaponDefinition[];
+  /**
+   * Bocas de los cañones y lanzadores de misiles, en metros respecto al centro de
+   * la nave (x derecha, y arriba, -z hacia el morro). Los disparos salen de ahí,
+   * alternando entre las de cada arma; sin ellos, del centro.
+   */
+  hardpoints?: ShipHardpoints;
+}
+
+/** Desplazamiento en metros en los ejes de la nave. */
+export type Offset3 = readonly [number, number, number];
+
+export interface ShipHardpoints {
+  cannon: readonly Offset3[];
+  missile: readonly Offset3[];
 }

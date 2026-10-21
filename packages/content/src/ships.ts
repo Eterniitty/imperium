@@ -1,4 +1,29 @@
-import type { ShipClassDefinition, ShipClassId, ShipCombat, WeaponDefinition } from "./types";
+import type { ShipClassDefinition, ShipClassId, ShipCombat, ShipHardpoints, WeaponDefinition } from "./types";
+
+/**
+ * Bocas de fuego de la nave insignia (la misma forma para todos los Emperadores):
+ * dos cañones en las raíces de las alas y dos lanzadores bajo ellas. En metros;
+ * el modelo 3D del cliente pone los cañones y los lanzadores justo ahí.
+ */
+export const FLAGSHIP_HARDPOINTS: ShipHardpoints = {
+  cannon: [
+    [9.6, -1.4, -21],
+    [-9.6, -1.4, -21],
+  ],
+  missile: [
+    [15.5, -2.6, 3],
+    [-15.5, -2.6, 3],
+  ],
+};
+
+/** Bocas de fuego escaladas (los piratas usan el mismo casco, más pequeño). */
+function scaledHardpoints(h: ShipHardpoints, k: number): ShipHardpoints {
+  const s = (o: readonly number[]) => [o[0]! * k, o[1]! * k, o[2]! * k] as const;
+  return { cannon: h.cannon.map(s), missile: h.missile.map(s) };
+}
+
+/** Escala del casco de los asaltantes Carroñeros respecto a la nave insignia. */
+export const PIRATE_MODEL_SCALE = 0.75;
 
 /** Cañón estándar: ráfagas rápidas, sin límite de munición. */
 const CANNON: WeaponDefinition = { kind: "cannon", damage: 14, cooldownSec: 0.2, rangeU: 2000, speedU: 1500, ammo: null, ammoRegenSec: null };
@@ -101,7 +126,7 @@ export const EMPEROR_FLAGSHIP: {
   speedLyPerHour: 200,
   scannerRangeLy: 15,
   hull: 400,
-  combat: { shield: 200, shieldRegenPerSec: 20, shieldDelaySec: 4, weapons: [CANNON, MISSILE] },
+  combat: { shield: 200, shieldRegenPerSec: 20, shieldDelaySec: 4, weapons: [CANNON, MISSILE], hardpoints: FLAGSHIP_HARDPOINTS },
 };
 
 /**
@@ -169,5 +194,6 @@ export const PIRATE_RAIDER: {
     shieldRegenPerSec: 6,
     shieldDelaySec: 4,
     weapons: [{ kind: "cannon", damage: 7, cooldownSec: 0.45, rangeU: 1800, speedU: 1300, ammo: null, ammoRegenSec: null }],
+    hardpoints: scaledHardpoints(FLAGSHIP_HARDPOINTS, PIRATE_MODEL_SCALE),
   },
 };

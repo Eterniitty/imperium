@@ -24,6 +24,8 @@ export class Combatant {
   shield: number;
   lastHitAt = 0;
   readonly weapons = new Map<WeaponKind, WeaponState>();
+  /** Siguiente boca de fuego de cada arma (se alternan). */
+  private readonly muzzles = new Map<WeaponKind, number>();
 
   constructor(
     readonly hullMax: number,
@@ -61,6 +63,19 @@ export class Combatant {
     w.readyAt = now + w.def.cooldownSec * 1000;
     if (w.ammo !== null) w.ammo--;
     return w.def;
+  }
+
+  /**
+   * Boca de la que sale el siguiente disparo de un arma y su desplazamiento
+   * (metros, en ejes de la nave). Sin bocas definidas, del centro.
+   */
+  nextMuzzle(kind: WeaponKind): { index: number; offset: Vec3 } {
+    const list = this.combat.hardpoints?.[kind] ?? [];
+    if (list.length === 0) return { index: 0, offset: [0, 0, 0] };
+    const index = (this.muzzles.get(kind) ?? 0) % list.length;
+    this.muzzles.set(kind, index + 1);
+    const o = list[index]!;
+    return { index, offset: [o[0], o[1], o[2]] };
   }
 
   weaponsView(now: number) {
@@ -101,6 +116,17 @@ export class Combatant {
 export function normalize(v: Vec3): Vec3 | null {
   const l = Math.hypot(v[0], v[1], v[2]);
   return l > 1e-6 ? [v[0] / l, v[1] / l, v[2] / l] : null;
+}
+
+/** Gira el vector `v` con el cuaternión `q` (x, y, z, w). */
+export function rotate(q: Quat, v: Vec3): Vec3 {
+  const [qx, qy, qz, qw] = q;
+  const [vx, vy, vz] = v;
+  // t = 2 · (q × v); v' = v + w·t + q × t
+  const tx = 2 * (qy * vz - qz * vy);
+  const ty = 2 * (qz * vx - qx * vz);
+  const tz = 2 * (qx * vy - qy * vx);
+  return [vx + qw * tx + (qy * tz - qz * ty), vy + qw * ty + (qz * tx - qx * tz), vz + qw * tz + (qx * ty - qy * tx)];
 }
 
 /** Dirección del morro de una nave: (0, 0, -1) rotado por su orientación. */

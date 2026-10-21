@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
-import type { I18nKey, StarSystemDetail } from "@imperium/shared";
+import type { I18nKey, StarSystemDetail, WeaponKind } from "@imperium/shared";
 import { PILOT_BOOST, PILOT_SPEED, planetAngle, pulseLimitAt, systemLayout, type PlanetLayout, type SystemLayout } from "@imperium/sim";
 import { resetSpace, shipName, spaceStore } from "../net/space";
 import { telemetry, type FlightTelemetry } from "./telemetry";
@@ -15,7 +15,7 @@ import { gameStore } from "../state/store";
 import { Backdrop } from "./Backdrop";
 import { FlightController } from "./FlightController";
 import type { Keyboard } from "./input";
-import { createFlagship, disposeShip, SHIP_SCALE } from "./shipModel";
+import { createFlagship, disposeShip, SHIP_SCALE, shipRig } from "./shipModel";
 import { glowTexture, labelTexture, ringTexture } from "./textures";
 import { CORONA_SCALE, createAtmosphereMaterial, createBodyUniforms, createCoronaMaterial, createPlanetMaterial, createRingMaterial, createStarSurfaceMaterial } from "./bodyMaterials";
 import { bodyDetailFor, bodySegments, planetLook } from "./planetLook";
@@ -92,7 +92,12 @@ export class SystemView implements View {
   private starName = "";
   private poseTimer = 0;
   private remote = new RemoteShips();
-  private effects = new Effects(() => worldStore.getState().myEmperorId);
+  private effects = new Effects(
+    () => worldStore.getState().myEmperorId,
+    (id, weapon, index) => (id === worldStore.getState().myEmperorId ? this.ownMuzzle(weapon, index) : this.remote.muzzleOf(id, weapon, index)),
+  );
+  /** Siguiente cañón propio (se alternan, igual que en el servidor). */
+  private cannonIndex = 0;
   private targetRing: THREE.Sprite;
   /** Cadencia local del cañón: no se envían disparos que el servidor rechazaría. */
   private cannonReadyAt = 0;
@@ -485,6 +490,15 @@ export class SystemView implements View {
     this.cannonReadyAt = now + cannon.cooldownSec * 1000;
     const f = this.forward();
     connection.send({ t: "fire", weapon: "cannon", dir: [f.x, f.y, f.z] });
+    // Se dibuja ya, desde la boca del cañón, con la velocidad de la nave sumada (como en el servidor).
+    const muzzle = this.ownMuzzle("cannon", this.cannonIndex++);
+    const speed = cannon.speedU + Math.max(0, this.flight!.velocity.dot(f));
+    if (muzzle) this.effects.fireLocal(muzzle, f, speed, cannon.rangeU, serverNow());
+  }
+
+  /** Boca de un arma de la nave propia, en el mundo. */
+  private ownMuzzle(weapon: WeaponKind, index: number): THREE.Vector3 | null {
+    return this.ship ? shipRig(this.ship).muzzle(weapon, index, new THREE.Vector3()) : null;
   }
 
   /** Lanza un misil al objetivo fijado (el servidor comprueba alcance, ángulo y munición). */
@@ -512,7 +526,7 @@ export class SystemView implements View {
   private updateCombatVisuals(dt: number): void {
     const state = spaceStore.getState();
     if (state.shots.length || state.explosions.length) {
-      for (const s of state.shots) this.effects.add(s);
+      for (const s of state.shots) this.effects.add(s, serverNow());
       for (const e of state.explosions) this.effects.explode(e);
       spaceStore.setState({ shots: [], explosions: [] });
     }
@@ -644,7 +658,10 @@ export class SystemView implements View {
       this.collide();
       this.applyCorrection();
       this.sendPose(dt);
-      this.remote.update();
+      this.remote.update(dt, this.time);
+      const rig = shipRig(this.ship);
+      rig.setThrust(this.flight.thrust, this.flight.pulse);
+      rig.tick(this.time, dt, Math.max(0, 1 - this.flight.speed / 40));
       this.fireCannon();
       this.updateCombatVisuals(dt);
       this.placeChaseCamera(1 - Math.exp(-dt * 8));

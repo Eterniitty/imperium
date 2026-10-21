@@ -517,7 +517,7 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       }
       sa.send({ t: "pose", systemId, ...pose([0, 0, 100]) });
       await sa.next(is("space"));
-      sb.send({ t: "pose", systemId, ...pose([0, 0, 80]) });
+      sb.send({ t: "pose", systemId, ...pose([0, 0, -200]) });
       await sa.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id);
       await settle(100);
       return { a, b, sa, sb, systemId };
@@ -555,7 +555,7 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       expect(shot).toMatchObject({ weapon: "missile", target: b.emperor.id });
       const weapons = await sa.next((m): m is Extract<ServerMessage, { t: "weapons" }> => m.t === "weapons" && m.weapons.some((w) => w.kind === "missile" && w.ammo === 5));
       expect(weapons.weapons.find((w) => w.kind === "missile")).toMatchObject({ ammo: 5, ammoMax: 6 });
-      await settle(400);
+      await settle(900);
       expect(app.space.combatOf(b.emperor.id).shield).toBe(110);
     });
 

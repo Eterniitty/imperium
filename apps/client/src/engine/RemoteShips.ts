@@ -2,7 +2,9 @@ import * as THREE from "three";
 import { serverNow } from "../net/world";
 import { shipName, spaceStore, type PoseSample } from "../net/space";
 import { gameStore } from "../state/store";
-import { createFlagship, disposeShip, SHIP_SCALE } from "./shipModel";
+import { PIRATE_MODEL_SCALE } from "@imperium/content";
+import type { WeaponKind } from "@imperium/shared";
+import { createFlagship, disposeShip, SHIP_SCALE, shipRig } from "./shipModel";
 import { labelTexture } from "./textures";
 
 const ALLY_COLOR = "#5fd3e6";
@@ -16,6 +18,9 @@ interface Visual {
   ship: THREE.Group;
   label: THREE.Sprite;
   key: string;
+  /** Posición del fotograma anterior, para estimar la velocidad (empuje y balanceo). */
+  prev: THREE.Vector3;
+  speed: number;
 }
 
 const qa = new THREE.Quaternion();
@@ -46,7 +51,7 @@ export class RemoteShips {
   readonly group = new THREE.Group();
   private visuals = new Map<string, Visual>();
 
-  update(): void {
+  update(dt = 0, time = 0): void {
     const { ships } = spaceStore.getState();
     const locale = gameStore.getState().locale;
     const t = serverNow() - INTERP_DELAY_MS;
@@ -62,6 +67,14 @@ export class RemoteShips {
       if (sampleAt(remote.samples, t, v.ship.position, v.ship.quaternion)) {
         v.label.position.copy(v.ship.position);
       }
+      if (dt > 0) {
+        if (!Number.isFinite(v.prev.x)) v.prev.copy(v.ship.position);
+        v.speed += (v.ship.position.distanceTo(v.prev) / dt - v.speed) * Math.min(1, dt * 3);
+        v.prev.copy(v.ship.position);
+        const rig = shipRig(v.ship);
+        rig.setThrust(Math.min(1, v.speed / 1000), v.speed > 2000);
+        rig.tick(time, dt, Math.max(0, 1 - v.speed / 60));
+      }
     }
     for (const [id, v] of this.visuals) if (!ships[id]) this.remove(id, v);
   }
@@ -69,14 +82,14 @@ export class RemoteShips {
   private add(id: string, name: string, color: string, small: boolean, key: string): Visual {
     const ship = createFlagship(color);
     // A la escala de la nave propia; los piratas, algo más pequeños.
-    ship.scale.setScalar(SHIP_SCALE * (small ? 0.75 : 1));
+    ship.scale.setScalar(SHIP_SCALE * (small ? PIRATE_MODEL_SCALE : 1));
     const { texture, aspect } = labelTexture(name, color);
     const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, sizeAttenuation: false, transparent: true }));
     label.scale.set(LABEL_HEIGHT * aspect, LABEL_HEIGHT, 1);
     label.center.set(0.5, -1.4);
     label.renderOrder = 12;
     this.group.add(ship, label);
-    const v = { ship, label, key };
+    const v = { ship, label, key, prev: new THREE.Vector3(Infinity, 0, 0), speed: 0 };
     this.visuals.set(id, v);
     return v;
   }
@@ -87,6 +100,12 @@ export class RemoteShips {
     v.label.material.map?.dispose();
     v.label.material.dispose();
     this.visuals.delete(id);
+  }
+
+  /** Dónde está ahora la boca de un arma de una nave ajena, o null si no se dibuja. */
+  muzzleOf(id: string, weapon: WeaponKind, index: number): THREE.Vector3 | null {
+    const v = this.visuals.get(id);
+    return v ? shipRig(v.ship).muzzle(weapon, index, new THREE.Vector3()) : null;
   }
 
   /** Dónde se dibuja ahora una nave ajena, o null si no está. */

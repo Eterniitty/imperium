@@ -8,7 +8,7 @@ import type { EmperorService } from "../emperor/service";
 import { findSystem } from "../emperor/world";
 import type { Client } from "../realtime/hub";
 import type { SocialService } from "../social/service";
-import { Combatant, distance, forwardOf, MISSILE_LOCK_COS, normalize, rayHit } from "./combat";
+import { Combatant, distance, forwardOf, MISSILE_LOCK_COS, normalize, rayHit, rotate } from "./combat";
 import { pirateCount, pirateHome, stepPirate } from "./pirates";
 
 /** Una nave presente en un sistema: de un Emperador o un pirata de la IA. */
@@ -336,13 +336,20 @@ export class SpaceService {
     }
     const def = m.combat.tryFire(weapon, now);
     if (!def) return;
+    // El disparo sale de la boca del arma (alternando entre las de cada lado), no del centro de la nave.
+    const muzzle = m.combat.nextMuzzle(weapon);
+    const off = rotate(m.pose.q, muzzle.offset);
+    const from: Vec3 = [m.pose.p[0] + off[0], m.pose.p[1] + off[1], m.pose.p[2] + off[2]];
+    // El proyectil hereda la velocidad de la nave en su dirección (si no, a toda máquina se quedaría atrás).
+    const v = m.pose.v;
+    const speed = def.speedU + Math.max(0, v[0] * dir[0] + v[1] * dir[1] + v[2] * dir[2]);
 
     if (weapon === "cannon") {
       // Cañón: el enemigo más cercano que el proyectil roza (ahora o hace un instante).
       for (const o of room) {
         if (!this.hostile(m, o)) continue;
         for (const p of this.recentPositions(o, now)) {
-          const t = rayHit(m.pose.p, dir, p, def.rangeU);
+          const t = rayHit(from, dir, p, def.rangeU);
           if (t !== null && (hitDistance === null || t < hitDistance)) {
             hitDistance = t;
             target = o;
@@ -351,15 +358,16 @@ export class SpaceService {
       }
     }
 
-    const hitAt = target && hitDistance !== null ? now + (hitDistance / def.speedU) * 1000 : null;
+    const hitAt = target && hitDistance !== null ? now + (hitDistance / speed) * 1000 : null;
     const shot: ServerMessage = {
       t: "shot",
       id: m.emperorId,
       weapon,
-      from: m.pose.p,
+      from,
+      muzzle: muzzle.index,
       dir,
       target: weapon === "missile" ? (target?.emperorId ?? null) : null,
-      speed: def.speedU,
+      speed,
       range: def.rangeU,
       serverTime: now,
       hitAt,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { EMPEROR_FLAGSHIP } from "@imperium/content";
-import { Combatant, forwardOf, rayHit } from "../src/space/combat";
+import { EMPEROR_FLAGSHIP, FLAGSHIP_HARDPOINTS } from "@imperium/content";
+import { Combatant, forwardOf, rayHit, rotate } from "../src/space/combat";
 
 describe("reglas del combate", () => {
   it("el morro de una nave sin girar apunta a -Z; girada 90° a la izquierda, a -X", () => {
@@ -9,6 +9,21 @@ describe("reglas del combate", () => {
     const f = forwardOf([0, s, 0, s]);
     expect(f[0]).toBeCloseTo(-1);
     expect(f[2]).toBeCloseTo(0);
+  });
+
+  it("los disparos salen alternando de las bocas de fuego de @imperium/content, giradas con la nave", () => {
+    const c = new Combatant(400, EMPEROR_FLAGSHIP.combat, 0);
+    const a = c.nextMuzzle("cannon");
+    const b = c.nextMuzzle("cannon");
+    expect(a.index).toBe(0);
+    expect(b.index).toBe(1);
+    expect(a.offset).toEqual([...FLAGSHIP_HARDPOINTS.cannon[0]!]);
+    expect(c.nextMuzzle("cannon").index).toBe(0);
+    // Girada 90° a la izquierda: lo que estaba delante (-Z) queda a la izquierda (-X).
+    const s = Math.SQRT1_2;
+    const r = rotate([0, s, 0, s], [0, 0, -10]);
+    expect(r[0]).toBeCloseTo(-10);
+    expect(r[2]).toBeCloseTo(0);
   });
 
   it("un rayo acierta lo que pasa cerca dentro del alcance, y no lo que queda detrás o lejos", () => {

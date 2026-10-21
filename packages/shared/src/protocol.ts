@@ -6,7 +6,7 @@
 import type { Battle, Cargo, Colony, Emperor, EmperorHumans, Fleet, FleetRoute, OrderSide, Stock, StockId, Wallet } from "./api";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
-export const PROTOCOL_VERSION = 7;
+export const PROTOCOL_VERSION = 8;
 
 /** Tamaño máximo de un mensaje del cliente, en bytes. */
 export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;
@@ -204,7 +204,7 @@ export type ServerMessage =
    * Alguien disparó (para dibujarlo). `hitAt` es la hora del servidor del impacto,
    * si lo hay; el daño llega aparte, con el nuevo estado de la nave (`ship`).
    */
-  | { t: "shot"; id: string; weapon: WeaponKind; from: Vec3; dir: Vec3; target: string | null; speed: number; range: number; serverTime: number; hitAt: number | null }
+  | { t: "shot"; id: string; weapon: WeaponKind; from: Vec3; muzzle: number; dir: Vec3; target: string | null; speed: number; range: number; serverTime: number; hitAt: number | null }
   /** Tu nave ha sido destruida: renaces en `systemId` (Núcleo Humano). */
   | { t: "destroyed"; by: string; systemId: string }
   /** Estado de tus armas: munición restante y cuándo vuelven a estar listas (hora del servidor). */
