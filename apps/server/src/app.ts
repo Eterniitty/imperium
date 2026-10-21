@@ -31,6 +31,7 @@ import { TerritoryService } from "./ai/territory";
 import { warRoutes } from "./war/routes";
 import { WarService } from "./war/service";
 import { SiegeService } from "./war/siege";
+import { LineageService, type LineageEffects, type RebirthInfo } from "./lineage/service";
 import { createMailer, type Mailer } from "./mail";
 import { ipRateKey, RateLimiter } from "./auth/rateLimit";
 
@@ -135,11 +136,50 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   const flagships = new FlagshipService(deps.db, config, (summary) => discoveries.detail(summary), colonies);
   hub.flagships = flagships;
   emperors.layoutOf = (systemId) => flagships.layout(systemId);
-  const space = new SpaceService(flagships, emperors, social, app.log, (emperorId) => {
+  const space = new SpaceService(flagships, emperors, social, app.log);
+  space.onFlagship = (emperorId) => void hub.publishFlagship(emperorId);
+  // Fase 10: muerte y linaje (Cunas, gestación, Herederos y encarnación).
+  const lineage = new LineageService(deps.db, config, colonies, app.log);
+  lineage.layoutOf = (systemId) => flagships.layout(systemId);
+  lineage.inCombat = (emperorId) => space.inCombat(emperorId);
+  hub.lineage = lineage;
+  aiEmperors.lineage = lineage;
+  /** Un Emperador cae: los demás dejan de verlo en el mapa y su dueño ve la gestación. */
+  const announceDeath = (emperorId: string) => {
     void hub.publish(emperorId);
     void hub.publishFlagship(emperorId);
-  });
-  space.onFlagship = (emperorId) => void hub.publishFlagship(emperorId);
+    void hub.publishHumans(emperorId);
+    void hub.publishLineage(emperorId);
+  };
+  /** Un Emperador renace (o se encarna): su nave sale de donde estuviera y aparece en el sistema nuevo. */
+  const announceRebirth = (info: RebirthInfo, fresh: boolean) => {
+    space.relocated(info.emperorId, fresh);
+    void hub.publish(info.emperorId);
+    void hub.publishFlagship(info.emperorId);
+    void hub.publishHumans(info.emperorId);
+    void hub.publishLineage(info.emperorId);
+    if (info.discovered.length) void hub.publishDiscovered(info.emperorId, info.discovered);
+    for (const id of info.colonies) void hub.publishColony(info.emperorId, id);
+  };
+  const announceLineage = (fx: LineageEffects) => {
+    if (fx.rebirth) announceRebirth(fx.rebirth, false);
+    void hub.publishLineage(fx.emperorId);
+    for (const id of fx.colonies) void hub.publishColony(fx.emperorId, id);
+  };
+  aiEmperors.onLineage = announceLineage;
+  space.onDeath = async (emperorId, systemId, by) => {
+    const death = await lineage.die(emperorId, { systemId, cause: "combat", by });
+    if (death) announceDeath(emperorId);
+    return death;
+  };
+  wars.flagshipHooks = { liveHull: (id) => space.liveHull(id), die: (tx, id, info) => lineage.dieTx(tx, id, info) };
+  hub.onWarFlagships = (fx) => {
+    for (const [id, hull] of fx.hulls) space.setHull(id, hull);
+    for (const d of fx.deaths) {
+      space.kill(d.emperorId, d.by, d.rebornAt, d.systemId);
+      announceDeath(d.emperorId);
+    }
+  };
   // Al reponer la nave cambian las existencias de la colonia.
   space.onColony = (emperorId, colonyId) => void hub.publishColony(emperorId, colonyId);
   hub.sieges = sieges;
@@ -166,13 +206,13 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     for (const s of fx.sieges) hub.publishSiegeFx(s);
   };
   aliens.onSiege = (fx) => hub.publishSiegeFx(fx);
-  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges });
+  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage: announceLineage });
   await app.register(humanityRoutes, { config, db: deps.db, emperors, humanity, market });
   await app.register(warRoutes, { config, db: deps.db, emperors, wars, aliens });
   await app.register(alienRoutes, { config, db: deps.db, emperors, discoveries, wars, aliens });
   await app.register(socialRoutes, { config, db: deps.db, emperors, social, hub });
   await app.register(discoveryRoutes, { config, db: deps.db, emperors, discoveries });
-  await app.register(accountRoutes, { config, db: deps.db, hub, space, colonies, humanity, market, sieges });
+  await app.register(accountRoutes, { config, db: deps.db, hub, space, colonies, humanity, market, sieges, lineage });
   await app.register(colonyRoutes, { config, db: deps.db, emperors, discoveries, colonies, sieges });
 
   // Cola de eventos programados: llegadas de flotas y del Emperador (y, más adelante, construcciones…).
@@ -242,6 +282,24 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     if (fx) return () => hub.publishSiegeFx(fx);
   });
   // Fase 11: una decisión de la IA de una región alienígena activa.
+  // Fase 10: fin de la gestación de un Emperador caído, nacimiento y gobierno de los Herederos.
+  worker.on("lineage.rebirth", async (tx, { emperorId }) => {
+    const info = await lineage.rebirth(tx, emperorId);
+    if (info) return () => announceRebirth(info, true);
+  });
+  worker.on("heir.born", async (tx, { heirId }) => {
+    const fx = await lineage.born(tx, heirId);
+    if (fx) return () => announceLineage(fx);
+  });
+  worker.on("heir.govern", async (tx, { heirId }) => {
+    const run = await lineage.govern(tx, heirId);
+    if (run)
+      return () =>
+        void run().then(
+          (fx) => fx && announceLineage(fx),
+          (err: unknown) => app.log.error({ err, heirId }, "Fallo en la decisión de un gobernador"),
+        );
+  });
   worker.on("ai.region", async (tx, { regionKey }) => aliens.tick(tx, regionKey));
   worker.on("ai.emperor", async (tx, { emperorId }) => aiEmperors.tick(tx, emperorId));
   // El tesoro ya debería poder pagar un proyecto que tiene todos sus recursos.
@@ -259,6 +317,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   app.decorate("aliens", aliens);
   app.decorate("aiEmperors", aiEmperors);
   app.decorate("sieges", sieges);
+  app.decorate("lineage", lineage);
+  app.decorate("wars", wars);
 
   return app;
 }
@@ -274,5 +334,7 @@ declare module "fastify" {
     aiEmperors: AiEmperorService;
     flagships: FlagshipService;
     sieges: SiegeService;
+    lineage: LineageService;
+    wars: WarService;
   }
 }

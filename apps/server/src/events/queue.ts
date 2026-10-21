@@ -28,6 +28,12 @@ export interface EventPayloads {
   "ai.emperor": { emperorId: string };
   /** Resolución periódica de un asedio (Fase 9b). */
   "siege.tick": { siegeId: string };
+  /** Fase 10: termina la gestación de un Emperador caído y renace. */
+  "lineage.rebirth": { emperorId: string };
+  /** Fase 10: nace un Heredero gestado en una Cuna. */
+  "heir.born": { heirId: string };
+  /** Fase 10: decisión del gobernador (Heredero) de una colonia. */
+  "heir.govern": { heirId: string };
 }
 export type EventKind = keyof EventPayloads;
 

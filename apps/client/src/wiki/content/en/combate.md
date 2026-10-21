@@ -22,9 +22,9 @@ Your ship's combat state persists even if you leave the system: you do not heal 
 
 ## If you are shot down
 
-Your ship explodes, leaves the system and **you are reborn in a random system of the Human Core** with the ship repaired: hull, shield and ammunition full. You do not lose colonies, fleets or discoveries (see [Law I](/wiki/leyes#i-persistence)).
+Your ship explodes, leaves the system and **your Emperor falls**. A new body is **gestated** in a [Lineage Cradle](/wiki/linaje) (or, if you have none, in the Human Core) for a time that grows with each death in a row. The humans aboard, fuel and ammunition are lost; you do not lose colonies, fleets or discoveries (see [Law I](/wiki/leyes#i-persistence)). Everything that happens when you die is in [Death and lineage](/wiki/linaje).
 
-> [!dev] Death with consequences (Lineage Cradles, gestation and Heirs) will arrive with the "Death and lineage" phase.
+The hull **does not heal by leaving the system**: the crew repairs it slowly and, next to an own colony, it is repaired quickly with its alloys (see [Death and lineage](/wiki/linaje#the-hull)).
 
 ## Against other Emperors
 

@@ -61,9 +61,10 @@ Orden de construcción de lo que pide [diseno.md](diseno.md). Cada fase se divid
 - **9b. Conquista de planetas ajenos** ✔ (21-10-2026). Asedio con progreso y presencia sostenida de naves armadas (`siege.start`, evento `siege.tick`; disputado si hay naves armadas del defensor, roto si el atacante se queda sin ellas), plataformas defensivas que frenan el asedio, dañan a los asediadores y aportan guarnición, desembarco de tropas (humanos de cargueros, colonizadores o la nave del Emperador; `siege.assault`) y captura con pérdidas (población, existencias, instalaciones; obras perdidas, órdenes del mercado y rutas canceladas). Colonias independientes conquistables. IA: facciones alienígenas que asedian y ocupan colonias de su territorio según agresividad y rencor; Emperadores IA que defienden y, los militaristas, conquistan. Protecciones: compañeros, gracia de 24 h y Núcleo Humano para la IA. Pendiente: conquista instalación a instalación, red de suministro y asedios en 3D.
 - **9c. Combate a gran escala**: por encima de ~5 naves por bando, el combate en tiempo real (6c) pasa a rondas.
 
-## Fase 10 — Muerte y linaje
+## Fase 10 — Muerte y linaje ✔ (21-10-2026)
 
-- La nave del Emperador puede caer. Cunas de linaje con gestación que crece con las muertes seguidas. Sin Cunas, reaparece en el Núcleo Humano. Herederos que gobiernan colonias y en los que el jugador puede encarnarse.
+- ✔ La nave del Emperador puede caer (combate pilotado y batallas por rondas, en las que ahora también combate; el casco se guarda y se repara). Cunas de linaje (instalación) con gestación que crece con las muertes seguidas y se olvida con el tiempo. Sin Cunas, reaparece en el Núcleo Humano. Se pierden los humanos de a bordo, el combustible y la munición. Herederos que gobiernan colonias con una doctrina (extracción, defensa, obras) y en los que el jugador puede encarnarse (vivo o muerto). Los Emperadores de la IA también lo usan. Pantalla de muerte con la gestación y panel «Linaje»; Wiki «Muerte y linaje». Migración `0017`, `PROTOCOL_VERSION` 11.
+- Pendiente: ataques alienígenas dirigidos a las Cunas (los Erradicadores, Fase 11), conquista instalación a instalación (la Cuna como objetivo propio, 9b) y gobernadores que también recluten y defiendan.
 
 ## Fase 11 — Masividad e inteligencia artificial
 

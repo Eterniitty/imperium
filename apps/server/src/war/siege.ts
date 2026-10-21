@@ -4,6 +4,7 @@ import { universeSeedFromString } from "@imperium/procgen";
 import type { Cargo, CommandError, Siege, SiegeAssaultReport, SiegeOutcome, SiegeState } from "@imperium/shared";
 import {
   colonyDefense,
+  doctrineDefense,
   flagshipHumansAfter,
   gameHours,
   isTravelling,
@@ -170,7 +171,7 @@ export class SiegeService {
     const locked = await this.colonyService.lockAny(tx, colony.id, now);
     if (!locked) return { ok: false, error: "unknown_planet" };
     const attack = siegePower(armed.map((s) => s.classId));
-    const defense = colonyDefense(locked.state.population, locked.counts);
+    const defense = colonyDefense(locked.state.population, locked.counts) * doctrineDefense(locked.row.governor);
     const nextTickAt = new Date(now + this.tickMs());
     const [row] = await tx
       .insert(sieges)
@@ -240,7 +241,7 @@ export class SiegeService {
     const hours = gameHours(siege.resolvedAt.getTime(), now, this.timeScale);
     const contested = await this.defended(tx, siege.defenderId, siege.systemId);
     const attack = siegePower(this.armed(f.idle).map((s) => s.classId));
-    const defense = colonyDefense(colony.state.population, colony.counts);
+    const defense = colonyDefense(colony.state.population, colony.counts) * doctrineDefense(colony.row.governor);
     let progress = siege.progress;
     let state: SiegeState;
     if (this.armed(f.idle).length === 0) state = "battle";
@@ -370,6 +371,7 @@ export class SiegeService {
       } else {
         const [emp] = await tx.select().from(emperors).where(eq(emperors.id, attackerId)).for("update").limit(1);
         if (!emp) return { ok: false, error: "no_emperor" };
+        if (emp.deadAt) return { ok: false, error: "dead" };
         const place = placeFromRow(this.seed, emp, now);
         if (isTravelling(place, now)) return { ok: false, error: "in_transit" };
         if (place.location.systemId !== siege.systemId) return { ok: false, error: "not_present" };

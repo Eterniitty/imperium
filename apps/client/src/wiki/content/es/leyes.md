@@ -6,9 +6,7 @@ En Aeonarch, «Emperador» no significa necesariamente gobernante de un imperio:
 
 > El Emperador puede morir, pero la muerte de su cuerpo no implica necesariamente el final de su existencia.
 
-**En el juego:** si tu nave es destruida, no pierdes la partida. Hoy **renaces en un sistema del Núcleo Humano** con la nave reparada (casco, escudo y munición al máximo). Tus colonias, flotas y descubrimientos siguen siendo tuyos.
-
-> [!dev] Las **Cunas de linaje** (instalaciones donde regenerarte, con una gestación que se alarga si mueres muchas veces seguidas) y los **Herederos** (gobernadores de tus colonias en los que podrás encarnarte) llegarán con la fase «Muerte y linaje».
+**En el juego:** si tu nave es destruida, no pierdes la partida. Tu Emperador **renace** en una **Cuna de linaje** (o, sin Cunas, en el Núcleo Humano) tras una **gestación** que se alarga si mueres muchas veces seguidas, y puede **encarnarse en sus Herederos**. Tus colonias, flotas y descubrimientos siguen siendo tuyos. Ver [Muerte y linaje](/wiki/linaje).
 
 ## II. Continuidad
 

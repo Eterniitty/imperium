@@ -84,6 +84,8 @@ const QuatSchema = z.tuple([z.number().min(-1.01).max(1.01), z.number().min(-1.0
 
 /** Mensajes del cliente por el WebSocket (ver `protocol.ts`). */
 const Stock4 = z.enum(["metal", "volatiles", "crystal", "alloys"]);
+/** Doctrina de un Heredero (Fase 10). */
+const Doctrine = z.enum(["prosperity", "bastion", "balanced"]);
 
 export const ClientMessageSchema = z.union([
   // Economía de la humanidad y mercado (los límites finos se comprueban en el servidor).
@@ -189,6 +191,12 @@ export const ClientMessageSchema = z.union([
     op: z.literal("siege.assault"),
     args: z.object({ siegeId: z.uuid(), fleetId: z.uuid().optional(), troops: z.number().int().min(1).max(1_000_000).optional() }),
   }),
+  // Fase 10: muerte y linaje.
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("lineage.prefer"), args: z.object({ colonyId: z.uuid().nullable() }) }),
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("heir.gestate"), args: z.object({ colonyId: z.uuid(), doctrine: Doctrine }) }),
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("heir.doctrine"), args: z.object({ heirId: z.uuid(), doctrine: Doctrine, builds: z.boolean() }) }),
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("heir.assign"), args: z.object({ heirId: z.uuid(), colonyId: z.uuid() }) }),
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("heir.incarnate"), args: z.object({ heirId: z.uuid() }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("colony.disembark"), args: z.object({ colonyId: z.uuid(), humans: z.number().int().min(1).max(100_000) }) }),
   z.object({ t: z.literal("sub"), topic: z.enum(["emperors", "me"]) }),
   z.object({ t: z.literal("pose"), systemId: SystemIdSchema, p: Vec3Schema, q: QuatSchema, v: Vec3Schema }),

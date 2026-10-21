@@ -1,5 +1,5 @@
 import { randomInt } from "node:crypto";
-import { CONTACT_SENSORS, EMPEROR_FLAGSHIP, FLEET_BATTLE, STOCK_IDS } from "@imperium/content";
+import { CONTACT_SENSORS, EMPEROR_FLAGSHIP, FLAGSHIP_BATTLE, FLEET_BATTLE, STOCK_IDS } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import {
   distance,
@@ -12,13 +12,13 @@ import {
   type WorldPosition,
 } from "@imperium/shared";
 import { battleRoundMs, battleRoundSeed, battleShip, canAttack, isTravelling, resolveBattleRound, type BattleShip } from "@imperium/sim";
-import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import type { ColonyService } from "../colony/service";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
 import { battleRounds, battles, battleSides, colonies, emperorAllies, emperors, fleetCargo, fleets, resourceLedger, ships } from "../db/schema";
 import { fleetScannerRangeLy } from "../discovery/service";
-import { findSystem, placeFromRow } from "../emperor/world";
+import { findSystem, inHumanCore, placeFromRow } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
 import { EMPTY_CARGO, fleetCapacity, type FleetMoveResult, type FleetService } from "../fleet/service";
 import type { LogisticsService } from "../logistics/service";
@@ -31,10 +31,23 @@ export class WarEffects {
   readonly fleets = new Map<string, string>();
   /** Colonias cambiadas (rutas reanudadas, capital que paga menos mantenimiento): id → dueño. */
   readonly colonies = new Map<string, string>();
+  /** Fase 10: casco nuevo de la nave de un Emperador que combate: id del Emperador → casco. */
+  readonly hulls = new Map<string, number>();
+  /** Fase 10: Emperadores cuya nave cayó en la batalla (ya registrados como muertos). */
+  readonly deaths: Array<{ emperorId: string; by: string; rebornAt: number; systemId: string }> = [];
 
   get empty(): boolean {
-    return this.battles.size + this.fleets.size + this.colonies.size === 0;
+    return this.battles.size + this.fleets.size + this.colonies.size + this.hulls.size + this.deaths.length === 0;
   }
+}
+
+/** Prefijo del id de la nave del Emperador en una batalla (sus naves de flota son uuid). */
+const FLAGSHIP_PREFIX = "flagship:";
+const isFlagship = (shipId: string) => shipId.startsWith(FLAGSHIP_PREFIX);
+
+/** La nave del Emperador como nave de batalla (Fase 10). */
+function flagshipBattleShip(emperorId: string, hull: number, shieldFactor: number): BattleShip {
+  return { id: `${FLAGSHIP_PREFIX}${emperorId}`, classId: "flagship", attack: FLAGSHIP_BATTLE.attack, shield: FLAGSHIP_BATTLE.battleShield * shieldFactor, hull: Math.ceil(hull) };
 }
 
 /** Informe guardado de una ronda (índices 0 y 1: los bandos). */
@@ -83,6 +96,44 @@ export class WarService {
   setAlienHooks(hostility: WarService["hostility"], onIntercept: (tx: Tx, emperorId: string, factionId: string) => Promise<void>): void {
     this.hostility = hostility;
     this.onAlienIntercept = onIntercept;
+  }
+
+  /**
+   * Fase 10: la nave del Emperador en las batallas. `liveHull`: su casco en
+   * memoria si se está pilotando (manda sobre el guardado); `die`: registra su
+   * muerte en la transacción de la ronda. Los enlaza `app.ts`.
+   */
+  flagshipHooks: {
+    liveHull: (emperorId: string) => number | null;
+    die: (tx: Tx, emperorId: string, info: { systemId: string; cause: "battle"; by: string | null }) => Promise<{ rebornAt: number; systemId: string } | null>;
+  } | null = null;
+
+  /**
+   * Naves de Emperadores vivos que están (no de viaje) en un sistema, con su
+   * casco (el de memoria si se pilota). Sin los actores alienígenas.
+   */
+  private async flagshipsIn(db: Database | Tx, systemId: string): Promise<Map<string, number>> {
+    const now = this.now();
+    const rows = await db
+      .select({ id: emperors.id, systemId: emperors.systemId, destSystemId: emperors.destSystemId, departAt: emperors.departAt, arriveAt: emperors.arriveAt, hull: emperors.flagshipHull })
+      .from(emperors)
+      .where(and(isNull(emperors.deadAt), ne(emperors.kind, "alien"), or(eq(emperors.systemId, systemId), eq(emperors.destSystemId, systemId))));
+    const out = new Map<string, number>();
+    for (const r of rows) {
+      const place = placeFromRow(this.seed, r, now);
+      if (isTravelling(place, now) || place.location.systemId !== systemId) continue;
+      const hull = this.flagshipHooks?.liveHull(r.id) ?? r.hull;
+      if (hull > 0) out.set(r.id, hull);
+    }
+    return out;
+  }
+
+  /**
+   * ¿Combate la nave de este Emperador en la batalla? Con su escolta (si tiene
+   * flotas en ella) o, fuera del Núcleo Humano, aunque esté sola.
+   */
+  private flagshipFights(systemId: string, hasFleets: boolean): boolean {
+    return hasFleets || !inHumanCore(systemId);
   }
 
   constructor(
@@ -173,19 +224,27 @@ export class WarService {
       .from(fleets)
       .where(and(eq(fleets.systemId, systemId), isNull(fleets.destSystemId), isNull(fleets.battleId)))
       .orderBy(asc(fleets.createdAt), asc(fleets.id));
-    if (rows.length < 2) return null;
+    if (rows.length === 0) return null;
     const shipRows = await tx
       .select({ id: ships.id, fleetId: ships.fleetId, classId: ships.classId, hull: ships.hull })
       .from(ships)
       .where(inArray(ships.fleetId, rows.map((r) => r.id)));
-    const byEmperor = new Map<string, { fleetIds: string[]; ships: BattleShip[] }>();
+    const byEmperor = new Map<string, { fleetIds: string[]; ships: BattleShip[]; flagship: BattleShip | null }>();
     for (const r of rows) {
       const own = shipRows.filter((s) => s.fleetId === r.id);
       if (own.length === 0) continue;
-      const e = byEmperor.get(r.emperorId) ?? { fleetIds: [], ships: [] };
+      const e = byEmperor.get(r.emperorId) ?? { fleetIds: [], ships: [], flagship: null };
       e.fleetIds.push(r.id);
       e.ships.push(...own.map((s) => battleShip(s.id, s.classId, s.hull)));
       byEmperor.set(r.emperorId, e);
+    }
+    // Fase 10: la nave del Emperador presente combate con su escolta o, fuera del Núcleo, sola.
+    for (const [emperorId, hull] of await this.flagshipsIn(tx, systemId)) {
+      const e = byEmperor.get(emperorId);
+      if (!this.flagshipFights(systemId, !!e)) continue;
+      const entry = e ?? { fleetIds: [], ships: [], flagship: null };
+      entry.flagship = flagshipBattleShip(emperorId, hull, 1);
+      byEmperor.set(emperorId, entry);
     }
     // Orden: quien llega primero; los demás por orden de llegada de su flota más antigua.
     const order = [...byEmperor.keys()];
@@ -200,6 +259,7 @@ export class WarService {
         if (a === b || allies.has(a < b ? `${a}|${b}` : `${b}|${a}`)) continue;
         const A = byEmperor.get(a)!;
         const B = byEmperor.get(b)!;
+        // Las naves de los Emperadores no empiezan batallas: hace falta una flota que pueda atacar.
         if (!canAttack(A.ships) && !canAttack(B.ships)) continue;
         if (!(await this.hostility(tx, a, b, systemId))) continue;
         // Bando 0: el que ya estaba (b); bando 1: el que llega (a).
@@ -257,6 +317,15 @@ export class WarService {
       const side = sideOf.get(fleetOwner.get(s.fleetId)!);
       if (side !== undefined) bySide[side].push(battleShip(s.id, s.classId, s.hull, shield));
     }
+    // Fase 10: las naves de los Emperadores de cada bando que siguen en el sistema.
+    const owners = new Set(fleetRows.map((f) => f.emperorId));
+    const flagships = new Map<string, number>();
+    for (const [emperorId, hull] of await this.flagshipsIn(tx, battle.systemId)) {
+      const side = sideOf.get(emperorId);
+      if (side === undefined || !this.flagshipFights(battle.systemId, owners.has(emperorId))) continue;
+      flagships.set(emperorId, hull);
+      bySide[side].push(flagshipBattleShip(emperorId, hull, shield));
+    }
 
     // Un bando sin naves en la batalla ha huido (o su Emperador ya no existe).
     if (bySide[0].length === 0 || bySide[1].length === 0) {
@@ -270,6 +339,20 @@ export class WarService {
 
     // Daños: el casco que queda; las destruidas se borran (y su carga se pierde).
     const destroyed = new Set(result.destroyed);
+    // Fase 10: casco de las naves de los Emperadores; la que cae se lleva a su Emperador.
+    for (const [emperorId, before] of flagships) {
+      const id = `${FLAGSHIP_PREFIX}${emperorId}`;
+      const hull = Math.max(0, Math.min(before, result.hull[id] ?? before));
+      if (destroyed.has(id)) {
+        const by = sides.find((x) => x.emperorId !== emperorId && x.side !== sideOf.get(emperorId))?.emperorId ?? null;
+        const [killer] = by ? await tx.select({ name: emperors.name }).from(emperors).where(eq(emperors.id, by)).limit(1) : [];
+        const death = await this.flagshipHooks?.die(tx, emperorId, { systemId: battle.systemId, cause: "battle", by: killer?.name ?? null });
+        if (death) fx.deaths.push({ emperorId, by: killer?.name ?? "", ...death });
+      } else if (hull !== before) {
+        await tx.update(emperors).set({ flagshipHull: hull }).where(eq(emperors.id, emperorId));
+        fx.hulls.set(emperorId, hull);
+      }
+    }
     for (const s of shipRows) {
       const hull = result.hull[s.id];
       if (hull !== undefined && !destroyed.has(s.id) && hull !== s.hull) await tx.update(ships).set({ hull }).where(eq(ships.id, s.id));
@@ -281,7 +364,8 @@ export class WarService {
         const capital = await this.colonyService.settleCapital(tx, emperorId, now);
         if (capital) fx.colonies.set(capital, emperorId);
       }
-      await tx.delete(ships).where(inArray(ships.id, [...destroyed]));
+      const lostShips = [...destroyed].filter((id) => !isFlagship(id));
+      if (lostShips.length) await tx.delete(ships).where(inArray(ships.id, lostShips));
       for (const f of fleetRows) {
         const lostShips = shipRows.filter((s) => s.fleetId === f.id && destroyed.has(s.id));
         if (lostShips.length === 0) continue;
@@ -515,6 +599,15 @@ export class WarService {
     for (const s of shipRows) {
       const counts = s.emperorId === emperorId ? own : foe;
       counts[s.classId] = (counts[s.classId] ?? 0) + 1;
+    }
+    // Fase 10: las naves de los Emperadores que combaten (mientras dura la batalla).
+    if (!battle.endedAt) {
+      const owners = new Set(shipRows.map((s) => s.emperorId));
+      for (const id of (await this.flagshipsIn(this.db, battle.systemId)).keys()) {
+        if (!sides.some((x) => x.emperorId === id) || !this.flagshipFights(battle.systemId, owners.has(id))) continue;
+        const counts = id === emperorId ? own : foe;
+        counts.flagship = (counts.flagship ?? 0) + 1;
+      }
     }
     const roundRows = await this.db
       .select()

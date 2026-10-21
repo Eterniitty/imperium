@@ -35,6 +35,7 @@ import type { Hub } from "../realtime/hub";
 import type { SpaceService } from "../space/service";
 import { maskEmail } from "../auth/tokens";
 import type { SiegeService } from "../war/siege";
+import type { LineageService } from "../lineage/service";
 
 export interface AccountDeps {
   config: ServerConfig;
@@ -46,6 +47,8 @@ export interface AccountDeps {
   market: MarketService;
   /** Fase 9b: asedios (como atacante o defensor) en la exportación. */
   sieges?: SiegeService;
+  /** Fase 10: Herederos y muertes en la exportación; eventos de los Herederos al borrar. */
+  lineage?: LineageService;
 }
 
 function fail(reply: FastifyReply, status: number, error: ApiError["error"]) {
@@ -56,7 +59,7 @@ function fail(reply: FastifyReply, status: number, error: ApiError["error"]) {
  * Derechos del RGPD que el jugador ejerce solo (ver /legal/privacidad.html):
  * descargar sus datos (art. 15 y 20) y borrar su cuenta (art. 17).
  */
-export async function accountRoutes(app: FastifyInstance, { config, db, hub, space, colonies: colonyService, humanity, market, sieges }: AccountDeps) {
+export async function accountRoutes(app: FastifyInstance, { config, db, hub, space, colonies: colonyService, humanity, market, sieges, lineage }: AccountDeps) {
   const cookieName = sessionCookieName(config);
   const cookieOptions = { path: "/", httpOnly: true, secure: config.COOKIE_SECURE, sameSite: "lax" } as const;
   // La exportación lee muchas tablas: pocas por cuenta.
@@ -112,6 +115,8 @@ export async function accountRoutes(app: FastifyInstance, { config, db, hub, spa
         ...(await market.exportFor(emperor.id)),
         // Fase 9b: asedios en los que ha sido atacante o defensor.
         sieges: sieges ? await sieges.exportFor(emperor.id) : [],
+        // Fase 10: sus Herederos y el historial de sus muertes (el estado de la gestación va en `emperor`).
+        lineage: lineage ? await lineage.exportFor(emperor.id) : { heirs: [], deaths: [] },
       };
     }
     const data = { exportedAt: new Date().toISOString(), account: acc, sessions: sessionRows, game };
@@ -140,6 +145,7 @@ export async function accountRoutes(app: FastifyInstance, { config, db, hub, spa
             .innerJoin(colonies, eq(colonies.id, colonyBuilds.colonyId))
             .where(eq(colonies.emperorId, emperor.id))
         ).map((r) => r.id);
+        const heirIds = lineage ? await lineage.heirIds(tx, emperor.id) : [];
         await tx
           .delete(scheduledEvents)
           .where(
@@ -147,6 +153,7 @@ export async function accountRoutes(app: FastifyInstance, { config, db, hub, spa
               sql`${scheduledEvents.payload}->>'emperorId' = ${emperor.id}`,
               fleetIds.length ? inArray(sql`${scheduledEvents.payload}->>'fleetId'`, fleetIds) : undefined,
               buildIds.length ? inArray(sql`${scheduledEvents.payload}->>'buildId'`, buildIds) : undefined,
+              heirIds.length ? inArray(sql`${scheduledEvents.payload}->>'heirId'`, heirIds) : undefined,
             ),
           );
         // Mercado: sus órdenes se cancelan (lo retenido vuelve a sus colonias antes de independizarse)

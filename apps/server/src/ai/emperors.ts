@@ -10,6 +10,8 @@ import {
   STARTING_FLEET,
   SIEGE,
   STOCK_IDS,
+  AI_LINEAGE,
+  type AiPersonality,
   type AiPersonalityDefinition,
 } from "@imperium/content";
 import { colonyDefense, gameHours, minColonists, realDurationMs, siegePower, type InstallationCounts } from "@imperium/sim";
@@ -28,6 +30,7 @@ import type { HumanityService } from "../humanity/service";
 import type { MarketEffects, MarketService } from "../market/service";
 import type { TerritoryService } from "./territory";
 import type { SiegeEffects, SiegeService } from "../war/siege";
+import type { LineageEffects, LineageService } from "../lineage/service";
 
 /** Decisiones como poco cada tanto tiempo real (con escalas de tiempo altas). */
 const MIN_DECIDE_MS = 10_000;
@@ -59,6 +62,9 @@ export class AiEmperorService {
   onEffects: ((fx: AiEmperorEffects) => void) | null = null;
   /** Asedios (Fase 9b; lo enlaza `app.ts`). */
   sieges: SiegeService | null = null;
+  /** Fase 10: muerte y linaje (Cunas, Herederos, encarnación) y su aviso; los enlaza `app.ts`. */
+  lineage: LineageService | null = null;
+  onLineage: ((fx: LineageEffects) => void) | null = null;
 
   constructor(
     private readonly db: Database,
@@ -86,8 +92,11 @@ export class AiEmperorService {
 
   /** Personalidad de un Emperador de la IA por su nombre. */
   personality(name: string): AiPersonalityDefinition {
-    const p = AI_EMPERORS.find((e) => e.name === name)?.personality ?? "expansionist";
-    return AI_PERSONALITIES[p];
+    return AI_PERSONALITIES[this.personalityId(name)];
+  }
+
+  private personalityId(name: string): AiPersonality {
+    return AI_EMPERORS.find((e) => e.name === name)?.personality ?? "expansionist";
   }
 
   /**
@@ -205,9 +214,12 @@ export class AiEmperorService {
 
     // 3. Construcción: instalaciones en orden; naves en el astillero de la capital.
     const colonizers = myFleets.reduce((n, f) => n + f.ships.filter((s) => s.classId === "colonizer").length, 0);
+    const lineageDef = AI_LINEAGE[this.personalityId(me.name)];
+    const hasCradle = own.some((c) => (c.installations.lineage_cradle ?? 0) > 0 || c.builds.some((b) => b.itemId === "lineage_cradle"));
     for (const c of own) {
       if (c.builds.length > 0) continue;
-      const next = this.nextInstallation(c, persona);
+      // Fase 10: tras su lista de instalaciones, una Cuna de linaje en la capital (donde renacer).
+      const next = this.nextInstallation(c, persona) ?? (lineageDef.cradle && c.capital && !hasCradle ? "lineage_cradle" : null);
       if (next) {
         const res = await this.colonyService.build(emperorId, c.id, "installation", next);
         if (res.ok) fx.colonies.push(c.id);
@@ -238,6 +250,9 @@ export class AiEmperorService {
 
     // 5. Comercio: vende los excedentes de su capital.
     if (persona.trades && own.length > 0) await this.trade(emperorId, own, fx);
+
+    // 6. Linaje (Fase 10): Herederos en sus Cunas, gobernadores y, si ha caído, encarnarse.
+    if (this.lineage) for (const l of await this.lineage.aiTurn(emperorId, this.personalityId(me.name))) this.onLineage?.(l);
     return fx;
   }
 

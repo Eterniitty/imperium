@@ -13,6 +13,7 @@ import {
   type FlagshipStatus,
   type Fleet,
   type I18nKey,
+  type LineageStatus,
   type ServerMessage,
   type Siege,
   type Topic,
@@ -51,6 +52,8 @@ export interface WorldState {
   flagship: FlagshipStatus | null;
   /** Asedios propios y a colonias propias (en curso y acabados hace poco), por id (Fase 9b). */
   sieges: Record<string, Siege>;
+  /** Linaje propio (Fase 10): muerte y gestación, Cunas, Herederos. */
+  lineage: LineageStatus | null;
   /** Escala del tiempo de juego del servidor (para estimar duraciones de viaje). */
   timeScale: number;
   myEmperorId: string | null;
@@ -69,6 +72,7 @@ export const worldStore = createStore<WorldState>()(() => ({
   wallet: null,
   flagship: null,
   sieges: {},
+  lineage: null,
   timeScale: 1,
   myEmperorId: null,
   clockOffset: 0,
@@ -114,7 +118,7 @@ class Connection {
     this.ws?.close(1000, "bye");
     this.ws = null;
     this.failPending();
-    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, battles: {}, wallet: null, flagship: null, sieges: {}, myEmperorId: null });
+    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, battles: {}, wallet: null, flagship: null, sieges: {}, lineage: null, myEmperorId: null });
     resetSpace();
   }
 
@@ -212,7 +216,7 @@ class Connection {
           for (const b of msg.data.battles) battles[b.id] = b;
           const sieges: Record<string, Siege> = {};
           for (const x of msg.data.sieges) sieges[x.id] = x;
-          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans, battles, wallet: msg.data.wallet, flagship: msg.data.flagship, sieges });
+          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans, battles, wallet: msg.data.wallet, flagship: msg.data.flagship, sieges, lineage: msg.data.lineage });
         }
         return;
       }
@@ -233,11 +237,15 @@ class Connection {
         let wallet = state.wallet;
         let flagship = state.flagship;
         let sieges = state.sieges;
+        let lineage = state.lineage;
         for (const op of msg.ops) {
           const dot = op.path.indexOf(".");
-          const kind = op.path.slice(0, dot) as "emperors" | "fleets" | "discovered" | "colonies" | "humans" | "battles" | "wallet" | "flagship" | "sieges";
+          const kind = op.path.slice(0, dot) as "emperors" | "fleets" | "discovered" | "colonies" | "humans" | "battles" | "wallet" | "flagship" | "sieges" | "lineage";
           const id = op.path.slice(dot + 1);
-          if (kind === "sieges") {
+          if (kind === "lineage") {
+            noticeLineage(lineage, op.v as LineageStatus);
+            lineage = op.v as LineageStatus;
+          } else if (kind === "sieges") {
             sieges = { ...sieges };
             if (op.v) {
               noticeSiege(sieges[id], op.v as Siege);
@@ -267,7 +275,7 @@ class Connection {
             else delete fleets[id];
           }
         }
-        worldStore.setState({ emperors, fleets, discovered, colonies, humans, battles, wallet, flagship, sieges });
+        worldStore.setState({ emperors, fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage });
         this.syncOwn();
         return;
       }
@@ -320,7 +328,7 @@ class Connection {
         spaceStore.setState({ weapons: msg.weapons });
         return;
       case "destroyed":
-        spaceStore.setState({ destroyed: { by: msg.by, systemId: msg.systemId } });
+        spaceStore.setState({ destroyed: { by: msg.by, systemId: msg.systemId, rebornAt: msg.rebornAt, at: Date.now() } });
         return;
       case "poseRejected":
         spaceStore.setState({ correction: { p: msg.p, q: msg.q, v: msg.v } });
@@ -365,5 +373,25 @@ function noticeSiege(prev: Siege | undefined, next: Siege): void {
     if (prev && prev.state !== "ready" && next.state === "ready" && next.outcome === "ongoing") notify("siege.notice.ready", { planet });
     else if (prev?.outcome === "ongoing" && next.outcome === "captured") notify("siege.notice.captured", { planet });
     else if (prev?.outcome === "ongoing" && next.outcome === "broken") notify("siege.notice.broken", { planet });
+  }
+}
+
+/**
+ * Avisos del linaje (Fase 10): renacer (en una Cuna, en el Núcleo o en un
+ * Heredero) y el nacimiento de un Heredero.
+ */
+function noticeLineage(prev: LineageStatus | null, next: LineageStatus): void {
+  if (!prev) return;
+  const notify = gameStore.getState().notify;
+  if (prev.dead && !next.dead) {
+    const last = next.deaths[0];
+    const kind = last?.rebirthKind ?? "core";
+    notify(kind === "heir" ? "lineage.notice.incarnated" : kind === "cradle" ? "lineage.notice.rebornCradle" : "lineage.notice.rebornCore", { generation: next.generation });
+  } else if (!prev.dead && !next.dead && next.generation > prev.generation) {
+    notify("lineage.notice.incarnated", { generation: next.generation });
+  }
+  for (const h of next.heirs) {
+    const before = prev.heirs.find((x) => x.id === h.id);
+    if (before?.state === "gestating" && h.state === "active") notify("lineage.notice.heirBorn", { name: h.name, colony: h.colonyName });
   }
 }

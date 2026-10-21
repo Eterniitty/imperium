@@ -1,4 +1,4 @@
-import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import type { FlagshipStatus, StarSystemDetail, StarSystemSummary } from "@imperium/shared";
 import { defaultPark, regenFuel, systemLayout, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
@@ -25,6 +25,7 @@ interface SuppliesRow {
   cannonAmmo: number;
   missiles: number;
   ammoAt: Date;
+  flagshipHull: number;
 }
 
 /** Órbita de aparcamiento guardada en una fila, o null si no la hay (aparca en el sitio por defecto). */
@@ -41,7 +42,7 @@ export function parkColumns(park: ParkedOrbit | null): ParkRow {
 }
 
 function suppliesFromRow(r: SuppliesRow): StoredSupplies {
-  return { fuel: r.fuel, fuelAt: r.fuelAt.getTime(), cannon: r.cannonAmmo, missiles: r.missiles, ammoAt: r.ammoAt.getTime() };
+  return { fuel: r.fuel, fuelAt: r.fuelAt.getTime(), cannon: r.cannonAmmo, missiles: r.missiles, ammoAt: r.ammoAt.getTime(), hull: r.flagshipHull };
 }
 
 /** Munición máxima de un arma de la nave del Emperador. */
@@ -49,7 +50,7 @@ function ammoMax(kind: "cannon" | "missile"): number {
   return EMPEROR_FLAGSHIP.combat.weapons.find((w) => w.kind === kind)?.ammo ?? 0;
 }
 
-const SUPPLY_COLUMNS = { fuel: emperors.fuel, fuelAt: emperors.fuelAt, cannonAmmo: emperors.cannonAmmo, missiles: emperors.missiles, ammoAt: emperors.ammoAt };
+const SUPPLY_COLUMNS = { fuel: emperors.fuel, fuelAt: emperors.fuelAt, cannonAmmo: emperors.cannonAmmo, missiles: emperors.missiles, ammoAt: emperors.ammoAt, flagshipHull: emperors.flagshipHull };
 const PARK_COLUMNS = { parkX: emperors.parkX, parkY: emperors.parkY, parkZ: emperors.parkZ, parkAt: emperors.parkAt };
 
 /** Emperador presente (no de viaje) en un sistema, con su nave aparcada y sus recursos. */
@@ -60,11 +61,12 @@ export interface ParkedShip {
   supplies: StoredSupplies;
 }
 
-/** Lo que se pide o se obtiene de una colonia al reponer. */
+/** Lo que se pide o se obtiene de una colonia al reponer (y casco reparado, Fase 10). */
 export interface Refill {
   fuel: number;
   cannon: number;
   missiles: number;
+  hull: number;
 }
 
 /**
@@ -131,6 +133,8 @@ export class FlagshipService {
         cannonMax: ammoMax("cannon"),
         missiles: row.missiles,
         missilesMax: ammoMax("missile"),
+        hull: row.flagshipHull,
+        hullMax: EMPEROR_FLAGSHIP.hull,
       },
     };
   }
@@ -145,8 +149,9 @@ export class FlagshipService {
   async saveSupplies(emperorId: string, s: StoredSupplies): Promise<void> {
     await this.db
       .update(emperors)
-      .set({ fuel: s.fuel, fuelAt: new Date(s.fuelAt), cannonAmmo: s.cannon, missiles: s.missiles, ammoAt: new Date(s.ammoAt) })
-      .where(eq(emperors.id, emperorId));
+      .set({ fuel: s.fuel, fuelAt: new Date(s.fuelAt), cannonAmmo: s.cannon, missiles: s.missiles, ammoAt: new Date(s.ammoAt), flagshipHull: s.hull })
+      // Un Emperador caído no tiene nave: lo que quedase en memoria ya no vale (Fase 10).
+      .where(and(eq(emperors.id, emperorId), isNull(emperors.deadAt)));
   }
 
   /** Guarda dónde queda aparcada la nave (al dejar de pilotarla). */
@@ -154,13 +159,18 @@ export class FlagshipService {
     await this.db.update(emperors).set(parkColumns(park)).where(eq(emperors.id, emperorId));
   }
 
-  /** Emperadores que están (no de viaje) en un sistema, con su órbita de aparcamiento y sus recursos. */
+  /** Emperadores que están (no de viaje ni muertos) en un sistema, con su órbita de aparcamiento y sus recursos. */
   async parkedIn(systemId: string): Promise<ParkedShip[]> {
     const now = new Date(this.now());
     const rows = await this.db
       .select({ id: emperors.id, name: emperors.name, systemId: emperors.systemId, ...PARK_COLUMNS, ...SUPPLY_COLUMNS })
       .from(emperors)
-      .where(or(and(eq(emperors.systemId, systemId), isNull(emperors.destSystemId)), and(eq(emperors.destSystemId, systemId), lte(emperors.arriveAt, now))));
+      .where(
+        and(
+          isNull(emperors.deadAt),
+          or(and(eq(emperors.systemId, systemId), isNull(emperors.destSystemId)), and(eq(emperors.destSystemId, systemId), lte(emperors.arriveAt, now))),
+        ),
+      );
     return rows.map((r) => ({ emperorId: r.id, name: r.name, park: this.resolvePark(systemId, r), supplies: suppliesFromRow(r) }));
   }
 
@@ -180,7 +190,7 @@ export class FlagshipService {
    * libro de recursos. Devuelve lo concedido.
    */
   async resupply(emperorId: string, colonyId: string, want: Refill): Promise<Refill> {
-    const none: Refill = { fuel: 0, cannon: 0, missiles: 0 };
+    const none: Refill = { fuel: 0, cannon: 0, missiles: 0, hull: 0 };
     const service = this.colonyService;
     if (!service) return none;
     return this.db.transaction(async (tx) => {
@@ -192,12 +202,14 @@ export class FlagshipService {
       const fuel = Math.max(0, Math.min(want.fuel, stock.volatiles / S.volatilesPerFuel));
       const cannon = Math.max(0, Math.floor(Math.min(want.cannon, stock.metal / S.metalPerRound)));
       const missiles = Math.max(0, Math.floor(Math.min(want.missiles, stock.alloys / S.alloysPerMissile)));
-      if (fuel <= 0 && cannon <= 0 && missiles <= 0) return none;
-      const spent = { volatiles: -fuel * S.volatilesPerFuel, metal: -cannon * S.metalPerRound, alloys: -missiles * S.alloysPerMissile };
+      // Fase 10: el casco se repara con las aleaciones que no se llevan los misiles.
+      const hull = Math.max(0, Math.min(want.hull, (stock.alloys - missiles * S.alloysPerMissile) / FLAGSHIP_REPAIR.alloysPerHull));
+      if (fuel <= 0 && cannon <= 0 && missiles <= 0 && hull <= 0) return none;
+      const spent = { volatiles: -fuel * S.volatilesPerFuel, metal: -cannon * S.metalPerRound, alloys: -(missiles * S.alloysPerMissile + hull * FLAGSHIP_REPAIR.alloysPerHull) };
       // El punto de enganche de la economía: resuelve la colonia, descuenta y lo asienta en el libro.
       const res = await service.adjustStock(tx, emperorId, colonyId, spent, "flagship_resupply", `emperor:${emperorId}`, now);
       if (!res.ok) return none;
-      return { fuel, cannon, missiles };
+      return { fuel, cannon, missiles, hull };
     });
   }
 }

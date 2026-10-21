@@ -22,9 +22,9 @@ El estado de combate de tu nave dura aunque salgas del sistema: no se cura salie
 
 ## Si te derriban
 
-Tu nave explota, sale del sistema y **renaces en un sistema al azar del Núcleo Humano** con la nave reparada: casco, escudo y munición al máximo. No pierdes colonias, flotas ni descubrimientos (ver [Ley I](/wiki/leyes#i-persistencia)).
+Tu nave explota, sale del sistema y **tu Emperador cae**. Su cuerpo nuevo se **gesta** en una [Cuna de linaje](/wiki/linaje) (o, si no tienes ninguna, en el Núcleo Humano) durante un tiempo que crece con cada muerte seguida. Se pierden los humanos de a bordo, el combustible y la munición; no pierdes colonias, flotas ni descubrimientos (ver [Ley I](/wiki/leyes#i-persistencia)). Todo lo que pasa al morir está en [Muerte y linaje](/wiki/linaje).
 
-> [!dev] La muerte con consecuencias (Cunas de linaje, gestación y Herederos) llegará con la fase «Muerte y linaje».
+El casco **no se cura solo al salir del sistema**: la tripulación lo repara poco a poco y, junto a una colonia propia, se repara deprisa con sus aleaciones (ver [Muerte y linaje](/wiki/linaje#el-casco)).
 
 ## Contra otros Emperadores
 

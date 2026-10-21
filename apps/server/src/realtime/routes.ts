@@ -24,6 +24,7 @@ import type { HumanityService } from "../humanity/service";
 import type { MarketService } from "../market/service";
 import type { AlienService } from "../ai/service";
 import type { SiegeService } from "../war/siege";
+import type { LineageEffects, LineageService } from "../lineage/service";
 import type { Client, Hub } from "./hub";
 import { TicketStore } from "./tickets";
 
@@ -43,6 +44,9 @@ export interface RealtimeDeps {
   aliens?: AlienService;
   /** Fase 9b: asedios y conquista de planetas. */
   sieges?: SiegeService;
+  /** Fase 10: muerte y linaje (Cunas, Herederos, encarnación) y cómo difundir sus cambios. */
+  lineage?: LineageService;
+  onLineage?: (fx: LineageEffects) => void;
 }
 
 const MINUTE = 60_000;
@@ -51,7 +55,7 @@ const HEARTBEAT_MS = 30_000;
 const MAX_CONNECTIONS_PER_ACCOUNT = 5;
 const MAX_CONNECTIONS = 1_000;
 
-export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges }: RealtimeDeps) {
+export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage }: RealtimeDeps) {
   const cookieName = sessionCookieName(config);
   const tickets = new TicketStore();
   const ticketsPerAccount = new RateLimiter(30, MINUTE);
@@ -229,6 +233,27 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                           : await sieges.assault(owner.emperorId, msg.args.siegeId, msg.args.fleetId, msg.args.troops);
                     if (res.ok) hub.publishSiegeFx(res.fx);
                     return res;
+                  }
+                  // Fase 10: muerte y linaje (ver lineage/service.ts).
+                  case "lineage.prefer":
+                  case "heir.gestate":
+                  case "heir.doctrine":
+                  case "heir.assign":
+                  case "heir.incarnate": {
+                    if (!lineage) return { ok: false, error: "invalid_command" } as const;
+                    const id = owner.emperorId;
+                    let res: Awaited<ReturnType<LineageService["prefer"]>>;
+                    if (msg.op === "lineage.prefer") res = await lineage.prefer(id, msg.args.colonyId);
+                    else if (msg.op === "heir.gestate") res = await lineage.gestate(id, msg.args.colonyId, msg.args.doctrine);
+                    else if (msg.op === "heir.doctrine") res = await lineage.setDoctrine(id, msg.args.heirId, msg.args.doctrine, msg.args.builds);
+                    else if (msg.op === "heir.assign") res = await lineage.assign(id, msg.args.heirId, msg.args.colonyId);
+                    else {
+                      // Lo que lleva la nave en memoria se guarda antes: viaja con el Emperador.
+                      await space.flushSupplies(id);
+                      res = await lineage.incarnate(id, msg.args.heirId);
+                    }
+                    if (res.ok) onLineage?.(res.fx);
+                    return res.ok ? { ok: true } : res;
                   }
                   // Fase 8: logística (ver logistics/service.ts).
                   case "fleet.transfer": {

@@ -1,4 +1,4 @@
-import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, PIRATE_RAIDER } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, PIRATE_RAIDER } from "@imperium/content";
 import type { ServerMessage, ShipPose, ShipState, Vec3, WeaponKind } from "@imperium/shared";
 import { bodiesAt, isTravelling, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_SPEED, plausibleMove, pulseLimitAt, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
@@ -31,6 +31,8 @@ interface Member {
   combat: Combatant;
   /** Escudo enviado por última vez a los demás (para difundir la recarga solo si cambia). */
   sentShield: number;
+  /** Casco enviado por última vez (la reparación a bordo también se difunde de vez en cuando). */
+  sentHull?: number;
   /**
    * Solo naves de Emperadores: si nadie la pilota, está aparcada y orbita la
    * estrella desde esta posición y hora (la ven todos los presentes y se le
@@ -98,14 +100,18 @@ export class SpaceService {
   private readonly deadPirates = new Map<string, number>();
   /** Uniones en curso, para no validar dos veces a la vez la misma nave. */
   private readonly joining = new Map<string, Promise<Member | null>>();
+  /**
+   * Fase 10: la nave de un Emperador cae en el combate pilotado. Registra la
+   * muerte (gestación en una Cuna o en el Núcleo) y devuelve cuándo y dónde
+   * renace; la pone `buildApp` (`LineageService.die` y avisos).
+   */
+  onDeath: (emperorId: string, systemId: string, by: string) => Promise<{ rebornAt: number; systemId: string } | null> = async () => null;
 
   constructor(
     private readonly flagships: FlagshipService,
     private readonly emperors: EmperorService,
     private readonly social: SocialService,
     private readonly log: FastifyBaseLogger,
-    /** Se llama cuando un Emperador renace en otro sistema (para difundirlo). */
-    private readonly onRespawn: (emperorId: string) => void = () => {},
     private readonly now: () => number = Date.now,
   ) {
     this.timer = setInterval(() => this.tick(), TICK_MS);
@@ -227,6 +233,7 @@ export class SpaceService {
   /** Estado de una nave a todos los del sistema (cada uno con su marca de compañero), ella incluida. */
   private broadcastState(m: Member): void {
     m.sentShield = Math.round(m.combat.shield);
+    m.sentHull = Math.round(m.combat.hull);
     for (const o of this.rooms.get(m.systemId) ?? []) this.sendTo(o, { t: "ship", ship: this.stateFor(m, o) });
   }
 
@@ -282,7 +289,8 @@ export class SpaceService {
 
   private async doJoin(client: Client, systemId: string, pose: ShipPose): Promise<Member | null> {
     const emperor = await this.emperors.byId(client.emperorId);
-    if (!emperor || isTravelling(emperor, this.now()) || emperor.location.systemId !== systemId) return null;
+    // Fase 10: un Emperador caído (gestándose) no tiene nave que pilotar.
+    if (!emperor || emperor.gestating || isTravelling(emperor, this.now()) || emperor.location.systemId !== systemId) return null;
     if (Math.hypot(...pose.p) > this.boundary(systemId) + BOUNDARY_SLACK) return null;
     const [allies, status, supplies] = await Promise.all([
       this.social.mutualAllies(emperor.id),
@@ -605,7 +613,11 @@ export class SpaceService {
     if (destroyed) void this.destroy(v, attackerName);
   }
 
-  /** Nave destruida: sale del sistema y el Emperador renace en el Núcleo Humano con la nave reparada. */
+  /**
+   * Nave destruida. Un pirata reaparece al rato. La de un Emperador sale del
+   * sistema y el Emperador cae (Fase 10): su cuerpo nuevo se gesta en una Cuna
+   * o en el Núcleo Humano; la nave nueva se lee de la base de datos al renacer.
+   */
   private async destroy(v: Member, by: string): Promise<void> {
     if (v.kind === "pirate") {
       this.leave(v.emperorId, "destroyed");
@@ -614,17 +626,60 @@ export class SpaceService {
       return;
     }
     const clients = [...v.clients];
+    const systemId = v.systemId;
     this.leave(v.emperorId, "destroyed");
-    v.combat.restore(this.now());
-    void this.saveSupplies(v.emperorId, v.combat);
+    this.combatants.delete(v.emperorId);
     try {
-      const emperor = await this.emperors.respawn(v.emperorId);
-      if (!emperor) return;
-      for (const c of clients) c.send({ t: "destroyed", by, systemId: emperor.location.systemId });
-      this.onRespawn(v.emperorId);
+      const death = await this.onDeath(v.emperorId, systemId, by);
+      if (!death) return;
+      for (const c of clients) c.send({ t: "destroyed", by, systemId: death.systemId, rebornAt: death.rebornAt });
     } catch (err) {
-      this.log.error(err, "Error al hacer renacer a un Emperador");
+      this.log.error(err, "Error al registrar la muerte de un Emperador");
     }
+  }
+
+  /**
+   * Fase 10: la nave de un Emperador cayó en una batalla de flotas por rondas
+   * (ya registrada en la base de datos): sale del sistema y su piloto lo sabe.
+   */
+  kill(emperorId: string, by: string, rebornAt: number, rebirthSystemId: string): void {
+    const m = this.members.get(emperorId);
+    const clients = m ? [...m.clients] : [];
+    this.leave(emperorId, "destroyed");
+    this.combatants.delete(emperorId);
+    for (const c of clients) c.send({ t: "destroyed", by, systemId: rebirthSystemId, rebornAt });
+  }
+
+  /**
+   * Fase 10: el Emperador cambió de sitio fuera del pilotaje (renació o se
+   * encarnó en un Heredero): su nave deja el sistema donde estuviera y sus
+   * recursos se vuelven a leer. Con `fresh` (cuerpo nuevo), también el escudo.
+   */
+  relocated(emperorId: string, fresh: boolean): void {
+    this.leave(emperorId, "left");
+    if (fresh) this.combatants.delete(emperorId);
+    else this.suppliesChanged(emperorId);
+  }
+
+  /** ¿Recibió daño hace poco la nave de este Emperador? (no puede encarnarse en pleno combate). */
+  inCombat(emperorId: string): boolean {
+    const c = this.combatants.get(emperorId);
+    return !!c && c.lastHitAt > 0 && this.now() - c.lastHitAt < LINEAGE.incarnateCombatLockSec * 1000;
+  }
+
+  /** Casco en memoria de la nave de un Emperador (o null si no está activa): el del combate de flotas parte de él. */
+  liveHull(emperorId: string): number | null {
+    const c = this.combatants.get(emperorId);
+    return c && c.hasReactor && !c.stale ? c.hull : null;
+  }
+
+  /** El combate de flotas por rondas cambió el casco de la nave (ya guardado): se aplica y se difunde. */
+  setHull(emperorId: string, hull: number): void {
+    const c = this.combatants.get(emperorId);
+    if (!c) return;
+    c.hull = Math.max(0, Math.min(c.hullMax, hull));
+    const m = this.members.get(emperorId);
+    if (m) this.broadcastState(m);
   }
 
   /** Mueve los piratas y los hace disparar cuando tienen a un enemigo delante y a tiro. */
@@ -686,7 +741,7 @@ export class SpaceService {
       }
       if (m.resupplyPending || !m.colonies?.list.length) continue;
       const missing = m.combat.missing(now);
-      if (missing.fuel < 0.5 && missing.cannon < 1 && missing.missiles < 1) continue;
+      if (missing.fuel < 0.5 && missing.cannon < 1 && missing.missiles < 1 && missing.hull < 0.5) continue;
       const layout = this.layout(m.systemId);
       if (!layout) continue;
       const near = m.colonies.list.find((c) => {
@@ -701,16 +756,18 @@ export class SpaceService {
         fuel: Math.min(missing.fuel, FLAGSHIP_SUPPLIES.resupplyFuelPerSec * sec),
         cannon: Math.min(missing.cannon, Math.ceil(FLAGSHIP_SUPPLIES.resupplyCannonPerSec * sec)),
         missiles: Math.min(missing.missiles, Math.ceil(FLAGSHIP_SUPPLIES.resupplyMissilesPerSec * sec)),
+        hull: Math.min(missing.hull, FLAGSHIP_REPAIR.colonyPerSec * sec),
       };
       m.resupplyPending = true;
       void this.flagships
         .resupply(m.emperorId, near.colonyId, want)
         .then((got) => {
           const added = m.combat.refill(got, this.now());
-          if (added.fuel > 0 || added.cannon > 0 || added.missiles > 0) {
+          if (added.fuel > 0 || added.cannon > 0 || added.missiles > 0 || added.hull > 0) {
             m.resupplyingUntil = this.now() + RESUPPLY_MS + 1000;
             this.sendWeapons(m);
             this.sendSupplies(m, this.now());
+            if (added.hull > 0) this.broadcastState(m);
             this.onColony(m.emperorId, near.colonyId);
           }
         })
@@ -767,7 +824,9 @@ export class SpaceService {
     if (broadcast) this.lastShieldBroadcast = now;
     for (const m of this.members.values()) {
       m.combat.regenShield(TICK_MS / 1000, now);
-      if (broadcast && Math.round(m.combat.shield) !== m.sentShield) this.broadcastState(m);
+      // Fase 10: la tripulación repara el casco poco a poco.
+      if (m.kind === "emperor") m.combat.repairHull(TICK_MS / 1000, now);
+      if (broadcast && (Math.round(m.combat.shield) !== m.sentShield || Math.round(m.combat.hull) !== m.sentHull)) this.broadcastState(m);
     }
   }
 }

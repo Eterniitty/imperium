@@ -669,22 +669,35 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       expect(app.space.combatOf(b.emperor.id).shield).toBe(110);
     });
 
-    it("una nave destruida sale del sistema y su Emperador renace en el Núcleo Humano", async () => {
+    it("una nave destruida sale del sistema; su Emperador cae, se gesta y renace en el Núcleo Humano (sin Cunas)", async () => {
       const { b, sa, sb, systemId } = await duel();
       const victim = app.space.combatOf(b.emperor.id);
       victim.shield = 0;
       victim.hull = 10;
+      // Sin recarga del escudo entre medias (tras un impacto tarda unos segundos).
+      victim.lastHitAt = Date.now();
+      const before = Date.now();
       sa.send({ t: "fire", weapon: "cannon", dir: [0, 0, -1] });
       const gone = await sa.next(is("shipGone"));
       expect(gone).toEqual({ t: "shipGone", id: b.emperor.id, reason: "destroyed" });
       const destroyed = await sb.next(is("destroyed"));
       expect(destroyed.by).toBe("Aurelia");
       expect(spawnSystems.has(destroyed.systemId)).toBe(true);
+      expect(destroyed.rebornAt).toBeGreaterThanOrEqual(before);
       expect(app.space.shipsIn(systemId)).not.toContain(b.emperor.id);
-      // Renace con la nave reparada.
-      expect([victim.hull, victim.shield]).toEqual([400, 200]);
+      // Fase 10: la gestación (con esta escala de tiempo, un instante) y el renacimiento con una nave nueva.
+      await settle(800);
       const res = await app.inject({ method: "GET", url: "/api/emperor", cookies: b.cookies });
       expect(res.json().emperor).toMatchObject({ location: { systemId: destroyed.systemId }, travel: null });
+      expect(res.json().emperor.gestating).toBeUndefined();
+      const status = await app.lineage.status(b.emperor.id);
+      // (Con esta escala de tiempo la racha ya se ha olvidado.)
+      expect(status).toMatchObject({ generation: 2, dead: null });
+      expect(status!.deaths[0]).toMatchObject({ cause: "combat", by: "Aurelia", streak: 1, rebirthKind: "core", systemId });
+      const ship = await app.flagships.status(b.emperor.id);
+      expect(ship!.supplies.hull).toBe(400);
+      // La nave nueva vuelve a estar en memoria entera al pilotarla.
+      expect([app.space.combatOf(b.emperor.id).hull, app.space.combatOf(b.emperor.id).shield]).toEqual([400, 200]);
     });
   });
 });

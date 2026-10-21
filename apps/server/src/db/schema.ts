@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { FLAGSHIP_SUPPLIES } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES } from "@imperium/content";
 import { bigint, bigserial, boolean, check, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 /**
@@ -117,12 +117,39 @@ export const emperors = pgTable("emperors", {
   cannonAmmo: integer("cannon_ammo").notNull().default(1500),
   missiles: integer("missiles").notNull().default(6),
   ammoAt: timestamp("ammo_at", { withTimezone: true }).notNull().defaultNow(),
+  /**
+   * Fase 10: casco de la nave (el mismo en el combate pilotado y en el de flotas
+   * por rondas). El espacio local lo lleva en memoria y lo guarda con los recursos.
+   */
+  flagshipHull: doublePrecision("flagship_hull").notNull().default(EMPEROR_FLAGSHIP.hull),
+  /**
+   * Fase 10: muerto y gestándose (las dos o ninguna). Mientras, la nave no está
+   * en ningún sitio y el Emperador no puede moverse ni pilotar; el evento
+   * `lineage.rebirth` lo hace renacer a la hora `rebornAt`.
+   */
+  deadAt: timestamp("dead_at", { withTimezone: true }),
+  rebornAt: timestamp("reborn_at", { withTimezone: true }),
+  /** Colonia con Cuna elegida al morir para renacer (se vuelve a comprobar al renacer). Sin clave ajena. */
+  rebirthColonyId: uuid("rebirth_colony_id"),
+  /** Racha de muertes seguidas a la hora `lastDeathAt` (se olvida con el tiempo, `@imperium/sim` lineage.ts). */
+  deathStreak: integer("death_streak").notNull().default(0),
+  lastDeathAt: timestamp("last_death_at", { withTimezone: true }),
+  /** Generación del linaje: sube con cada cuerpo nuevo (renacer o encarnarse). */
+  generation: integer("generation").notNull().default(1),
+  /** Última vez que se encarnó en un Heredero (enfriamiento). */
+  incarnatedAt: timestamp("incarnated_at", { withTimezone: true }),
+  /** Cuna preferida para renacer (colonia propia con Cuna; se comprueba al morir). Sin clave ajena. */
+  preferredCradleId: uuid("preferred_cradle_id"),
+  /** Herederos gestados (para ponerles nombre en orden). */
+  heirsBorn: integer("heirs_born").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   check("emperors_kind", sql`${t.kind} IN ('player', 'ai', 'alien') AND (${t.kind} = 'player') = (${t.accountId} IS NOT NULL) AND (${t.kind} = 'alien') = (${t.factionId} IS NOT NULL)`),
   check("emperors_humans_nonnegative", sql`${t.humans} >= 0`),
   check("emperors_visibility", sql`${t.visibility} IN ('public', 'allies', 'hidden')`),
+  check("emperors_dead_complete", sql`(${t.deadAt} IS NULL) = (${t.rebornAt} IS NULL)`),
+  check("emperors_flagship_hull", sql`${t.flagshipHull} >= 0`),
   check("emperors_travel_complete", sql`(${t.destSystemId} IS NULL) = (${t.departAt} IS NULL) AND (${t.departAt} IS NULL) = (${t.arriveAt} IS NULL)`),
   check(
     "emperors_park_complete",
@@ -262,6 +289,12 @@ export const colonies = pgTable(
      * La capital es la colonia más antigua *para su dueño* (coalesce con `foundedAt`).
      */
     acquiredAt: timestamp("acquired_at", { withTimezone: true }),
+    /**
+     * Fase 10: doctrina del Heredero que la gobierna (null = sin gobernador). Copia
+     * de `heirs.doctrine` del Heredero nacido de esta colonia: la resolución de la
+     * economía la lee sin consultar otra tabla. Al cambiar, se resuelve antes.
+     */
+    governor: text("governor"),
   },
   (t) => [
     unique("colonies_planet_unique").on(t.systemId, t.planetIndex),
@@ -715,5 +748,66 @@ export const sieges = pgTable(
     check("sieges_state", sql`${t.state} IN ('advancing', 'contested', 'battle', 'ready')`),
     check("sieges_outcome", sql`${t.outcome} IS NULL OR ${t.outcome} IN ('captured', 'broken', 'lifted', 'void')`),
     check("sieges_progress", sql`${t.progress} >= 0 AND ${t.progress} <= 1`),
+  ],
+);
+
+/**
+ * Fase 10: Herederos del linaje. Se gestan en la Cuna de una colonia propia y
+ * la gobiernan (uno por colonia) con la doctrina elegida; el Emperador puede
+ * encarnarse en ellos. Si la colonia cambia de manos, el Heredero muere.
+ */
+export const heirs = pgTable(
+  "heirs",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    emperorId: uuid("emperor_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    colonyId: uuid("colony_id")
+      .notNull()
+      .references(() => colonies.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** prosperity | bastion | balanced (`HEIR_DOCTRINES`). */
+    doctrine: text("doctrine").notNull(),
+    /** Su gobernador encarga instalaciones cuando la cola está vacía. */
+    builds: boolean("builds").notNull().default(true),
+    /** gestating | active. */
+    state: text("state").notNull().default("gestating"),
+    /** Cuándo nace (mientras se gesta). */
+    readyAt: timestamp("ready_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("heirs_colony_idx").on(t.colonyId),
+    index("heirs_emperor_idx").on(t.emperorId),
+    check("heirs_state", sql`${t.state} IN ('gestating', 'active')`),
+    check("heirs_doctrine", sql`${t.doctrine} IN ('prosperity', 'bastion', 'balanced')`),
+  ],
+);
+
+/** Fase 10: muertes de los Emperadores (historial del linaje; van en la exportación de datos). */
+export const emperorDeaths = pgTable(
+  "emperor_deaths",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    emperorId: uuid("emperor_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    systemId: text("system_id").notNull(),
+    /** combat (tiempo real) | battle (flotas por rondas). */
+    cause: text("cause").notNull(),
+    /** Quién lo derribó (nombre; vacío o null si fue un pirata o no se sabe). */
+    killer: text("killer"),
+    streak: integer("streak").notNull(),
+    diedAt: timestamp("died_at", { withTimezone: true }).notNull(),
+    rebornAt: timestamp("reborn_at", { withTimezone: true }).notNull(),
+    /** cradle | core | heir, al renacer (null mientras se gesta). */
+    rebirthKind: text("rebirth_kind"),
+    rebirthSystemId: text("rebirth_system_id"),
+  },
+  (t) => [
+    index("emperor_deaths_emperor_idx").on(t.emperorId, t.diedAt),
+    check("emperor_deaths_cause", sql`${t.cause} IN ('combat', 'battle')`),
+    check("emperor_deaths_rebirth", sql`${t.rebirthKind} IS NULL OR ${t.rebirthKind} IN ('cradle', 'core', 'heir')`),
   ],
 );

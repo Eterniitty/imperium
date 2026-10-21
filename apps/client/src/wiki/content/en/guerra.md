@@ -8,7 +8,7 @@ When **a fleet arrives** at a system, if there are **stopped fleets of two Emper
 
 - There is at most **one battle per system**. Fleets of either side that arrive later **join** their side; third parties' fleets **wait** for it to end.
 - When it ends, the game checks whether other enemies remain in the system (and another battle may start).
-- The Emperor's ship does not take part in these battles: it fights [in real time](/wiki/combate).
+- **The Emperor's ship fights too** (see [Death and lineage](/wiki/linaje#the-emperor-s-ship-in-battles)): alongside its fleets if they are in the battle and, outside the Human Core, even alone, when a hostile fleet arrives where it is. Emperors' ships do not start battles by themselves. If it falls, the Emperor dies.
 
 ## How a round is resolved
 

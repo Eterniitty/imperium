@@ -6,8 +6,9 @@ describe("datos de economía", () => {
     expect(validateEconomy()).toEqual([]);
   });
 
-  it("hay mina, refinería, central, astillero y plataforma defensiva (Fase 9b)", () => {
-    expect(INSTALLATIONS.map((i) => i.id).sort()).toEqual(["defense_platform", "mine", "power_plant", "refinery", "shipyard"]);
+  it("hay mina, refinería, central, astillero, plataforma defensiva (Fase 9b) y Cuna de linaje (Fase 10)", () => {
+    expect(INSTALLATIONS.map((i) => i.id).sort()).toEqual(["defense_platform", "lineage_cradle", "mine", "power_plant", "refinery", "shipyard"]);
+    expect(getInstallation("lineage_cradle")?.maxPerColony).toBe(1);
     expect(getInstallation("shipyard")?.maxPerColony).toBe(1);
     expect(getInstallation("nada")).toBeUndefined();
   });
