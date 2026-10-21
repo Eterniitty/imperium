@@ -47,7 +47,7 @@ With the same budget (checked by automated tests):
 
 ## Models
 
-Every ship has its own 3D model, generated in code from its data (length, hull shape, engines, wings, turrets, containers, hangar). Cannons and launchers sit on its **hardpoints**, the same ones the server fires from. Your parked fleets are shown in formation in the system view, next to your colony.
+Every ship has its own 3D model, generated in code from its data (length, design family, hull shape, engines, turrets, containers, hangar). They are industrial, military spacecraft rather than aircraft: modular hulls, large nozzles that glow with thrust, manoeuvring thrusters that fire when you turn or strafe, heat radiators, antennas, sensors and navigation lights (red to port, green to starboard, white strobes). Each family — scouts, fighters, frigates, capital ships, transports and, in the future, miners — mounts the same parts in its own layout; Scavenger ships are rebuilt, asymmetric scrap. Cannons and launchers sit on its **hardpoints**, the same ones the server fires from. Your parked fleets are shown in formation in the system view, next to your colony.
 
 {{tabla:naves-modelos}}
 
