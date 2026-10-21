@@ -1,4 +1,4 @@
-import { AIM_ASSIST, ALIEN_LOCAL, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, getAlienShipClass, getShipClass, MINING, PIRATE_AI, PIRATE_AMBUSH, type ShipClassId } from "@imperium/content";
+import { AIM_ASSIST, ALIEN_LOCAL, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, getAlienShipClass, getShipClass, MINING, PIRATE_AI, PIRATE_AMBUSH, SCAVENGER_LAIR, type ShipClassId } from "@imperium/content";
 import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, MOTHERSHIP_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
 import { addToHold, arriveVelocity, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
@@ -9,7 +9,7 @@ import type { SocialService } from "../social/service";
 import type { FlagshipService } from "./flagship";
 import type { DeepSpaceService } from "./deep";
 import { Combatant, type StoredSupplies, distance, forwardOf, HIT_RADIUS, MISSILE_LOCK_COS, normalize, rotate } from "./combat";
-import { pirateFlight, pirateHome, piratesOf, stepPirate } from "./pirates";
+import { hasLair, pirateFlight, pirateHome, piratesOf, stepPirate } from "./pirates";
 import { PendingArrivals, RIFT_ARRIVE_WINDOW_MS, riftNear, type RiftNotice } from "./rift";
 
 /** Una nave presente en un sistema: de un Emperador o un pirata de la IA. */
@@ -29,7 +29,7 @@ interface Member {
   fleetId?: string;
   shipId?: string;
   /** Solo piratas: dónde viven, un valor fijo para variar su forma de rodear, su clase de nave, su puntería y su modo (Fase 9d). */
-  ai?: { home: Vec3; phase: number; classId: string; aimJitter: number; mode?: PirateMode };
+  ai?: { home: Vec3; phase: number; classId: string; aimJitter: number; mode?: PirateMode; anchored?: boolean };
   /** Radio de impacto (metros): las naves grandes son más fáciles de acertar. */
   radius: number;
   name: string;
@@ -1121,22 +1121,26 @@ export class SpaceService {
 
   /** Crea los piratas que viven en el sistema (los que no estén muertos esperando reaparecer). */
   private spawnPirates(systemId: string, room: Set<Member>): void {
-    const specs = piratesOf(systemId);
+    const specs: Array<{ id: string; classId: string; aimJitter: number; lair?: boolean }> = piratesOf(systemId).map((s, i) => ({ ...s, id: `pirate:${systemId}:${i}` }));
+    // Guarida (`SCAVENGER_LAIR`): una nodriza fondeada, al final de la lista (su casa es la del índice siguiente).
+    if (hasLair(systemId)) specs.push({ id: `pirate:${systemId}:lair`, classId: SCAVENGER_LAIR.classId, aimJitter: 0.06, lair: true });
     const now = this.now();
     specs.forEach((spec, i) => {
-      const id = `pirate:${systemId}:${i}`;
+      const id = spec.id;
       if (this.members.has(id) || (this.deadPirates.get(id) ?? 0) > now) return;
       const cls = getAlienShipClass(spec.classId);
       const layout = this.layout(systemId);
       if (!layout || !cls) return;
       this.deadPirates.delete(id);
       const home = pirateHome(systemId, i, layout, now);
-      const combat = new Combatant(cls.hull, cls.combat, now);
+      const combat = spec.lair
+        ? new Combatant(cls.hull * SCAVENGER_LAIR.hullMult, { ...cls.combat, shield: cls.combat.shield * SCAVENGER_LAIR.shieldMult }, now)
+        : new Combatant(cls.hull, cls.combat, now);
       this.combatants.set(id, combat);
       const m: Member = {
         emperorId: id,
         kind: "pirate",
-        ai: { home, phase: (i * 0.37) % 1, classId: cls.id, aimJitter: spec.aimJitter },
+        ai: { home, phase: (i * 0.37) % 1, classId: cls.id, aimJitter: spec.aimJitter, anchored: spec.lair },
         radius: Math.max(HIT_RADIUS, cls.model.lengthM * 0.45),
         name: "",
         systemId,
@@ -1162,7 +1166,7 @@ export class SpaceService {
    */
   private ambush(m: Member): void {
     if (Math.random() >= PIRATE_AMBUSH.chance) return;
-    const pack = [...(this.rooms.get(m.systemId) ?? [])].filter((o) => o.kind === "pirate" && o.combat.hull > 0);
+    const pack = [...(this.rooms.get(m.systemId) ?? [])].filter((o) => o.kind === "pirate" && !o.ai?.anchored && o.combat.hull > 0);
     const now = this.now();
     pack.forEach((o, i) => {
       const a = (i / pack.length) * Math.PI * 2 + Math.random();
@@ -1386,8 +1390,20 @@ export class SpaceService {
       return;
     }
     if (v.kind === "pirate") {
+      const systemId = v.systemId;
       this.leave(v.emperorId, "destroyed");
       this.combatants.delete(v.emperorId);
+      if (v.ai?.anchored) {
+        // Guarida destruida: el sistema queda sin Carroñeros un tiempo y ella tarda en volver.
+        const now = this.now();
+        this.deadPirates.set(v.emperorId, now + SCAVENGER_LAIR.respawnHours * 3600_000);
+        const clear = now + SCAVENGER_LAIR.clearHours * 3600_000;
+        piratesOf(systemId).forEach((_, i) => {
+          const id = `pirate:${systemId}:${i}`;
+          this.deadPirates.set(id, Math.max(this.deadPirates.get(id) ?? 0, clear));
+        });
+        return;
+      }
       this.deadPirates.set(v.emperorId, this.now() + PIRATE_AI.respawnSec * 1000);
       return;
     }
@@ -1663,6 +1679,8 @@ export class SpaceService {
     let target: Member | null = prey && distance(m.pose.p, prey.pose.p) <= PIRATE_AI.packRadiusU ? prey : nearestD <= PIRATE_AI.aggroRangeU ? nearest : null;
     const underFire = now - m.combat.lastHitAt < PIRATE_AI.underFireSec * 1000;
     ai.mode = nextPirateMode(ai.mode ?? "hunt", m.combat.hull / m.combat.hullMax, m.combat.shieldMax > 0 ? m.combat.shield / m.combat.shieldMax : 1, underFire, nearest ? nearestD : null);
+    // La guarida no huye: aguanta y dispara.
+    if (ai.anchored) ai.mode = "hunt";
     if (ai.mode !== "hunt") target = null;
     const best = target ? distance(m.pose.p, target.pose.p) : Infinity;
     const flight = pirateFlight(ai.classId);
@@ -1676,7 +1694,8 @@ export class SpaceService {
       jink: underFire && toward ? jinkVector(toward, ai.phase, now / 1000, flight.speedU) : null,
       flank: hunters.length >= 2 ? flankOffset(Math.max(0, hunters.indexOf(m)), hunters.length, flight.preferredRangeU) : undefined,
     };
-    const step = stepPirate(m.pose.p, m.pose.v, ai.home, target?.pose.p ?? null, dt, ai.phase, flight, intent);
+    // La guarida está fondeada: no se mueve, solo dispara.
+    const step = ai.anchored ? { p: m.pose.p, q: m.pose.q, v: [0, 0, 0] as Vec3 } : stepPirate(m.pose.p, m.pose.v, ai.home, target?.pose.p ?? null, dt, ai.phase, flight, intent);
     m.pose = step;
     m.poseAt = now;
     m.history.push({ t: now, p: step.p });

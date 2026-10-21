@@ -41,6 +41,12 @@ La Marea de Óxido vive de asaltar líneas de suministro. Cuando un convoy con *
 
 {{tabla:incursiones}}
 
+### Guaridas
+
+En algunos sistemas con Carroñeros, lejos del Núcleo, hay una **guarida**: una nodriza carroñera **fondeada** que no se mueve, muy resistente y bien armada. No huye nunca. Si la destruyes, los Carroñeros de ese sistema **dejan de reaparecer** durante unas horas, y la guarida tarda un día en volver.
+
+{{tabla:guaridas}}
+
 ## Peligro por zona
 
 Cuanto más lejos del Núcleo, más numerosos, más pesados y con mejor puntería. El anillo es la distancia al Núcleo en sectores (ver [Universo](/wiki/universo)).

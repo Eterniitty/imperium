@@ -71,6 +71,14 @@ const is =
   (m: ServerMessage): m is Extract<ServerMessage, { t: K }> =>
     m.t === t;
 
+/** Las naves de la milicia del Núcleo (`CORE_MILITIA`) patrullan los sistemas del Núcleo: aquí no cuentan. */
+const notMilitia = (s: { id: string }) => !s.id.startsWith("militia:");
+/** Mensaje `poses` que trae la posición de una nave concreta. */
+const posesOf =
+  (id: string) =>
+  (m: ServerMessage): m is Extract<ServerMessage, { t: "poses" }> =>
+    m.t === "poses" && m.ships.some((s) => s.id === id);
+
 type Snap<T extends Topic> = Extract<ServerMessage, { t: "snap"; topic: T }>;
 type Delta = Extract<ServerMessage, { t: "delta" }>;
 /** Instantánea de un tema. */
@@ -462,22 +470,24 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       sa.send({ t: "pose", systemId, ...pose(near(systemId, [100, 0, 0])) });
       const first = await sa.next(is("space"));
       // B aún no pilota, pero su nave está aparcada en el sistema y se ve.
-      expect(first).toMatchObject({ systemId, ships: [{ id: b.emperor.id, name: "Brennus", kind: "emperor" }] });
+      expect(first).toMatchObject({ systemId });
+      expect(first.ships.filter(notMilitia)).toMatchObject([{ id: b.emperor.id, name: "Brennus", kind: "emperor" }]);
 
       sb.send({ t: "pose", systemId, ...pose(near(systemId, [110, 0, 0])) });
       const seenB = await sb.next(is("space"));
-      expect(seenB.ships).toMatchObject([{ id: a.emperor.id, name: "Aurelia", ally: false, p: near(systemId, [100, 0, 0]), hull: 400, shield: 200 }]);
+      expect(seenB.ships.filter(notMilitia)).toMatchObject([{ id: a.emperor.id, name: "Aurelia", ally: false, p: near(systemId, [100, 0, 0]), hull: 400, shield: 200 }]);
 
       // B se mueve: A recibe su posición (y no la suya propia).
       const from = sa.messages.length;
       sb.send({ t: "pose", systemId, ...pose(near(systemId, [112, 0, 0])) });
-      const poses = await sa.next(is("poses"), from);
-      expect(poses.ships).toEqual([{ id: b.emperor.id, ...pose(near(systemId, [112, 0, 0])) }]);
+      const poses = await sa.next(posesOf(b.emperor.id), from);
+      // (Las escoltas de su flota, `ship:<id>`, también se mueven: solo cuenta la nave de B.)
+      expect(poses.ships.filter((s) => !s.id.includes(":"))).toEqual([{ id: b.emperor.id, ...pose(near(systemId, [112, 0, 0])) }]);
 
       // B deja de pilotar: su nave se queda aparcada donde estaba y A la sigue viendo.
       sb.send({ t: "leave" });
       await settle(1300);
-      expect(sa.messages.filter(is("shipGone"))).toEqual([]);
+      expect(sa.messages.filter(is("shipGone")).filter(notMilitia)).toEqual([]);
       expect(app.space.shipsIn(systemId)).toContain(b.emperor.id);
       const status = await app.flagships.status(b.emperor.id);
       const at = near(systemId, [112, 0, 0]);
@@ -493,7 +503,7 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       await parkAt(b.emperor.id, [R, 0, 0]);
       sa.send({ t: "pose", systemId, ...pose([0, 0, R]) });
       const space = await sa.next(is("space"));
-      expect(space.ships).toMatchObject([{ id: b.emperor.id }]);
+      expect(space.ships.filter(notMilitia)).toMatchObject([{ id: b.emperor.id }]);
       await settle(1300);
       const moved = sa.messages.filter(is("poses")).flatMap((m) => m.ships).filter((s) => s.id === b.emperor.id).at(-1)!;
       expect(moved.p[0]).toBeLessThan(R);
@@ -605,7 +615,7 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       await sb.next(is("space"));
       const dest = coreSystems.find((s) => s.id !== systemId)!;
       sb.send({ t: "cmd", cmdId: "salto-0001", op: "emperor.move", args: { systemId: dest.id } });
-      expect(await sa.next(is("shipGone"))).toEqual({ t: "shipGone", id: b.emperor.id, reason: "left" });
+      expect(await sa.next((m): m is Extract<ServerMessage, { t: "shipGone" }> => m.t === "shipGone" && m.id === b.emperor.id)).toEqual({ t: "shipGone", id: b.emperor.id, reason: "jump" });
       // Aparecerá en el borde del destino, del lado por el que llega.
       const status = (await app.flagships.status(b.emperor.id))!;
       expect(status.systemId).toBe(dest.id);

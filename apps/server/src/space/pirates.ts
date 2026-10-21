@@ -2,7 +2,7 @@
  * Piratas Carroñeros (IA): dónde viven y cómo se mueven. Funciones puras; el
  * estado y la difusión los lleva SpaceService.
  */
-import { getAlienShipClass, PIRATE_AI, scavengerDanger, type AlienFlight } from "@imperium/content";
+import { getAlienShipClass, PIRATE_AI, SCAVENGER_LAIR, scavengerDanger, type AlienFlight } from "@imperium/content";
 import { hashString } from "@imperium/procgen";
 import { isDeepId, parseSystemId, type Quat, type Vec3 } from "@imperium/shared";
 import { HUMAN_CORE_RADIUS } from "../emperor/world";
@@ -60,6 +60,13 @@ export function piratesOf(systemId: string): PirateSpec[] {
     out.push({ classId, aimJitter: level.aimJitter });
   }
   return out;
+}
+
+/** ¿Tiene el sistema una guarida de Carroñeros (`SCAVENGER_LAIR`)? Determinista por sistema. */
+export function hasLair(systemId: string): boolean {
+  if (isDeepId(systemId) || piratesOf(systemId).length === 0) return false;
+  if (systemRing(systemId) < SCAVENGER_LAIR.minRing) return false;
+  return hashString(`guarida:${systemId}`) % 100 < SCAVENGER_LAIR.chancePct;
 }
 
 /** Cuántos piratas viven en un sistema. */

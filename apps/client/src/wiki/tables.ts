@@ -14,6 +14,8 @@ import {
   type AiPersonality,
   ALIEN_AI,
   ROUTE_RAID,
+  SCAVENGER_LAIR,
+  getAlienShipClass,
   ALIEN_SHIP_CLASSES,
   ALIEN_SIEGE,
   INSTALLATION_DEFENSE,
@@ -713,6 +715,19 @@ export const GEN_TABLES: Record<string, Builder> = {
     };
   },
 
+  guaridas: (t, locale) => {
+    const L = SCAVENGER_LAIR;
+    const cls = getAlienShipClass(L.classId)!;
+    const h = (n: number) => t("colony.costHours", { h: num(locale, n) });
+    return kv(t, [
+      ["wiki.k.raidMinRing", num(locale, L.minRing)],
+      ["wiki.k.lairChance", `${num(locale, L.chancePct)} %`],
+      ["wiki.k.lairHull", num(locale, cls.hull * L.hullMult)],
+      ["wiki.k.lairShield", num(locale, cls.combat!.shield * L.shieldMult)],
+      ["wiki.k.lairClear", h(L.clearHours)],
+      ["wiki.k.lairRespawn", h(L.respawnHours)],
+    ]);
+  },
   incursiones: (t, locale) => {
     const R = ROUTE_RAID;
     const pct = (x: number) => `${num(locale, Math.round(x * 100))} %`;

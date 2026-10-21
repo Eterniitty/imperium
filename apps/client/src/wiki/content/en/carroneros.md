@@ -41,6 +41,12 @@ The Rust Tide lives off raiding supply lines. When a convoy on an **automatic ro
 
 {{tabla:incursiones}}
 
+### Lairs
+
+In some Scavenger systems far from the Core there is a **lair**: an **anchored** Scavenger mothership that does not move, very tough and well armed. It never flees. If you destroy it, the Scavengers of that system **stop respawning** for a few hours, and the lair takes a day to come back.
+
+{{tabla:guaridas}}
+
 ## Danger by zone
 
 The farther from the Core, the more numerous, the heavier and the better their aim. The ring is the distance to the Core in sectors (see [Universe](/wiki/universo)).

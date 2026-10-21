@@ -355,6 +355,28 @@ export const ROUTE_RAID = {
 } as const;
 
 /**
+ * Guaridas de los Carroñeros (fase 2 del plan): en algunos sistemas con
+ * Carroñeros, lejos del Núcleo, una nave nodriza fondeada (no se mueve) les
+ * sirve de base. Muy resistente y bien armada; si cae, los Carroñeros del
+ * sistema dejan de reaparecer durante un tiempo, y la guarida tarda en volver.
+ */
+export const SCAVENGER_LAIR = {
+  /** Anillo mínimo. */
+  minRing: 3,
+  /** Porcentaje de los sistemas con Carroñeros que tienen guarida. */
+  chancePct: 15,
+  /** Nave que hace de guarida. */
+  classId: "scav_mothership",
+  /** Multiplicadores de casco y escudo sobre los de esa nave. */
+  hullMult: 4,
+  shieldMult: 3,
+  /** Horas (reales) sin Carroñeros en el sistema tras destruirla. */
+  clearHours: 6,
+  /** Horas (reales) hasta que vuelve una guarida nueva. */
+  respawnHours: 24,
+} as const;
+
+/**
  * Emboscadas en las salidas de salto (fase 2 del plan): al salir de la grieta
  * en un sistema con Carroñeros, a veces la manada ya está esperando cerca.
  */
