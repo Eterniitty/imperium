@@ -6,9 +6,10 @@
  * - Carga (`charge`): una costura de luz que se alarga y se abre poco a poco,
  *   con grietas secundarias que se encienden, chispas que el desgarro absorbe y
  *   el fondo que se curva a su alrededor (lente).
- * - Salto (`burst`): se abre del todo, la nave entra y desaparece; destello y la
- *   grieta se cierra tras ella.
- * - Llegada (`arrive`): se abre otra en el destino, la nave sale de ella y se cierra.
+ * - Salto (`burst`): se abre del todo, la nave se espaguetiza hacia ella y
+ *   desaparece (`warpStreak.ts`); destello y la grieta se cierra tras ella.
+ * - Llegada (`arrive`): se abre otra en el destino, sale un rayo de luz que se
+ *   contrae en la nave (`RiftField.emerge`) y se cierra.
  *
  * Dentro del desgarro se ve «el otro lado»: el fondo real refractado y
  * arremolinado (si hay captura de la escena) mezclado con el flujo cuántico.
@@ -22,6 +23,7 @@ import { FLAGSHIP_LENGTH_M, QUANTUM_CHARGE_SEC, QUANTUM_RIFT } from "@imperium/c
 import type { Quat, Vec3 } from "@imperium/shared";
 import { withLogDepth } from "../logDepth";
 import { glowTexture } from "../textures";
+import { WarpStreaks } from "./warpStreak";
 
 /** Alto de la grieta (m) y lado del plano que la contiene (con su halo y la lente). */
 export const RIFT_HEIGHT = FLAGSHIP_LENGTH_M * QUANTUM_RIFT.heightLengths;
@@ -397,17 +399,6 @@ export class RiftPortal {
   }
 }
 
-/** Nave tragada por una grieta (o que sale de ella): animación de posición. */
-interface Swallow {
-  ship: THREE.Object3D;
-  from: THREE.Vector3;
-  dir: THREE.Vector3;
-  distance: number;
-  t: number;
-  /** Al acabar, quitarla y liberarla (las de otros); la propia solo se oculta. */
-  done: (ship: THREE.Object3D) => void;
-}
-
 const tmpV = new THREE.Vector3();
 
 /**
@@ -417,14 +408,15 @@ const tmpV = new THREE.Vector3();
 export class RiftField {
   readonly group = new THREE.Group();
   private rifts = new Map<string, RiftPortal>();
-  private swallows: Swallow[] = [];
+  /** Naves que se espaguetizan al entrar o salen como un rayo. */
+  private warp = new WarpStreaks();
   private target: THREE.WebGLRenderTarget | null = null;
   private size = new THREE.Vector2();
   /** Luz de la grieta más cercana sobre las naves (siempre en la escena: añadirla y quitarla obligaría a recompilar). */
   readonly light = new THREE.PointLight(0x9fb8ff, 0, RIFT_HEIGHT * 8, 2);
 
   constructor() {
-    this.group.add(this.light);
+    this.group.add(this.light, this.warp.group);
   }
 
   get active(): boolean {
@@ -460,33 +452,36 @@ export class RiftField {
   }
 
   /**
-   * La nave entra en la grieta `key`: acelera hacia ella y la cruza en
-   * `QUANTUM_RIFT.departSec`; al acabar, `done` (ocultarla o liberarla) y la grieta se cierra.
+   * La nave entra en la grieta `key`: se estira hacia ella (espaguetización) y
+   * desaparece dentro en `QUANTUM_RIFT.departSec`, con un destello; al acabar,
+   * `done` (ocultarla o liberarla) y la grieta se cierra.
    */
-  swallow(key: string, ship: THREE.Object3D, done: (ship: THREE.Object3D) => void): void {
+  swallow(key: string, ship: THREE.Object3D, reduce: boolean, done: (ship: THREE.Object3D) => void): void {
     const r = this.rifts.get(key);
-    const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(ship.quaternion).normalize();
-    const to = r ? r.object.position.clone().sub(ship.position).dot(dir) : FLAGSHIP_LENGTH_M * QUANTUM_RIFT.aheadLengths;
+    const at = r ? r.object.position : RiftField.ahead(ship.position, ship.quaternion);
     r?.burst();
-    this.swallows.push({ ship, from: ship.position.clone(), dir, distance: Math.max(0, to) + FLAGSHIP_LENGTH_M * 1.6, t: 0, done });
+    this.warp.depart(ship, at, reduce, (s) => {
+      done(s);
+      for (const [k, rift] of this.rifts) if (rift.object.position.distanceTo(at) < RIFT_HEIGHT * 3) this.rifts.get(k)?.close();
+    });
   }
 
-  /** ¿Está tragándose a esta nave? */
+  /**
+   * La nave sale de la grieta de llegada en `at`: tras `delay` s (oculta), un
+   * rayo de luz sale de la grieta y se contrae en ella. Su posición la sigue
+   * fijando quien la mueve.
+   */
+  emerge(ship: THREE.Object3D, at: THREE.Vector3, delay: number, reduce: boolean): void {
+    this.warp.arrive(ship, at, delay, reduce);
+  }
+
+  /** ¿Está tragándose a esta nave (o sacándola)? */
   swallowing(ship: THREE.Object3D): boolean {
-    return this.swallows.some((s) => s.ship === ship);
+    return this.warp.has(ship);
   }
 
   update(dt: number, time: number, viewer: THREE.Vector3 | null): void {
-    this.swallows = this.swallows.filter((s) => {
-      s.t += dt;
-      const k = Math.min(1, s.t / QUANTUM_RIFT.departSec);
-      // Arranca despacio y se lanza: la nave «cae» en la grieta.
-      s.ship.position.copy(s.from).addScaledVector(s.dir, s.distance * k * k * k);
-      if (k < 1) return true;
-      s.done(s.ship);
-      for (const [key, r] of this.rifts) if (r.object.position.distanceTo(s.ship.position) < RIFT_HEIGHT * 3) this.rifts.get(key)?.close();
-      return false;
-    });
+    this.warp.update(dt);
     let best: RiftPortal | null = null;
     let bestD = Infinity;
     for (const [key, r] of this.rifts) {
@@ -574,8 +569,7 @@ export class RiftField {
   }
 
   clear(): void {
-    for (const s of this.swallows) s.done(s.ship);
-    this.swallows = [];
+    this.warp.clear();
     for (const [key, r] of [...this.rifts]) this.drop(key, r);
     this.light.intensity = 0;
     this.releaseTarget();
