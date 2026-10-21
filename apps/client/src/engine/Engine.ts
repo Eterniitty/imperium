@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { isDeepId, translate, type I18nKey, type SectorCoord, type StarSystemSummary, type WorldPosition } from "@imperium/shared";
-import { isTravelling, positionAt } from "@imperium/sim";
+import { distance, isDeepId, translate, type I18nKey, type SectorCoord, type StarSystemSummary, type WorldPosition } from "@imperium/shared";
+import { isTravelling, positionAt, quantumFuelCost, regenFuel } from "@imperium/sim";
 import { STAR_CLASSES } from "@imperium/procgen";
 import { spaceStore } from "../net/space";
 import { serverNow, worldStore } from "../net/world";
@@ -233,10 +233,20 @@ export class Engine {
     if (isTravelling(emperor, serverNow())) return this.notify("pilot.cannotWhileJumping");
     const here = emperor.travel ? emperor.travel.to : emperor.location;
     if (target.id === here.systemId) return this.notify("error.already_there");
+    // Sin combustible para ese salto no tiene sentido alinear ni cargar: se avisa antes de la animación.
+    if (this.fuelNow() < quantumFuelCost(distance(here.position, target.position))) return this.notify("error.insufficient_fuel");
     if (!(this.active === this.system && this.system.isPiloting) && !this.pilot(null)) return;
     this.system.startQuantum(target, here.position, near);
     // Ya en segundo plano (p. ej. se eligió el destino y se cambió de ventana): no se espera a la animación.
     if (this.inBackground()) this.system.skipQuantumAhead();
+  }
+
+  /** Combustible actual de la nave (en vivo si se pilota; si no, el guardado más lo regenerado). */
+  private fuelNow(): number {
+    const live = spaceStore.getState().supplies;
+    if (live) return live.fuel;
+    const flagship = worldStore.getState().flagship;
+    return flagship ? regenFuel(flagship.supplies.fuel, (serverNow() - flagship.supplies.fuelAt) / 1000) : Infinity;
   }
 
   /** El motor cuántico está cargado: orden de salto; si el servidor la acepta, al túnel. */
