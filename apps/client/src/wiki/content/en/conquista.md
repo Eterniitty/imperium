@@ -47,6 +47,12 @@ The planet is defended by its **militia** (a share of its population) and the **
 - **More troops than defenders**: you take the planet. Some of your soldiers fall per defender, and the whole militia falls; **the survivors stay as colonists**.
 - **Fewer or equal**: the landing fails, all your troops fall and take part of the militia with them. The siege goes on: you can try again.
 
+## Orbital bombardment
+
+With the siege **ready**, instead of landing troops you can **bombard** one specific installation of the colony (for example its **lineage cradle**, so its owner cannot be reborn there, or a defence platform). Pick the installation in the siege panel and press **Bombard**: if the colony has one, it is destroyed without you taking the planet, and the siege loses part of its progress, so you cannot raze everything at once. You need armed ships in the system and no armed defenders. You cannot see the enemy's installations: if it has none of that type, the server tells you.
+
+{{tabla:bombardeo}}
+
 ## 4. Capture
 
 The colony becomes yours **with losses**: part of the population, part of the stock and, at random, some installations. Also:

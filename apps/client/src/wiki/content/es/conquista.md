@@ -47,6 +47,12 @@ Defienden el planeta la **milicia** (una parte de su población) y la **guarnici
 - **Más tropas que defensores**: tomas el planeta. Caen algunos de tus soldados por cada defensor y toda la milicia; **los supervivientes se quedan como colonos**.
 - **Menos o igual**: el desembarco fracasa, caen todas tus tropas y se llevan por delante a parte de la milicia. El asedio sigue: puedes volver a intentarlo.
 
+## Bombardeo orbital
+
+Con el asedio **listo**, en vez de desembarcar puedes **bombardear** una instalación concreta de la colonia (por ejemplo su **Cuna de linaje**, para que su dueño no renazca allí, o una plataforma defensiva). Elige la instalación en el panel del asedio y pulsa **Bombardear**: si la colonia la tiene, queda destruida sin que tomes el planeta, y el asedio pierde parte de su progreso, así que no puedes arrasarlo todo de golpe. Necesitas naves armadas en el sistema y que no haya defensores armados. No ves las instalaciones del enemigo: si no tiene esa, el servidor te lo dice.
+
+{{tabla:bombardeo}}
+
 ## 4. Captura
 
 La colonia pasa a ser tuya **con pérdidas**: parte de la población, parte de las existencias y, al azar, algunas instalaciones. Además:

@@ -216,6 +216,7 @@ export const ClientMessageSchema = z.union([
     op: z.literal("siege.assault"),
     args: z.object({ siegeId: z.uuid(), fleetId: z.uuid().optional(), troops: z.number().int().min(1).max(1_000_000).optional() }),
   }),
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("siege.raze"), args: z.object({ siegeId: z.uuid(), installationId: z.string().regex(/^[a-z_]{1,32}$/) }) }),
   // Fase 10: muerte y linaje.
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("lineage.prefer"), args: z.object({ colonyId: z.uuid().nullable() }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("heir.gestate"), args: z.object({ colonyId: z.uuid(), doctrine: Doctrine }) }),

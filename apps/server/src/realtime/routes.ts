@@ -276,6 +276,12 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     return res;
                   }
                   // Fase 9b: asedio, desembarco y captura (ver war/siege.ts).
+                  case "siege.raze": {
+                    if (!sieges) return { ok: false, error: "no_siege" } as const;
+                    const res = await sieges.raze(owner.emperorId, msg.args.siegeId, msg.args.installationId);
+                    if (res.ok) hub.publishSiegeFx(res.fx);
+                    return res;
+                  }
                   case "siege.start":
                   case "siege.lift":
                   case "siege.assault": {

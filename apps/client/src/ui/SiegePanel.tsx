@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Fleet, I18nKey, PlanetClaim, Siege } from "@imperium/shared";
+import { INSTALLATIONS, SIEGE } from "@imperium/content";
 import { siegePower } from "@imperium/sim";
 import { connection, useWorld } from "../net/world";
 import { useAuth } from "../state/auth";
@@ -43,6 +44,8 @@ export function SiegeCard({ siege }: { siege: Siege }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<I18nKey | null>(null);
   const [source, setSource] = useState<string>("");
+  // Bombardeo orbital: qué instalación destruir (no se ven las del enemigo: si no la tiene, el servidor lo dice).
+  const [razeTarget, setRazeTarget] = useState<string>("lineage_cradle");
 
   const planet = siege.colonyName ?? siege.planetName;
   const enemy = siege.role === "attacker"
@@ -121,6 +124,20 @@ export function SiegeCard({ siege }: { siege: Siege }) {
             ) : (
               <span className="muted">{t("siege.noTroops")}</span>
             ))}{" "}
+          {siege.state === "ready" && (
+            <>
+              <select aria-label={t("siege.razeTarget")} value={razeTarget} onChange={(e) => setRazeTarget(e.target.value)}>
+                {INSTALLATIONS.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {t(d.nameKey as I18nKey)}
+                  </option>
+                ))}
+              </select>{" "}
+              <button className="btn" disabled={busy} title={t("siege.razeHint", { pct: Math.round(SIEGE.razeProgressAfter * 100) })} onClick={() => void run(connection.command("siege.raze", { siegeId: siege.id, installationId: razeTarget }))}>
+                {t("siege.raze")}
+              </button>{" "}
+            </>
+          )}
           <button className="link-btn" disabled={busy} onClick={() => void run(connection.command("siege.lift", { siegeId: siege.id }))}>
             {t("siege.lift")}
           </button>

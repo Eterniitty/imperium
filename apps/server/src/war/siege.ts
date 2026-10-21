@@ -412,6 +412,36 @@ export class SiegeService {
   }
 
   /**
+   * Orden `siege.raze`: bombardeo orbital. Con el asedio listo, naves armadas
+   * presentes y sin defensores armados, destruye una instalación elegida de la
+   * colonia sin tomarla; el asedio vuelve a `SIEGE.razeProgressAfter`.
+   */
+  async raze(attackerId: string, siegeId: string, installationId: string): Promise<SiegeResult> {
+    return this.db.transaction(async (tx): Promise<SiegeResult> => {
+      const [siege] = await tx
+        .select()
+        .from(sieges)
+        .where(and(eq(sieges.id, siegeId), eq(sieges.attackerId, attackerId), isNull(sieges.endedAt)))
+        .for("update")
+        .limit(1);
+      if (!siege) return { ok: false, error: "no_siege" };
+      if (siege.progress < 1 - EPS) return { ok: false, error: "siege_not_ready" };
+      const f = await this.forces(tx, attackerId, siege.systemId);
+      if (this.armed(f.idle).length === 0) return { ok: false, error: f.inBattle ? "in_battle" : "no_armed_fleet" };
+      if (await this.defended(tx, siege.defenderId, siege.systemId)) return { ok: false, error: "defended" };
+      if (!(await this.colonyService.razeInstallation(tx, siege.colonyId, installationId, `siege:${siege.id}`))) return { ok: false, error: "unknown_item" };
+      await tx.update(sieges).set({ progress: SIEGE.razeProgressAfter }).where(eq(sieges.id, siege.id));
+      const fx = new SiegeEffects();
+      fx.sieges.add(siege.id);
+      if (siege.defenderId) {
+        fx.colonies.push([siege.colonyId, siege.defenderId]);
+        fx.allColonies.add(siege.defenderId);
+      }
+      return { ok: true, siegeId: siege.id, fx };
+    });
+  }
+
+  /**
    * Toma la colonia: cancela sus órdenes del mercado (lo retenido vuelve a sus
    * almacenes y pasa al conquistador; los créditos, a quien los puso), la
    * captura (`ColonyService.capture`) y termina el asedio.

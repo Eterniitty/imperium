@@ -47,6 +47,12 @@ export const SIEGE = {
   /** Pérdidas al tomar el planeta (captura, no destrucción): parte de la población, de las existencias y de las instalaciones. */
   capture: { populationLoss: 0.1, stockLoss: 0.25, installationLoss: 0.2 },
   /**
+   * Bombardeo orbital (`siege.raze`): con el asedio listo, en vez de asaltar se
+   * destruye una instalación elegida (la Cuna de linaje, una plataforma…) sin
+   * tomar la colonia; el asedio vuelve a este progreso.
+   */
+  razeProgressAfter: 0.5,
+  /**
    * Protección de los Emperadores nuevos: durante sus primeras horas de juego
    * nadie puede asediar sus colonias (igual que la gracia de las facciones).
    */

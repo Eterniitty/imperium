@@ -513,6 +513,8 @@ export const GEN_TABLES: Record<string, Builder> = {
     numeric: [1, 2],
   }),
 
+  bombardeo: (t, locale) => kv(t, [["wiki.k.razeProgress", `${num(locale, SIEGE.razeProgressAfter * 100)} %`]]),
+
   suministro: (t, locale) =>
     kv(t, [
       ["wiki.k.supplyRange", `${num(locale, ECONOMY.supplyRangeLy)} a.l.`],

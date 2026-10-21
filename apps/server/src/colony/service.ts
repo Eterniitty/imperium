@@ -739,6 +739,35 @@ export class ColonyService {
   }
 
   /**
+   * Bombardeo orbital (Fase 9b, `siege.raze`): destruye la instalación más
+   * reciente de un tipo, sin reembolso, dentro de la transacción del asedio.
+   * Devuelve false si la colonia no la tiene.
+   */
+  async razeInstallation(tx: Tx, colonyId: string, installationId: string, ref: string): Promise<boolean> {
+    const [row] = await tx.select().from(colonies).where(eq(colonies.id, colonyId)).for("update").limit(1);
+    const def = getInstallation(installationId);
+    if (!row || !def) return false;
+    const [target] = await tx
+      .select({ id: installations.id })
+      .from(installations)
+      .where(and(eq(installations.colonyId, row.id), eq(installations.kind, def.id)))
+      .orderBy(desc(installations.builtAt))
+      .limit(1);
+    if (!target) return false;
+    // Lo producido hasta ahora, con las instalaciones que tenía.
+    const counts = (await this.installationCounts(tx, [row.id])).get(row.id) ?? {};
+    const site = this.site(row, counts, await this.extraUpkeepOf(tx, row));
+    const now = this.now();
+    if (site && row.emperorId) {
+      const state = this.resolve(row, site, now);
+      await tx.update(colonies).set({ population: state.population, ...state.stock, resolvedAt: new Date(now) }).where(eq(colonies.id, row.id));
+    }
+    await tx.delete(installations).where(eq(installations.id, target.id));
+    await tx.insert(resourceLedger).values({ emperorId: row.emperorId, colonyId: row.id, reason: "razed", ref: `${ref}:${def.id}` });
+    return true;
+  }
+
+  /**
    * Desembarca humanos de la nave del Emperador en una colonia propia: el
    * Emperador tiene que estar en ese sistema (no viajando), y no se puede pasar
    * del tope de población del planeta.

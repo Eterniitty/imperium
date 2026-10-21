@@ -135,6 +135,8 @@ export interface CommandArgs {
    * (por defecto, todos).
    */
   "siege.assault": { siegeId: string; fleetId?: string; troops?: number };
+  /** Bombardeo orbital: con el asedio listo, destruye una instalación de la colonia sin tomarla (`SIEGE.razeProgressAfter`). */
+  "siege.raze": { siegeId: string; installationId: string };
   /** Fase 10: Cuna preferida para renacer (una colonia propia con Cuna), o null para la más cercana. */
   "lineage.prefer": { colonyId: string | null };
   /** Fase 10: gesta un Heredero en la Cuna de una colonia propia (sin otro Heredero), con su doctrina. */
