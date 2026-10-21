@@ -60,8 +60,8 @@ export const sessions = pgTable(
  */
 export const emperors = pgTable("emperors", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  /** Cuenta del jugador. Null solo en los actores de la IA (`kind` distinto de "player"). */
   accountId: uuid("account_id")
-    .notNull()
     .unique()
     .references(() => accounts.id, { onDelete: "cascade" }),
   /** Nombre tal y como lo escribió el jugador (normalizado a NFC). */
@@ -73,6 +73,14 @@ export const emperors = pgTable("emperors", {
    * decir, aliados mutuos) o "hidden" (nadie). Lo aplica el servidor al enviar.
    */
   visibility: text("visibility").notNull().default("allies"),
+  /**
+   * Fase 11: "player" (un jugador), "ai" (Emperador humano de la IA) o "alien"
+   * (actor de una facción alienígena: sus flotas usan las mismas tablas y
+   * órdenes que las de los jugadores). Los "alien" no salen en la lista de Emperadores.
+   */
+  kind: text("kind").notNull().default("player"),
+  /** Facción alienígena del actor (solo con kind "alien"; id de `FACTIONS`). */
+  factionId: text("faction_id").unique(),
   /** Sistema donde está, o del que salió si está viajando: "sx:sy:sz:indice". */
   systemId: text("system_id").notNull(),
   /**
@@ -92,6 +100,7 @@ export const emperors = pgTable("emperors", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
+  check("emperors_kind", sql`${t.kind} IN ('player', 'ai', 'alien') AND (${t.kind} = 'player') = (${t.accountId} IS NOT NULL) AND (${t.kind} = 'alien') = (${t.factionId} IS NOT NULL)`),
   check("emperors_humans_nonnegative", sql`${t.humans} >= 0`),
   check("emperors_visibility", sql`${t.visibility} IN ('public', 'allies', 'hidden')`),
   check("emperors_travel_complete", sql`(${t.destSystemId} IS NULL) = (${t.departAt} IS NULL) AND (${t.departAt} IS NULL) = (${t.arriveAt} IS NULL)`),
@@ -561,4 +570,68 @@ export const shipments = pgTable(
     arriveAt: timestamp("arrive_at", { withTimezone: true }).notNull(),
   },
   (t) => [index("shipments_emperor_idx").on(t.emperorId), check("shipments_kind", sql`${t.kind} IN ('trade', 'contribution')`)],
+);
+
+// --- Fase 11: facciones alienígenas (IA) ---
+
+/**
+ * Territorio ganado por la expansión lenta de las facciones alienígenas. La
+ * capa base es determinista (`@imperium/procgen` territory.ts) y no se guarda;
+ * aquí solo los sistemas que se han sumado después.
+ */
+export const alienClaims = pgTable(
+  "alien_claims",
+  {
+    systemId: text("system_id").primaryKey(),
+    factionId: text("faction_id").notNull(),
+    claimedAt: timestamp("claimed_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("alien_claims_faction_idx").on(t.factionId)],
+);
+
+/**
+ * Regiones de territorio donde la IA está despierta: se activan cuando un
+ * humano se acerca y se duermen tras `ALIEN_AI.activeHours` sin actividad.
+ * Mientras están activas, un evento `ai.region` decide cada cierto tiempo.
+ */
+export const alienRegions = pgTable("alien_regions", {
+  regionKey: text("region_key").primaryKey(),
+  factionId: text("faction_id").notNull(),
+  activeUntil: timestamp("active_until", { withTimezone: true }).notNull(),
+  /** Hay un evento `ai.region` programado para esta región. */
+  ticking: boolean("ticking").notNull().default(false),
+  lastSpawnAt: timestamp("last_spawn_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Flotas alienígenas y la región a la que pertenecen (su guarnición). */
+export const alienFleets = pgTable(
+  "alien_fleets",
+  {
+    fleetId: uuid("fleet_id")
+      .primaryKey()
+      .references(() => fleets.id, { onDelete: "cascade" }),
+    regionKey: text("region_key").notNull(),
+  },
+  (t) => [index("alien_fleets_region_idx").on(t.regionKey)],
+);
+
+/**
+ * Relación de cada facción con cada Emperador (diplomacia básica): el rencor
+ * sube al interceptar sus flotas o colonizar su territorio, se olvida con el
+ * tiempo y se puede pagar con tributos. Con `ALIEN_AI.grudge.hostileAt`, una
+ * facción neutral se vuelve hostil a ese Emperador.
+ */
+export const alienStandings = pgTable(
+  "alien_standings",
+  {
+    emperorId: uuid("emperor_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    factionId: text("faction_id").notNull(),
+    /** Rencor a la hora `updatedAt` (decae linealmente desde entonces). */
+    grudge: doublePrecision("grudge").notNull().default(0),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.emperorId, t.factionId] }), check("alien_standings_grudge", sql`${t.grudge} >= 0`)],
 );

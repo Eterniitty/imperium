@@ -22,6 +22,8 @@ export interface EventPayloads {
   "humanity.fund": { projectId: string };
   /** Siguiente ronda de una batalla de flotas (Fase 9a). */
   "battle.round": { battleId: string };
+  /** Decisión de la IA alienígena en una región activa (Fase 11). */
+  "ai.region": { regionKey: string };
 }
 export type EventKind = keyof EventPayloads;
 

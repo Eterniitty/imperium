@@ -8,6 +8,7 @@ import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
 import {
   accounts,
+  alienStandings,
   battles,
   battleSides,
   colonies,
@@ -103,6 +104,8 @@ export async function accountRoutes(app: FastifyInstance, { config, db, hub, spa
         // Economía de la humanidad y mercado: cartera, aportes, órdenes, operaciones y envíos.
         wallet: (await db.select().from(emperorWallets).where(eq(emperorWallets.emperorId, emperor.id)))[0] ?? null,
         humanityContributions: await db.select().from(humanityContributions).where(eq(humanityContributions.emperorId, emperor.id)),
+        // Fase 11: relación (rencor) de cada facción alienígena con este Emperador.
+        alienStandings: await db.select().from(alienStandings).where(eq(alienStandings.emperorId, emperor.id)),
         ...(await market.exportFor(emperor.id)),
       };
     }

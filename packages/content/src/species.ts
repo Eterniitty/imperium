@@ -2,9 +2,11 @@ import type { SpeciesDefinition } from "./types";
 
 /**
  * Especies del universo, según docs/lore.md. Ninguna es jugable. Lo que el lore
- * no concreta todavía (naturaleza física de algunas, colores, rasgos numéricos)
- * es provisional y se ajustará cuando se integren en el juego. Solo los
- * Carroñeros están activos por ahora (piratas de la IA).
+ * no concreta todavía (naturaleza física de algunas, rasgos numéricos) es
+ * provisional. Todas las que no han desaparecido están activas: tienen
+ * territorio (capa determinista de `@imperium/procgen` territory.ts), flotas
+ * con naves propias (`ALIEN_SHIP_CLASSES`, aliens.ts) y una IA que las mueve
+ * (Fase 11, `apps/server/src/ai`). Los Precursores solo dejan ruinas.
  */
 export const SPECIES: readonly SpeciesDefinition[] = [
   {
@@ -13,6 +15,8 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     nameKey: "species.eradicators.name",
     descriptionKey: "species.eradicators.description",
     mottoKey: "species.eradicators.motto",
+    philosophyKey: "species.eradicators.philosophy",
+    attitudeKey: "species.eradicators.attitude",
     nature: "mechanical", // provisional
     doctrine: "purge",
     expansion: "slow_solid",
@@ -25,7 +29,10 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     rivals: ["tharaxi", "elydri"],
     visual: { silhouette: "angular", primaryColor: "#e6e1d6", secondaryColor: "#7a1f1f", emissiveColor: "#ffffff" },
     playable: false,
-    enabledInMvp: false,
+    enabledInMvp: true,
+    territory: { minCoreRing: 7, regionWeight: 0.8, systemShare: 0.55, region: "sparse" },
+    fleet: { style: "phalanx", composition: [["erad_purger", 3], ["erad_sentence", 1]], shipsPerFleet: [2, 5], fleetsPerRegion: [1, 3] },
+    ai: { patrol: 0.5, intruders: "attack", responders: 3, expansionPerDay: 0.3, trades: false, grudgePerColony: 1 },
   },
   {
     // Grises: orden y control. La humanidad es una variable imposible de controlar; ofrecen pactos con límites.
@@ -33,6 +40,8 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     nameKey: "species.greys.name",
     descriptionKey: "species.greys.description",
     mottoKey: "species.greys.motto",
+    philosophyKey: "species.greys.philosophy",
+    attitudeKey: "species.greys.attitude",
     nature: "hybrid", // provisional: «inteligencias antiguas»
     doctrine: "precision_strike",
     expansion: "slow_solid",
@@ -45,7 +54,10 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     rivals: ["void_nomads", "nihil"],
     visual: { silhouette: "geometric", primaryColor: "#9aa3ad", secondaryColor: "#3d4450", emissiveColor: "#b0f0ff" },
     playable: false,
-    enabledInMvp: false,
+    enabledInMvp: true,
+    territory: { minCoreRing: 4, regionWeight: 0.8, systemShare: 0.5, region: "any" },
+    fleet: { style: "precision", composition: [["grey_watcher", 1], ["grey_theorem", 2]], shipsPerFleet: [1, 3], fleetsPerRegion: [1, 2] },
+    ai: { patrol: 0.4, intruders: "guard", responders: 2, expansionPerDay: 0.2, trades: false, grudgePerColony: 0.34 },
   },
   {
     // Nómadas del Vacío: supervivencia y libertad. Viven en flotas; comercian con quien respete sus rutas.
@@ -53,6 +65,8 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     nameKey: "species.void_nomads.name",
     descriptionKey: "species.void_nomads.description",
     mottoKey: "species.void_nomads.motto",
+    philosophyKey: "species.void_nomads.philosophy",
+    attitudeKey: "species.void_nomads.attitude",
     nature: "biological",
     doctrine: "guerrilla",
     expansion: "nomadic",
@@ -65,7 +79,10 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     rivals: ["aurelians", "greys"],
     visual: { silhouette: "angular", primaryColor: "#b8874a", secondaryColor: "#3a2f28", emissiveColor: "#ffb35c" },
     playable: false,
-    enabledInMvp: false,
+    enabledInMvp: true,
+    territory: { minCoreRing: 3, regionWeight: 1, systemShare: 0.35, region: "sparse" },
+    fleet: { style: "caravan", composition: [["nomad_ark", 1], ["nomad_corsair", 2]], shipsPerFleet: [2, 4], fleetsPerRegion: [1, 3] },
+    ai: { patrol: 0.7, intruders: "guard", responders: 1, expansionPerDay: 0.3, trades: true, grudgePerColony: 0.5 },
   },
   {
     // Precursores: misterio y legado. Civilizaciones desaparecidas; solo quedan ruinas, mundos artificiales y archivos.
@@ -73,6 +90,8 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     nameKey: "species.precursors.name",
     descriptionKey: "species.precursors.description",
     mottoKey: "species.precursors.motto",
+    philosophyKey: "species.precursors.philosophy",
+    attitudeKey: "species.precursors.attitude",
     nature: "exotic",
     doctrine: "ancient_technology",
     expansion: "extinct",
@@ -86,6 +105,9 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     visual: { silhouette: "ethereal", primaryColor: "#d9c37a", secondaryColor: "#1c1a24", emissiveColor: "#f5e6a8" },
     playable: false,
     enabledInMvp: false,
+    territory: { minCoreRing: 3, regionWeight: 0, systemShare: 0.3, region: "any" },
+    fleet: { style: "relic", composition: [["precursor_sentinel", 1]], shipsPerFleet: [1, 1], fleetsPerRegion: [0, 0] },
+    ai: { patrol: 0, intruders: "ignore", responders: 0, expansionPerDay: 0, trades: false, grudgePerColony: 0 },
   },
   {
     // ELYDRI: nada debe olvidarse. Archivos vivientes cristalinos; quieren estudiar los recuerdos de los Emperadores.
@@ -93,6 +115,8 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     nameKey: "species.elydri.name",
     descriptionKey: "species.elydri.description",
     mottoKey: "species.elydri.motto",
+    philosophyKey: "species.elydri.philosophy",
+    attitudeKey: "species.elydri.attitude",
     nature: "crystalline",
     doctrine: "ancient_technology",
     expansion: "slow_solid",
@@ -105,7 +129,10 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     rivals: ["eradicators", "nihil"],
     visual: { silhouette: "crystalline", primaryColor: "#cfe9f5", secondaryColor: "#5a7fa8", emissiveColor: "#8fe9ff" },
     playable: false,
-    enabledInMvp: false,
+    enabledInMvp: true,
+    territory: { minCoreRing: 3, regionWeight: 0.7, systemShare: 0.45, region: "dense" },
+    fleet: { style: "line", composition: [["elydri_prism", 3], ["elydri_reliquary", 1]], shipsPerFleet: [1, 3], fleetsPerRegion: [1, 2] },
+    ai: { patrol: 0.3, intruders: "guard", responders: 1, expansionPerDay: 0.1, trades: false, grudgePerColony: 0.25 },
   },
   {
     // THARAXI: el individuo es prescindible. Marea viviente colectiva; fascinada por la reproducción humana autónoma.
@@ -113,6 +140,8 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     nameKey: "species.tharaxi.name",
     descriptionKey: "species.tharaxi.description",
     mottoKey: "species.tharaxi.motto",
+    philosophyKey: "species.tharaxi.philosophy",
+    attitudeKey: "species.tharaxi.attitude",
     nature: "biological",
     doctrine: "swarm_assault",
     expansion: "fast_fragile",
@@ -125,7 +154,10 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     rivals: ["eradicators", "vesperi"],
     visual: { silhouette: "organic", primaryColor: "#4f6b2e", secondaryColor: "#7a2d4a", emissiveColor: "#c6ff5a" },
     playable: false,
-    enabledInMvp: false,
+    enabledInMvp: true,
+    territory: { minCoreRing: 5, regionWeight: 1.3, systemShare: 0.7, region: "dense" },
+    fleet: { style: "swarm", composition: [["tharaxi_drone", 6], ["tharaxi_node", 1]], shipsPerFleet: [4, 10], fleetsPerRegion: [2, 4] },
+    ai: { patrol: 0.6, intruders: "attack", responders: 3, expansionPerDay: 1.5, trades: false, grudgePerColony: 1 },
   },
   {
     // AURELIANOS: el poder debe demostrarse. Casas aristocráticas; respetan a los Emperadores como rivales naturales.
@@ -133,6 +165,8 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     nameKey: "species.aurelians.name",
     descriptionKey: "species.aurelians.description",
     mottoKey: "species.aurelians.motto",
+    philosophyKey: "species.aurelians.philosophy",
+    attitudeKey: "species.aurelians.attitude",
     nature: "biological",
     doctrine: "noble_conquest",
     expansion: "slow_solid",
@@ -145,7 +179,10 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     rivals: ["void_nomads", "vesperi"],
     visual: { silhouette: "angular", primaryColor: "#e8b64c", secondaryColor: "#4a2a6b", emissiveColor: "#ffe08a" },
     playable: false,
-    enabledInMvp: false,
+    enabledInMvp: true,
+    territory: { minCoreRing: 4, regionWeight: 1, systemShare: 0.5, region: "dense" },
+    fleet: { style: "line", composition: [["aurelian_lancer", 3], ["aurelian_bastion", 1]], shipsPerFleet: [2, 5], fleetsPerRegion: [2, 3] },
+    ai: { patrol: 0.5, intruders: "attack", responders: 2, expansionPerDay: 0.4, trades: false, grudgePerColony: 0.5 },
   },
   {
     // NIHIL: toda existencia es una deuda. Ocultos en espacio extremo; unos quieren acabar con la humanidad, otros liberar a los Emperadores.
@@ -153,6 +190,8 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     nameKey: "species.nihil.name",
     descriptionKey: "species.nihil.description",
     mottoKey: "species.nihil.motto",
+    philosophyKey: "species.nihil.philosophy",
+    attitudeKey: "species.nihil.attitude",
     nature: "exotic",
     doctrine: "stealth_sabotage",
     expansion: "static",
@@ -165,7 +204,10 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     rivals: ["elydri", "greys"],
     visual: { silhouette: "ethereal", primaryColor: "#0d0b14", secondaryColor: "#2a1f3d", emissiveColor: "#7a5cff" },
     playable: false,
-    enabledInMvp: false,
+    enabledInMvp: true,
+    territory: { minCoreRing: 6, regionWeight: 0.6, systemShare: 0.6, region: "sparse" },
+    fleet: { style: "shadow", composition: [["nihil_veil", 3], ["nihil_rift", 1]], shipsPerFleet: [1, 3], fleetsPerRegion: [1, 2] },
+    ai: { patrol: 0.3, intruders: "attack", responders: 1, expansionPerDay: 0.1, trades: false, grudgePerColony: 0.5 },
   },
   {
     // VESPERI: la vida local es sagrada. Pequeñas civilizaciones defensivas; protectoras o resistentes según cómo se las trate.
@@ -173,6 +215,8 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     nameKey: "species.vesperi.name",
     descriptionKey: "species.vesperi.description",
     mottoKey: "species.vesperi.motto",
+    philosophyKey: "species.vesperi.philosophy",
+    attitudeKey: "species.vesperi.attitude",
     nature: "biological", // provisional: «civilizaciones diversas»
     doctrine: "fortified_defense",
     expansion: "static",
@@ -185,7 +229,10 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     rivals: ["aurelians", "tharaxi"],
     visual: { silhouette: "geometric", primaryColor: "#5f9e8a", secondaryColor: "#1f3b3a", emissiveColor: "#7fffd4" },
     playable: false,
-    enabledInMvp: false,
+    enabledInMvp: true,
+    territory: { minCoreRing: 3, regionWeight: 1, systemShare: 0.3, region: "any" },
+    fleet: { style: "bastion", composition: [["vesperi_aegis", 2], ["vesperi_watchtower", 1]], shipsPerFleet: [2, 4], fleetsPerRegion: [2, 3] },
+    ai: { patrol: 0.2, intruders: "guard", responders: 1, expansionPerDay: 0.05, trades: false, grudgePerColony: 0.5 },
   },
   {
     // Carroñeros: piratas de especies mezcladas que asaltan fuera del Núcleo Humano. Ya activos como IA.
@@ -193,6 +240,8 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     nameKey: "species.scavengers.name",
     descriptionKey: "species.scavengers.description",
     mottoKey: "species.scavengers.motto",
+    philosophyKey: "species.scavengers.philosophy",
+    attitudeKey: "species.scavengers.attitude",
     nature: "hybrid",
     doctrine: "raiding",
     expansion: "nomadic",
@@ -206,6 +255,9 @@ export const SPECIES: readonly SpeciesDefinition[] = [
     visual: { silhouette: "brutalist_scrap", primaryColor: "#6b5a4a", secondaryColor: "#2b2620", emissiveColor: "#ff5a3c" },
     playable: false,
     enabledInMvp: true,
+    territory: { minCoreRing: 2, regionWeight: 1.2, systemShare: 0.25, region: "any" },
+    fleet: { style: "pack", composition: [["scav_raider", 3], ["scav_breaker", 1]], shipsPerFleet: [1, 3], fleetsPerRegion: [1, 2] },
+    ai: { patrol: 0.5, intruders: "attack", responders: 2, expansionPerDay: 0.5, trades: false, grudgePerColony: 0 },
   },
 ];
 

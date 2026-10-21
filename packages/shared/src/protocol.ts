@@ -6,7 +6,7 @@
 import type { Battle, Cargo, Colony, Emperor, EmperorHumans, Fleet, FleetRoute, OrderSide, Stock, StockId, Wallet } from "./api";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
-export const PROTOCOL_VERSION = 6;
+export const PROTOCOL_VERSION = 7;
 
 /** Tamaño máximo de un mensaje del cliente, en bytes. */
 export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;
@@ -160,6 +160,8 @@ export type CommandError =
   | "invalid_route"
   | "in_battle"
   | "no_target"
+  | "unknown_faction"
+  | "no_diplomacy"
   | "rate_limited"
   | "internal";
 

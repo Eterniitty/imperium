@@ -320,13 +320,14 @@ export class ColonyService {
    */
   async claims(systemId: string): Promise<PlanetClaim[]> {
     const rows = await this.db
-      .select({ planetIndex: colonies.planetIndex, name: colonies.name, ownerId: colonies.emperorId, ownerName: emperors.name })
+      .select({ planetIndex: colonies.planetIndex, name: colonies.name, ownerId: colonies.emperorId, ownerName: emperors.name, ownerFactionId: emperors.factionId })
       .from(colonies)
       // Sin dueño (cuenta borrada): colonia independiente, con ownerId y ownerName null.
       .leftJoin(emperors, eq(emperors.id, colonies.emperorId))
       .where(eq(colonies.systemId, systemId))
       .orderBy(asc(colonies.planetIndex));
-    return rows;
+    // La facción solo va si el dueño es alienígena (el hábitat de los Nómadas).
+    return rows.map(({ ownerFactionId, ...r }) => (ownerFactionId ? { ...r, ownerFactionId } : r));
   }
 
   // --- Órdenes ---

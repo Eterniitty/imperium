@@ -142,3 +142,62 @@ describe("generateSystemDetail", () => {
     expect(differ).toBeGreaterThanOrEqual(sector.systems.length - 1);
   });
 });
+
+describe("territorio alienígena", async () => {
+  const { baseSystemTerritory, coreRing, isRelicSite, regionOf, regionOwner, regionMaxRing } = await import("../src");
+  const rules = {
+    regionSizeSectors: 2,
+    emptyRegionWeight: 1,
+    species: [
+      { speciesId: "cerca", minCoreRing: 2, regionWeight: 1, systemShare: 0.5, region: "any" as const, preferredStarClasses: ["M" as const], factions: [["cerca_a", 1] as const] },
+      { speciesId: "lejos", minCoreRing: 6, regionWeight: 1, systemShare: 0.9, region: "dense" as const, preferredStarClasses: ["G" as const, "K" as const], factions: [["lejos_a", 0.5] as const, ["lejos_b", 0.5] as const] },
+    ],
+    relics: { speciesId: "ruinas", minCoreRing: 3, share: 0.5, starClasses: ["BH" as const, "NS" as const] },
+  };
+  const TSEED = 12345;
+
+  it("es determinista y no toca el Núcleo Humano", () => {
+    let owned = 0;
+    for (let x = -4; x <= 4; x++)
+      for (let z = -4; z <= 4; z++) {
+        for (const s of generateSector(SEED, { x, y: 0, z }).systems) {
+          const a = baseSystemTerritory(TSEED, SEED, s, rules);
+          expect(baseSystemTerritory(TSEED, SEED, s, rules)).toEqual(a);
+          if (coreRing(s.sector) <= 1) expect(a).toBeNull();
+          if (a) {
+            owned++;
+            const sp = rules.species.find((r) => r.speciesId === a.speciesId)!;
+            expect(coreRing(s.sector)).toBeGreaterThanOrEqual(sp.minCoreRing);
+          }
+        }
+      }
+    expect(owned).toBeGreaterThan(0);
+  });
+
+  it("las especies lejanas solo aparecen en regiones lejanas", () => {
+    for (let x = -6; x <= 6; x++)
+      for (let y = -2; y <= 2; y++) {
+        const r = { x, y, z: 0 };
+        const o = regionOwner(TSEED, SEED, r, rules);
+        if (o?.speciesId === "lejos") expect(regionMaxRing(r, 2)).toBeGreaterThanOrEqual(6);
+        if (o) expect(["cerca_a", "lejos_a", "lejos_b"]).toContain(o.factionId);
+      }
+  });
+
+  it("otra semilla de territorio reparte distinto (es secreta del servidor)", () => {
+    const owners = (seed: number) => Array.from({ length: 40 }, (_, i) => regionOwner(seed, SEED, { x: 3 + i, y: 0, z: 0 }, rules)?.speciesId ?? "-").join();
+    expect(owners(1)).not.toBe(owners(2));
+    expect(regionOf({ x: -1, y: 3, z: 0 }, 2)).toEqual({ x: -1, y: 1, z: 0 });
+  });
+
+  it("las ruinas solo están en estrellas exóticas fuera del Núcleo", () => {
+    const base = { sector: { x: 5, y: 0, z: 0 }, index: 0 };
+    let relics = 0;
+    for (let i = 0; i < 50; i++) {
+      if (isRelicSite(TSEED, { ...base, index: i, starClass: "BH" }, rules)) relics++;
+      expect(isRelicSite(TSEED, { ...base, index: i, starClass: "G" }, rules)).toBe(false);
+      expect(isRelicSite(TSEED, { sector: { x: 1, y: 0, z: 0 }, index: i, starClass: "BH" }, rules)).toBe(false);
+    }
+    expect(relics).toBeGreaterThan(10);
+  });
+});

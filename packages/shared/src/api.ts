@@ -265,6 +265,8 @@ export interface PlanetClaim {
   /** Dueño; null = colonia independiente (su Emperador borró la cuenta). */
   ownerId: string | null;
   ownerName: string | null;
+  /** Si el dueño es una facción alienígena (Fase 11), su id (`FACTIONS`); el cliente muestra su nombre traducido. */
+  ownerFactionId?: string | null;
 }
 
 /** Respuesta de `GET /api/systems/:systemId/claims`: planetas con dueño de un sistema descubierto. */
@@ -310,6 +312,8 @@ export interface Battle {
   outcome: BattleOutcome;
   /** Nombre del Emperador enemigo. */
   enemyName: string;
+  /** Si el enemigo es una facción alienígena (Fase 11), su id; el cliente muestra su nombre traducido. */
+  enemyFactionId?: string | null;
   /** Naves de cada bando que siguen en la batalla. */
   own: ShipCounts;
   foe: ShipCounts;
@@ -324,6 +328,8 @@ export interface Battle {
 export interface FleetContact {
   fleetId: string;
   emperorName: string;
+  /** Flota de una facción alienígena (Fase 11): su id. Interceptarla aumenta su rencor. */
+  factionId?: string | null;
   ships: number;
   from: SystemLocation;
   to: SystemLocation;
@@ -334,6 +340,62 @@ export interface FleetContact {
 /** Respuesta de `GET /api/contacts`. */
 export interface ContactsResponse {
   contacts: FleetContact[];
+  /** Flotas alienígenas paradas al alcance de tus sensores (Fase 11). */
+  sightings?: AlienSighting[];
+}
+
+// --- Fase 11: especies alienígenas, territorios e IA ---
+
+/** Dueño alienígena de un sistema (capa de territorio más la expansión). */
+export interface AlienTerritory {
+  factionId: string;
+  speciesId: string;
+}
+
+/** Flota alienígena parada que ven tus sensores. */
+export interface AlienSighting {
+  fleetId: string;
+  factionId: string;
+  speciesId: string;
+  systemId: string;
+  systemName: string;
+  ships: ShipCounts;
+  inBattle: boolean;
+}
+
+/** Relación de una facción alienígena con tu Emperador (diplomacia básica). */
+export interface AlienStanding {
+  factionId: string;
+  speciesId: string;
+  /** Rencor actual (con `hostileAt` o más, hostil aunque la facción sea neutral). */
+  grudge: number;
+  /** ¿Te ataca? (facción hostil por naturaleza o por rencor). */
+  hostile: boolean;
+  /** ¿Acepta tributos para olvidar el rencor? */
+  acceptsTribute: boolean;
+}
+
+/**
+ * Respuesta de `GET /api/aliens`: territorio alienígena de los sistemas que has
+ * descubierto (la niebla de guerra también lo oculta), ruinas precursoras y tu
+ * relación con las facciones que conoces.
+ */
+export interface AliensResponse {
+  territory: Array<AlienTerritory & { systemId: string }>;
+  relics: string[];
+  standings: AlienStanding[];
+  /** Rencor a partir del cual una facción neutral es hostil. */
+  hostileAt: number;
+}
+
+/** Respuesta de `GET /api/systems/:systemId/aliens`: presencia alienígena en un sistema descubierto. */
+export interface SystemAliensResponse {
+  territory: AlienTerritory | null;
+  relic: boolean;
+  /** Flotas alienígenas paradas allí (solo si tus sensores lo cubren ahora). */
+  fleets: AlienSighting[];
+  /** ¿Tus sensores cubren el sistema? (si no, las flotas no se ven). */
+  sensed: boolean;
 }
 
 /** Respuesta de `POST /api/ws/ticket`: ticket de un solo uso para abrir el WebSocket. */

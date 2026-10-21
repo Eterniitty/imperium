@@ -22,6 +22,7 @@ import type { SpaceService } from "../space/service";
 import type { WarService } from "../war/service";
 import type { HumanityService } from "../humanity/service";
 import type { MarketService } from "../market/service";
+import type { AlienService } from "../ai/service";
 import type { Client, Hub } from "./hub";
 import { TicketStore } from "./tickets";
 
@@ -37,6 +38,8 @@ export interface RealtimeDeps {
   hub: Hub;
   humanity: HumanityService;
   market: MarketService;
+  /** Fase 11: facciones alienígenas (tributos y rencor al colonizar su territorio). */
+  aliens?: AlienService;
 }
 
 const MINUTE = 60_000;
@@ -45,7 +48,7 @@ const HEARTBEAT_MS = 30_000;
 const MAX_CONNECTIONS_PER_ACCOUNT = 5;
 const MAX_CONNECTIONS = 1_000;
 
-export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, colonies, logistics, wars, space, hub, humanity, market }: RealtimeDeps) {
+export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, colonies, logistics, wars, space, hub, humanity, market, aliens }: RealtimeDeps) {
   const cookieName = sessionCookieName(config);
   const tickets = new TicketStore();
   const ticketsPerAccount = new RateLimiter(30, MINUTE);
@@ -198,6 +201,13 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     }
                     return res;
                   }
+                  // Fase 11: tributo a una facción alienígena (diplomacia básica, ver ai/service.ts).
+                  case "alien.tribute": {
+                    if (!aliens) return { ok: false, error: "unknown_faction" } as const;
+                    const res = await aliens.tribute(owner.emperorId, msg.args.factionId, msg.args.credits);
+                    if (res.ok) await hub.publishWallet(res.emperorId);
+                    return res;
+                  }
                   // Fase 8: logística (ver logistics/service.ts).
                   case "fleet.transfer": {
                     const a = msg.args;
@@ -226,6 +236,8 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                   // Fase 7: colonias (ver colony/service.ts).
                   case "colony.claim": {
                     const res = await colonies.claim(owner.emperorId, msg.args);
+                    // Colonizar territorio alienígena despierta a su facción y le suma rencor.
+                    if (res.ok && aliens) await aliens.onColonyClaimed(res.emperorId, msg.args.systemId);
                     if (res.ok) {
                       // Todas sus colonias: la capital puede haber cambiado de mantenimiento (colonizador gastado).
                       await hub.publishColonies(res.emperorId);

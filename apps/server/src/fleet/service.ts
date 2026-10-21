@@ -1,4 +1,4 @@
-import { fleetSpeedLyPerHour, getShipClass, SHIP_PASSENGERS, type ShipClassId } from "@imperium/content";
+import { anyFleetSpeedLyPerHour, getAnyShipClass, SHIP_PASSENGERS, type ShipClassId } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import type { Cargo, CommandError, Fleet, FleetRoute } from "@imperium/shared";
 import { isTravelling, travelDurationMs } from "@imperium/sim";
@@ -40,7 +40,7 @@ export function fleetCapacity(classIds: readonly string[]): Fleet["capacity"] {
   let resources = 0;
   let humans = 0;
   for (const id of classIds) {
-    resources += getShipClass(id as ShipClassId)?.cargo ?? 0;
+    resources += getAnyShipClass(id)?.cargo ?? 0;
     humans += SHIP_PASSENGERS[id as ShipClassId] ?? 0;
   }
   return { resources, humans };
@@ -130,7 +130,7 @@ export class FleetService {
       if (isTravelling(current, now)) return { ok: false, error: "in_transit" };
       if (current.location.systemId === dest.id) return { ok: false, error: "already_there" };
 
-      const speed = fleetSpeedLyPerHour(current.ships.map((s) => s.classId)) * this.config.TIME_SCALE;
+      const speed = anyFleetSpeedLyPerHour(current.ships.map((s) => s.classId)) * this.config.TIME_SCALE;
       const arriveAt = now + travelDurationMs(current.location.position, dest.position, speed);
       // Salir de un sistema donde combate es huir: deja la batalla.
       const updated = await tx

@@ -49,8 +49,8 @@ describe("especies (docs/lore.md)", () => {
     );
   });
 
-  it("solo los Carroñeros (piratas de la IA) están activos por ahora", () => {
-    expect(mvpSpecies().map((s) => s.id)).toEqual(["scavengers"]);
+  it("todas las especies están activas salvo los Precursores, desaparecidos", () => {
+    expect(mvpSpecies().map((s) => s.id).sort()).toEqual(SPECIES.filter((s) => s.id !== "precursors").map((s) => s.id).sort());
   });
 
   it("ninguna especie alienígena es jugable", () => {
@@ -170,5 +170,37 @@ describe("combate", () => {
     const { validateCombat } = await import("../src");
     const bad = { shield: 10, shieldRegenPerSec: 1, shieldDelaySec: 1, weapons: [{ kind: "missile" as const, damage: 0, cooldownSec: 1, rangeU: 1, speedU: 1, ammo: 3, ammoRegenSec: null }] };
     expect(validateCombat("x", bad).length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("especies en el juego (Fase 11)", () => {
+  it("cada especie activa tiene al menos dos naves propias y las de su flota son suyas", async () => {
+    const { alienShipsOf } = await import("../src");
+    for (const s of SPECIES.filter((x) => !x.extinct)) {
+      expect(alienShipsOf(s.id).length).toBeGreaterThanOrEqual(2);
+      for (const [id] of s.fleet.composition) expect(alienShipsOf(s.id).map((a) => a.id)).toContain(id);
+    }
+  });
+
+  it("las más peligrosas viven más lejos del Núcleo Humano", () => {
+    const ring = (id: string) => SPECIES.find((s) => s.id === id)!.territory.minCoreRing;
+    expect(ring("scavengers")).toBe(2);
+    expect(ring("eradicators")).toBeGreaterThan(ring("tharaxi"));
+    expect(ring("tharaxi")).toBeGreaterThan(ring("vesperi"));
+    expect(ring("nihil")).toBeGreaterThan(ring("void_nomads"));
+    for (const s of SPECIES) expect(s.territory.minCoreRing).toBeGreaterThanOrEqual(2);
+  });
+
+  it("solo los Nómadas del Vacío comercian; los Precursores nunca atacan", () => {
+    expect(SPECIES.filter((s) => s.ai.trades).map((s) => s.id)).toEqual(["void_nomads"]);
+    expect(SPECIES.find((s) => s.id === "precursors")!.ai.intruders).toBe("ignore");
+  });
+
+  it("getAnyShipClass encuentra naves humanas y alienígenas", async () => {
+    const { getAnyShipClass, anyFleetSpeedLyPerHour } = await import("../src");
+    expect(getAnyShipClass("frigate")!.attack).toBe(getShipClass("frigate")!.attack);
+    expect(getAnyShipClass("tharaxi_drone")!.hull).toBeGreaterThan(0);
+    expect(getAnyShipClass("no_existe")).toBeUndefined();
+    expect(anyFleetSpeedLyPerHour(["frigate", "nomad_ark"])).toBe(Math.min(getShipClass("frigate")!.speedLyPerHour, getAnyShipClass("nomad_ark")!.speedLyPerHour));
   });
 });

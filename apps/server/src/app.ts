@@ -23,6 +23,9 @@ import { HumanityService } from "./humanity/service";
 import { MarketService } from "./market/service";
 import { inHumanCore } from "./emperor/world";
 import { SpaceService } from "./space/service";
+import { alienRoutes } from "./ai/routes";
+import { AlienService } from "./ai/service";
+import { TerritoryService } from "./ai/territory";
 import { warRoutes } from "./war/routes";
 import { WarService } from "./war/service";
 import { createMailer, type Mailer } from "./mail";
@@ -104,6 +107,13 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   colonies.setBonuses(() => humanity.bonuses());
   wars.setShieldFactor((systemId) => (inHumanCore(systemId) ? humanity.bonuses().coreShield : 1));
   const market = new MarketService(deps.db, colonies, humanity);
+  // Fase 11: facciones alienígenas (territorio, flotas, comercio y diplomacia básica) con la misma tubería de órdenes.
+  const aliens = new AlienService(deps.db, config, new TerritoryService(deps.db, config), fleets, colonies, humanity, (summary) => discoveries.detail(summary));
+  aliens.market = market;
+  wars.setAlienHooks(
+    (db, a, b, systemId) => aliens.hostile(db, a, b, systemId),
+    (tx, emperorId, factionId) => aliens.onIntercept(tx, emperorId, factionId),
+  );
   const hub = new Hub(emperors, fleets, social, discoveries, colonies, wars, humanity, app.log, config.TIME_SCALE);
   const space = new SpaceService(
     config,
@@ -123,9 +133,14 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   });
   app.decorate("space", space);
   await app.register(emperorRoutes, { config, db: deps.db, emperors, hub });
-  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, colonies, logistics, wars, space, hub, humanity, market });
+  aliens.onMarket = (res) => {
+    for (const id of res.wallets) void hub.publishWallet(id);
+    for (const [colonyId, emperorId] of res.colonies) void hub.publishColony(emperorId, colonyId);
+  };
+  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, colonies, logistics, wars, space, hub, humanity, market, aliens });
   await app.register(humanityRoutes, { config, db: deps.db, emperors, humanity, market });
-  await app.register(warRoutes, { config, db: deps.db, emperors, wars });
+  await app.register(warRoutes, { config, db: deps.db, emperors, wars, aliens });
+  await app.register(alienRoutes, { config, db: deps.db, emperors, discoveries, wars, aliens });
   await app.register(socialRoutes, { config, db: deps.db, emperors, social, hub });
   await app.register(discoveryRoutes, { config, db: deps.db, emperors, discoveries });
   await app.register(accountRoutes, { config, db: deps.db, hub, space, colonies, humanity, market });
@@ -135,14 +150,19 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   // Al llegar se descubre lo que cubre el escáner (niebla de guerra).
   const worker = new EventWorker(deps.db, app.log);
   worker.on("fleet.arrive", async (tx, { fleetId }) => {
+    await aliens.ensure();
     const owner = await fleets.arrive(tx, fleetId);
-    const found = await discoveries.fleetArrived(tx, fleetId);
+    // Las flotas de las facciones alienígenas no descubren nada ni tienen a quién avisar.
+    const alien = owner !== null && aliens.isActor(owner);
+    const found = alien ? null : await discoveries.fleetArrived(tx, fleetId);
     // Fase 9a: si coincide con flotas hostiles, combate (y la ruta espera a que acabe).
     const war = owner ? await wars.onArrive(tx, fleetId) : null;
+    // Fase 11: si llega a territorio alienígena, la región despierta y quizá responde.
+    if (owner && !alien) await aliens.onFleetArrived(tx, fleetId);
     // Ruta automática: descarga, carga y sale hacia la otra colonia.
     const step = owner && !war?.inBattle ? await logistics.onArrive(tx, fleetId) : null;
     return () => {
-      if (owner) void hub.publishFleet(owner, fleetId);
+      if (owner && !alien) void hub.publishFleet(owner, fleetId);
       if (found) void hub.publishDiscovered(found.emperorId, found.systemIds);
       if (step) for (const id of step.colonyIds) void hub.publishColony(step.emperorId, id);
       if (war) hub.publishWar(war.fx);
@@ -155,6 +175,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   });
   worker.on("emperor.arrive", async (tx, { emperorId, systemId }) => {
     const found = await discoveries.emperorArrived(tx, emperorId, systemId);
+    if (found) await aliens.onEmperorArrived(tx, emperorId, systemId);
     if (found) return () => void hub.publishDiscovered(found.emperorId, found.systemIds);
   });
   // Fin de una construcción: instalación nueva o flota nueva con la nave construida.
@@ -185,6 +206,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
       if (done) void hub.publishColony(done.emperorId, done.colonyId);
     };
   });
+  // Fase 11: una decisión de la IA de una región alienígena activa.
+  worker.on("ai.region", async (tx, { regionKey }) => aliens.tick(tx, regionKey));
   // El tesoro ya debería poder pagar un proyecto que tiene todos sus recursos.
   worker.on("humanity.fund", async (tx, { projectId }) => {
     if (await humanity.onFund(tx, projectId)) return () => void humanity.reload();
@@ -197,6 +220,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   app.decorate("colonies", colonies);
   app.decorate("humanity", humanity);
   app.decorate("market", market);
+  app.decorate("aliens", aliens);
 
   return app;
 }
@@ -208,5 +232,6 @@ declare module "fastify" {
     space: SpaceService;
     humanity: HumanityService;
     market: MarketService;
+    aliens: AlienService;
   }
 }

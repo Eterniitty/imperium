@@ -2,7 +2,7 @@ import { EMPEROR_FLAGSHIP, getShipClass, HUMANS, STARTING_FLEET } from "@imperiu
 import { universeSeedFromString } from "@imperium/procgen";
 import type { CommandError, Emperor } from "@imperium/shared";
 import { isTravelling, travelDurationMs } from "@imperium/sim";
-import { eq, sql } from "drizzle-orm";
+import { eq, ne, sql } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
 import { emperors, fleets, ships } from "../db/schema";
@@ -55,9 +55,12 @@ export class EmperorService {
     return row ? this.toEmperor(row) : null;
   }
 
-  /** Todos los Emperadores. Vale mientras sean pocos; luego habrá zonas de interés por sector. */
+  /**
+   * Todos los Emperadores (sin los actores de las facciones alienígenas, que
+   * no lo son). Vale mientras sean pocos; luego habrá zonas de interés por sector.
+   */
   async all(): Promise<Emperor[]> {
-    const rows = await this.db.select(columns).from(emperors).orderBy(emperors.createdAt);
+    const rows = await this.db.select(columns).from(emperors).where(ne(emperors.kind, "alien")).orderBy(emperors.createdAt);
     return rows.map((r) => this.toEmperor(r));
   }
 

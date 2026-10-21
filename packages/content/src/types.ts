@@ -112,6 +112,65 @@ export interface VisualLanguage {
   emissiveColor: HexColor;
 }
 
+/** Densidad de estrellas que prefiere una especie para su territorio. */
+export type RegionPreference = "dense" | "sparse" | "any";
+
+/**
+ * Dónde vive una especie: datos de la capa de territorio (`@imperium/procgen`
+ * territory.ts). La galaxia se divide en regiones cúbicas y cada una se reparte
+ * entre las especies que pueden vivir a esa distancia del Núcleo Humano.
+ */
+export interface TerritoryPreferences {
+  /**
+   * Anillo mínimo (distancia al Núcleo Humano en sectores, contada como el
+   * mayor de |x|, |y|, |z| del sector). El Núcleo es el anillo 0–1: ninguna
+   * especie vive ahí. Las más peligrosas, más lejos.
+   */
+  minCoreRing: number;
+  /** Peso al repartir las regiones entre especies (0 = no tiene regiones propias). */
+  regionWeight: number;
+  /** Fracción de los sistemas de sus regiones que ocupa si la estrella es de sus clases preferidas (con las demás, un tercio). */
+  systemShare: number;
+  /** Densidad de estrellas de las regiones que prefiere. */
+  region: RegionPreference;
+}
+
+/** Estilo de flota: cómo agrupa una especie sus naves. */
+export type FleetStyle = "pack" | "bastion" | "caravan" | "relic" | "phalanx" | "swarm" | "line" | "shadow" | "precision";
+
+/** Flotas de una especie (las que despliega la IA en su territorio). */
+export interface FleetDoctrine {
+  style: FleetStyle;
+  /** Naves de la especie (ids de `ALIEN_SHIP_CLASSES`) y su peso al formar una flota. */
+  composition: ReadonlyArray<readonly [string, number]>;
+  /** Naves por flota: [en el borde de su territorio más cercano al Núcleo, en lo más profundo]. */
+  shipsPerFleet: readonly [number, number];
+  /** Flotas de guarnición por región activa: [cerca, lejos]. */
+  fleetsPerRegion: readonly [number, number];
+}
+
+/** Qué hace la IA de una especie cuando una flota humana entra en su territorio (si es hostil a ese Emperador). */
+export type IntruderResponse = "attack" | "guard" | "ignore";
+
+/** Comportamiento de la IA de una especie (Fase 11). Ver `ALIEN_AI` para los parámetros comunes. */
+export interface AlienAiBehavior {
+  /** Probabilidad de que una flota parada salga a patrullar en cada decisión. */
+  patrol: number;
+  /**
+   * `attack`: envía flotas contra el intruso; `guard`: solo combaten las que ya
+   * están en el sistema; `ignore`: nunca combate.
+   */
+  intruders: IntruderResponse;
+  /** Flotas que envía como mucho contra un intruso. */
+  responders: number;
+  /** Sistemas que intenta sumar a su territorio por día de juego (expansión lenta). */
+  expansionPerDay: number;
+  /** Comercia en el mercado global con su propia cartera (Nómadas del Vacío). */
+  trades: boolean;
+  /** Rencor que suma un Emperador al fundar una colonia en su territorio (con 1 se vuelve hostil). */
+  grudgePerColony: number;
+}
+
 /** Ficha de una especie alienígena. */
 export interface SpeciesDefinition {
   id: string;
@@ -121,6 +180,10 @@ export interface SpeciesDefinition {
   descriptionKey: string;
   /** Clave i18n del lema (p. ej. «Purificación · Exterminio»): `species.<id>.motto`. */
   mottoKey: string;
+  /** Clave i18n de su filosofía: `species.<id>.philosophy`. */
+  philosophyKey: string;
+  /** Clave i18n de su actitud hacia la humanidad: `species.<id>.attitude`. */
+  attitudeKey: string;
   nature: SpeciesNature;
   doctrine: WarDoctrine;
   expansion: ExpansionStyle;
@@ -138,6 +201,12 @@ export interface SpeciesDefinition {
   playable: false;
   /** Si aparece en el MVP. */
   enabledInMvp: boolean;
+  /** Dónde vive (capa de territorio). */
+  territory: TerritoryPreferences;
+  /** Cómo forma sus flotas. */
+  fleet: FleetDoctrine;
+  /** Cómo se comporta su IA. */
+  ai: AlienAiBehavior;
 }
 
 /** Objetivo estratégico principal de una facción. */
@@ -183,6 +252,8 @@ export interface FactionDefinition {
   traitModifiers: TraitModifiers;
   /** Ids de facciones con las que está enfrentada (pueden ser de su misma especie). */
   hostileTo: string[];
+  /** Peso de la facción al repartir las regiones de su especie (0 = sin territorio propio). */
+  regionShare: number;
 }
 
 /** Clases de nave humanas del MVP. */

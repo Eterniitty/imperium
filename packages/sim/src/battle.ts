@@ -10,7 +10,7 @@
  * objetivo absorbe daño hasta agotarse en esa ronda y el resto va al casco.
  * Con el casco a 0, la nave queda destruida.
  */
-import { FLEET_BATTLE, getShipClass, type ShipClassId } from "@imperium/content";
+import { FLEET_BATTLE, getAnyShipClass } from "@imperium/content";
 
 /** Nave en una batalla. */
 export interface BattleShip {
@@ -56,9 +56,9 @@ export function battleRoundSeed(battleSeed: number, round: number): number {
   return (Math.imul(battleSeed >>> 0, 0x9e3779b1) ^ Math.imul(round + 1, 0x85ebca6b)) >>> 0;
 }
 
-/** Nave de batalla con los datos de su clase (ataque y escudo) y su casco actual. */
+/** Nave de batalla con los datos de su clase (ataque y escudo; humana o alienígena) y su casco actual. */
 export function battleShip(id: string, classId: string, hull: number, /** Multiplicador del escudo (Defensas del Núcleo). */ shieldFactor = 1): BattleShip {
-  const cls = getShipClass(classId as ShipClassId);
+  const cls = getAnyShipClass(classId);
   return { id, classId, attack: cls?.attack ?? 0, shield: (cls?.battleShield ?? 0) * shieldFactor, hull };
 }
 

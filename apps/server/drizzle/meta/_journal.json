@@ -85,6 +85,13 @@
       "when": 1792562110952,
       "tag": "0011_stormy_vance_astro",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792564338189,
+      "tag": "0012_right_nicolaos",
+      "breakpoints": true
     }
   ]
 }

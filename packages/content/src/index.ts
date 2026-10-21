@@ -6,3 +6,4 @@ export * from "./i18n";
 export * from "./validate";
 export * from "./economy";
 export * from "./humanity";
+export * from "./aliens";

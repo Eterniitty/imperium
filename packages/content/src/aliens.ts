@@ -1,0 +1,335 @@
+/**
+ * Naves de las especies alienígenas y parámetros comunes de su IA (Fase 11).
+ * Solo datos: la capa de territorio está en `@imperium/procgen` (territory.ts)
+ * y la IA que mueve las flotas en el servidor (`apps/server/src/ai`).
+ *
+ * Las naves alienígenas no se construyen en astilleros humanos: las despliega
+ * la IA en su territorio. Usan las mismas reglas que las humanas en el combate
+ * de flotas por rondas (`attack`, `battleShield`, `hull`) y llevan ya los datos
+ * del combate en tiempo real (`combat`) y del modelo procedural (`model`; la
+ * silueta y los colores son los de su especie, `SpeciesDefinition.visual`) para
+ * cuando se pilote contra ellas.
+ */
+import { factionsOfSpecies } from "./factions";
+import { SHIP_CLASSES } from "./ships";
+import { SPECIES } from "./species";
+import type { ShipCombat, ShipClassId, WeaponDefinition } from "./types";
+
+/** Papel de una nave alienígena en su flota. */
+export type AlienShipRole = "raider" | "line" | "heavy" | "swarm" | "carrier" | "trader" | "escort" | "scout" | "stealth" | "guardian";
+
+/** Forma del casco para el modelo procedural (junto con la silueta de la especie). */
+export type AlienHullShape = "needle" | "wedge" | "disc" | "spindle" | "shard" | "pod" | "crescent" | "monolith" | "ring" | "brick";
+
+export interface AlienShipModel {
+  /** Eslora en metros (la nave del Emperador mide ~45 m). */
+  lengthM: number;
+  hullShape: AlienHullShape;
+  /** Número de motores o fuentes de luz (el modelo los reparte por la popa). */
+  engines: number;
+}
+
+/** Ficha de una clase de nave alienígena. */
+export interface AlienShipClassDefinition {
+  id: string;
+  speciesId: string;
+  /** Clave i18n del nombre: `ship.<id>.name` (mismo espacio que las humanas). */
+  nameKey: string;
+  /** Clave i18n de la descripción: `ship.<id>.description`. */
+  descriptionKey: string;
+  role: AlienShipRole;
+  /** Puntos de casco. */
+  hull: number;
+  /** Daño por ronda en el combate de flotas (±20 %). */
+  attack: number;
+  /** Escudo por ronda en el combate de flotas. */
+  battleShield: number;
+  /** Velocidad de crucero en años luz por hora. */
+  speedLyPerHour: number;
+  /** Alcance del escáner en años luz. */
+  scannerRangeLy: number;
+  /** Bodega (los Nómadas comercian). */
+  cargo: number;
+  /** Combate en tiempo real (aún no se usa: llega con el pilotaje contra alienígenas). */
+  combat: ShipCombat;
+  model: AlienShipModel;
+}
+
+const cannon = (damage: number, cooldownSec: number, rangeU = 2000, speedU = 1500): WeaponDefinition => ({
+  kind: "cannon",
+  damage,
+  cooldownSec,
+  rangeU,
+  speedU,
+  ammo: null,
+  ammoRegenSec: null,
+});
+const missile = (damage: number, ammo: number, rangeU = 5000): WeaponDefinition => ({
+  kind: "missile",
+  damage,
+  cooldownSec: 2.5,
+  rangeU,
+  speedU: 700,
+  ammo,
+  ammoRegenSec: 15,
+});
+
+/**
+ * Naves alienígenas, de dos en dos por especie (los Precursores, un guardián
+ * que nunca se mueve). Referencia humana: la fragata tiene casco 300, ataque 40
+ * y escudo 15. Las especies que viven más lejos del Núcleo son más fuertes.
+ */
+export const ALIEN_SHIP_CLASSES: readonly AlienShipClassDefinition[] = [
+  // --- Carroñeros (anillo 2+): débiles pero en manada ---
+  {
+    id: "scav_raider", speciesId: "scavengers", nameKey: "ship.scav_raider.name", descriptionKey: "ship.scav_raider.description",
+    role: "raider", hull: 120, attack: 14, battleShield: 5, speedLyPerHour: 160, scannerRangeLy: 10, cargo: 60,
+    combat: { shield: 40, shieldRegenPerSec: 6, shieldDelaySec: 4, weapons: [cannon(7, 0.45, 1800, 1300)] },
+    model: { lengthM: 34, hullShape: "wedge", engines: 2 },
+  },
+  {
+    id: "scav_breaker", speciesId: "scavengers", nameKey: "ship.scav_breaker.name", descriptionKey: "ship.scav_breaker.description",
+    role: "heavy", hull: 260, attack: 24, battleShield: 10, speedLyPerHour: 110, scannerRangeLy: 8, cargo: 300,
+    combat: { shield: 70, shieldRegenPerSec: 6, shieldDelaySec: 5, weapons: [cannon(10, 0.5, 1800, 1300), missile(70, 4)] },
+    model: { lengthM: 70, hullShape: "brick", engines: 3 },
+  },
+  // --- VESPERI (anillo 3+): defensas extraordinarias ---
+  {
+    id: "vesperi_aegis", speciesId: "vesperi", nameKey: "ship.vesperi_aegis.name", descriptionKey: "ship.vesperi_aegis.description",
+    role: "escort", hull: 380, attack: 26, battleShield: 40, speedLyPerHour: 100, scannerRangeLy: 12, cargo: 0,
+    combat: { shield: 260, shieldRegenPerSec: 22, shieldDelaySec: 3, weapons: [cannon(12, 0.25)] },
+    model: { lengthM: 60, hullShape: "disc", engines: 2 },
+  },
+  {
+    id: "vesperi_watchtower", speciesId: "vesperi", nameKey: "ship.vesperi_watchtower.name", descriptionKey: "ship.vesperi_watchtower.description",
+    role: "scout", hull: 140, attack: 12, battleShield: 20, speedLyPerHour: 180, scannerRangeLy: 25, cargo: 0,
+    combat: { shield: 90, shieldRegenPerSec: 12, shieldDelaySec: 3, weapons: [cannon(8, 0.3)] },
+    model: { lengthM: 30, hullShape: "spindle", engines: 1 },
+  },
+  // --- Nómadas del Vacío (anillo 3+): caravanas que comercian ---
+  {
+    id: "nomad_ark", speciesId: "void_nomads", nameKey: "ship.nomad_ark.name", descriptionKey: "ship.nomad_ark.description",
+    role: "trader", hull: 420, attack: 10, battleShield: 20, speedLyPerHour: 120, scannerRangeLy: 15, cargo: 2000,
+    combat: { shield: 150, shieldRegenPerSec: 10, shieldDelaySec: 5, weapons: [cannon(6, 0.4)] },
+    model: { lengthM: 180, hullShape: "pod", engines: 4 },
+  },
+  {
+    id: "nomad_corsair", speciesId: "void_nomads", nameKey: "ship.nomad_corsair.name", descriptionKey: "ship.nomad_corsair.description",
+    role: "escort", hull: 200, attack: 30, battleShield: 15, speedLyPerHour: 200, scannerRangeLy: 15, cargo: 80,
+    combat: { shield: 100, shieldRegenPerSec: 12, shieldDelaySec: 4, weapons: [cannon(12, 0.22), missile(80, 4)] },
+    model: { lengthM: 38, hullShape: "needle", engines: 2 },
+  },
+  // --- ELYDRI (anillo 3+): escudos y tecnología antigua ---
+  {
+    id: "elydri_prism", speciesId: "elydri", nameKey: "ship.elydri_prism.name", descriptionKey: "ship.elydri_prism.description",
+    role: "line", hull: 260, attack: 34, battleShield: 60, speedLyPerHour: 140, scannerRangeLy: 20, cargo: 0,
+    combat: { shield: 320, shieldRegenPerSec: 30, shieldDelaySec: 3, weapons: [cannon(15, 0.25, 2400, 1800)] },
+    model: { lengthM: 50, hullShape: "shard", engines: 0 },
+  },
+  {
+    id: "elydri_reliquary", speciesId: "elydri", nameKey: "ship.elydri_reliquary.name", descriptionKey: "ship.elydri_reliquary.description",
+    role: "heavy", hull: 600, attack: 40, battleShield: 120, speedLyPerHour: 90, scannerRangeLy: 30, cargo: 500,
+    combat: { shield: 700, shieldRegenPerSec: 45, shieldDelaySec: 4, weapons: [cannon(18, 0.3, 2400, 1800), missile(110, 6)] },
+    model: { lengthM: 220, hullShape: "shard", engines: 0 },
+  },
+  // --- Grises (anillo 4+): precisión ---
+  {
+    id: "grey_watcher", speciesId: "greys", nameKey: "ship.grey_watcher.name", descriptionKey: "ship.grey_watcher.description",
+    role: "scout", hull: 120, attack: 10, battleShield: 40, speedLyPerHour: 260, scannerRangeLy: 30, cargo: 0,
+    combat: { shield: 160, shieldRegenPerSec: 20, shieldDelaySec: 3, weapons: [cannon(9, 0.3, 2600, 2000)] },
+    model: { lengthM: 26, hullShape: "disc", engines: 0 },
+  },
+  {
+    id: "grey_theorem", speciesId: "greys", nameKey: "ship.grey_theorem.name", descriptionKey: "ship.grey_theorem.description",
+    role: "line", hull: 320, attack: 55, battleShield: 45, speedLyPerHour: 160, scannerRangeLy: 20, cargo: 0,
+    combat: { shield: 260, shieldRegenPerSec: 25, shieldDelaySec: 3, weapons: [cannon(20, 0.3, 2800, 2200), missile(100, 4, 6000)] },
+    model: { lengthM: 70, hullShape: "ring", engines: 0 },
+  },
+  // --- AURELIANOS (anillo 4+): flotas nobles ---
+  {
+    id: "aurelian_lancer", speciesId: "aurelians", nameKey: "ship.aurelian_lancer.name", descriptionKey: "ship.aurelian_lancer.description",
+    role: "line", hull: 300, attack: 42, battleShield: 20, speedLyPerHour: 170, scannerRangeLy: 12, cargo: 40,
+    combat: { shield: 160, shieldRegenPerSec: 14, shieldDelaySec: 4, weapons: [cannon(15, 0.2), missile(90, 6)] },
+    model: { lengthM: 55, hullShape: "needle", engines: 3 },
+  },
+  {
+    id: "aurelian_bastion", speciesId: "aurelians", nameKey: "ship.aurelian_bastion.name", descriptionKey: "ship.aurelian_bastion.description",
+    role: "heavy", hull: 900, attack: 70, battleShield: 50, speedLyPerHour: 80, scannerRangeLy: 15, cargo: 200,
+    combat: { shield: 500, shieldRegenPerSec: 25, shieldDelaySec: 5, weapons: [cannon(24, 0.25, 2400, 1600), missile(140, 8)] },
+    model: { lengthM: 320, hullShape: "monolith", engines: 6 },
+  },
+  // --- THARAXI (anillo 5+): enjambres ---
+  {
+    id: "tharaxi_drone", speciesId: "tharaxi", nameKey: "ship.tharaxi_drone.name", descriptionKey: "ship.tharaxi_drone.description",
+    role: "swarm", hull: 60, attack: 12, battleShield: 0, speedLyPerHour: 190, scannerRangeLy: 6, cargo: 0,
+    combat: { shield: 0, shieldRegenPerSec: 0, shieldDelaySec: 0, weapons: [cannon(6, 0.3, 1200, 1100)] },
+    model: { lengthM: 14, hullShape: "pod", engines: 1 },
+  },
+  {
+    id: "tharaxi_node", speciesId: "tharaxi", nameKey: "ship.tharaxi_node.name", descriptionKey: "ship.tharaxi_node.description",
+    role: "carrier", hull: 700, attack: 30, battleShield: 10, speedLyPerHour: 90, scannerRangeLy: 12, cargo: 400,
+    combat: { shield: 100, shieldRegenPerSec: 8, shieldDelaySec: 6, weapons: [cannon(10, 0.4, 1500, 1100), missile(80, 10)] },
+    model: { lengthM: 260, hullShape: "spindle", engines: 5 },
+  },
+  // --- NIHIL (anillo 6+): ocultación y anomalías gravitatorias ---
+  {
+    id: "nihil_veil", speciesId: "nihil", nameKey: "ship.nihil_veil.name", descriptionKey: "ship.nihil_veil.description",
+    role: "stealth", hull: 180, attack: 50, battleShield: 25, speedLyPerHour: 210, scannerRangeLy: 18, cargo: 0,
+    combat: { shield: 140, shieldRegenPerSec: 18, shieldDelaySec: 3, weapons: [cannon(18, 0.3, 2200, 1800)] },
+    model: { lengthM: 40, hullShape: "crescent", engines: 0 },
+  },
+  {
+    id: "nihil_rift", speciesId: "nihil", nameKey: "ship.nihil_rift.name", descriptionKey: "ship.nihil_rift.description",
+    role: "heavy", hull: 520, attack: 80, battleShield: 40, speedLyPerHour: 100, scannerRangeLy: 20, cargo: 0,
+    combat: { shield: 300, shieldRegenPerSec: 20, shieldDelaySec: 4, weapons: [cannon(26, 0.35, 2400, 1800), missile(160, 4, 6000)] },
+    model: { lengthM: 150, hullShape: "crescent", engines: 0 },
+  },
+  // --- Erradicadores (anillo 7+): los más peligrosos ---
+  {
+    id: "erad_purger", speciesId: "eradicators", nameKey: "ship.erad_purger.name", descriptionKey: "ship.erad_purger.description",
+    role: "line", hull: 420, attack: 60, battleShield: 40, speedLyPerHour: 170, scannerRangeLy: 15, cargo: 0,
+    combat: { shield: 260, shieldRegenPerSec: 22, shieldDelaySec: 3, weapons: [cannon(20, 0.2), missile(120, 6)] },
+    model: { lengthM: 80, hullShape: "wedge", engines: 4 },
+  },
+  {
+    id: "erad_sentence", speciesId: "eradicators", nameKey: "ship.erad_sentence.name", descriptionKey: "ship.erad_sentence.description",
+    role: "heavy", hull: 1200, attack: 110, battleShield: 80, speedLyPerHour: 90, scannerRangeLy: 20, cargo: 0,
+    combat: { shield: 800, shieldRegenPerSec: 40, shieldDelaySec: 4, weapons: [cannon(32, 0.25, 2600, 1800), missile(200, 8, 6000)] },
+    model: { lengthM: 400, hullShape: "monolith", engines: 6 },
+  },
+  // --- Precursores: guardián dormido de sus ruinas (no se despliega en flotas) ---
+  {
+    id: "precursor_sentinel", speciesId: "precursors", nameKey: "ship.precursor_sentinel.name", descriptionKey: "ship.precursor_sentinel.description",
+    role: "guardian", hull: 3000, attack: 150, battleShield: 200, speedLyPerHour: 1, scannerRangeLy: 40, cargo: 0,
+    combat: { shield: 2000, shieldRegenPerSec: 60, shieldDelaySec: 6, weapons: [cannon(40, 0.5, 3000, 2000)] },
+    model: { lengthM: 600, hullShape: "ring", engines: 0 },
+  },
+];
+
+/** Busca una clase de nave alienígena. */
+export function getAlienShipClass(id: string): AlienShipClassDefinition | undefined {
+  return ALIEN_SHIP_CLASSES.find((s) => s.id === id);
+}
+
+/** Naves de una especie. */
+export function alienShipsOf(speciesId: string): AlienShipClassDefinition[] {
+  return ALIEN_SHIP_CLASSES.filter((s) => s.speciesId === speciesId);
+}
+
+/** Lo que el combate de flotas y los viajes necesitan de cualquier nave, humana o alienígena. */
+export interface ShipStats {
+  id: string;
+  hull: number;
+  attack: number;
+  battleShield: number;
+  speedLyPerHour: number;
+  scannerRangeLy: number;
+  cargo: number;
+}
+
+/** Datos de una nave cualquiera (primero las humanas, luego las alienígenas). */
+export function getAnyShipClass(id: string): ShipStats | undefined {
+  return SHIP_CLASSES.find((s) => s.id === (id as ShipClassId)) ?? getAlienShipClass(id);
+}
+
+/** Velocidad de una flota de naves de cualquier especie: la de su nave más lenta. */
+export function anyFleetSpeedLyPerHour(classIds: readonly string[]): number {
+  let speed = Infinity;
+  for (const id of classIds) {
+    const c = getAnyShipClass(id);
+    if (!c) throw new Error(`Clase de nave desconocida: ${id}`);
+    speed = Math.min(speed, c.speedLyPerHour);
+  }
+  if (!Number.isFinite(speed)) throw new Error("Una flota sin naves no puede viajar");
+  return speed;
+}
+
+/**
+ * Parámetros comunes de la IA de las facciones alienígenas (Fase 11) y de su
+ * territorio. Las horas son de juego (se dividen por la escala de tiempo).
+ */
+export const ALIEN_AI = {
+  /** Lado de una región de territorio, en sectores (cada región es de una sola especie o de nadie). */
+  regionSizeSectors: 2,
+  /** Peso de «nadie» al repartir las regiones (más alto, más espacio libre). */
+  emptyRegionWeight: 2.5,
+  /** Anillo a partir del cual las flotas son las más grandes de su especie. */
+  deepRing: 12,
+  /** Cada cuánto decide la IA de una región activa (minutos de juego). */
+  tickGameMinutes: 30,
+  /** Una región se duerme (deja de decidir) tras estas horas sin actividad humana cerca. */
+  activeHours: 12,
+  /** Como mucho una flota nueva de refuerzo por región cada tantas horas. */
+  reinforceHours: 6,
+  /** Las patrullas van a sistemas de su territorio a esta distancia como mucho (a.l.). */
+  patrolRangeLy: 35,
+  /** Las flotas que responden a un intruso salen de esta distancia como mucho (a.l.). */
+  responseRangeLy: 60,
+  /** La expansión suma sistemas a esta distancia de su territorio como mucho (a.l.). */
+  expansionRangeLy: 20,
+  /**
+   * Gracia para Emperadores nuevos: durante sus primeras horas de juego las
+   * facciones no envían flotas contra ellos (sí combaten las que ya estén en el
+   * sistema al que lleguen). Junto con el Núcleo Humano, que es seguro, evita
+   * arrasar a quien empieza.
+   */
+  noviceGraceHours: 24,
+  /** Créditos con los que empieza la cartera de una facción que comercia. */
+  traderStartingCredits: 5000,
+  /** Rencor (relación con cada Emperador): con `hostileAt` o más, la facción es hostil aunque sea neutral. */
+  grudge: {
+    hostileAt: 1,
+    /** Interceptar una de sus flotas. */
+    intercept: 1,
+    /** Rencor que se olvida por día de juego. */
+    decayPerDay: 0.25,
+    /** Créditos de tributo que borran un punto de rencor (diplomacia básica). */
+    tributeCreditsPerPoint: 400,
+    /** Tributo mínimo. */
+    minTribute: 50,
+  },
+  /** Comercio de los Nómadas del Vacío en el mercado global. */
+  trade: {
+    /** Recursos que venden y compran. */
+    sells: ["volatiles", "metal"] as const,
+    buys: ["crystal"] as const,
+    /** Cantidad de cada orden [mín, máx]. */
+    quantity: [100, 400] as const,
+    /** Precio de referencia por unidad (si el mercado aún no tiene precio). */
+    referencePrice: { metal: 1, volatiles: 1.5, crystal: 6, alloys: 4 } as const,
+    /** Margen sobre el precio de referencia: venden más caro y compran más barato. */
+    spread: 0.08,
+    /** Órdenes abiertas como mucho. */
+    maxOpenOrders: 6,
+    /** Existencias que reponen en su hábitat por decisión (su producción propia). */
+    restock: 300,
+  },
+} as const;
+
+/**
+ * Reglas de la capa de territorio (`@imperium/procgen` territory.ts) a partir
+ * de las fichas de especies y facciones: qué especies tienen regiones, a qué
+ * distancia del Núcleo, con qué estrellas, y qué facción lleva cada región.
+ */
+export function territoryRules() {
+  const species = SPECIES.filter((s) => !s.extinct && s.territory.regionWeight > 0).map((s) => ({
+    speciesId: s.id,
+    minCoreRing: s.territory.minCoreRing,
+    regionWeight: s.territory.regionWeight,
+    systemShare: s.territory.systemShare,
+    region: s.territory.region,
+    preferredStarClasses: s.geography.preferredStarClasses,
+    factions: factionsOfSpecies(s.id)
+      .filter((f) => f.regionShare > 0)
+      .map((f) => [f.id, f.regionShare] as const),
+  }));
+  const relic = SPECIES.find((s) => s.extinct);
+  return {
+    regionSizeSectors: ALIEN_AI.regionSizeSectors,
+    emptyRegionWeight: ALIEN_AI.emptyRegionWeight,
+    species,
+    relics: relic
+      ? { speciesId: relic.id, minCoreRing: relic.territory.minCoreRing, share: relic.territory.systemShare, starClasses: relic.geography.preferredStarClasses }
+      : null,
+  };
+}

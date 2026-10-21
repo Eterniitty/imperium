@@ -20,6 +20,7 @@ export const FACTIONS: readonly FactionDefinition[] = [
     relation: "hostile",
     traitModifiers: { aggression: 0.05 },
     hostileTo: [],
+    regionShare: 1,
   },
   {
     id: "greys_calculus",
@@ -30,6 +31,7 @@ export const FACTIONS: readonly FactionDefinition[] = [
     relation: "neutral",
     traitModifiers: {  },
     hostileTo: ["void_nomads_free_wake"],
+    regionShare: 1,
   },
   {
     id: "void_nomads_free_wake",
@@ -40,6 +42,7 @@ export const FACTIONS: readonly FactionDefinition[] = [
     relation: "neutral",
     traitModifiers: {  },
     hostileTo: ["greys_calculus", "aurelians_house_solenne"],
+    regionShare: 1,
   },
   {
     id: "elydri_living_archive",
@@ -50,6 +53,7 @@ export const FACTIONS: readonly FactionDefinition[] = [
     relation: "neutral",
     traitModifiers: {  },
     hostileTo: ["eradicators_pale_verdict", "nihil_quiet_end"],
+    regionShare: 1,
   },
   {
     id: "tharaxi_tide",
@@ -60,6 +64,7 @@ export const FACTIONS: readonly FactionDefinition[] = [
     relation: "hostile",
     traitModifiers: { aggression: 0.05 },
     hostileTo: ["tharaxi_severed_caste"],
+    regionShare: 0.85,
   },
   {
     id: "tharaxi_severed_caste",
@@ -70,6 +75,7 @@ export const FACTIONS: readonly FactionDefinition[] = [
     relation: "potential_ally",
     traitModifiers: { aggression: -0.45, numbers: -0.6, techLevel: 0.15 },
     hostileTo: ["tharaxi_tide"],
+    regionShare: 0.15,
   },
   {
     id: "aurelians_house_solenne",
@@ -80,6 +86,7 @@ export const FACTIONS: readonly FactionDefinition[] = [
     relation: "hostile",
     traitModifiers: { aggression: 0.1 },
     hostileTo: ["aurelians_house_varek"],
+    regionShare: 0.6,
   },
   {
     id: "aurelians_house_varek",
@@ -90,6 +97,7 @@ export const FACTIONS: readonly FactionDefinition[] = [
     relation: "neutral",
     traitModifiers: { aggression: -0.15, techLevel: 0.05 },
     hostileTo: ["aurelians_house_solenne"],
+    regionShare: 0.4,
   },
   {
     id: "nihil_quiet_end",
@@ -100,6 +108,7 @@ export const FACTIONS: readonly FactionDefinition[] = [
     relation: "hostile",
     traitModifiers: { aggression: 0.2 },
     hostileTo: ["nihil_unbinding"],
+    regionShare: 0.6,
   },
   {
     id: "nihil_unbinding",
@@ -110,6 +119,7 @@ export const FACTIONS: readonly FactionDefinition[] = [
     relation: "potential_ally",
     traitModifiers: { aggression: -0.4 },
     hostileTo: ["nihil_quiet_end"],
+    regionShare: 0.4,
   },
   {
     id: "vesperi_wardens",
@@ -120,6 +130,7 @@ export const FACTIONS: readonly FactionDefinition[] = [
     relation: "potential_ally",
     traitModifiers: {  },
     hostileTo: ["vesperi_last_border"],
+    regionShare: 0.5,
   },
   {
     id: "vesperi_last_border",
@@ -130,6 +141,7 @@ export const FACTIONS: readonly FactionDefinition[] = [
     relation: "neutral",
     traitModifiers: { aggression: 0.3 },
     hostileTo: ["vesperi_wardens"],
+    regionShare: 0.5,
   },
   {
     id: "scavengers_rust_tide",
@@ -140,6 +152,7 @@ export const FACTIONS: readonly FactionDefinition[] = [
     relation: "hostile",
     traitModifiers: {  },
     hostileTo: [],
+    regionShare: 1,
   },
 ];
 

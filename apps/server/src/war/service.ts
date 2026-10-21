@@ -71,6 +71,20 @@ export class WarService {
     this.shieldFactor = get;
   }
 
+  /**
+   * Fase 11: ¿combaten dos dueños que no son compañeros? Por defecto, sí (dos
+   * Emperadores). Con facciones alienígenas lo decide `AlienService` (su
+   * postura, el rencor y el Núcleo Humano, donde nunca combaten).
+   */
+  private hostility: (db: Database | Tx, a: string, b: string, systemId: string) => Promise<boolean> = async () => true;
+  /** Se llama al interceptar una flota alienígena (rencor de su facción), dentro de la misma transacción. */
+  private onAlienIntercept: ((tx: Tx, emperorId: string, factionId: string) => Promise<void>) | null = null;
+
+  setAlienHooks(hostility: WarService["hostility"], onIntercept: (tx: Tx, emperorId: string, factionId: string) => Promise<void>): void {
+    this.hostility = hostility;
+    this.onAlienIntercept = onIntercept;
+  }
+
   constructor(
     private readonly db: Database,
     private readonly config: Pick<ServerConfig, "UNIVERSE_SEED" | "TIME_SCALE">,
@@ -176,6 +190,7 @@ export class WarService {
         const A = byEmperor.get(a)!;
         const B = byEmperor.get(b)!;
         if (!canAttack(A.ships) && !canAttack(B.ships)) continue;
+        if (!(await this.hostility(tx, a, b, systemId))) continue;
         // Bando 0: el que ya estaba (b); bando 1: el que llega (a).
         const now = this.now();
         const nextRoundAt = new Date(now + battleRoundMs(this.config.TIME_SCALE));
@@ -345,6 +360,18 @@ export class WarService {
    */
   async contacts(emperorId: string): Promise<FleetContact[]> {
     const now = this.now();
+    const sensors = await this.sensors(emperorId);
+    if (sensors.length === 0) return [];
+    return this.contactsFrom(emperorId, sensors, now);
+  }
+
+  /**
+   * Sensores de un Emperador: sus flotas paradas (escáner de su mejor nave), su
+   * nave (si no viaja) y sus colonias. Lo usan los contactos y los avistamientos
+   * de flotas alienígenas.
+   */
+  async sensors(emperorId: string): Promise<Array<{ position: WorldPosition; range: number }>> {
+    const now = this.now();
     const sensors: Array<{ position: WorldPosition; range: number }> = [];
     const own = await this.db.select().from(fleets).where(eq(fleets.emperorId, emperorId));
     if (own.length) {
@@ -363,8 +390,10 @@ export class WarService {
       const s = findSystem(this.seed, c.systemId);
       if (s) sensors.push({ position: s.position, range: CONTACT_SENSORS.colonyRangeLy });
     }
-    if (sensors.length === 0) return [];
+    return sensors;
+  }
 
+  private async contactsFrom(emperorId: string, sensors: Array<{ position: WorldPosition; range: number }>, now: number): Promise<FleetContact[]> {
     const moving = await this.db
       .select({
         id: fleets.id,
@@ -374,6 +403,7 @@ export class WarService {
         departAt: fleets.departAt,
         arriveAt: fleets.arriveAt,
         name: emperors.name,
+        factionId: emperors.factionId,
       })
       .from(fleets)
       .innerJoin(emperors, eq(emperors.id, fleets.emperorId))
@@ -397,6 +427,7 @@ export class WarService {
       out.push({
         fleetId: m.id,
         emperorName: m.name,
+        factionId: m.factionId,
         ships: counts.find((c) => c.fleetId === m.id)?.n ?? 0,
         from: place.location,
         to: place.travel.to,
@@ -415,7 +446,12 @@ export class WarService {
   async intercept(emperorId: string, fleetId: string, targetFleetId: string): Promise<FleetMoveResult> {
     const target = (await this.contacts(emperorId)).find((c) => c.fleetId === targetFleetId);
     if (!target) return { ok: false, error: "no_target" };
-    return this.db.transaction((tx) => this.fleetService.moveTx(tx, emperorId, fleetId, target.to.systemId));
+    return this.db.transaction(async (tx) => {
+      const res = await this.fleetService.moveTx(tx, emperorId, fleetId, target.to.systemId);
+      // Interceptar a una facción alienígena es un acto hostil: aumenta su rencor.
+      if (res.ok && target.factionId && this.onAlienIntercept) await this.onAlienIntercept(tx, emperorId, target.factionId);
+      return res;
+    });
   }
 
   // --- Vistas para los jugadores ---
@@ -449,7 +485,7 @@ export class WarService {
     const [battle] = await this.db.select().from(battles).where(eq(battles.id, battleId)).limit(1);
     if (!battle) return null;
     const sides = await this.db
-      .select({ side: battleSides.side, emperorId: battleSides.emperorId, outcome: battleSides.outcome, name: emperors.name })
+      .select({ side: battleSides.side, emperorId: battleSides.emperorId, outcome: battleSides.outcome, name: emperors.name, factionId: emperors.factionId })
       .from(battleSides)
       .innerJoin(emperors, eq(emperors.id, battleSides.emperorId))
       .where(eq(battleSides.battleId, battleId));
@@ -490,6 +526,7 @@ export class WarService {
       nextRoundAt: battle.nextRoundAt?.getTime() ?? null,
       outcome: (mine.outcome as BattleOutcome | null) ?? "ongoing",
       enemyName: enemy?.name ?? "?",
+      enemyFactionId: enemy?.factionId ?? null,
       own,
       foe,
       rounds,

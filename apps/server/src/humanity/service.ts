@@ -28,7 +28,7 @@ import {
   type HumanityBonuses,
   type ProjectLevels,
 } from "@imperium/sim";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import type { ColonyService } from "../colony/service";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
@@ -497,7 +497,10 @@ export class HumanityService {
     const now = this.now();
     if (this.viewCache && now - this.viewCache.at < VIEW_CACHE_MS) return this.viewCache.data;
 
-    const wallets = await this.db.select().from(emperorWallets);
+    // Las carteras de las facciones alienígenas (los Nómadas comercian) no son de la humanidad.
+    const wallets = (
+      await this.db.select({ w: emperorWallets }).from(emperorWallets).innerJoin(emperors, eq(emperors.id, emperorWallets.emperorId)).where(ne(emperors.kind, "alien"))
+    ).map((r) => r.w);
     let emperorsWithColonies = 0;
     let population = 0;
     let credits = 0;
@@ -525,7 +528,11 @@ export class HumanityService {
       .where(isNull(colonies.emperorId));
     population += ind?.population ?? 0;
     stock = sumStock(stock, ind ? stockOf(ind) : undefined);
-    const [count] = await this.db.select({ n: sql<number>`count(*)::int` }).from(colonies);
+    const [count] = await this.db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(colonies)
+      .leftJoin(emperors, eq(emperors.id, colonies.emperorId))
+      .where(sql`${emperors.kind} IS DISTINCT FROM 'alien'`);
 
     const [t] = await this.db.select().from(humanityTreasury).where(eq(humanityTreasury.id, 1)).limit(1);
     const treasuryCredits = t ? treasuryAfter(t.credits, t.incomePerHour, gameHours(t.settledAt.getTime(), now, this.timeScale)) : 0;

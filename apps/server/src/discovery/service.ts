@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { EMPEROR_FLAGSHIP, getShipClass, type ShipClassId } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, getAnyShipClass } from "@imperium/content";
 import { generateSystemDetail, universeSeedFromString } from "@imperium/procgen";
 import type { StarSystemDetail, StarSystemSummary } from "@imperium/shared";
 import { isTravelling } from "@imperium/sim";
@@ -26,7 +26,7 @@ export function systemDetailSeed(secret: string, systemId: string): number {
 /** Alcance del escáner de una flota: el de su mejor nave. */
 export function fleetScannerRangeLy(classIds: readonly string[]): number {
   let range = 0;
-  for (const id of classIds) range = Math.max(range, getShipClass(id as ShipClassId)?.scannerRangeLy ?? 0);
+  for (const id of classIds) range = Math.max(range, getAnyShipClass(id)?.scannerRangeLy ?? 0);
   return range;
 }
 
@@ -147,7 +147,8 @@ export class DiscoveryService {
     const pending = await this.db
       .select({ id: emperors.id, systemId: emperors.systemId, destSystemId: emperors.destSystemId, departAt: emperors.departAt, arriveAt: emperors.arriveAt })
       .from(emperors)
-      .where(sql`NOT EXISTS (SELECT 1 FROM ${discoveries} WHERE ${discoveries.emperorId} = ${emperors.id})`);
+      // Los actores de las facciones alienígenas no descubren (no tienen niebla de guerra que levantar).
+      .where(sql`${emperors.kind} <> 'alien' AND NOT EXISTS (SELECT 1 FROM ${discoveries} WHERE ${discoveries.emperorId} = ${emperors.id})`);
     const now = this.now();
     for (const row of pending) {
       await this.db.transaction(async (tx) => {
