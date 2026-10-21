@@ -82,7 +82,6 @@ export function FlightHud() {
   const view = useGame((s) => s.view);
   const camera = useGame((s) => s.cameraView);
   const tel = useTelemetry();
-  const assist = useSettings((s) => s.prefs.flight.assist);
   const mouseFlight = useSettings((s) => s.prefs.flight.mouseFlight);
   const deadzone = useSettings((s) => s.prefs.flight.mouseDeadzone);
   if (!flight) return null;
@@ -121,22 +120,14 @@ export function FlightHud() {
         </div>
         {piloting && (
           <div className="flight-sub">
-            <span className={pulse ? "pulse-key on" : "pulse-key"}>
-              {tel.pulseCharge !== null && piloting ? t("pilot.pulseCharging", { s: Math.ceil((1 - tel.pulseCharge) * PULSE_CHARGE_SEC) }) : t("pilot.pulseHint", { key: keys.pulse })}
-            </span>
-            {pulse && <span className="muted"> · {t("pilot.pulseLimit", { v: `${limitNum} ${t(limitUnit)}` })}</span>}
-            <span className={assist ? "pulse-key on" : "pulse-key"}>
-              {" "}
-              · {t("pilot.assist")} {assist ? "ON" : "OFF"} ({keys.flightAssist})
-            </span>
-            {engines === "on" && <span className="muted"> · {t("pilot.enginesStopHint", { key: keys.engines })}</span>}
-            <div className={mouseFlight ? "pulse-key on" : "pulse-key"}>{t(mouseFlight ? "pilot.mouseMode.flight" : "pilot.mouseMode.camera", { key: keys.mouseFlight })}</div>
+            {/* Los interruptores (pulso, asistencia, ratón, cámara) están en la barra de acciones. */}
+            {tel.pulseCharge !== null && <span className="pulse-key on">{t("pilot.pulseCharging", { s: Math.ceil((1 - tel.pulseCharge) * PULSE_CHARGE_SEC) })}</span>}
+            {pulse && <span className="muted">{t("pilot.pulseLimit", { v: `${limitNum} ${t(limitUnit)}` })}</span>}
             <div className="muted">
               {t(`pilot.region.${tel.gravity.region}`)}
               {tel.gravity.body && ` · ${tel.gravity.body}`}
               {tel.gravity.g > 0.005 && ` · ${t("pilot.gravity")} ${tel.gravity.g.toFixed(2)} m/s²`}
             </div>
-            {tel.freeCam && <div className="muted">{t("pilot.freeCam", { key: keys.cameraReset })}</div>}
           </div>
         )}
         {piloting && tel.eta && (

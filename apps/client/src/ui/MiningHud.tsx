@@ -77,7 +77,7 @@ export function MiningHud() {
               <span className="muted small">
                 {left < 0.5 ? t("mining.depleted") : t("mining.left", { n: fmtInt(left) })}
                 {" · "}
-                {inRange ? t(mining ? "mining.active" : "mining.hint", { key: keys.mine }) : t("mining.approach", { range: formatDistance(MINING.rangeM) })}
+                {inRange ? (mining ? t("mining.active") : t("mining.hint", { key: keys.weaponLaser })) : t("mining.approach", { range: formatDistance(MINING.rangeM) })}
               </span>
             </div>
           ) : (

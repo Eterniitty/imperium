@@ -2,7 +2,7 @@ import { useWorld } from "../net/world";
 import { useClaims } from "../state/claims";
 import { gameStore, useGame, useT } from "../state/store";
 import { ownColonyAt, planetLabel } from "./colonies";
-import { Deposits, DepositChips, Meter, RESOURCE_COLORS } from "./common";
+import { Deposits, DepositChips, Meter, RESOURCE_COLORS, KeyHint } from "./common";
 import { PlanetColony } from "./PlanetColony";
 import { engineRef } from "../engineRef";
 import { useKeyLabels } from "./keys";
@@ -70,7 +70,7 @@ export function PlanetPanel() {
           <div className="muted">{t(`planet.${planet.type}`)}</div>
           {piloting && (
             <button className="btn small" onClick={() => engineRef.current?.cruiseTo(`planet:${planet.index}`)}>
-              {t("cruise.goHere", { key: keys.cruise })}
+              {t("cruise.goHere")} <KeyHint action="cruise" />
             </button>
           )}
           <dl className="facts">

@@ -11,7 +11,7 @@ import { findSystemSummary, gameStore } from "../state/store";
 import { GalaxyView } from "./GalaxyView";
 import { Keyboard } from "./input";
 import { isBound, keyLabel, pixelRatioFor, settingsStore } from "../state/settings";
-import { SystemView } from "./SystemView";
+import { SystemView, type PilotAction } from "./SystemView";
 import { TunnelView } from "./TunnelView";
 import { playQuantumJump, playQuantumTear } from "../audio/quantumSfx";
 import { QuantumRift } from "./fx/quantumRift";
@@ -288,6 +288,16 @@ export class Engine {
     gameStore.getState().select(null);
     const jumpKey = settingsStore.getState().bindings.jump[0];
     this.notify("pilot.leftSystem", { jump: jumpKey ? keyLabel(jumpKey, gameStore.getState().locale) : "—" });
+  }
+
+  /** Acción del piloto desde un botón (barra de acciones): la misma que con su tecla. */
+  pilotAction(action: PilotAction): void {
+    if (this.active === this.system) this.system.runAction(action);
+  }
+
+  /** Salir del túnel a mitad del viaje (botón del túnel; también con su tecla si la tiene). */
+  dropOutNow(): void {
+    if (this.jumping) void this.dropOut();
   }
 
   /** Salto cuántico a la estrella seleccionada en el mapa: se vuelve a los mandos y empieza la secuencia. */

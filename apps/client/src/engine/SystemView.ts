@@ -78,6 +78,27 @@ function smoothstep(a: number, b: number, x: number): number {
   return k * k * (3 - 2 * k);
 }
 
+/** Acciones del piloto que se pueden hacer con una tecla o con un botón (`SystemView.runAction`). */
+export const PILOT_ACTIONS = [
+  "cruise",
+  "follow",
+  "dock",
+  "engines",
+  "pulse",
+  "cameraReset",
+  "flightAssist",
+  "mouseFlight",
+  "lockTarget",
+  "targetNext",
+  "targetPrev",
+  "targetNearest",
+  "autoFire",
+  "weaponCannon",
+  "weaponMissile",
+  "weaponLaser",
+  "fireMissile",
+] as const satisfies readonly Action[];
+export type PilotAction = (typeof PILOT_ACTIONS)[number];
 
 /**
  * Vista de un sistema estelar, con la disposición de `@imperium/sim` (distancias
@@ -1672,9 +1693,7 @@ export class SystemView implements View {
   }
 
   private cruiseNotice(key: I18nKey, params: Record<string, string | number>): void {
-    const st = gameStore.getState();
-    const code = settingsStore.getState().bindings.cruise[0];
-    st.notify(key, { ...params, key: code ? keyLabel(code, st.locale) : "—" });
+    gameStore.getState().notify(key, params);
   }
 
   /** Tecla del crucero: con el piloto automático puesto, lo quita; si no, abre o cierra la lista de destinos. */
@@ -1926,6 +1945,52 @@ export class SystemView implements View {
     this.dom.style.cursor = this.hoveredPlanet !== null ? "pointer" : "";
   }
 
+  /**
+   * Acción del piloto por su nombre: la misma con una tecla o con un botón de
+   * la barra de acciones (`ActionBar`), porque no todo lleva tecla por defecto.
+   */
+  runAction(action: PilotAction): void {
+    if (!this.ship || this.quantum) return;
+    // Encender o apagar a mano el pulso o los motores es pilotar: el piloto automático se desactiva.
+    if (this.autopilot.active && (action === "pulse" || action === "engines")) this.cancelCruise("cruise.manual");
+    switch (action) {
+      case "cruise":
+        return this.cruiseKey();
+      case "follow":
+        return this.followKey();
+      case "dock":
+        return void this.dockKey();
+      case "engines":
+        return this.toggleEngines();
+      case "pulse":
+        return this.togglePulse();
+      case "cameraReset":
+        return this.chase.reset();
+      case "flightAssist":
+        return this.toggleFlightPref("assist", "pilot.assistOn", "pilot.assistOff");
+      case "mouseFlight":
+        return this.toggleFlightPref("mouseFlight", "pilot.mouseFlightOn", "pilot.mouseFlightOff");
+      case "lockTarget":
+        return this.lockAtReticle();
+      case "targetNext":
+        return this.onLocked(this.assist.cycle(this.remote, this.ship.position, 1));
+      case "targetPrev":
+        return this.onLocked(this.assist.cycle(this.remote, this.ship.position, -1));
+      case "targetNearest":
+        return this.onLocked(this.assist.nearest(this.remote, this.ship.position));
+      case "autoFire":
+        return this.toggleFlightPref("autoFire", "combat.autoFireOn", "combat.autoFireOff");
+      case "weaponCannon":
+        return this.selectWeapon("cannon");
+      case "weaponMissile":
+        return this.selectWeapon("missile");
+      case "weaponLaser":
+        return this.selectWeapon("laser");
+      case "fireMissile":
+        return this.fireMissile();
+    }
+  }
+
   onKey(code: string): void {
     if (this.ship) {
       // Encender o apagar a mano el pulso o los motores es pilotar: el piloto automático se desactiva.
@@ -1936,25 +2001,12 @@ export class SystemView implements View {
         if (this.quantum.phase === "align" || this.quantum.phase === "charge") this.cancelQuantum();
       }
       else if (this.quantum) return;
-      else if (isBound("cruise", code)) this.cruiseKey();
-      else if (isBound("follow", code)) this.followKey();
-      else if (isBound("dock", code)) void this.dockKey();
       else if (code === "Escape" && gameStore.getState().cruisePanel) gameStore.getState().setCruisePanel(false);
       else if (code === "Escape" && this.autopilot.active) this.cancelCruise("cruise.cancelled");
-      else if (isBound("engines", code)) this.toggleEngines();
-      else if (isBound("pulse", code)) this.togglePulse();
-      else if (isBound("cameraReset", code)) this.chase.reset();
-      else if (isBound("flightAssist", code)) this.toggleFlightPref("assist", "pilot.assistOn", "pilot.assistOff");
-      else if (isBound("mouseFlight", code)) this.toggleFlightPref("mouseFlight", "pilot.mouseFlightOn", "pilot.mouseFlightOff");
-      else if (isBound("lockTarget", code)) this.lockAtReticle();
-      else if (isBound("targetNext", code)) this.onLocked(this.assist.cycle(this.remote, this.ship.position, 1));
-      else if (isBound("targetPrev", code)) this.onLocked(this.assist.cycle(this.remote, this.ship.position, -1));
-      else if (isBound("targetNearest", code)) this.onLocked(this.assist.nearest(this.remote, this.ship.position));
-      else if (isBound("autoFire", code)) this.toggleFlightPref("autoFire", "combat.autoFireOn", "combat.autoFireOff");
-      else if (isBound("weaponCannon", code)) this.selectWeapon("cannon");
-      else if (isBound("weaponMissile", code)) this.selectWeapon("missile");
-      else if (isBound("weaponLaser", code)) this.selectWeapon("laser");
-      else if (isBound("fireMissile", code)) this.fireMissile();
+      else {
+        const action = PILOT_ACTIONS.find((a) => isBound(a, code));
+        if (action) this.runAction(action);
+      }
       return;
     }
     if (code === "Escape" || code === "Backspace") this.events.onExit();

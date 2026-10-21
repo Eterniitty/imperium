@@ -34,13 +34,12 @@ export function HelpButton() {
     setBusy(false);
   };
   return (
-    <div className="help-hud panel">
-      <button className="lang-btn" disabled={busy || wait > 0} title={t("help.hint")} onClick={() => void call()}>
-        {wait > 0 ? t("help.wait", { s: wait }) : t("help.call")}
+    <>
+      <button type="button" className="action-btn help-btn" disabled={busy || wait > 0} title={t("help.hint")} onClick={() => void call()}>
+        <span>{wait > 0 ? t("help.wait", { s: wait }) : t("help.call")}</span>
       </button>
-      {sentAt > 0 && wait > 0 && <span className="muted small">{t("help.sent")}</span>}
       {error && <span className="auth-error small">{t(error)}</span>}
-    </div>
+    </>
   );
 }
 

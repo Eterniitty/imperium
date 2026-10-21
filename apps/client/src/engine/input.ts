@@ -26,6 +26,8 @@ export class Keyboard {
   private handleDown = (e: KeyboardEvent) => {
     // Con el menú de ajustes abierto, las teclas son del menú (Esc lo cierra), no del juego.
     if (this.isTyping(e) || gameStore.getState().settingsOpen) return;
+    // Pilotando, Tab cambia de blanco (si tiene esa tecla) y no mueve el foco de la página.
+    if (e.code === "Tab" && gameStore.getState().view === "system" && settingsStore.getState().bindings.targetNext.includes("Tab")) e.preventDefault();
     if (!e.repeat) this.onKeyPress(e.code);
     this.down.add(e.code);
   };

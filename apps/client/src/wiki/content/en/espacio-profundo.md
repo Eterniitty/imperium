@@ -4,7 +4,7 @@ Not everything between the stars is empty. During a [quantum jump](/wiki/pilotar
 
 ## Dropping out of the tunnel
 
-- In the quantum tunnel, press [[K]] or the **Drop out here** button. The ship stops at the point on the line between the two systems that matches how far you had travelled.
+- In the quantum tunnel, press the **Drop out here** button. The ship stops at the point on the line between the two systems that matches how far you had travelled.
 - **You only spend the fuel for the distance covered**: the rest of the jump goes back into the tank.
 - You are left at the controls in a **deep space region**. Space is divided into cells; each cell is a region with its own contents. **Anyone who drops out in the same region shares it with you**: you see each other and can mine (or fight) together. Privacy and the [fog of war](/wiki/niebla) work as in star systems; on arrival, your scanner discovers the nearby stars.
 - To leave, press [[J]] and pick a destination within your fuel range (including the one you had before, to **resume** the trip), or pick a star on the map.
@@ -28,7 +28,7 @@ An asteroid **is depleted** as you mine it (it looks smaller and duller) and **r
 ## Mining
 
 1. Get close to an asteroid until it is **within range** (the HUD shows it in green).
-2. Hold [[L]] while aiming at the asteroid: the **mining laser** extracts a few units per second and uses reactor energy. Range is measured from the ship's hull. It does not work with the engines off ([[I]]) or with the pulse drive on.
+2. Pick the laser ([[3]]) and hold left click while aiming at the asteroid: the **mining laser** extracts a few units per second and uses reactor energy. Range is measured from the ship's hull. It does not work with the engines off ([[I]]) or with the pulse drive on.
 3. What you extract goes into your ship's **hold**, which is small. When it is full, the laser stops.
 
 {{tabla:mineria}}

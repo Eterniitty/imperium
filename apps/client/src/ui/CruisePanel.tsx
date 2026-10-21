@@ -66,7 +66,7 @@ export function CruisePanel() {
           ✕
         </button>
       </div>
-      <p className="muted small">{t("cruise.hint", { cruise: keys.cruise, follow: keys.follow })}</p>
+      <p className="muted small">{t("cruise.hint")}</p>
       <h3>{t("cruise.ships")}</h3>
       {ships.length === 0 ? <p className="muted small">{t("cruise.noShipsList")}</p> : <ul className="quantum-list">{ships.map(row)}</ul>}
       <h3>{t("cruise.places")}</h3>
@@ -93,7 +93,7 @@ export function CruiseHud() {
         {c.seconds !== null && <span className="mono"> · {formatDuration(c.seconds * 1000)}</span>}
       </div>
       <div className="muted small">
-        {t("cruise.hud.cancel", { key: keys.cruise })}
+        {t("cruise.hud.cancel")}
         <button className="link-btn" onClick={() => engineRef.current?.cancelCruise()}>
           {t("cruise.cancel")}
         </button>

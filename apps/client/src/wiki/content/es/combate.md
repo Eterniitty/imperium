@@ -6,7 +6,7 @@ Dentro de un sistema se combate en tiempo real, pilotando. El **servidor es la a
 
 - **Cañón** ([[F]] o **clic izquierdo**, mantener): ráfagas rápidas, sin límite de munición. Los cañones van en **montajes que giran solos**: con un blanco fijado apuntan al **punto de adelanto** si cabe en su arco alrededor del morro; si no, disparan al frente. Impacta en **la primera nave que el proyectil toca**, sea cual sea (el servidor calcula la trayectoria contra el movimiento de cada nave).
 - **Misil** ([[R]], o clic izquierdo con los misiles seleccionados): mucho daño y **sigue a su blanco** dentro del sistema. Necesita un **blanco fijado** que esté **a tiro** y **delante del morro** (a menos de 60°). Si otra nave se cruza en su camino, el impacto es para ella. La munición es limitada y se repone con el tiempo. En tu nave, los cañones van en las barquillas de la proa y los misiles salen de los lanzadores de la proa de los dos módulos de hábitat, a los costados.
-- **Láser de minería** ([[L]], o clic izquierdo con el láser seleccionado): solo en el [espacio profundo](/wiki/espacio-profundo), contra asteroides.
+- **Láser de minería** (elige el láser con [[3]] y mantén el clic izquierdo): solo en el [espacio profundo](/wiki/espacio-profundo), contra asteroides.
 - Sin **motores** encendidos ([[I]]) no hay armas, y con el **motor de pulso** encendido no se dispara.
 
 ## Asistencia de puntería
@@ -14,10 +14,10 @@ Dentro de un sistema se combate en tiempo real, pilotando. El **servidor es la a
 Las naves enemigas miden pocos metros y se ven como un punto: la nave te ayuda a apuntar.
 
 - **Marcadores**: cada nave del sistema lleva un marcador aunque no se vea, con su distancia. Forma y color dicen quién es: **rombo rojo** = hostil (piratas), **cuadrado ámbar** = otro Emperador, **círculo cian** = compañero. El **blanco fijado** lleva un recuadro mayor con su nombre, su escudo y su casco; si queda fuera de la pantalla, una **flecha** en el borde señala hacia él.
-- **Fijar blanco**: [[X]] fija la nave más cercana a la retícula (al cursor en vuelo con ratón; si no, a la línea del morro). [[Y]] y [[U]]: siguiente y anterior (primero los hostiles, del más cercano al más lejano; luego los demás Emperadores). [[V]]: el más cercano. **Clic central** sobre un marcador: fija esa nave. Al ciclar **nunca se fijan compañeros**; con el clic central sí (te avisa si tienes el fuego amigo activado).
+- **Fijar blanco**: [[X]] fija la nave más cercana a la retícula (al cursor en vuelo con ratón; si no, a la línea del morro). [[Tab]] o el botón **Siguiente blanco**: el siguiente (primero los hostiles, del más cercano al más lejano; luego los demás Emperadores); **Blanco cercano**: el más cercano (botones de la barra de acciones). **Clic central** sobre un marcador: fija esa nave. Al ciclar **nunca se fijan compañeros**; con el clic central sí (te avisa si tienes el fuego amigo activado).
 - **Punto de adelanto**: un círculo donde hay que disparar según la velocidad del blanco, la tuya y la del proyectil. Se pone **verde** cuando el blanco está a tiro y dentro del arco de los montajes.
 - **Puntería automática**: con un blanco fijado, los cañones apuntan solos a ese punto; tú decides cuándo disparar. Los misiles ya persiguen al blanco solos.
-- **Fuego automático** ([[O]], también en Ajustes → Controles): el cañón dispara solo mientras el blanco fijado esté a tiro y en arco. Nunca dispara solo a un compañero.
+- **Fuego automático** (botón **Fuego auto** de la barra de acciones o del panel de armas, también en Ajustes → Controles): el cañón dispara solo mientras el blanco fijado esté a tiro y en arco. Nunca dispara solo a un compañero.
 - **Ratón**: con los motores encendidos, el **clic izquierdo** dispara el arma seleccionada y la **rueda** cambia de arma ([[1]] cañón, [[2]] misiles, [[3]] láser). La distancia de la cámara pasa a **Mayús + rueda**, mover la cámara al **botón derecho** (o Alt + arrastrar), seleccionar un planeta a **Alt + clic** y el piloto automático por doble clic a **Alt + doble clic**. Se puede desactivar en Ajustes → Controles («Ratón para combatir»). Todas las teclas se pueden cambiar.
 
 {{tabla:punteria}}

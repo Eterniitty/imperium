@@ -785,6 +785,22 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .combat-assist { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
 
 /* Pedir ayuda (HELP_CALL): botón al pilotar y peticiones de los compañeros. */
-.help-hud { position: absolute; right: 244px; bottom: 92px; padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
 .help-calls { position: fixed; top: 76px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 6px; z-index: 30; }
 .help-call { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; border-color: rgba(255, 138, 106, 0.6); }
+
+/* Barra de acciones del piloto (docs/rediseno-interfaz.md): botones para lo que no lleva tecla. */
+.action-bar { position: absolute; left: 12px; bottom: 112px; display: flex; flex-direction: column; gap: 6px; padding: 8px; max-width: 272px; animation: panel-in 0.22s ease-out both; }
+.action-group { display: flex; flex-wrap: wrap; gap: 4px; }
+.action-group + .action-group { border-top: 1px solid rgba(143, 220, 255, 0.12); padding-top: 6px; }
+.action-btn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; font: inherit; font-size: 12px; letter-spacing: 0.02em; color: var(--muted); background: rgba(8, 14, 26, 0.6); border: 1px solid rgba(143, 220, 255, 0.18); border-radius: 5px; cursor: pointer; transition: color 0.15s, border-color 0.15s, background 0.15s, transform 0.08s; }
+.action-btn:hover { color: var(--text); border-color: rgba(143, 220, 255, 0.45); background: rgba(20, 34, 56, 0.75); }
+.action-btn:active { transform: translateY(1px); }
+.action-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.action-btn.on { color: #120c02; background: var(--gold); border-color: var(--gold); }
+.action-btn.on kbd { color: #120c02; border-color: rgba(18, 12, 2, 0.4); }
+.action-btn kbd { font-size: 10px; padding: 0 4px; }
+@keyframes panel-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .action-bar { animation: none; } .action-btn { transition: none; } }
+.action-btn.help-btn { color: #ffb39e; border-color: rgba(255, 138, 106, 0.45); }
+.action-btn.help-btn:hover { color: #ffd3c6; border-color: rgba(255, 138, 106, 0.8); }
+.action-btn:disabled { opacity: 0.55; cursor: default; }

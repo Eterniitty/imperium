@@ -147,7 +147,7 @@ function weaponName(t: T, w: WeaponDefinition): string {
 function keysTable(t: T, locale: Locale, ctx: ActionContext): GenTable {
   return {
     head: [t("wiki.col.action"), t("wiki.col.keys")],
-    rows: ACTIONS[ctx].map((a) => [t(`action.${a}`), DEFAULT_BINDINGS[a].map((c) => keyLabel(c, locale)).join(" / ") || "—"]),
+    rows: ACTIONS[ctx].map((a) => [t(`action.${a}`), DEFAULT_BINDINGS[a].map((c) => keyLabel(c, locale)).join(" / ") || t("wiki.v.buttonOnly")]),
   };
 }
 

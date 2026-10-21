@@ -1,3 +1,4 @@
+import { KeyHint } from "./common";
 import { useTelemetry } from "../engine/telemetry";
 import { engineRef } from "../engineRef";
 import { useAuth } from "../state/auth";
@@ -33,7 +34,7 @@ export function QuantumHud() {
         <div className="muted small">{t("quantum.tunnelHint", { map: keys.toggleMap })}</div>
         {/* Espacio profundo: salir del túnel aquí (se gasta solo el combustible recorrido). */}
         <button className="btn quantum-drop" type="button" onClick={() => void engineRef.current?.dropOut()} title={t("quantum.dropTitle")}>
-          {t("quantum.drop", { key: keys.dropOut })}
+          {t("quantum.drop")} <KeyHint action="dropOut" />
         </button>
       </div>
     );

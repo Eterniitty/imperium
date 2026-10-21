@@ -51,7 +51,7 @@ Para que el juego aguante muchos jugadores, en el mapa solo ves a los Emperadore
 - El filtro se aplica **en el servidor**: a quien no puede verte, tu posición **ni siquiera se le envía**.
 - **Tus flotas solo las ves tú.**
 - Si vuelas en el mismo sistema que otro jugador, os veis las naves: estáis en el mismo sitio.
-- Para volar junto a un compañero dentro del sistema, el **piloto automático** sigue su nave en formación ([[H]]; ver [Pilotar la nave](/wiki/pilotar)).
+- Para volar junto a un compañero dentro del sistema, el **piloto automático** sigue su nave en formación (botón **Seguir**; ver [Pilotar la nave](/wiki/pilotar)).
 
 > [!dev] Un futuro escáner podrá detectar a quien esté cerca. Las **organizaciones** (con descubrimientos compartidos) llegarán en la fase 12.
 

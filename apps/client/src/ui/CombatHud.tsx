@@ -1,3 +1,4 @@
+import { KeyHint } from "./common";
 import { useStore } from "zustand";
 import { FLAGSHIP_SUPPLIES } from "@imperium/content";
 import { shipName, spaceStore } from "../net/space";
@@ -143,7 +144,7 @@ export function CombatHud() {
         {autoFire && (
           <div className="combat-assist">
             <span className="hud-tag ok">
-              {t("combat.autoFire")} <kbd>{keys.autoFire}</kbd>
+              {t("combat.autoFire")} <KeyHint action="autoFire" />
             </span>
           </div>
         )}

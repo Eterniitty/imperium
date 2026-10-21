@@ -6,7 +6,7 @@ Inside a system you fight in real time, at the controls. The **server is the aut
 
 - **Cannon** ([[F]] or **left click**, hold): rapid bursts, with unlimited ammunition. The cannons sit on **mounts that aim by themselves**: with a locked target they point at the **lead point** if it fits in their arc around the nose; otherwise they fire straight ahead. It hits **the first ship the projectile touches**, whichever it is (the server works out the trajectory against each ship's movement).
 - **Missile** ([[R]], or left click with missiles selected): heavy damage, and it **follows its target** inside the system. It needs a **locked target** that is **in range** and **ahead of the nose** (within 60°). If another ship crosses its path, that ship takes the hit. Ammunition is limited and refills over time. On your ship, the cannons sit in the bow pods and missiles leave from the launchers at the bow of the two habitat modules, on the sides.
-- **Mining laser** ([[L]], or left click with the laser selected): only in [deep space](/wiki/espacio-profundo), against asteroids.
+- **Mining laser** (pick the laser with [[3]] and hold left click): only in [deep space](/wiki/espacio-profundo), against asteroids.
 - Without **engines** running ([[I]]) there are no weapons, and you cannot fire with the **pulse drive** on.
 
 ## Aim assist
@@ -14,10 +14,10 @@ Inside a system you fight in real time, at the controls. The **server is the aut
 Enemy ships are a few metres long and look like a dot: your ship helps you aim.
 
 - **Markers**: every ship in the system has a marker even if you cannot see it, with its distance. Shape and colour tell who it is: **red diamond** = hostile (pirates), **amber square** = another Emperor, **cyan circle** = companion. The **locked target** gets a larger box with its name, shield and hull; if it is off screen, an **arrow** at the edge points to it.
-- **Locking**: [[X]] locks the ship closest to the reticle (the cursor in mouse flight; otherwise the line of the nose). [[Y]] and [[U]]: next and previous (hostiles first, nearest to farthest; then other Emperors). [[V]]: the nearest. **Middle click** on a marker: lock that ship. Cycling **never locks companions**; middle click does (with a warning if your friendly fire is on).
+- **Locking**: [[X]] locks the ship closest to the reticle (the cursor in mouse flight; otherwise the line of the nose). [[Tab]] or the **Next target** button: the next one (hostiles first, nearest to farthest; then other Emperors); **Nearest target**: the nearest (action bar buttons). [[V]]: the nearest. **Middle click** on a marker: lock that ship. Cycling **never locks companions**; middle click does (with a warning if your friendly fire is on).
 - **Lead point**: a circle where you must shoot given the target's speed, yours and the projectile's. It turns **green** when the target is in range and inside the mounts' arc.
 - **Automatic aiming**: with a locked target, the cannons aim at that point by themselves; you decide when to fire. Missiles already chase the target by themselves.
-- **Auto-fire** ([[O]], also in Settings → Controls): the cannon fires by itself while the locked target is in range and in arc. It never fires by itself at a companion.
+- **Auto-fire** (the **Auto fire** button in the action bar or the weapons panel, also in Settings → Controls): the cannon fires by itself while the locked target is in range and in arc. It never fires by itself at a companion.
 - **Mouse**: with engines on, **left click** fires the selected weapon and the **wheel** switches weapon ([[1]] cannon, [[2]] missiles, [[3]] laser). Camera distance moves to **Shift + wheel**, moving the camera to the **right button** (or Alt + drag), selecting a planet to **Alt + click** and autopilot by double click to **Alt + double click**. It can be turned off in Settings → Controls ("Mouse for combat"). All keys can be rebound.
 
 {{tabla:punteria}}

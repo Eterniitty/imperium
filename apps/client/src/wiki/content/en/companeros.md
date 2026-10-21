@@ -51,7 +51,7 @@ So that the game can hold many players, on the map you only see the Emperors **n
 - The filter is applied **on the server**: your position is **not even sent** to anyone who cannot see you.
 - **Your fleets are only visible to you.**
 - If you fly in the same system as another player, you see each other's ships: you are in the same place.
-- To fly alongside a companion inside a system, the **autopilot** follows their ship in formation ([[H]]; see [Flying the ship](/wiki/pilotar)).
+- To fly alongside a companion inside a system, the **autopilot** follows their ship in formation (the **Follow** button; see [Flying the ship](/wiki/pilotar)).
 
 > [!dev] A future scanner will be able to detect anyone nearby. **Organisations** (with shared discoveries) will arrive in phase 12.
 

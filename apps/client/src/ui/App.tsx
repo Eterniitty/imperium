@@ -15,7 +15,8 @@ import { ColoniesPanel } from "./ColoniesPanel";
 import { BridgePanel } from "./BridgePanel";
 import { ColonyManager } from "./ColonyManager";
 import { EscortHud } from "./EscortHud";
-import { HelpButton, HelpCalls } from "./HelpCall";
+import { HelpCalls } from "./HelpCall";
+import { ActionBar } from "./ActionBar";
 import { FleetsPanel } from "./FleetsPanel";
 import { WarPanel } from "./WarPanel";
 import { Notice } from "./Notice";
@@ -118,7 +119,7 @@ export function App() {
             <FlightHud />
             <CombatHud />
             <EscortHud />
-            <HelpButton />
+            <ActionBar />
             {/* Puente de mando a bordo de la nave nodriza (acoplado): el imperio, como en el túnel. */}
             {docked && (
               <div className="left-col">

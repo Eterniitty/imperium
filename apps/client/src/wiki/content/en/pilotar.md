@@ -4,7 +4,7 @@ Your Emperor always travels in their ship, and you fly it yourself in real time,
 
 ## Controls
 
-Every key can be changed in **Settings → Controls** (up to two per action). These are the defaults:
+Only the actions used constantly with your hands on the controls have a default key (moving, turning, firing, engines, pulse, jump, camera). Everything else is in the **action bar**, on the left above the ship status: engines, pulse, assist, mouse mode, camera, cruise, follow, dock, targets, auto fire and call for help. Active buttons show in gold and, if the action has a key, they show it. Any action can be bound to a key in **Settings → Controls** (up to two per action). These are the defaults:
 
 ### Flying the ship
 
@@ -12,7 +12,7 @@ Every key can be changed in **Settings → Controls** (up to two per action). Th
 
 **Starting the engines.** When you take the controls, the ship's engines are off: the HUD is dimmed and reminds you of the key in the centre. Press [[I]] to start them (a few seconds): reactor, pumps and status lights come on, the turbine spools up, the nozzles ignite and the HUD powers up. Without engines there is no thrust, no turning, no pulse drive, no weapons and no mining laser (the ship only keeps its momentum and feels gravity). The same key shuts them down. If you order a quantum jump with the engines off, they start by themselves before the ship aligns; when you arrive from a jump they are already running.
 
-**The camera and the ship are separate.** The mouse has two modes, switched with [[G]] (the HUD shows which one is active):
+**The camera and the ship are separate.** The mouse has two modes, switched with the **Mouse** button in the action bar (it shows which one is active):
 
 - **Free camera** (default): dragging with the mouse **moves the camera around the ship** (above, below, to the sides, in front) without turning it; the wheel zooms (with engines on, left click and the wheel are for weapons: then drag with the right button and zoom with Shift + wheel; see [Combat](/wiki/combate#aim-assist)) and [[B]] puts the camera back behind the ship. You fly with the keyboard: arrow keys (pitch and yaw) and [[Q]]/[[E]] (roll).
 - **Mouse flight**: a **virtual reticle** in the centre of the screen. The ship turns towards where the cursor points relative to the centre, without dragging: the further from the centre, the faster (up to the outer circle); inside the small circle (dead zone) it does not turn. The camera follows behind the ship; hold the right button to look around for a moment. Arrow keys and [[Q]]/[[E]] still work.
@@ -23,7 +23,7 @@ In **Settings → Controls** you can change the mouse flight sensitivity and dea
 
 The ship moves with thrusters: the main one pushes forward, weaker ones brake and move it sideways and up or down, and the manoeuvring thrusters turn it (turns speed up and slow down smoothly, never at once).
 
-- With **flight assist** on (default; [[Z]] toggles it), the thrusters bring the ship to the speed you ask for and, with no keys pressed, brake it to a stop.
+- With **flight assist** on (default; the **Assist** button toggles it), the thrusters bring the ship to the speed you ask for and, with no keys pressed, brake it to a stop.
 - With it off, the ship **keeps its velocity** (pure inertia): to brake you have to thrust the other way.
 - In **Settings → Controls** you can change the acceleration, the inertia and the maximum manoeuvring speed, and invert the camera's vertical axis.
 
@@ -58,11 +58,11 @@ The pulse drive ([[P]], on and off) is a **supercruise** to cross the system fro
 
 Inside a system (or a deep-space region) the ship can fly itself to a place or follow another ship. It works the same controls you do —turning, thrusters, boost and pulse drive—, so it flies at the same speeds and other players see it fly normally.
 
-- **Choose a destination**: [[N]] opens the list of planets, moons, asteroid belts, the system's anomaly and, in deep space, the nearest asteroids, plus the ships in sight (your [companions](/wiki/companeros) first). You can also press **Cruise here** in the panel of the selected planet, or **double-click** a planet, moon, ship or an empty point of the system plane (a marked point) in the view (with engines on, **Alt + double-click**, since left click fires).
+- **Choose a destination**: the **Cruise** button opens the list of planets, moons, asteroid belts, the system's anomaly and, in deep space, the nearest asteroids, plus the ships in sight (your [companions](/wiki/companeros) first). You can also press **Cruise here** in the panel of the selected planet, or **double-click** a planet, moon, ship or an empty point of the system plane (a marked point) in the view (with engines on, **Alt + double-click**, since left click fires).
 - **Go to a place**: the ship turns, engages the pulse drive if the destination is far (throttling it to brake in time), drops it when close and finishes on thrusters until it **stops at a safe distance** (above a planet or moon, at half its radius of altitude, between 5 and 120 km; next to an asteroid, within mining-laser range). It flies around the star, planets and moons in the way. On arrival it disengages and tells you.
 - **Orbit**: in the list, next to a planet or a moon, **Orbit** takes the ship there and leaves it circling its equator at the same safe altitude, nose along the orbit, until you cancel.
-- **Follow a ship**: [[H]] follows the locked ship ([[X]]) or, if there is none, the nearest ship in sight (companions first); press it again to switch to the next one. Your ship takes up formation behind and to one side, matching its speed (with the pulse drive if it uses it). If it jumps out of the system or goes out of sight, the autopilot disengages with a notice.
-- **Cancel**: [[N]], Esc or **any flight control** (move, turn, boost, pulse, engines; in mouse flight, moving the cursor out of the dead zone). A HUD notice shows the mode, destination, distance and the key to cancel.
+- **Follow a ship**: the **Follow** button follows the locked ship ([[X]]) or, if there is none, the nearest ship in sight (companions first); press it again to switch to the next one. Your ship takes up formation behind and to one side, matching its speed (with the pulse drive if it uses it). If it jumps out of the system or goes out of sight, the autopilot disengages with a notice.
+- **Cancel**: **Stop cruise**, Esc or **any flight control** (move, turn, boost, pulse, engines; in mouse flight, moving the cursor out of the dead zone). A HUD notice shows the mode, destination, distance and the key to cancel.
 - If the engines are off, they start on their own. Without fuel it uses thrusters only (much slower). Firing and mining do not cancel it.
 
 ## Gravity
@@ -127,7 +127,7 @@ When you leave the controls, your ship stays where it was and **orbits the star*
 
 ## Cameras
 
-[[T]] switches between the **chase** camera (third person, the default) and the **cockpit** camera (first person). In both, the mouse moves the camera, not the ship; [[B]] returns to the chase view (or to looking ahead).
+[[T]] switches between the **chase** camera (third person, the default) and the **cockpit** camera (first person). In both, the mouse moves the camera, not the ship; the **Recenter camera** button returns to the chase view (or to looking ahead).
 
 ## Leaving the system
 
@@ -148,7 +148,7 @@ Fly to the **edge of the system** (a few thousand kilometres beyond the outermos
 
 ### Dropping out halfway
 
-In the tunnel, [[K]] (or the **Drop out here** button) stops the trip: you stay in **deep space**, between the two stars, and only spend the fuel for the distance covered. There may be asteroids there to mine with [[L]]. See [Deep space and mining](/wiki/espacio-profundo).
+In the tunnel, the **Drop out here** button stops the trip: you stay in **deep space**, between the two stars, and only spend the fuel for the distance covered. There may be asteroids there to mine with [[L]]. See [Deep space and mining](/wiki/espacio-profundo).
 
 ## Shared flight
 

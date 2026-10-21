@@ -4,7 +4,7 @@ Tu Emperador viaja siempre en su nave, y la pilotas tú en tiempo real, sin pant
 
 ## Controles
 
-Todas las teclas se pueden cambiar en **Ajustes → Controles** (hasta dos por acción). Estas son las de por defecto:
+Solo llevan tecla por defecto las acciones que se usan constantemente con las manos en los mandos (moverse, girar, disparar, motores, pulso, salto, cámara). Lo demás está en la **barra de acciones**, a la izquierda, encima del estado de la nave: motores, pulso, asistencia, modo del ratón, cámara, crucero, seguir, acoplar, blancos, fuego automático y pedir ayuda. Los botones encendidos se ven en dorado y, si la acción tiene tecla, la muestran. Cualquier acción se puede asignar a una tecla en **Ajustes → Controles** (hasta dos por acción). Estas son las de por defecto:
 
 ### Pilotar la nave
 
@@ -12,7 +12,7 @@ Todas las teclas se pueden cambiar en **Ajustes → Controles** (hasta dos por a
 
 **Arrancar los motores.** Al tomar los mandos, la nave está con los motores apagados: el HUD se ve tenue y en el centro te recuerda la tecla. Pulsa [[I]] y empieza el arranque (unos segundos): se encienden el reactor, las bombas y las luces de estado, suena la turbina, las toberas se encienden y el HUD se activa. Sin motores no hay empuje, giros, motor de pulso, armas ni láser de minería (la nave solo sigue con su inercia y la gravedad). La misma tecla los apaga. Si das la orden de salto cuántico con los motores apagados, arrancan solos antes de alinear la nave; al llegar de un salto ya están en marcha.
 
-**La cámara y la nave van por separado.** El ratón tiene dos modos, que se cambian con [[G]] (el HUD dice en cuál estás):
+**La cámara y la nave van por separado.** El ratón tiene dos modos, que se cambian con el botón **Ratón** de la barra de acciones (dice en cuál estás):
 
 - **Cámara libre** (por defecto): arrastrar con el ratón **mueve la cámara alrededor de la nave** (arriba, abajo, a los lados, por delante) sin girarla; la rueda acerca o aleja la cámara (con los motores encendidos, el clic izquierdo y la rueda son para las armas: entonces se arrastra con el botón derecho y se acerca con Mayús + rueda; ver [Combate](/wiki/combate#asistencia-de-punteria)) y [[B]] la devuelve detrás de la nave. Pilotas con el teclado: flechas (cabeceo y guiñada) y [[Q]]/[[E]] (alabeo).
 - **Vuelo con ratón**: una **retícula virtual** en el centro de la pantalla. La nave gira hacia donde apunta el cursor respecto al centro, sin arrastrar: cuanto más lejos del centro, más rápido (hasta el círculo exterior); dentro del círculo pequeño (zona muerta) no gira. La cámara va detrás de la nave; con el botón derecho puedes mirar alrededor un momento. Las flechas y [[Q]]/[[E]] siguen funcionando.
@@ -23,7 +23,7 @@ En **Ajustes → Controles** puedes cambiar la sensibilidad y la zona muerta del
 
 La nave se mueve con propulsores: el principal empuja hacia delante, otros más débiles frenan y la mueven a los lados y arriba o abajo, y los de maniobra la hacen girar (los giros aceleran y frenan con suavidad, nunca de golpe).
 
-- Con la **asistencia de vuelo** encendida (por defecto; [[Z]] la cambia), los propulsores llevan la nave a la velocidad que pides y, sin teclas, la frenan hasta pararla.
+- Con la **asistencia de vuelo** encendida (por defecto; el botón **Asistencia** la cambia), los propulsores llevan la nave a la velocidad que pides y, sin teclas, la frenan hasta pararla.
 - Apagada, la nave **conserva su velocidad** (inercia pura): para frenar hay que empujar al revés.
 - En **Ajustes → Controles** puedes cambiar la aceleración, la inercia y la velocidad máxima de maniobra, e invertir el eje vertical de la cámara.
 
@@ -58,11 +58,11 @@ El motor de pulso ([[P]], encender y apagar) es un **supercrucero** para cruzar 
 
 Dentro de un sistema (o de una región de espacio profundo) la nave puede ir sola a un sitio o seguir a otra nave. Mueve los mismos mandos que tú —giros, propulsores, impulso y pulso—, así que va a las mismas velocidades y los demás la ven volar con normalidad.
 
-- **Elegir destino**: [[N]] abre la lista con los planetas, las lunas, los cinturones de asteroides, la anomalía del sistema y, en el espacio profundo, los asteroides más cercanos, además de las naves a la vista (primero tus [compañeros](/wiki/companeros)). También puedes pulsar **Crucero hasta aquí** en el panel del planeta seleccionado o hacer **doble clic** en la vista sobre un planeta, una luna, una nave o un punto vacío del plano del sistema (un punto marcado; con los motores encendidos, **Alt + doble clic**, porque el clic izquierdo dispara).
+- **Elegir destino**: el botón **Crucero** abre la lista con los planetas, las lunas, los cinturones de asteroides, la anomalía del sistema y, en el espacio profundo, los asteroides más cercanos, además de las naves a la vista (primero tus [compañeros](/wiki/companeros)). También puedes pulsar **Crucero hasta aquí** en el panel del planeta seleccionado o hacer **doble clic** en la vista sobre un planeta, una luna, una nave o un punto vacío del plano del sistema (un punto marcado; con los motores encendidos, **Alt + doble clic**, porque el clic izquierdo dispara).
 - **Ir a un sitio**: la nave se orienta, enciende el pulso si el destino está lejos (y lo modera para frenar a tiempo), lo apaga cerca y termina con los propulsores hasta **detenerse a una distancia segura** (sobre un planeta o una luna, a la mitad de su radio de altura, entre 5 y 120 km; junto a un asteroide, a tiro del láser de minería). Rodea la estrella, los planetas y las lunas que se crucen en el camino. Al llegar se desactiva y te avisa.
 - **Orbitar**: en la lista, junto a un planeta o una luna, **Orbitar** lleva la nave hasta él y la deja dando vueltas por su ecuador, a la misma altura segura, con el morro en el sentido de la órbita, hasta que la canceles.
-- **Seguir una nave**: [[H]] sigue a la nave fijada ([[X]]) o, si no hay, a la nave a la vista más cercana (primero los compañeros); pulsarla otra vez pasa a la siguiente. La tuya se pone en formación detrás y a un lado, igualando su velocidad (con pulso si ella lo lleva). Si salta fuera del sistema o deja de verse, el piloto automático se desactiva con un aviso.
-- **Cancelar**: [[N]], Esc o **cualquier mando de pilotaje** (moverse, girar, impulso, pulso, motores; en vuelo con ratón, mover el cursor fuera de la zona muerta). Un aviso en el HUD muestra el modo, el destino, la distancia y la tecla para cancelar.
+- **Seguir una nave**: el botón **Seguir** sigue a la nave fijada ([[X]]) o, si no hay, a la nave a la vista más cercana (primero los compañeros); pulsarla otra vez pasa a la siguiente. La tuya se pone en formación detrás y a un lado, igualando su velocidad (con pulso si ella lo lleva). Si salta fuera del sistema o deja de verse, el piloto automático se desactiva con un aviso.
+- **Cancelar**: **Parar crucero**, Esc o **cualquier mando de pilotaje** (moverse, girar, impulso, pulso, motores; en vuelo con ratón, mover el cursor fuera de la zona muerta). Un aviso en el HUD muestra el modo, el destino, la distancia y la tecla para cancelar.
 - Si los motores están apagados, se arrancan solos. Sin combustible, va solo con los propulsores (mucho más despacio). Disparar y minar no lo cancelan.
 
 ## Gravedad
@@ -127,7 +127,7 @@ Al dejar los mandos, tu nave se queda donde estaba y **orbita la estrella** como
 
 ## Cámaras
 
-[[T]] alterna entre la cámara **exterior** (tercera persona, por defecto) y la de **cabina** (primera persona). En las dos, el ratón mueve la cámara, no la nave; [[B]] vuelve a la vista de seguimiento (o a mirar al frente).
+[[T]] alterna entre la cámara **exterior** (tercera persona, por defecto) y la de **cabina** (primera persona). En las dos, el ratón mueve la cámara, no la nave; el botón **Recentrar cámara** vuelve a la vista de seguimiento (o a mirar al frente).
 
 ## Salir del sistema
 
@@ -148,7 +148,7 @@ Vuela hasta el **borde del sistema** (unos miles de kilómetros más allá del �
 
 ### Salir del túnel a mitad de viaje
 
-En el túnel, [[K]] (o el botón **Salir del túnel aquí**) detiene el viaje: quedas en el **espacio profundo**, entre las dos estrellas, y solo gastas el combustible del tramo recorrido. Allí puede haber asteroides que minar con [[L]]. Ver [Espacio profundo y minería](/wiki/espacio-profundo).
+En el túnel, el botón **Salir del túnel aquí** detiene el viaje: quedas en el **espacio profundo**, entre las dos estrellas, y solo gastas el combustible del tramo recorrido. Allí puede haber asteroides que minar con [[L]]. Ver [Espacio profundo y minería](/wiki/espacio-profundo).
 
 ## Vuelo compartido
 

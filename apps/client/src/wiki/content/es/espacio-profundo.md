@@ -4,7 +4,7 @@ Entre las estrellas no todo está vacío. Durante un [viaje cuántico](/wiki/pil
 
 ## Salir del túnel
 
-- En el túnel cuántico pulsa [[K]] o el botón **Salir del túnel aquí**. La nave se detiene en el punto de la línea entre los dos sistemas que corresponde a lo que llevabas de viaje.
+- En el túnel cuántico pulsa el botón **Salir del túnel aquí**. La nave se detiene en el punto de la línea entre los dos sistemas que corresponde a lo que llevabas de viaje.
 - **Solo gastas el combustible del tramo recorrido**: el resto del salto vuelve al depósito.
 - Quedas a los mandos en una **región de espacio profundo**. El espacio está dividido en celdas; cada celda es una región con su propio contenido. **Quien sale del túnel en la misma región la comparte contigo**: os veis y podéis minar (o combatir) juntos. La privacidad y la [niebla de guerra](/wiki/niebla) funcionan igual que en los sistemas; al llegar, tu escáner descubre las estrellas cercanas.
 - Para irte, pulsa [[J]] y elige un destino al alcance de tu combustible (también el que tenías antes, para **reanudar** el viaje), o elige una estrella en el mapa.
@@ -28,7 +28,7 @@ Un asteroide **se agota** al minarlo (se ve más pequeño y apagado) y **se rege
 ## Minar
 
 1. Acércate a un asteroide hasta tenerlo **a tiro** (el HUD lo marca en verde).
-2. Mantén [[L]] apuntando al asteroide: el **láser de minería** extrae unas pocas unidades por segundo y gasta energía del reactor. La distancia se mide desde el casco de la nave. No funciona con los motores apagados ([[I]]) ni con el motor de pulso encendido.
+2. Elige el láser ([[3]]) y mantén el clic izquierdo apuntando al asteroide: el **láser de minería** extrae unas pocas unidades por segundo y gasta energía del reactor. La distancia se mide desde el casco de la nave. No funciona con los motores apagados ([[I]]) ni con el motor de pulso encendido.
 3. Lo extraído va a la **bodega** de tu nave, que es pequeña. Si está llena, el láser se detiene.
 
 {{tabla:mineria}}

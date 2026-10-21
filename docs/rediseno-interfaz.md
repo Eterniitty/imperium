@@ -14,7 +14,7 @@ tecla por defecto).
 | Grupo | Con tecla por defecto |
 |---|---|
 | Vuelo | W/S empuje, A/D lateral, Espacio/C subir/bajar, Q/E alabeo, flechas (giro con teclado), Mayús (impulso) |
-| Combate | clic izquierdo (disparar), 1/2/3 (arma), R (misil), X (fijar blanco), Tab (siguiente blanco) |
+| Combate | clic izquierdo o F (disparar), 1/2/3 (arma), R (misil), X (fijar blanco), Tab (siguiente blanco) |
 | Nave | I (motores), P (pulso), J (salto), T (cámara cabina/exterior) |
 | Interfaz | M (mapa), Esc (menú / cerrar), Intro (confirmar) |
 

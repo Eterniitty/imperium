@@ -21,6 +21,11 @@ export type Action = (typeof ACTIONS)[ActionContext][number];
 /** Hasta dos teclas por acción (códigos de `KeyboardEvent.code`). */
 export type Bindings = Record<Action, string[]>;
 
+/**
+ * Teclas por defecto (`docs/rediseno-interfaz.md` §1): solo lo que se usa
+ * constantemente con las manos en los mandos. Lo demás se hace con botones y
+ * se le puede asignar tecla en Ajustes → Controles.
+ */
 export const DEFAULT_BINDINGS: Bindings = {
   forward: ["KeyW"],
   back: ["KeyS"],
@@ -40,24 +45,24 @@ export const DEFAULT_BINDINGS: Bindings = {
   fireMissile: ["KeyR"],
   // Asistencia de puntería: fijar en la retícula (X), siguiente / anterior / más cercano, fuego automático y elegir arma.
   lockTarget: ["KeyX"],
-  targetNext: ["KeyY"],
-  targetPrev: ["KeyU"],
-  targetNearest: ["KeyV"],
-  autoFire: ["KeyO"],
+  targetNext: ["Tab"],
+  targetPrev: [],
+  targetNearest: [],
+  autoFire: [],
   weaponCannon: ["Digit1"],
   weaponMissile: ["Digit2"],
   weaponLaser: ["Digit3"],
   pulse: ["KeyP"],
-  flightAssist: ["KeyZ"],
-  mouseFlight: ["KeyG"],
-  cameraReset: ["KeyB"],
+  flightAssist: [],
+  mouseFlight: [],
+  cameraReset: [],
   engines: ["KeyI"],
   // Espacio profundo: láser de minería (mantener) y salir del túnel cuántico.
-  mine: ["KeyL"],
+  mine: [],
   // Piloto automático: lista de destinos (o cancelar) y seguir a otra nave.
-  cruise: ["KeyN"],
-  follow: ["KeyH"],
-  dock: ["Enter"],
+  cruise: [],
+  follow: [],
+  dock: [],
   mapForward: ["KeyW", "ArrowUp"],
   mapBack: ["KeyS", "ArrowDown"],
   mapLeft: ["KeyA", "ArrowLeft"],
@@ -71,7 +76,7 @@ export const DEFAULT_BINDINGS: Bindings = {
   deselect: ["Escape"],
   jump: ["KeyJ"],
   toggleMap: ["KeyM"],
-  dropOut: ["KeyK"],
+  dropOut: [],
 };
 
 const STORAGE_KEY = "imperium.keys";

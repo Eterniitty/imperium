@@ -2,6 +2,8 @@ import type { Planet, ResourceDeposits, ResourceId } from "@imperium/shared";
 import { STAR_CLASSES } from "@imperium/procgen";
 import type { StarClass } from "@imperium/shared";
 import { useT } from "../state/store";
+import { useKeyLabels } from "./keys";
+import type { Action } from "../state/settings";
 
 export const RESOURCE_ORDER: ResourceId[] = ["metal", "volatiles", "crystal"];
 
@@ -72,4 +74,10 @@ export function Meter({ value, color }: { value: number; color: string }) {
       <span className="meter-fill" style={{ width: `${Math.round(value * 100)}%`, background: color }} />
     </span>
   );
+}
+
+/** Tecla de una acción, solo si tiene alguna asignada (no todo lleva tecla). */
+export function KeyHint({ action }: { action: Action }) {
+  const label = useKeyLabels()[action];
+  return label === "—" ? null : <kbd>{label}</kbd>;
 }
