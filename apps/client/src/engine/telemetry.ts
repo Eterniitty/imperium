@@ -32,6 +32,8 @@ export interface FlightTelemetry {
   enginePower: number;
   /** Gravedad que siente la nave (m/s²; 0 con el pulso), región y cuerpo dominante. */
   gravity: { g: number; region: "deep" | "approach" | "surface"; body: string | null };
+  /** Piloto automático de crucero: modo, destino, fase, distancia (m) y tiempo estimado (s); null si está apagado. */
+  cruise: { mode: "goto" | "follow"; name: string; phase: "align" | "cruise" | "approach" | "formation"; distance: number; seconds: number | null } | null;
 }
 
 export const telemetry: FlightTelemetry = {
@@ -50,6 +52,7 @@ export const telemetry: FlightTelemetry = {
   engines: "on",
   enginePower: 1,
   gravity: { g: 0, region: "deep", body: null },
+  cruise: null,
 };
 
 /** Copia de la telemetría refrescada cada `intervalMs` (para los números del HUD). */

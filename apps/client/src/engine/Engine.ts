@@ -241,6 +241,23 @@ export class Engine {
     if (this.inBackground()) this.system.skipQuantumAhead();
   }
 
+  /** Piloto automático de crucero (al pilotar): destinos posibles, destino actual, activar y cancelar. */
+  cruiseOptions() {
+    return this.isPiloting ? this.system.cruiseOptions() : [];
+  }
+
+  get cruiseTarget() {
+    return this.isPiloting ? this.system.cruiseTarget : null;
+  }
+
+  cruiseTo(id: string): void {
+    if (this.isPiloting) this.system.cruiseTo(id);
+  }
+
+  cancelCruise(): void {
+    this.system.cancelCruise("cruise.cancelled");
+  }
+
   /** Combustible actual de la nave (en vivo si se pilota; si no, el guardado más lo regenerado). */
   private fuelNow(): number {
     const live = spaceStore.getState().supplies;

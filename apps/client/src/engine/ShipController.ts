@@ -3,6 +3,7 @@ import { stepPulseSpeed } from "@imperium/sim";
 import { FLIGHT_MODEL } from "@imperium/content";
 import { settingsStore } from "../state/settings";
 import type { Keyboard } from "./input";
+import type { CruiseCommand } from "./Autopilot";
 
 /**
  * Mandos de la nave del Emperador, separados de la cámara (que maneja
@@ -54,6 +55,12 @@ export class ShipController {
   readonly maneuver: Maneuver = { x: 0, y: 0, z: 0, pitch: 0, yaw: 0, roll: 0 };
   pulseLimit = 0;
   /**
+   * Piloto automático de crucero: si lo hay, sus mandos sustituyen a los del
+   * teclado y del ratón (misma física; la asistencia de vuelo va siempre puesta)
+   * y el pulso no pasa de `pulseCap`.
+   */
+  autopilot: CruiseCommand | null = null;
+  /**
    * Motores encendidos. Apagados (o arrancando) no hay empuje, giros ni pulso:
    * la nave solo sigue con su inercia y la gravedad.
    */
@@ -92,6 +99,11 @@ export class ShipController {
   set pulse(on: boolean) {
     if (on && !this.pulseOn) this.pulseSpeed = this.velocity.length();
     this.pulseOn = on;
+  }
+
+  /** Cursor sobre la vista (relativo al centro, en medias alturas), o null si está fuera. */
+  get cursorAt(): { x: number; y: number } | null {
+    return this.cursor ? { ...this.cursor } : null;
   }
 
   /** ¿Se está pilotando con el ratón ahora mismo (modo de vuelo con ratón y cursor fuera de la zona muerta)? */
@@ -146,11 +158,16 @@ export class ShipController {
     const M = FLIGHT_MODEL;
     if (!this.powered) this.pulseOn = false;
     const live = this.enabled && this.powered;
+    const auto = live ? this.autopilot : null;
 
     // Mandos de giro (−1 a 1 por eje).
     const turn = this.turn.set(0, 0, 0);
     this.mouseStick.set(0, 0);
-    if (live) {
+    if (auto) {
+      turn.set(auto.pitch, auto.yaw, auto.roll);
+      // El cursor no gira la nave, pero se mide (moverlo fuera de la zona muerta cancela el piloto automático).
+      this.stickFromCursor();
+    } else if (live) {
       if (kb.action("pitchUp")) turn.x += 1;
       if (kb.action("pitchDown")) turn.x -= 1;
       if (kb.action("turnLeft")) turn.y += 1;
@@ -166,7 +183,8 @@ export class ShipController {
     }
     // Mandos de traslación, en ejes de la nave (−Z es delante).
     const input = this.input.set(0, 0, 0);
-    if (live) {
+    if (auto) input.set(auto.x, auto.y, auto.z);
+    else if (live) {
       if (kb.action("forward")) input.z -= 1;
       if (kb.action("back")) input.z += 1;
       if (kb.action("strafeLeft")) input.x -= 1;
@@ -174,7 +192,7 @@ export class ShipController {
       if (kb.action("up")) input.y += 1;
       if (kb.action("down")) input.y -= 1;
     }
-    const boost = live && kb.action("boost");
+    const boost = auto ? auto.boost : live && kb.action("boost");
     Object.assign(this.maneuver, { x: input.x, y: input.y, z: input.z, pitch: turn.x, yaw: turn.y, roll: turn.z });
 
     const accelK = prefs.accel;
@@ -200,10 +218,11 @@ export class ShipController {
 
       if (this.pulseOn) {
         // Supercrucero: siempre hacia el morro; la velocidad, suave hacia el límite. Sin gravedad (el pulso la compensa).
-        this.pulseSpeed = stepPulseSpeed(this.pulseSpeed, this.pulseLimit, h);
+        const limit = auto && auto.pulseCap > 0 ? Math.min(this.pulseLimit, auto.pulseCap) : this.pulseLimit;
+        this.pulseSpeed = stepPulseSpeed(this.pulseSpeed, limit, h);
         this.velocity.set(0, 0, -1).applyQuaternion(this.ship.quaternion).multiplyScalar(this.pulseSpeed);
       } else {
-        if (this.powered) this.stepThrust(input, prefs.assist, maxSpeed, accelK * (boost ? M.boostAccelFactor : 1), prefs.inertia, h);
+        if (this.powered) this.stepThrust(input, prefs.assist || auto !== null, maxSpeed, accelK * (boost ? M.boostAccelFactor : 1), prefs.inertia, h);
         if (this.gravity) this.gravity(this.ship.position, this.external);
         else this.external.set(0, 0, 0);
         this.velocity.addScaledVector(this.external, h);

@@ -26,6 +26,18 @@ Texto para jugadores (lo usará la ventana de ayuda del juego). Las teclas son l
 | M | Mapa galáctico / volver a los mandos (durante un viaje: mapa / túnel) |
 | K | Durante un viaje: **salir del túnel** y quedarse en el espacio profundo |
 | L (mantener) | Láser de minería (espacio profundo, apuntando a un asteroide) |
+| **N** | **Piloto automático**: lista de destinos (planetas, lunas, cinturones, anomalía, asteroides, naves); con él puesto, lo cancela |
+| **H** | **Seguir** la nave fijada (X) o la siguiente a la vista (primero los compañeros) |
+| Doble clic | Al pilotar: piloto automático hacia el planeta, la luna, la nave o el punto del plano del sistema bajo el cursor |
+
+## Piloto automático de crucero
+
+Dentro del sistema (o en el espacio profundo), la nave puede ir sola:
+
+- **Ir a un sitio** (N, «Crucero hasta aquí» en el panel del planeta, o doble clic en la vista): se orienta, enciende el pulso si está lejos (moderado para frenar a tiempo), lo apaga a unos 12 km y termina con los propulsores hasta pararse a una distancia segura (planetas y lunas: a la mitad de su radio de altura, entre 5 y 120 km; asteroides: a tiro del láser). Rodea la estrella, los planetas y las lunas que se crucen. Al llegar se desactiva.
+- **Seguir una nave** (H, o elegirla en la lista): en formación detrás y a un lado, igualando su velocidad (con pulso si ella lo lleva). Si salta fuera del sistema o deja de verse, se desactiva con aviso.
+- **Cancelar**: N, Esc o cualquier mando de pilotaje (moverse, girar, impulso, pulso, motores; en vuelo con ratón, sacar el cursor de la zona muerta). El HUD muestra el modo, el destino, la distancia y la tecla.
+- Usa los mismos mandos que el piloto (con la asistencia de vuelo puesta): mismas velocidades, mismas posiciones al servidor. Arranca los motores si están apagados.
 
 ## Velocidades
 
