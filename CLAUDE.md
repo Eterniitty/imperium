@@ -51,10 +51,7 @@ Idioma de trabajo: **español** (código y comentarios en español; identificado
 3. La generación procedural (`packages/procgen`) debe ser determinista: solo operaciones enteras y `+ - * / sqrt`. Nada de `Math.sin/pow/log` en lo que afecte al juego. Cambios que alteren el universo exigen subir `GENERATOR_VERSION`.
 4. Especies, facciones y naves son **datos** en `packages/content`, no lógica.
 5. Todo texto visible usa claves i18n (`packages/shared/src/i18n`), con español e inglés.
-6. No digas que algo funciona sin haberlo ejecutado. Para no perder tiempo (petición del usuario, que considera lentas las comprobaciones):
-   - Con cada cambio: solo `pnpm typecheck` y los tests de lo tocado (`pnpm exec vitest run <archivos>`); `pnpm test` entero (~40 s) antes de hacer commit.
-   - Antes de desplegar: `pnpm build` y `pnpm e2e:rapido` (~3 min: las pruebas sin la etiqueta `@lento`).
-   - `pnpm e2e` completo (~15 min: resoluciones, planetas, multijugador, colonias) solo al cerrar una fase o si se toca el motor 3D, la interfaz general o el multijugador; mejor en segundo plano mientras se sigue trabajando. Mira las capturas si cambió la interfaz.
+6. **Pruebas (petición del usuario, 21-10-2026): no se pasan tests ni e2e salvo que el usuario reporte un error visible**; entonces se prueba lo afectado. Antes de cada cambio grande y de cada despliegue, **copia de seguridad** (código en `~/backups/aeonarch/proyecto/`, base con `pg_dump` en `~/backups/aeonarch/`). Sí se pasan `pnpm typecheck` y `pnpm build` (rápidos; los scripts de despliegue comprueban tipos con `scripts/verify.sh`; `CON_PRUEBAS=1` añade los tests). No digas que algo funciona sin haberlo ejecutado: si no se probó, dilo.
 7. Nunca subas credenciales. `.env` está en `.gitignore`; las variables se documentan en `.env.example`.
 8. Commits en español, descriptivos.
 9. **Cada sistema nuevo o cambiado se documenta en la Wiki** (`/wiki`): artículos en `apps/client/src/wiki/content/es/*.md` y `en/*.md` (los dos idiomas), índice en `packages/shared/src/wiki.ts` (`WIKI_ARTICLES`). Las cifras no se copian a mano: se muestran con tablas generadas desde `packages/content` (`apps/client/src/wiki/tables.ts`, `{{tabla:<id>}}`). Lo que aún no existe se marca con `> [!dev]` («En desarrollo»). `apps/client/test/wiki.test.ts` comprueba idiomas, enlaces y tablas.
