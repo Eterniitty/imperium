@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { translate, type I18nKey, type SectorCoord, type StarSystemSummary, type WorldPosition } from "@imperium/shared";
 import { isTravelling, positionAt } from "@imperium/sim";
+import { STAR_CLASSES } from "@imperium/procgen";
 import { spaceStore } from "../net/space";
 import { serverNow, worldStore } from "../net/world";
 import { authStore } from "../state/auth";
@@ -235,6 +236,9 @@ export class Engine {
     if (this.active === this.system) this.system.stopPiloting();
     this.galaxy.follow(null);
     this.jumping = { from: emperor.location.position, to: emperor.travel.to.position };
+    // Colores del túnel: de la estrella de origen a la de destino.
+    const color = (id: string) => STAR_CLASSES[findSystemSummary(id)?.starClass ?? "G"].color;
+    this.tunnel.setJourney(color(emperor.location.systemId), color(emperor.travel.to.systemId), emperor.travel.departAt, emperor.travel.arriveAt);
     this.switchTo(this.tunnel);
     gameStore.getState().setView("tunnel");
   }
