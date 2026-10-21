@@ -57,7 +57,7 @@ Las estrellas **giran** (más deprisa en el ecuador que en los polos, como el So
 
 Cerca de una estrella hace **calor**: dentro de su zona, la nave recibe daño cada segundo, poco en el borde y **cada vez más deprisa** al acercarse (crece con el cuadrado de lo que te has metido). Primero se gastan los **escudos**, que no se recargan mientras te estés quemando, y después el **casco**. El HUD lo avisa con el daño por segundo; a partir del daño por segundo de la última fila de la tabla, la zona es **mortal**: el aviso parpadea y el **pulso se corta** mientras vayas hacia la estrella (alejándote sí funciona). Las zonas quedan siempre por dentro de la órbita de los planetas y de donde se aparcan las naves. Si mueres así, la causa es «calor estelar».
 
-En un **agujero negro** no hay superficie contra la que chocar: el radio de la tabla es el **horizonte de sucesos**, y cruzarlo destruye la nave sin remedio. Su disco también quema.
+En un **agujero negro** no hay superficie contra la que chocar: el radio de la tabla es el **horizonte de sucesos**, y cruzarlo destruye la nave sin remedio. Se dibuja siguiendo la luz por el espacio curvado (relatividad general): una **sombra** de unas 2,6 veces el horizonte, un **disco de acreción** desde la órbita estable más interna (3 radios), más caliente y azulado por dentro, que gira más deprisa cerca del centro y brilla más por el lado que se acerca a ti; la parte de detrás del disco se ve **doblada por encima y por debajo** de la sombra, y un fino **anillo de fotones** la rodea. Su zona interior también quema.
 
 {{tabla:calor}}
 

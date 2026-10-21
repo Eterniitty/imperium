@@ -57,7 +57,7 @@ Stars **rotate** (faster at the equator than at the poles, like the Sun) and **b
 
 Near a star it gets **hot**: inside its zone, the ship takes damage every second, little at the edge and **faster and faster** as you get closer (it grows with the square of how deep you are). **Shields** go first, and they do not recharge while you are burning, then the **hull**. The HUD warns you with the damage per second; from the damage per second in the table's last row, the zone is **lethal**: the warning blinks and the **pulse cuts out** while you head toward the star (heading away it still works). The zones always lie inside the planets' orbits and where ships park. If you die this way, the cause is "stellar heat".
 
-A **black hole** has no surface to crash into: the radius in the table is the **event horizon**, and crossing it destroys the ship for good. Its disk burns too.
+A **black hole** has no surface to crash into: the radius in the table is the **event horizon**, and crossing it destroys the ship for good. It is drawn by following light through curved space (general relativity): a **shadow** about 2.6 times the horizon, an **accretion disc** from the innermost stable orbit (3 radii), hotter and bluer inside, spinning faster near the centre and brighter on the side coming towards you; the far side of the disc appears **bent over and under** the shadow, and a thin **photon ring** circles it. Its inner zone burns too.
 
 {{tabla:calor}}
 

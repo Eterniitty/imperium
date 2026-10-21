@@ -589,6 +589,100 @@ const FLAME_FRAGMENT = /* glsl */ `
   }
 `;
 
+/**
+ * Agujero negro (Schwarzschild): en cada píxel se sigue el rayo de luz hacia
+ * atrás por el espacio curvado (aceleración de una geodésica de luz,
+ * −1,5·h²·r/|r|⁵, en radios del horizonte), dentro de una capa de `uShell`
+ * radios. El rayo que cruza el horizonte da negro (la sombra sale de ~2,6
+ * radios, como en la realidad); el que cruza el plano del disco de acreción
+ * (de la órbita estable más interna, 3 radios, a `DISK_OUT`) suma su luz:
+ * más caliente y azulada dentro, roja fuera, girando a la velocidad de
+ * Kepler, más brillante en el lado que se acerca (Doppler). La parte de
+ * detrás del agujero se ve doblada por encima y por debajo, y los rayos que
+ * casi orbitan dibujan el anillo de fotones. Los que escapan dejan ver la
+ * escena de detrás (sin desviarla). Pasos según la calidad.
+ */
+const BLACK_HOLE_FRAGMENT = /* glsl */ `
+  uniform float uRadius;
+  uniform float uShell;
+  uniform float uTime;
+  uniform vec3 uSeed;
+  uniform vec3 uDiskN;
+  uniform float uMaxOctaves;
+  varying vec3 vViewPos;
+  varying vec3 vCenterView;
+  ${NOISE_GLSL}
+  const float DISK_IN = 3.0;
+  const float DISK_OUT = 11.0;
+  vec3 diskColor(float r) {
+    float t = clamp((r - DISK_IN) / (DISK_OUT - DISK_IN), 0.0, 1.0);
+    vec3 hot = vec3(0.82, 0.9, 1.0) * 2.4;
+    vec3 mid = vec3(1.0, 0.72, 0.38) * 1.5;
+    vec3 cool = vec3(0.85, 0.28, 0.1) * 0.65;
+    return t < 0.3 ? mix(hot, mid, t / 0.3) : mix(mid, cool, (t - 0.3) / 0.7);
+  }
+  void main() {
+    // Rayo en orientación del mundo y en radios del horizonte, desde la cámara (relativa al centro).
+    vec3 rd = normalize((vec4(normalize(vViewPos), 0.0) * viewMatrix).xyz);
+    vec3 cam = (vec4(-vCenterView / uRadius, 0.0) * viewMatrix).xyz;
+    float bb = dot(cam, rd);
+    float cc = dot(cam, cam) - uShell * uShell;
+    float disc = bb * bb - cc;
+    if (disc <= 0.0) discard;
+    float t0 = max(-bb - sqrt(disc), 0.0);
+    vec3 p = cam + rd * t0;
+    vec3 v = rd;
+    vec3 hv = cross(p, v);
+    float h2 = dot(hv, hv);
+    vec3 e1 = normalize(cross(uDiskN, vec3(0.0, 0.0, 1.0)));
+    vec3 e2 = cross(uDiskN, e1);
+    vec3 col = vec3(0.0);
+    float alpha = 0.0;
+    float prevSide = dot(p, uDiskN);
+    int steps = int(clamp((uMaxOctaves - 1.0) * 22.0, 90.0, 200.0));
+    for (int i = 0; i < 200; i++) {
+      if (i >= steps) break;
+      float r = length(p);
+      if (r < 1.0) {
+        // Cruzó el horizonte: nada sale de ahí.
+        alpha = 1.0;
+        break;
+      }
+      // Pasos más cortos cerca del agujero, donde la luz se curva más.
+      float dt = clamp(0.045 * r * r / (r + 2.0), 0.012, 0.7);
+      vec3 prevP = p;
+      v += -1.5 * h2 * p / pow(r, 5.0) * dt;
+      p += v * dt;
+      float side = dot(p, uDiskN);
+      if (side * prevSide < 0.0) {
+        // Punto exacto del cruce (entre los dos pasos): sin escalones en el disco.
+        vec3 cross0 = mix(prevP, p, prevSide / (prevSide - side));
+        float rr = length(cross0);
+        if (rr > DISK_IN && rr < DISK_OUT) {
+          vec3 q = cross0;
+          float ang = atan(dot(q, e2), dot(q, e1));
+          // Gira a la velocidad de Kepler (más deprisa dentro): el dibujo se arrastra en espiral.
+          float a2 = ang - uTime * 0.9 * pow(rr / DISK_IN, -1.5);
+          vec3 sp = vec3(cos(a2) * rr, sin(a2) * rr, rr * 0.35);
+          float turb = 0.55 + 0.45 * snoise(sp * 0.9 + uSeed) + 0.25 * snoise(sp * 2.7 + uSeed.zxy);
+          float streak = 0.75 + 0.25 * sin(rr * 9.0 + turb * 3.0);
+          vec3 tangent = normalize(cross(uDiskN, q));
+          float dop = clamp(1.0 + 0.55 * dot(tangent, -normalize(v)), 0.25, 2.0);
+          float edge = smoothstep(DISK_IN, DISK_IN + 0.4, rr) * (1.0 - smoothstep(DISK_OUT - 3.0, DISK_OUT, rr));
+          float a = clamp(0.9 * edge * (0.55 + 0.45 * turb), 0.0, 1.0);
+          vec3 e = diskColor(rr) * dop * dop * dop * max(turb, 0.1) * streak;
+          col += (1.0 - alpha) * e * a;
+          alpha += (1.0 - alpha) * a;
+          if (alpha > 0.985) break;
+        }
+      }
+      prevSide = side;
+      if (r > uShell && dot(p, v) > 0.0) break;
+    }
+    gl_FragColor = vec4(col, alpha);
+  }
+`;
+
 const RING_VERTEX = BODY_VERTEX;
 
 /** Superficie procedural de un planeta o luna de radio `radius` (m). */
@@ -706,6 +800,31 @@ export function createCoronaMaterial(color: THREE.Color, radius: number, seed: T
     blending: THREE.AdditiveBlending,
   });
 }
+
+/** Agujero negro (ver `BLACK_HOLE_FRAGMENT`), en una capa de `BLACK_HOLE_SHELL` radios del horizonte. */
+export function createBlackHoleMaterial(radius: number, seed: THREE.Vector3, shared: BodyUniforms): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uRadius: { value: radius },
+      uShell: { value: BLACK_HOLE_SHELL },
+      uTime: shared.uTime,
+      uSeed: { value: seed },
+      // El disco, algo inclinado respecto al plano del sistema (así se ve la lente desde el plano).
+      uDiskN: { value: new THREE.Vector3(0.18, 1, 0.12).normalize() },
+      uMaxOctaves: shared.uMaxOctaves,
+    },
+    ...withLogDepth({ vertexShader: BODY_VERTEX, fragmentShader: BLACK_HOLE_FRAGMENT }),
+    transparent: true,
+    depthWrite: false,
+    // El color ya va multiplicado por su opacidad (luz del disco sobre la sombra).
+    blending: THREE.CustomBlending,
+    blendSrc: THREE.OneFactor,
+    blendDst: THREE.OneMinusSrcAlphaFactor,
+  });
+}
+
+/** Capa del agujero negro (radios del horizonte): abarca el disco y el borde de la lente. */
+export const BLACK_HOLE_SHELL = 14;
 
 /** Llamas 3D de la estrella (ver `FLAME_FRAGMENT`); `spin` es el uniforme de giro de la superficie. */
 export function createStarFlameMaterial(color: THREE.Color, radius: number, seed: THREE.Vector3, spin: THREE.IUniform<number>, shared: BodyUniforms): THREE.ShaderMaterial {

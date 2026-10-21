@@ -30,7 +30,7 @@ import type { Keyboard } from "./input";
 import { createFlagship, disposeShip, SHIP_SCALE, shipRig } from "./shipModel";
 import { createCockpit } from "./cockpit";
 import { glowTexture, labelTexture, ringTexture } from "./textures";
-import { CORONA_SCALE, FLAME_SCALE, STAR_SPIN_PERIOD_SEC, createStarFlameMaterial, createAtmosphereMaterial, createBodyUniforms, createCoronaMaterial, createPlanetMaterial, createRingMaterial, createStarSurfaceMaterial } from "./bodyMaterials";
+import { BLACK_HOLE_SHELL, CORONA_SCALE, FLAME_SCALE, STAR_SPIN_PERIOD_SEC, createBlackHoleMaterial, createStarFlameMaterial, createAtmosphereMaterial, createBodyUniforms, createCoronaMaterial, createPlanetMaterial, createRingMaterial, createStarSurfaceMaterial } from "./bodyMaterials";
 import { bodyDetailFor, bodySegments, planetLook } from "./planetLook";
 import { claimsStore } from "../state/claims";
 import { ownColonyAt, planetLabel } from "../ui/colonies";
@@ -119,7 +119,7 @@ export class SystemView implements View {
   private systemId: string | null = null;
   private starName = "";
   /** La estrella del sistema: su superficie (giro), su corona y el resplandor que crece al acercarse. */
-  private starFx: { surface: THREE.ShaderMaterial; corona: THREE.ShaderMaterial; radius: number; flames: THREE.Mesh | null } | null = null;
+  private starFx: { surface: THREE.ShaderMaterial; corona: THREE.ShaderMaterial; radius: number; flames: THREE.Mesh | null; blackHole: THREE.Mesh | null } | null = null;
   /** Radio a partir del cual se sale al espacio interestelar (ver `pilot`). */
   private boundary = 0;
   private poseTimer = 0;
@@ -287,15 +287,16 @@ export class SystemView implements View {
       flames.renderOrder = 2;
       this.content.add(flames);
     }
-    this.starFx = { surface, corona: coronaMat, radius: starRadius, flames };
+    this.starFx = { surface, corona: coronaMat, radius: starRadius, flames, blackHole: null };
 
+    // Agujero negro: sombra, disco de acreción con lente gravitatoria y anillo de fotones (BLACK_HOLE_FRAGMENT).
     if (isBlackHole) {
-      const disk = new THREE.Mesh(
-        new THREE.RingGeometry(starRadius * 1.4, starRadius * 3.2, 96),
-        new THREE.MeshBasicMaterial({ color: 0xc98bff, side: THREE.DoubleSide, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }),
-      );
-      disk.rotation.x = Math.PI / 2.3;
-      this.content.add(disk);
+      let blackHole: THREE.Mesh;
+      corona.visible = false;
+      blackHole = new THREE.Mesh(new THREE.SphereGeometry(starRadius * BLACK_HOLE_SHELL, 96, 48), createBlackHoleMaterial(starRadius, starSeed, this.bodyUniforms));
+      blackHole.renderOrder = 3;
+      this.content.add(blackHole);
+      if (this.starFx) this.starFx.blackHole = blackHole;
     }
 
     const light = new THREE.PointLight(starColor, isBlackHole ? 1.5 : 4.5, 0, 0);
@@ -1420,6 +1421,13 @@ export class SystemView implements View {
     if (fx.flames) {
       const m = fx.flames.material as THREE.ShaderMaterial;
       const inside = d < r * FLAME_SCALE * 1.01;
+      m.side = inside ? THREE.BackSide : THREE.FrontSide;
+      m.depthTest = !inside;
+    }
+    // Agujero negro: igual (desde dentro de su capa, la cara trasera).
+    if (fx.blackHole) {
+      const m = fx.blackHole.material as THREE.ShaderMaterial;
+      const inside = d < r * BLACK_HOLE_SHELL * 1.01;
       m.side = inside ? THREE.BackSide : THREE.FrontSide;
       m.depthTest = !inside;
     }
