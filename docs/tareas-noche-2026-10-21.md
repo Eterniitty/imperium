@@ -64,3 +64,11 @@ En orden, siempre de dos en dos agentes, con copia antes de cada cambio grande:
         pantalla de muerte y panel «Linaje», Wiki «Muerte y linaje»; migración 0017, `PROTOCOL_VERSION` 11. Falta fusionar y desplegar.
   - [x] **9b (conquista)** hecha en la rama `fase-9b` (asedio, plataformas defensivas, desembarco, captura, IA
         alienígena y Emperadores IA militaristas, Wiki «Conquista»; migración 0015, `PROTOCOL_VERSION` 9). Falta fusionar y desplegar.
+
+## Cola del usuario (21-10-2026, tarde), por orden — dos agentes como máximo, desplegar al terminar cada cosa
+1. [ ] Efecto del viaje cuántico: grieta 3D visible para otros y túnel mejorado (rama `vuelo-y-salto`, prioridad).
+2. [ ] Resto de `vuelo-y-salto`: nave del Emperador más grande (250–400 m), misiles desde los lanzadores, arranque de motores, vuelo con ratón con tecla para cambiar de modo.
+3. [ ] `espacio-profundo`: salir del túnel a mitad de viaje, asteroides minables (volátiles, elementos, materia extraña), bodega, refinar combustible, aviso de epilepsia.
+4. [ ] Calor de las estrellas: zona de calor según clase (escudos y luego casco, cada vez más rápido), aviso en el HUD, agujero negro = destrucción al cruzar el horizonte, cálculo en el servidor (muerte y linaje de la Fase 10), el pulso se apaga antes de la zona mortal.
+5. [ ] Qué hacer mientras viajas, en orden: puente de mando en el túnel; órdenes tácticas en batallas a distancia; pilotar otras naves de tus flotas a distancia; gestión más profunda de colonias; exploración a distancia con sondas.
+6. [ ] Nave nodriza: clase de nave capital gigante (portanaves) para las flotas; cuando la flota está en un planeta o sistema, la nave del Emperador puede acoplarse en su hangar (aproximación y anclaje en 3D, tecla de acoplar/desacoplar) y recarga combustible (y munición/energía) desde la bodega de la flota. Hacer después de fusionar `vuelo-y-salto` (escala de naves) y `espacio-profundo` (combustible, bodega, refinado).
