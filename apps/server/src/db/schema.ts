@@ -78,6 +78,8 @@ export const emperors = pgTable("emperors", {
   autoGovern: boolean("auto_govern").notNull().default(false),
   /** Fuego amigo: con false (por defecto), sus disparos y choques no dañan a sus compañeros. */
   friendlyFire: boolean("friendly_fire").notNull().default(false),
+  /** Cuenta de pruebas: combustible infinito (ni el pulso ni los saltos lo gastan). Solo se pone a mano en la base de datos. */
+  infiniteFuel: boolean("infinite_fuel").notNull().default(false),
   /**
    * Fase 11: "player" (un jugador), "ai" (Emperador humano de la IA) o "alien"
    * (actor de una facción alienígena: sus flotas usan las mismas tablas y

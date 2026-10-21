@@ -23,9 +23,10 @@ const columns = {
   deadAt: emperors.deadAt,
   autoGovern: emperors.autoGovern,
   friendlyFire: emperors.friendlyFire,
+  infiniteFuel: emperors.infiniteFuel,
 };
 const PARK_SELECT = { parkX: emperors.parkX, parkY: emperors.parkY, parkZ: emperors.parkZ, parkAt: emperors.parkAt };
-type Row = PlaceRow & { name: string; kind: string; deadAt: Date | null; autoGovern: boolean; friendlyFire: boolean };
+type Row = PlaceRow & { name: string; kind: string; deadAt: Date | null; autoGovern: boolean; friendlyFire: boolean; infiniteFuel: boolean };
 
 /** `companionId`: el compañero cerca del que apareció (alta con compañero aceptada). */
 export type CreateResult = { ok: true; emperor: Emperor; companionId: string | null } | { ok: false; error: "emperor_exists" | "name_taken" };
@@ -78,6 +79,7 @@ export class EmperorService {
       ...(row.deadAt ? { gestating: true as const } : {}),
       ...(row.autoGovern ? { autoGovern: true as const } : {}),
       ...(row.friendlyFire ? { friendlyFire: true as const } : {}),
+      ...(row.infiniteFuel ? { infiniteFuel: true as const } : {}),
     };
   }
 
@@ -183,7 +185,7 @@ export class EmperorService {
 
     return this.db.transaction(async (tx): Promise<MoveResult> => {
       const [row] = await tx
-        .select({ ...columns, fuel: emperors.fuel, fuelAt: emperors.fuelAt, ...PARK_SELECT })
+        .select({ ...columns, fuel: emperors.fuel, fuelAt: emperors.fuelAt, infiniteFuel: emperors.infiniteFuel, ...PARK_SELECT })
         .from(emperors)
         .where(eq(emperors.accountId, accountId))
         .for("update")
@@ -197,7 +199,8 @@ export class EmperorService {
       if (current.location.systemId === dest.id) return { ok: false, error: "already_there" };
       // El motor cuántico gasta combustible según la distancia: el depósito marca el alcance.
       const fuel = regenFuel(row.fuel, (now - row.fuelAt.getTime()) / 1000);
-      const cost = quantumFuelCost(distance(current.location.position, dest.position));
+      // Cuenta de pruebas: el salto no gasta combustible.
+      const cost = row.infiniteFuel ? 0 : quantumFuelCost(distance(current.location.position, dest.position));
       if (cost > fuel) return { ok: false, error: "insufficient_fuel" };
 
       const arriveAt = now + travelDurationMs(current.location.position, dest.position, this.speed);

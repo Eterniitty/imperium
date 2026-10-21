@@ -96,6 +96,8 @@ export interface Emperor {
   autoGovern?: true;
   /** Fuego amigo activado: sus disparos también dañan a sus compañeros (orden `emperor.friendlyFire`). */
   friendlyFire?: true;
+  /** Cuenta de pruebas: combustible infinito. */
+  infiniteFuel?: true;
 }
 
 /** Una nave de una flota. `classId` es una clase de `@imperium/content` (SHIP_CLASSES). */

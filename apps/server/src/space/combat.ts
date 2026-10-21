@@ -116,9 +116,13 @@ export class Combatant {
   }
 
   /** Combustible actual (con la reserva de emergencia que se regenera sola). */
+  /** Cuenta de pruebas (`emperors.infinite_fuel`): el combustible no se gasta y siempre está lleno. */
+  infiniteFuel = false;
+
   fuelNow(now: number): number {
     const r = this.reactor;
     if (!r) return 0;
+    if (this.infiniteFuel) r.fuel = FLAGSHIP_SUPPLIES.fuelMax;
     const fuel = regenFuel(r.fuel, (now - r.fuelAt) / 1000);
     if (fuel !== r.fuel) this.dirty = true;
     r.fuel = fuel;
@@ -151,7 +155,7 @@ export class Combatant {
    */
   spendPulse(dtSec: number, now: number): boolean {
     const r = this.reactor;
-    if (!r) return true;
+    if (!r || this.infiniteFuel) return true;
     const cost = FLAGSHIP_SUPPLIES.pulseFuelPerSec * dtSec;
     if (this.fuelNow(now) < cost || r.fuel <= 0) return false;
     r.fuel = Math.max(0, r.fuel - cost);

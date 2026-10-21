@@ -1,0 +1,1 @@
+ALTER TABLE "emperors" ADD COLUMN "infinite_fuel" boolean DEFAULT false NOT NULL;

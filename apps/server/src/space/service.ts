@@ -714,6 +714,7 @@ export class SpaceService {
   private async doJoin(client: Client, systemId: string, pose: ShipPose): Promise<Member | null> {
     const emperor = await this.emperors.byId(client.emperorId);
     if (emperor) this.friendlyFire.set(emperor.id, !!emperor.friendlyFire);
+    if (emperor?.infiniteFuel) this.combatantOf(emperor.id).infiniteFuel = true;
     // Fase 10: un Emperador caído (gestándose) no tiene nave que pilotar.
     if (!emperor || emperor.gestating || isTravelling(emperor, this.now()) || emperor.location.systemId !== systemId) return null;
     if (Math.hypot(...pose.p) > this.boundary(systemId) + BOUNDARY_SLACK) return null;

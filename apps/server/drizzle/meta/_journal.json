@@ -183,6 +183,13 @@
       "when": 1792603459312,
       "tag": "0026_fuego_amigo",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1792605714026,
+      "tag": "0027_combustible_infinito",
+      "breakpoints": true
     }
   ]
 }
