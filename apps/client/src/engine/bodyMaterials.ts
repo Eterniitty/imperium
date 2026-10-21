@@ -509,12 +509,15 @@ const CORONA_FRAGMENT = /* glsl */ `
     vec3 cc = vCenterView / uRadius;
     float t = dot(cc, rd);
     float h = t > 0.0 ? length(cross(rd, cc)) : length(cc);
-    // Nunca tapa el disco.
-    if (h < 1.0) discard;
+    // No tapa el disco: ahí la esfera de la estrella está delante y la profundidad la
+    // oculta. Pero tampoco se descarta dentro del círculo exacto: la esfera es un
+    // poliedro y su contorno queda un poco por dentro, y esa franja de un píxel se
+    // veía negra; se rellena con el brillo del borde.
+    if (h < 0.97) discard;
     // Dirección del punto del rayo más cercano a la estrella, en el mundo (estable al girar la cámara).
     vec3 closest = rd * max(t, 0.0) - cc;
     vec3 dirW = normalize((vec4(closest, 0.0) * viewMatrix).xyz);
-    float x = h - 1.0;
+    float x = max(h - 1.0, 0.0);
     // Cerca de la estrella el resplandor crece (la luz satura la vista).
     float halo = (0.5 * exp(-x * 7.0) + 0.24 * exp(-x * 1.5)) * (1.0 + 3.0 * uNear);
     float fade = 1.0 - smoothstep(2.8, 4.8, h);
