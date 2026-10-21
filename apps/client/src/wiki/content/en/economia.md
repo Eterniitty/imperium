@@ -82,6 +82,12 @@ A colony on a planet with richness 2 in metal, 1 in volatiles and 1 in crystal, 
 
 Ship costs and build times are in [Fleets](/wiki/flotas#ships).
 
+## Managing colonies from anywhere
+
+In the **Colonies** panel, **Manage colonies** opens a window with all your colonies: population, stock and production, installations and build queue for each one. From there you can order and cancel builds **without being in the system**, also during a quantum trip (on the command bridge, clicking a colony opens it here). What needs you to be present, such as landing humans or unloading the hold, stays in the planet panel.
+
+**Demolishing** an installation (two clicks, so you do not do it by accident) removes the most recent one of that type and returns half its cost to the colony's stock, up to its storage. Use it to cut upkeep or make room for another; it is recorded in the resource ledger.
+
 ## Resource ledger
 
 Every discrete movement of resources or humans is recorded in an **insert-only ledger** that nobody can modify or delete: foundations, orders, cancellations, colonists boarding or landing, fleet loading and unloading, battle losses, colonies becoming independent and, with the [economy of humanity](/wiki/humanidad), credits, contributions and [market](/wiki/mercado) trades. Continuous production is not recorded (that is the lazy calculation). It is used to audit and rebuild balances, and it is included in your [data download](/wiki/cuenta).

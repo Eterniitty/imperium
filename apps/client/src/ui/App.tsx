@@ -12,6 +12,7 @@ import { CombatHud } from "./CombatHud";
 import { MiningHud } from "./MiningHud";
 import { ColoniesPanel } from "./ColoniesPanel";
 import { BridgePanel } from "./BridgePanel";
+import { ColonyManager } from "./ColonyManager";
 import { FleetsPanel } from "./FleetsPanel";
 import { WarPanel } from "./WarPanel";
 import { Notice } from "./Notice";
@@ -123,6 +124,7 @@ export function App() {
         <CompanionInbox />
         <SettingsPanel />
         <EconomyPanel />
+        <ColonyManager />
         <LineagePanel />
         <PhotosensitivityNotice />
       </div>

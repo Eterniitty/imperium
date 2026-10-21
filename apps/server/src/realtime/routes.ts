@@ -372,6 +372,12 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     if (res.ok) await hub.publishColony(res.emperorId, res.colonyId);
                     return res;
                   }
+                  case "colony.demolish": {
+                    const res = await colonies.demolish(owner.emperorId, msg.args.colonyId, msg.args.installationId);
+                    // El mantenimiento de la capital puede cambiar: todas sus colonias.
+                    if (res.ok) await hub.publishColonies(res.emperorId);
+                    return res;
+                  }
                   case "colony.disembark": {
                     const res = await colonies.disembark(owner.emperorId, msg.args.colonyId, msg.args.humans);
                     if (res.ok) {

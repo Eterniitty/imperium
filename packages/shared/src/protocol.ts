@@ -87,6 +87,8 @@ export interface CommandArgs {
   "colony.build": { colonyId: string; kind: "installation" | "ship"; itemId: string };
   /** Cancela un encargo: se devuelve todo si aún no había empezado, la mitad si estaba en construcción. */
   "colony.cancel": { colonyId: string; buildId: string };
+  /** Derriba una instalación de una colonia propia (la más reciente de ese tipo): devuelve `ECONOMY.demolishRefund` de su coste. */
+  "colony.demolish": { colonyId: string; installationId: string };
   /** Desembarca humanos de la nave del Emperador (presente en el sistema) en una colonia propia. */
   "colony.disembark": { colonyId: string; humans: number };
   /** Embarca humanos de una colonia propia en la nave del Emperador (presente en el sistema), sin pasar de su capacidad y dejando `HUMANS.colonyKeep`. */

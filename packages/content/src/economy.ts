@@ -177,6 +177,8 @@ export function getInstallation(id: string): InstallationDefinition | undefined 
 export const ECONOMY = {
   /** Parte del coste que se devuelve al cancelar un encargo ya empezado (sin empezar: todo). */
   cancelRefundStarted: 0.5,
+  /** Parte del coste que se recupera al derribar una instalación construida. */
+  demolishRefund: 0.5,
   /** Extracción por hora y punto de riqueza sin minas (la colonia rasca la superficie). */
   baseExtractionPerRichness: 2,
   /** Extracción por hora, mina y punto de riqueza (con toda la energía y mano de obra). */

@@ -168,6 +168,7 @@ export const ClientMessageSchema = z.union([
     args: z.object({ colonyId: z.uuid(), kind: z.enum(["installation", "ship"]), itemId: z.string().regex(/^[a-z_]{1,32}$/) }),
   }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("colony.cancel"), args: z.object({ colonyId: z.uuid(), buildId: z.uuid() }) }),
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("colony.demolish"), args: z.object({ colonyId: z.uuid(), installationId: z.string().regex(/^[a-z_]{1,32}$/) }) }),
   z.object({
     t: z.literal("cmd"),
     cmdId: CmdIdSchema,

@@ -654,6 +654,44 @@ export class ColonyService {
   }
 
   /**
+   * Derriba la instalación más reciente de un tipo en una colonia propia y
+   * devuelve `ECONOMY.demolishRefund` de su coste (sin pasar del almacén). Las
+   * existencias se resuelven antes, con las instalaciones que había.
+   */
+  async demolish(emperorId: string, colonyId: string, installationId: string): Promise<ColonyResult> {
+    return this.db.transaction(async (tx): Promise<ColonyResult> => {
+      const [row] = await tx
+        .select()
+        .from(colonies)
+        .where(and(eq(colonies.id, colonyId), eq(colonies.emperorId, emperorId)))
+        .for("update")
+        .limit(1);
+      if (!row) return { ok: false, error: "no_colony" };
+      const def = getInstallation(installationId);
+      if (!def) return { ok: false, error: "unknown_item" };
+      const [target] = await tx
+        .select({ id: installations.id })
+        .from(installations)
+        .where(and(eq(installations.colonyId, row.id), eq(installations.kind, def.id)))
+        .orderBy(desc(installations.builtAt))
+        .limit(1);
+      if (!target) return { ok: false, error: "unknown_item" };
+      const counts = (await this.installationCounts(tx, [row.id])).get(row.id) ?? {};
+      const site = this.site(row, counts, await this.extraUpkeepOf(tx, row));
+      if (!site) return { ok: false, error: "unknown_planet" };
+      const now = this.now();
+      const state = this.resolve(row, site, now);
+      const refund = scaled({ ...def.cost }, ECONOMY.demolishRefund);
+      const stock = { ...state.stock };
+      for (const k of Object.keys(stock) as Array<keyof StockAmounts>) stock[k] = Math.min(ECONOMY.storage[k], stock[k] + refund[k]);
+      await tx.update(colonies).set({ population: state.population, ...stock, resolvedAt: new Date(now) }).where(eq(colonies.id, row.id));
+      await tx.delete(installations).where(eq(installations.id, target.id));
+      await tx.insert(resourceLedger).values({ emperorId, colonyId: row.id, reason: "demolish", ref: `installation:${def.id}`, ...refund });
+      return { ok: true, emperorId, colonyId: row.id };
+    });
+  }
+
+  /**
    * Desembarca humanos de la nave del Emperador en una colonia propia: el
    * Emperador tiene que estar en ese sistema (no viajando), y no se puede pasar
    * del tope de población del planeta.

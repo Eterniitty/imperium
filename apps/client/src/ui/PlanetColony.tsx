@@ -184,6 +184,7 @@ export function PlanetColony({ detail, planet }: { detail: StarSystemDetail; pla
             locale={locale}
             onBuild={(kind, itemId) => void run(connection.command("colony.build", { colonyId: own.id, kind, itemId }))}
             onCancel={(buildId) => void run(connection.command("colony.cancel", { colonyId: own.id, buildId }))}
+            onDemolish={(installationId) => void run(connection.command("colony.demolish", { colonyId: own.id, installationId }))}
           />
         </>
       )}
@@ -276,13 +277,14 @@ function Embark({ colony, aboard, now, busy, onBoard }: { colony: Colony; aboard
   );
 }
 
-function ColonyDetail({
+export function ColonyDetail({
   colony,
   now,
   busy,
   locale,
   onBuild,
   onCancel,
+  onDemolish,
 }: {
   colony: Colony;
   now: number;
@@ -290,8 +292,11 @@ function ColonyDetail({
   locale: Parameters<typeof contentText>[0];
   onBuild: (kind: "installation" | "ship", itemId: string) => void;
   onCancel: (buildId: string) => void;
+  onDemolish: (installationId: string) => void;
 }) {
   const t = useT();
+  // Derribar pide confirmación: el primer clic arma el botón y el segundo derriba.
+  const [demolishing, setDemolishing] = useState<string | null>(null);
   const stock = liveStock(colony, now);
   const population = livePopulation(colony, now);
   const queued = (id: string) => colony.builds.filter((b) => b.kind === "installation" && b.itemId === id).length;
@@ -346,6 +351,18 @@ function ColonyDetail({
           <li key={id}>
             <strong>{itemName("installation", id)}</strong>
             <span className="muted small mono">× {n}</span>
+            <button
+              className="link-btn small"
+              disabled={busy}
+              title={t("colony.demolishHint", { pct: Math.round(ECONOMY.demolishRefund * 100) })}
+              onClick={() => {
+                if (demolishing !== id) return setDemolishing(id);
+                setDemolishing(null);
+                onDemolish(id);
+              }}
+            >
+              {t(demolishing === id ? "colony.demolishConfirm" : "colony.demolish")}
+            </button>
           </li>
         ))}
         {Object.keys(colony.installations).length === 0 && <li className="muted small">{t("colony.noInstallations")}</li>}

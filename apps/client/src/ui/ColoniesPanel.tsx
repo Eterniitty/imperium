@@ -30,10 +30,15 @@ export function ColoniesPanel() {
         {t("colony.title")} {open ? "▾" : "▸"}
       </button>
       {open && (
+        <button className="link-btn small" onClick={() => gameStore.getState().setColonyManager(list[0]!.id)}>
+          {t("colony.manage")}
+        </button>
+      )}
+      {open && (
         <ul className="fleet-list">
           {list.map((c) => (
             <li key={c.id}>
-              <button className="fleet-row" onClick={() => go(c)}>
+              <button className="fleet-row" onClick={() => (engineRef.current?.isTravelling ? gameStore.getState().setColonyManager(c.id) : go(c))}>
                 <strong>{c.name ?? c.planetName}</strong>
                 <span className="muted small">{t("colony.in", { planet: c.planetName, system: c.systemName })}</span>
                 <span className="small">

@@ -54,6 +54,8 @@ export interface GameState {
   settingsOpen: boolean;
   /** Panel de economía abierto: «Humanidad», «Mercado» o ninguno. */
   economyOpen: EconomyTab | null;
+  /** Ventana de gestión de colonias (desde cualquier sitio): id de la colonia abierta, o null. */
+  colonyManager: string | null;
   /** Panel del linaje (Fase 10: Cunas, Herederos, muertes) abierto. */
   lineageOpen: boolean;
   /** Cámara al pilotar: desde la cabina (primera persona) o desde detrás de la nave (tercera). */
@@ -78,6 +80,7 @@ export interface GameState {
   notify(key: I18nKey, params?: Record<string, string | number>): void;
   setSettingsOpen(open: boolean): void;
   setEconomyOpen(tab: EconomyTab | null): void;
+  setColonyManager(colonyId: string | null): void;
   setLineageOpen(open: boolean): void;
   toggleCameraView(): void;
   setQuantumPanel(open: boolean): void;
@@ -131,6 +134,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   notice: null,
   settingsOpen: false,
   economyOpen: null,
+  colonyManager: null,
   lineageOpen: false,
   cameraView: "third",
   quantumPanel: false,
@@ -175,6 +179,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
 
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   setEconomyOpen: (economyOpen) => set({ economyOpen }),
+  setColonyManager: (colonyManager) => set({ colonyManager }),
   setLineageOpen: (lineageOpen) => set({ lineageOpen }),
   toggleCameraView: () => set({ cameraView: get().cameraView === "first" ? "third" : "first" }),
   setQuantumPanel: (quantumPanel) => set(quantumPanel ? { quantumPanel, cruisePanel: false } : { quantumPanel }),

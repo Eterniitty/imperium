@@ -82,6 +82,12 @@ Una colonia en un planeta con riqueza 2 de metal, 1 de volátiles y 1 de cristal
 
 Los costes y tiempos de las naves están en [Flotas](/wiki/flotas#naves).
 
+## Gestionar colonias desde cualquier sitio
+
+En el panel **Colonias**, **Gestionar colonias** abre una ventana con todas tus colonias: población, existencias y producción, instalaciones y cola de obras de cada una. Desde ahí puedes encargar y cancelar obras **sin estar en el sistema**, también durante un viaje cuántico (en el puente de mando, pulsar una colonia la abre aquí). Lo que pide estar presente, como desembarcar humanos o descargar la bodega, sigue en la ficha del planeta.
+
+**Derribar** una instalación (dos clics, para no hacerlo sin querer) quita la más reciente de ese tipo y devuelve la mitad de su coste a las existencias de la colonia, sin pasar del almacén. Sirve para quitarte mantenimiento o hacer sitio a otra; queda apuntado en el libro de recursos.
+
 ## Libro de recursos
 
 Cada movimiento discreto de recursos o humanos queda apuntado en un **libro solo de inserción**, que nadie puede modificar ni borrar: fundaciones, encargos, cancelaciones, colonos que embarcan o desembarcan, cargas y descargas de flotas, pérdidas en batalla, independencia de colonias y, desde la [economía de la humanidad](/wiki/humanidad), créditos, aportes y operaciones del [mercado](/wiki/mercado). La producción continua no se apunta (es el cálculo perezoso). Sirve para auditar y reconstruir los saldos, y aparece en la [descarga de tus datos](/wiki/cuenta).
