@@ -202,4 +202,16 @@ describe.skipIf(!TEST_DATABASE_URL)("acceso por enlace", () => {
     expect(res.statusCode).toBe(401);
     expect(res.json()).toEqual({ error: "unauthenticated" });
   });
+
+  it("tope general de peticiones a la API por IP", async () => {
+    const small = await buildApp({ ...config, API_REQUESTS_PER_IP_MINUTE: 3 }, { db: database.db, mailer });
+    const me = (ip: string) => small.inject({ method: "GET", url: "/api/auth/me", remoteAddress: ip });
+    for (let i = 0; i < 3; i++) expect((await me("10.9.0.1")).statusCode).toBe(401);
+    const blocked = await me("10.9.0.1");
+    expect(blocked.statusCode).toBe(429);
+    expect(blocked.json()).toEqual({ error: "rate_limited" });
+    // Otra IP no se ve afectada.
+    expect((await me("10.9.0.2")).statusCode).toBe(401);
+    await small.close();
+  });
 });

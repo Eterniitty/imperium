@@ -4,7 +4,7 @@ import type { I18nKey } from "./es";
 export const en: Record<I18nKey, string> = {
   "app.title": "AEONARCH",
   "app.subtitle": "The war never ends. Neither does humanity.",
-  "app.prototype": "Prototype · Phase 4",
+  "app.prototype": "Alpha · in development",
 
   "start.enter": "Awaken",
 

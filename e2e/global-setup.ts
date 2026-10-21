@@ -45,6 +45,7 @@ export default async function globalSetup() {
       TIME_SCALE: "600",
       // Todas las pruebas piden enlaces desde la misma IP.
       AUTH_REQUESTS_PER_IP: "200",
+      API_REQUESTS_PER_IP_MINUTE: "100000",
     },
   });
 

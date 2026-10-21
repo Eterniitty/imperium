@@ -6,7 +6,7 @@
 export const es = {
   "app.title": "AEONARCH",
   "app.subtitle": "La guerra no termina. La humanidad tampoco.",
-  "app.prototype": "Prototipo · Fase 4",
+  "app.prototype": "Alfa · en desarrollo",
 
   "start.enter": "Despertar",
 

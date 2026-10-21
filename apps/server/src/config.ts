@@ -37,6 +37,8 @@ const EnvSchema = z
     TIME_SCALE: z.coerce.number().positive().max(1e7).default(1),
     /** Enlaces de acceso que puede pedir una IP cada 15 min. Las pruebas de navegador lo suben (todas salen de la misma IP). */
     AUTH_REQUESTS_PER_IP: z.coerce.number().int().min(1).max(1000).default(10),
+    /** Peticiones a la API HTTP por IP y minuto (tope general, además de los límites de cada ruta). */
+    API_REQUESTS_PER_IP_MINUTE: z.coerce.number().int().min(1).max(100_000).default(600),
     MAIL_TRANSPORT: z.enum(["console", "smtp"]).default("console"),
     // Correo real (MAIL_TRANSPORT=smtp): servidor del proveedor de correo transaccional.
     // Con smtp, SMTP_HOST, SMTP_USER, SMTP_PASS y MAIL_FROM son obligatorias.

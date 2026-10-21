@@ -20,6 +20,7 @@ import { SocialService } from "./social/service";
 import { LogisticsService } from "./logistics/service";
 import { SpaceService } from "./space/service";
 import { createMailer, type Mailer } from "./mail";
+import { ipRateKey, RateLimiter } from "./auth/rateLimit";
 
 /** Versión del servidor; la inyecta esbuild al compilar y en desarrollo vale "dev". */
 declare const __SERVER_VERSION__: string | undefined;
@@ -60,6 +61,14 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   });
 
   await app.register(cookie);
+
+  // Tope general por IP para toda la API, antes de tocar la base de datos: frena
+  // las avalanchas contra rutas sin límite propio (p. ej. consultar la sesión).
+  const apiPerIp = new RateLimiter(config.API_REQUESTS_PER_IP_MINUTE, 60_000);
+  app.addHook("onRequest", async (req, reply) => {
+    if (!req.url.startsWith("/api/")) return;
+    if (!apiPerIp.consume(ipRateKey(req.ip))) return reply.code(429).send({ error: "rate_limited" } satisfies ApiError);
+  });
 
   const startedAt = Date.now();
 
