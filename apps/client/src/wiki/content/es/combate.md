@@ -5,7 +5,7 @@ Dentro de un sistema se combate en tiempo real, pilotando. El **servidor es la a
 ## Armas
 
 - **Cañón** ([[F]], mantener): ráfagas rápidas hacia donde apunta el morro, sin límite de munición. Impacta en el primer enemigo que el proyectil roza (a unos 30 m de su centro).
-- **Misil** ([[R]]): mucho daño y **sigue a su objetivo** dentro del sistema. Necesita un **objetivo fijado** ([[X]] fija al enemigo más cercano y, al repetir, el siguiente), que esté **a tiro** y **delante del morro** (a menos de 60°). La munición es limitada y se repone con el tiempo.
+- **Misil** ([[R]]): mucho daño y **sigue a su objetivo** dentro del sistema. Necesita un **objetivo fijado** ([[X]] fija al enemigo más cercano y, al repetir, el siguiente), que esté **a tiro** y **delante del morro** (a menos de 60°). La munición es limitada y se repone con el tiempo. En tu nave, los cañones van en las barquillas de la proa y los misiles salen de los lanzadores de la proa de los dos módulos de hábitat, a los costados.
 - Con el **motor de pulso** encendido no se dispara.
 
 {{tabla:armas}}

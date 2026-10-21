@@ -5,7 +5,7 @@ Inside a system you fight in real time, at the controls. The **server is the aut
 ## Weapons
 
 - **Cannon** ([[F]], hold): rapid bursts towards where the nose points, with unlimited ammunition. It hits the first enemy the projectile grazes (within about 30 m of its centre).
-- **Missile** ([[R]]): heavy damage, and it **follows its target** inside the system. It needs a **locked target** ([[X]] locks the nearest enemy and, pressed again, the next one) that is **in range** and **ahead of the nose** (within 60°). Ammunition is limited and refills over time.
+- **Missile** ([[R]]): heavy damage, and it **follows its target** inside the system. It needs a **locked target** ([[X]] locks the nearest enemy and, pressed again, the next one) that is **in range** and **ahead of the nose** (within 60°). Ammunition is limited and refills over time. On your ship, the cannons sit in the bow pods and missiles leave from the launchers at the bow of the two habitat modules, on the sides.
 - You cannot fire with the **pulse drive** on.
 
 {{tabla:armas}}

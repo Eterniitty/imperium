@@ -29,7 +29,15 @@ interface Missile {
   end: number;
   hits: boolean;
   last: THREE.Vector3;
+  /** Quién lo lanzó y desde qué lanzador: al salir, va pegado al lanzador (hereda el movimiento de la nave). */
+  shooter: string;
+  muzzle: number;
 }
+
+/** Tiempo (ms) que el misil sigue al lanzador al salir: así sale de él aunque la nave se mueva o gire. */
+const MISSILE_LAUNCH_MS = 450;
+/** Escala del modelo del misil (unos 9 m: se ve junto a una nave de 320 m). */
+const MISSILE_SCALE = 2.1;
 
 interface Flash {
   sprite: THREE.Sprite;
@@ -45,7 +53,7 @@ export type ShipLocator = (id: string) => THREE.Vector3 | null;
 /** Devuelve dónde está ahora la boca `index` del arma de una nave, o null si no se dibuja. */
 export type MuzzleLocator = (id: string, weapon: WeaponKind, index: number) => THREE.Vector3 | null;
 
-// Geometrías compartidas. Ráfaga de cañón: unos 32 m de largo (las naves miden ~45 m).
+// Geometrías compartidas. Ráfaga de cañón: unos 32 m de largo (la insignia mide 320 m).
 const BOLT_OUTER = new THREE.BoxGeometry(2.2, 2.2, 34);
 const BOLT_CORE = new THREE.BoxGeometry(0.7, 0.7, 30);
 const MISSILE_BODY = new THREE.CylinderGeometry(0.42, 0.42, 4.2, 8).rotateX(Math.PI / 2);
@@ -280,11 +288,14 @@ export class Effects {
     flame.position.z = 2.6;
     object.add(flame, this.sprite(0xff8a3a, 22));
     object.position.copy(from);
+    object.scale.setScalar(MISSILE_SCALE);
+    // Sale ya orientado hacia donde se lanza (el morro del modelo mira a -Z).
+    object.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), dir);
     const trail = new Trail();
     this.group.add(object, trail.points);
     this.trails.push(trail);
     this.flash(from, 18, 0.18, 0xffc080);
-    this.missiles.push({ object, flame, trail, from, dir, targetId: shot.target, speed: shot.speed, t0: now, end: now + flight, hits: shot.hitAt !== null, last: from.clone() });
+    this.missiles.push({ object, flame, trail, from, dir, targetId: shot.target, speed: shot.speed, t0: now, end: now + flight, hits: shot.hitAt !== null, last: from.clone(), shooter: shot.id, muzzle: shot.muzzle });
   }
 
   /** Destello en un punto: impacto (pequeño) o explosión de una nave (grande). */
@@ -344,6 +355,11 @@ export class Effects {
     this.missiles = this.missiles.filter((m) => {
       const target = m.targetId ? locate(m.targetId) : null;
       const k = Math.min(1, Math.max(0, (serverTime - m.t0) / (m.end - m.t0)));
+      // Al salir, el punto de partida es el lanzador tal y como se dibuja ahora (la nave se mueve y gira).
+      if (serverTime - m.t0 < MISSILE_LAUNCH_MS) {
+        const at = this.muzzleOf(m.shooter, "missile", m.muzzle);
+        if (at) m.from.copy(at);
+      }
       prev.copy(m.last);
       if (target) {
         // Curva suave hacia donde está el objetivo ahora: parece que lo persigue.
@@ -355,7 +371,7 @@ export class Effects {
       m.object.position.copy(m.last);
       if (m.last.distanceToSquared(prev) > 1e-6) m.object.lookAt(prev.clone().multiplyScalar(2).sub(m.last));
       m.trail.push(prev, m.last, dt);
-      m.flame.scale.setScalar(10 + Math.random() * 5);
+      m.flame.scale.setScalar((10 + Math.random() * 5) / MISSILE_SCALE);
       if (k >= 1) {
         this.group.remove(m.object);
         for (const c of m.object.children) if (c instanceof THREE.Sprite) c.material.dispose();
