@@ -99,7 +99,7 @@ When you take the controls in a system where you have stationary fleets (not in 
 
 ## Docking in a mothership
 
-The **mothership** is the biggest ship you can build (1600 m, in an orbital drydock; see [Human ships](/wiki/naves)). When one of your fleets with a mothership is stationary in the system where you are flying, get close to it and press [[Enter]] (dock): your ship enters its hangar and **resupplies from the fleet's hold** as it would next to one of your colonies (volatiles → fuel, metal → ammunition, alloys → missiles and hull). Fill the fleet's hold at a colony first (see [Logistics](/wiki/logistica)).
+The **mothership** is the biggest ship you can build (1600 m, in an orbital drydock; see [Human ships](/wiki/naves)). When one of your fleets with a mothership is stationary in the system where you are flying, get close to it and press [[Enter]] (dock): your ship enters its hangar and **resupplies from the fleet's hold** as it would next to one of your colonies (volatiles → fuel, metal → ammunition, alloys → missiles and hull). Fill the fleet's hold at a colony first (see [Fleets](/wiki/flotas)).
 
 - While docked your ship does not move on its own; press [[Enter]] again to leave.
 - You undock automatically if the fleet sets off or your ship moves away.

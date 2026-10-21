@@ -99,7 +99,7 @@ Cuando tomas los mandos en un sistema donde tienes flotas paradas (fuera de bata
 
 ## Acoplarse en una nave nodriza
 
-La **nave nodriza** es la nave más grande que puedes construir (1600 m, en un dique orbital; ver [Naves humanas](/wiki/naves)). Cuando una flota tuya con nave nodriza está parada en el sistema donde pilotas, acércate a ella y pulsa [[Enter]] (acoplar): tu nave entra en su hangar y **se repone de la bodega de la flota** como junto a una colonia propia (volátiles → combustible, metal → munición, aleaciones → misiles y casco). Llena antes la bodega de la flota en una colonia (ver [Logística](/wiki/logistica)).
+La **nave nodriza** es la nave más grande que puedes construir (1600 m, en un dique orbital; ver [Naves humanas](/wiki/naves)). Cuando una flota tuya con nave nodriza está parada en el sistema donde pilotas, acércate a ella y pulsa [[Enter]] (acoplar): tu nave entra en su hangar y **se repone de la bodega de la flota** como junto a una colonia propia (volátiles → combustible, metal → munición, aleaciones → misiles y casco). Llena antes la bodega de la flota en una colonia (ver [Flotas](/wiki/flotas)).
 
 - Mientras estás acoplada la nave no se mueve por su cuenta; vuelve a pulsar [[Enter]] para salir. Si dejas de pilotar (por ejemplo, para abrir el mapa), tu nave sigue en el hangar.
 - Te desacoplas sola si la flota se pone en marcha o si tu nave se aleja.
