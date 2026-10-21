@@ -171,7 +171,8 @@ describe.skipIf(!TEST_DATABASE_URL)("economía de la humanidad y mercado", () =>
     await deliver();
     expect((await colonyRow(buyer.colony.id)).metal).toBeCloseTo(2060, 0);
     const ledger = await db.select().from(resourceLedger).where(eq(resourceLedger.colonyId, buyer.colony.id));
-    expect(ledger.map((l) => [l.reason, l.metal])).toEqual([["market_delivery", 60]]);
+    expect(ledger.map((l) => l.reason)).toEqual(["market_delivery"]);
+    expect(ledger[0]!.metal).toBeCloseTo(60, 6);
     // Precios públicos e historial.
     const view = (await app.inject({ method: "GET", url: "/api/market", cookies: buyer.cookies })).json() as MarketResponse;
     const metal = view.resources.find((r) => r.resource === "metal")!;
