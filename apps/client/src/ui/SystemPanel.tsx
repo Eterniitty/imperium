@@ -11,6 +11,7 @@ import { DepositChips, Meter, RESOURCE_COLORS, starColorCss } from "./common";
 import { AlienPresence } from "./AlienPresence";
 import { factionName } from "./aliens";
 import { FleetLogistics } from "./FleetLogistics";
+import { TacticPicker } from "./TacticPicker";
 import { PlanetColony } from "./PlanetColony";
 import { formatDuration, useServerNow } from "./useNow";
 import { companionsIn, useCompanionTrail } from "./companionTrail";
@@ -215,6 +216,7 @@ export function SystemPanel() {
               <li key={f.id} className="fleet">
                 <strong>{t("fleet.name", { n: f.number })}</strong>
                 <span className="muted small">{t("fleet.ships", { count: f.ships.length })}</span>
+                <TacticPicker fleet={f} />
               </li>
             ))}
           </ul>

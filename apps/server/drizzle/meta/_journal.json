@@ -155,6 +155,13 @@
       "when": 1792590957502,
       "tag": "0022_posicion_por_sistema",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792594863772,
+      "tag": "0023_tactica_de_flota",
+      "breakpoints": true
     }
   ]
 }

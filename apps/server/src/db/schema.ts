@@ -205,6 +205,8 @@ export const fleets = pgTable(
     arriveAt: timestamp("arrive_at", { withTimezone: true }),
     /** Batalla en la que combate (Fase 9a); null si no está en ninguna. */
     battleId: uuid("battle_id").references((): AnyPgColumn => battles.id, { onDelete: "set null" }),
+    /** Táctica en las batallas por rondas (`FLEET_TACTICS`). */
+    tactic: text("tactic").notNull().default("balanced"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

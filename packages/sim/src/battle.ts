@@ -12,7 +12,7 @@
  * escudo de batalla del objetivo absorbe daño hasta agotarse en esa ronda y el
  * resto va al casco. Con el casco a 0, la nave queda destruida.
  */
-import { battleProfileOf, FLEET_BATTLE, getAnyShipClass } from "@imperium/content";
+import { battleProfileOf, FLEET_BATTLE, FLEET_TACTICS, getAnyShipClass, type FleetTacticId } from "@imperium/content";
 
 /** Nave en una batalla. */
 export interface BattleShip {
@@ -29,6 +29,8 @@ export interface BattleShip {
   shots?: number;
   /** Tamaño como blanco (entero ≥ 1, por defecto 1): peso al elegirla como objetivo. */
   profile?: number;
+  /** Fuego concentrado (táctica `focus`): dispara al enemigo con menos casco. */
+  focus?: boolean;
 }
 
 /** Resultado de una ronda. */
@@ -63,16 +65,24 @@ export function battleRoundSeed(battleSeed: number, round: number): number {
 }
 
 /** Nave de batalla con los datos de su clase (ataque y escudo; humana o alienígena) y su casco actual. */
-export function battleShip(id: string, classId: string, hull: number, /** Multiplicador del escudo (Defensas del Núcleo). */ shieldFactor = 1): BattleShip {
+export function battleShip(
+  id: string,
+  classId: string,
+  hull: number,
+  /** Multiplicador del escudo (Defensas del Núcleo). */ shieldFactor = 1,
+  /** Táctica de su flota. */ tactic: FleetTacticId = "balanced",
+): BattleShip {
   const cls = getAnyShipClass(classId);
+  const t = FLEET_TACTICS[tactic] ?? FLEET_TACTICS.balanced;
   return {
     id,
     classId,
-    attack: cls?.attack ?? 0,
-    shield: (cls?.battleShield ?? 0) * shieldFactor,
+    attack: (cls?.attack ?? 0) * t.attack,
+    shield: (cls?.battleShield ?? 0) * shieldFactor * t.shield,
     hull,
     shots: cls?.battleShots ?? 1,
     profile: cls ? battleProfileOf(cls) : 1,
+    ...(t.focus ? { focus: true } : {}),
   };
 }
 
@@ -127,7 +137,8 @@ export function resolveBattleRound(sides: readonly [readonly BattleShip[], reado
         // Objetivos: los enemigos que siguen en pie (así no se malgastan disparos).
         const alive = enemies.filter((e) => hull.get(e.id)! > 0);
         if (alive.length === 0) break shooting;
-        const target = pickTarget(alive, next);
+        // Fuego concentrado: el que tenga menos casco (a igualdad, el primero por id); si no, al azar.
+        const target = shooter.focus ? alive.reduce((a, e) => (hull.get(e.id)! < hull.get(a.id)! ? e : a)) : pickTarget(alive, next);
         // Daño: su parte del ataque ± dispersión, redondeado (entero).
         const pct = 100 - spread + (next() % (2 * spread + 1));
         const damage = Math.round((shooter.attack * pct) / 100 / shots);

@@ -3,7 +3,7 @@
  * docs/arquitectura.md §8. Los esquemas Zod de lo que envía el cliente están en
  * `schemas.ts`.
  */
-import type { Battle, Cargo, Colony, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, HeirDoctrineId, LineageStatus, OrderSide, Siege, Stock, StockId, Wallet } from "./api";
+import type { Battle, Cargo, Colony, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, FleetTactic, HeirDoctrineId, LineageStatus, OrderSide, Siege, Stock, StockId, Wallet } from "./api";
 import type { DeepRegionView } from "./deepspace";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
@@ -97,6 +97,8 @@ export interface CommandArgs {
   "fleet.route": FleetRoute & { fleetId: string };
   /** Quita la ruta automática de una flota (se queda donde esté). */
   "fleet.routeStop": { fleetId: string };
+  /** Cambia la táctica de una flota propia en las batallas por rondas (desde cualquier sitio; en plena batalla vale desde la ronda siguiente). */
+  "fleet.tactic": { fleetId: string; tactic: FleetTactic };
   /**
    * Intercepta una flota enemiga visible en tránsito: la flota propia viaja al
    * destino de la otra y combaten allí al coincidir.

@@ -1,3 +1,4 @@
+import type { FleetTactic } from "@imperium/shared";
 import { withHardpoints } from "./shipModels";
 import type { ShipClassDefinition, ShipClassId, ShipCombat, ShipHardpoints, WeaponDefinition } from "./types";
 
@@ -434,6 +435,24 @@ export const FLEET_BATTLE = {
   /** Variación del daño de cada disparo, en tanto por ciento (±). */
   damageSpreadPct: 20,
 } as const;
+
+/** Táctica de una flota en las batallas por rondas (orden `fleet.tactic`, también a distancia). */
+export type FleetTacticId = FleetTactic;
+
+/**
+ * Tácticas: multiplican el ataque y el escudo de batalla de las naves de la
+ * flota; con `focus`, cada disparo va al enemigo con menos casco (en vez de al
+ * azar según su tamaño), para rematar antes. La nave del Emperador combate
+ * siempre con la táctica equilibrada.
+ */
+export const FLEET_TACTICS: Record<FleetTacticId, { attack: number; shield: number; focus: boolean }> = {
+  balanced: { attack: 1, shield: 1, focus: false },
+  aggressive: { attack: 1.25, shield: 0.7, focus: false },
+  defensive: { attack: 0.7, shield: 1.4, focus: false },
+  focus: { attack: 0.9, shield: 1, focus: true },
+};
+
+export const FLEET_TACTIC_IDS = Object.keys(FLEET_TACTICS) as FleetTacticId[];
 
 /**
  * Sensores para detectar flotas en tránsito (contactos que se pueden

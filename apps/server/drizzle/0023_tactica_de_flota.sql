@@ -1,0 +1,1 @@
+ALTER TABLE "fleets" ADD COLUMN "tactic" text DEFAULT 'balanced' NOT NULL;

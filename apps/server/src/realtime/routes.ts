@@ -323,6 +323,12 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     }
                     return res;
                   }
+                  case "fleet.tactic": {
+                    const ok = await fleets.setTactic(owner.emperorId, msg.args.fleetId, msg.args.tactic);
+                    if (!ok) return { ok: false, error: "no_fleet" } as const;
+                    await hub.publishFleet(owner.emperorId, msg.args.fleetId);
+                    return { ok: true } as const;
+                  }
                   case "fleet.routeStop": {
                     const ok = await logistics.clearRoute(owner.emperorId, msg.args.fleetId);
                     if (!ok) return { ok: false, error: "no_fleet" } as const;

@@ -1,6 +1,6 @@
-import { anyFleetSpeedLyPerHour, getAnyShipClass, SHIP_PASSENGERS, type ShipClassId } from "@imperium/content";
+import { anyFleetSpeedLyPerHour, FLEET_TACTICS, getAnyShipClass, SHIP_PASSENGERS, type ShipClassId } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
-import type { Cargo, CommandError, Fleet, FleetRoute } from "@imperium/shared";
+import type { Cargo, CommandError, Fleet, FleetRoute, FleetTactic } from "@imperium/shared";
 import { isTravelling, travelDurationMs } from "@imperium/sim";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import type { ServerConfig } from "../config";
@@ -18,6 +18,7 @@ const columns = {
   departAt: fleets.departAt,
   arriveAt: fleets.arriveAt,
   battleId: fleets.battleId,
+  tactic: fleets.tactic,
 };
 type Row = {
   id: string;
@@ -28,10 +29,16 @@ type Row = {
   departAt: Date | null;
   arriveAt: Date | null;
   battleId: string | null;
+  tactic: string;
 };
 
 /** Resultado de una orden de viaje. `fledBattleId`: la batalla de la que huye la flota al salir, si estaba en una. */
 export type FleetMoveResult = { ok: true; fleet: Fleet; emperorId: string; fledBattleId: string | null } | { ok: false; error: CommandError };
+
+/** Táctica guardada (texto) → táctica válida (la equilibrada si no se reconoce). */
+export function asTactic(value: string): FleetTactic {
+  return value in FLEET_TACTICS ? (value as FleetTactic) : "balanced";
+}
 
 export const EMPTY_CARGO: Cargo = { metal: 0, volatiles: 0, crystal: 0, alloys: 0, humans: 0 };
 
@@ -90,8 +97,19 @@ export class FleetService {
           ? { fromColonyId: route.fromColonyId, toColonyId: route.toColonyId, carry: route.carry as FleetRoute["carry"], humans: route.humans }
           : null,
         battleId: r.battleId,
+        tactic: asTactic(r.tactic),
       };
     });
+  }
+
+  /** Orden `fleet.tactic`: cambia la táctica de una flota propia, esté donde esté (en batalla, desde la ronda siguiente). */
+  async setTactic(emperorId: string, fleetId: string, tactic: FleetTactic): Promise<boolean> {
+    const rows = await this.db
+      .update(fleets)
+      .set({ tactic })
+      .where(and(eq(fleets.id, fleetId), eq(fleets.emperorId, emperorId)))
+      .returning({ id: fleets.id });
+    return rows.length > 0;
   }
 
   async byEmperor(emperorId: string): Promise<Fleet[]> {

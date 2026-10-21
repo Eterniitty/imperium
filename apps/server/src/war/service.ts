@@ -20,7 +20,7 @@ import { battleRounds, battles, battleSides, colonies, emperorAllies, emperors, 
 import { fleetScannerRangeLy } from "../discovery/service";
 import { findSystem, inHumanCore, placeFromRow } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
-import { EMPTY_CARGO, fleetCapacity, type FleetMoveResult, type FleetService } from "../fleet/service";
+import { asTactic, EMPTY_CARGO, fleetCapacity, type FleetMoveResult, type FleetService } from "../fleet/service";
 import type { LogisticsService } from "../logistics/service";
 
 /** Lo que ha cambiado (para avisar a los jugadores tras confirmar la transacción). */
@@ -299,7 +299,7 @@ export class WarService {
     const sides = await tx.select().from(battleSides).where(eq(battleSides.battleId, battle.id));
     const sideOf = new Map(sides.map((s) => [s.emperorId, s.side as 0 | 1]));
     const fleetRows = await tx
-      .select({ id: fleets.id, emperorId: fleets.emperorId })
+      .select({ id: fleets.id, emperorId: fleets.emperorId, tactic: fleets.tactic })
       .from(fleets)
       .where(eq(fleets.battleId, battle.id))
       .for("update");
@@ -310,12 +310,13 @@ export class WarService {
           .where(inArray(ships.fleetId, fleetRows.map((f) => f.id)))
       : [];
     const fleetOwner = new Map(fleetRows.map((f) => [f.id, f.emperorId]));
+    const fleetTactic = new Map(fleetRows.map((f) => [f.id, asTactic(f.tactic)]));
     for (const f of fleetRows) fx.fleets.set(f.id, f.emperorId);
     const bySide: [BattleShip[], BattleShip[]] = [[], []];
     const shield = this.shieldFactor(battle.systemId);
     for (const s of shipRows) {
       const side = sideOf.get(fleetOwner.get(s.fleetId)!);
-      if (side !== undefined) bySide[side].push(battleShip(s.id, s.classId, s.hull, shield));
+      if (side !== undefined) bySide[side].push(battleShip(s.id, s.classId, s.hull, shield, fleetTactic.get(s.fleetId)));
     }
     // Fase 10: las naves de los Emperadores de cada bando que siguen en el sistema.
     const owners = new Set(fleetRows.map((f) => f.emperorId));

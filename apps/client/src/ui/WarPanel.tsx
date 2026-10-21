@@ -1,4 +1,5 @@
 import { engineRef } from "../engineRef";
+import { TacticPicker } from "./TacticPicker";
 import { useCallback, useEffect, useState } from "react";
 import { ALIEN_AI } from "@imperium/content";
 import type { AlienSighting, AlienStanding, Battle, ContactsResponse, Fleet, FleetContact, I18nKey, ShipCounts } from "@imperium/shared";
@@ -112,6 +113,11 @@ export function WarPanel() {
                       </>
                     )}
                     {last && <span className="muted small">{t("war.lastRound", { dealt: last.dealt, taken: last.taken })}</span>}
+                    {/* Órdenes tácticas a distancia: la táctica de cada flota propia en la batalla. */}
+                    {b.outcome === "ongoing" &&
+                      (Object.values(fleets) as Fleet[])
+                        .filter((f) => f.battleId === b.id)
+                        .map((f) => <TacticPicker key={f.id} fleet={f} label={t("tactic.ofFleet", { n: f.number })} />)}
                     {b.outcome === "ongoing" && <span className="muted small">{t("war.fleeHint")}</span>}
                     {b.outcome === "ongoing" && (
                       <button className="link-btn small" data-testid="battle-3d" onClick={() => engineRef.current?.showBattle(b.id)}>

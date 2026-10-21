@@ -20,6 +20,14 @@ Al **llegar una flota** a un sistema, si allí hay **flotas paradas de dos Emper
 
 {{tabla:batallas}}
 
+## Tácticas
+
+Cada flota tiene una **táctica** que cambia cómo combate en las rondas. Se elige en el panel **Batallas** (para cada flota propia en una batalla en curso) o en la ficha del sistema donde está la flota, y **vale a distancia**: no hace falta estar allí, y en plena batalla se aplica desde la ronda siguiente. La nave del Emperador combate siempre con la táctica equilibrada.
+
+{{tabla:tacticas}}
+
+Con **fuego concentrado**, cada disparo va a la nave enemiga con menos casco en vez de elegirla al azar: rematas antes las naves dañadas, pero no repartes el daño.
+
 ## Las naves en batalla
 
 Las cifras de cada nave (ataque, disparos, escudo de batalla, tamaño como blanco y casco) y el equilibrio entre clases están en [Naves humanas](/wiki/naves#en-batalla); las alienígenas, en [Naves alienígenas](/wiki/naves-alienigenas). Solo esas cifras cuentan en las rondas; las armas y escudos «en tiempo real» son los del [combate pilotado](/wiki/combate).

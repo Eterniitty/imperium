@@ -122,7 +122,12 @@ export interface Fleet {
   route: FleetRoute | null;
   /** Batalla en la que combate (Fase 9a), o null. No puede cargar ni descargar mientras tanto. */
   battleId: string | null;
+  /** Táctica en las batallas por rondas (se puede cambiar a distancia, también en plena batalla). */
+  tactic: FleetTactic;
 }
+
+/** Táctica de una flota en las batallas por rondas (efectos en `FLEET_TACTICS` de `@imperium/content`). */
+export type FleetTactic = "balanced" | "aggressive" | "defensive" | "focus";
 
 /** Contenido de una bodega. */
 export type Cargo = Record<"metal" | "volatiles" | "crystal" | "alloys" | "humans", number>;

@@ -20,6 +20,14 @@ When **a fleet arrives** at a system, if there are **stopped fleets of two Emper
 
 {{tabla:batallas}}
 
+## Tactics
+
+Every fleet has a **tactic** that changes how it fights in rounds. You pick it in the **Battles** panel (for each of your fleets in an ongoing battle) or in the panel of the system where the fleet is, and **it works remotely**: you do not need to be there, and in the middle of a battle it applies from the next round. The Emperor's ship always fights with the balanced tactic.
+
+{{tabla:tacticas}}
+
+With **focused fire**, every shot goes to the enemy ship with the least hull instead of a random one: you finish off damaged ships sooner, but you do not spread the damage.
+
 ## Ships in battle
 
 Each ship's figures (attack, shots, battle shield, target size and hull) and the balance between classes are in [Human ships](/wiki/naves#in-battle); alien ones in [Alien ships](/wiki/naves-alienigenas). Only those figures count in rounds; the "real time" weapons and shields are those of [piloted combat](/wiki/combate).

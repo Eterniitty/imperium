@@ -33,6 +33,8 @@ import {
   SHIP_COLLISION,
   BODY_COLLISION,
   STAR_HEAT,
+  FLEET_TACTICS,
+  FLEET_TACTIC_IDS,
   STAR_HEAT_LETHAL_DPS,
   FLEET_BATTLE,
   FLAGSHIP_BATTLE,
@@ -500,6 +502,15 @@ export const GEN_TABLES: Record<string, Builder> = {
     rows: STAR_ORDER.map((c) => {
       const b = starBody(c);
       return [t(`star.${c}`), `${num(locale, b.radius / 1000)} km`, `${num(locale, b.surfaceGravityG, 1)} g (${num(locale, b.surfaceGravity, 1)} m/s²)`];
+    }),
+    numeric: [1, 2],
+  }),
+
+  tacticas: (t, locale) => ({
+    head: [t("tactic.label"), t("wiki.col.attack"), t("wiki.col.battleShield"), t("wiki.col.targeting")],
+    rows: FLEET_TACTIC_IDS.map((id) => {
+      const x = FLEET_TACTICS[id];
+      return [t(`tactic.${id}`), `× ${num(locale, x.attack)}`, `× ${num(locale, x.shield)}`, t(x.focus ? "wiki.v.focusTarget" : "wiki.v.randomTarget")];
     }),
     numeric: [1, 2],
   }),
