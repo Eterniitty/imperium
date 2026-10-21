@@ -29,7 +29,7 @@ export function EscortHud() {
     if (!err) setOrder(o);
   };
   return (
-    <div className="escort-hud panel" role="group" aria-label={t("escort.title")}>
+    <div className="escort-hud panel" role="group" aria-label={t("escort.title", { n: escorts })}>
       <span className="stat-label">{t("escort.title", { n: escorts })}</span>
       <div className="escort-orders">
         {ORDERS.map((o) => (

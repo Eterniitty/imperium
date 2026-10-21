@@ -1820,6 +1820,8 @@ export class SystemView implements View {
         this.updateCruise(dt);
         this.flight.update(dt);
       }
+      // Al entrar en el túnel (`onDeparted`) la nave puede haber salido ya de esta vista.
+      if (!this.ship || !this.flight) return;
       if (!departing) {
         this.followDock();
         if (!spaceStore.getState().docked) this.collide();
