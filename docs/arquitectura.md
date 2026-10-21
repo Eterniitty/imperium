@@ -230,6 +230,14 @@ Guía para jugadores en [ayuda-pilotaje.md](ayuda-pilotaje.md).
 - **Controles**: `ShipController` (rotación con velocidad angular limitada, propulsores con inercia, asistencia de vuelo, pilotaje con ratón opcional, subpasos fijos semi-implícitos; cifras en `FLIGHT_MODEL`, `packages/content` flightModel.ts) y `ChaseCamera` (cámara orbital libre alrededor de la nave, que no la gira). `FlightController` queda solo para el vuelo libre de cámara del mapa. Ajustes de pilotaje en `prefs.flight`; teclas nuevas Z (asistencia), G (pilotaje con ratón), B (cámara detrás). El modelo de nave puede exponer `setManeuver()` para los propulsores de maniobra.
 - **Gravedad**: `packages/sim` gravity.ts (`gravityAt`, `gravitySpeedBound`); el servidor (`SpaceService.maxSpeedAt`) suma la velocidad ganada cayendo. Limitaciones en `docs/aterrizaje.md`.
 
+### Implementado: grieta en el mundo, túnel, insignia de 320 m, arranque y ratón (21-10-2026, rama `vuelo-y-salto`)
+- **Grieta del salto** (`apps/client/src/engine/fx/riftPortal.ts`, `RiftField`): objeto 3D delante del morro (en esloras, `QUANTUM_RIFT`); la ven todos los del sistema. Mensaje del cliente `rift` (`charge`/`cancel`/`arrive`) que `SpaceService` reenvía como `rift` a los de la sala si está junto a la nave (`apps/server/src/space/rift.ts`; la de llegada se guarda hasta tomar los mandos); `shipGone` con `reason: "jump"`. `PROTOCOL_VERSION` 13 respecto a `f684902` (choca con el 13 de `espacio-profundo`: al fusionar, 14).
+- **Túnel** (`TunnelView`): paredes con flujo, filamentos, costillas y anillos; colores de la estrella de origen a la de destino según el avance (`setJourney`); nave en tercera persona iluminada por los anillos; medidas en esloras.
+- **Insignia de 320 m** (`FLAGSHIP_LENGTH_M`, `FLAGSHIP_HIT_RADIUS_M`, `FLAGSHIP_HARDPOINTS` en fracciones de la eslora, `packages/content` ships.ts; receta `flagship` en `ship/human.ts`). Clases humanas reescaladas (20–620 m). Cámaras, cabina, colisión con cuerpos, luces y túnel dependen de la eslora.
+- **Misiles**: salen de los lanzadores visibles de los hábitats y, 450 ms, siguen al lanzador dibujado (`Effects`).
+- **Motores** (`SystemView.updateEngines`, `ShipController.powered`, `ShipRig.setPower`, `audio/engineSfx.ts`): apagados al tomar los mandos; tecla `engines` (I), arranque `FLIGHT_MODEL.engineStartSec`. Solo en el cliente: el servidor no sabe si están encendidos (los demás ven la nave según su velocidad).
+- **Ratón**: `prefs.flight.mouseFlight` alterna cámara libre (arrastrar orbita) y vuelo con retícula virtual (cursor respecto al centro, `mouseSensitivity`, `mouseDeadzone`, `mouseInvertY`, `FLIGHT_MODEL.mouseReticleRadius`); tecla G.
+
 ## 9. Autenticación por enlace mágico
 
 - El usuario introduce su correo; se genera un **token aleatorio de 32 bytes**.
