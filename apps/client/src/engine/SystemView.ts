@@ -748,7 +748,10 @@ export class SystemView implements View {
     }
     if (q.phase === "align") {
       const target = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), q.dir);
-      ship.quaternion.rotateTowards(target, QUANTUM_ALIGN_RAD_PER_SEC * dt);
+      // Giro suave: arranca y frena poco a poco (aproximación exponencial con tope de velocidad).
+      const left = ship.quaternion.angleTo(target);
+      const step = Math.min(QUANTUM_ALIGN_RAD_PER_SEC * dt, left * (1 - Math.exp(-dt * 3.2)) + 0.002 * dt);
+      ship.quaternion.rotateTowards(target, step);
       const cos = fwd.dot(q.dir);
       telemetry.quantumAlign = (cos + 1) / 2;
       if (cos > Math.cos((1.5 * Math.PI) / 180)) {
@@ -1363,17 +1366,15 @@ export class SystemView implements View {
     let kick = 0;
     let shake = 0;
     const q = this.quantum;
-    if (q?.phase === "depart") {
-      const k = q.t / QUANTUM_RIFT.departSec;
-      kick = 12 * smoothstep(0.15, 1, k);
-      shake = smoothstep(0.2, 0.6, k) * (1 - smoothstep(0.8, 1.2, k));
+    // Sin temblores en el salto (se notaban a tirones): solo se abre el campo de visión, con curvas suaves.
+    if (q?.phase === "charge") {
+      kick = 2.5 * smoothstep(0.3, 1, q.t / QUANTUM_CHARGE_SEC);
+    } else if (q?.phase === "depart" || q?.phase === "sent") {
+      const k = q.phase === "sent" ? 0 : q.t / QUANTUM_RIFT.departSec;
+      kick = 2.5 + 7 * smoothstep(0, 1, k);
     } else if (this.arrival) {
       const tb = this.arrival.t - QUANTUM_RIFT.arriveBeamDelaySec;
-      if (tb > 0) {
-        kick = 11 * (1 - Math.exp(-tb * 30)) * Math.exp(-tb * 3.2);
-        const c = tb - QUANTUM_RIFT.arriveBeamSec * 0.6;
-        shake = c > 0 ? Math.exp(-c * 9) : 0;
-      }
+      if (tb > 0) kick = 7 * smoothstep(0, 0.45, tb) * (1 - smoothstep(0.45, 1.9, tb));
     }
     if (this.impactShake > 0) {
       shake = Math.max(shake, this.impactShake * 1.6);

@@ -426,12 +426,12 @@ export const QUANTUM_RIFT = {
   heightLengths: 2.6,
   maxOffsetLengths: 12,
   /** Segundos que tarda la nave en estirarse y desaparecer en la grieta al saltar (casi a la velocidad de la luz). */
-  departSec: 0.5,
+  departSec: 0.9,
   /** Segundos que la grieta de llegada sigue abierta. */
   arriveSec: 2.2,
   /** Llegada: segundos desde que se abre la grieta hasta que sale el rayo de luz, y lo que tarda el rayo en contraerse en la nave. */
-  arriveBeamDelaySec: 0.3,
-  arriveBeamSec: 0.45,
+  arriveBeamDelaySec: 0.4,
+  arriveBeamSec: 0.7,
   /** Segundos desde que se abre la grieta de llegada hasta que el piloto recupera los mandos. */
   arriveShipSec: 1.4,
 } as const;

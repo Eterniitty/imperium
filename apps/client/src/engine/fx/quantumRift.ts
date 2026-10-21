@@ -48,7 +48,8 @@ void main() {
   vec2 dir = r > 1e-4 ? p / r : vec2(0.0);
   float soft = 1.0 - 0.6 * uReduce;
   float charge = uCharge * uCharge;
-  float ripple = uArrive > 0.0 ? (1.0 - uArrive) * (0.5 + 0.5 * sin(r * 40.0 - uArrive * 30.0)) : 0.0;
+  // Llegada: una sola onda ancha que se apaga (sin anillos finos, que vibraban).
+  float ripple = uArrive > 0.0 ? (1.0 - uArrive) * (1.0 - uArrive) * smoothstep(0.0, 0.15, uArrive) : 0.0;
 
   // Lente leve hacia la grieta.
   uv -= dir / asp * charge * 0.012 * soft / (r * 6.0 + 0.5);
@@ -69,9 +70,11 @@ void main() {
       frozen += texture2D(tFrozen, s).rgb;
     }
     frozen /= samples;
-    float k = smoothstep(0.1, 0.85, uBreak);
+    float k = smoothstep(0.0, 1.0, uBreak);
+    k = k * k * (3.0 - 2.0 * k);
     col = mix(frozen, col, k);
-    col += vec3(0.75, 0.85, 1.0) * exp(-uBreak * 9.0) * 0.7 * (1.0 - uReduce);
+    // Un brillo suave al cruzar (sube y baja, nunca de golpe).
+    col += vec3(0.75, 0.85, 1.0) * smoothstep(0.0, 0.2, uBreak) * (1.0 - smoothstep(0.2, 0.7, uBreak)) * 0.22 * (1.0 - uReduce);
   }
   gl_FragColor = vec4(col, 1.0);
   #include <tonemapping_fragment>
@@ -80,8 +83,8 @@ void main() {
 `;
 
 /** Duraciones de la rotura y de la llegada, en segundos. */
-const BREAK_SEC = 1.0;
-const ARRIVE_SEC = 1.6;
+const BREAK_SEC = 1.7;
+const ARRIVE_SEC = 2.0;
 
 export class QuantumRift {
   private targets: [THREE.WebGLRenderTarget, THREE.WebGLRenderTarget] | null = null;
