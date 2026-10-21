@@ -25,3 +25,13 @@ Los detalles legales (responsable, datos que se tratan, plazos, copias de seguri
 ## Ajustes del juego
 
 Se guardan **en tu navegador** (no en el servidor): idioma, calidad de imagen, tamaño de la interfaz, volumen de la **música** (generada por código en tu navegador, sin archivos) y [teclas](/wiki/pilotar#controles).
+
+## Administradores de la Wiki
+
+Las cuentas de administrador (las decide el servidor) ven en la Wiki un botón **Editar** en cada artículo y **Artículo nuevo** en el índice:
+
+- Editor de Markdown con **vista previa en vivo**, en español o en inglés (avisa si un idioma ha quedado desactualizado respecto al otro), con **nota de la edición** y la lista de **tablas del juego** para insertar (`{{tabla:<id>}}`).
+- **Historial**: cada publicación es una revisión que no se borra; se ven las diferencias con la versión publicada y se puede **restaurar** cualquier versión anterior o el texto original.
+- Se pueden **ocultar** artículos o cambiarlos de grupo en el índice.
+
+Si una cuenta de administrador se borra, sus revisiones se conservan (son texto público de la Wiki) sin autor; en la descarga de datos van las que hizo.

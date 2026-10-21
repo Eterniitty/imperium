@@ -6,6 +6,11 @@
  * - `{{tabla:<id>}}` en su propia línea: tabla generada con los datos del juego (tables.ts),
  *   y `{{fichas:<id>}}`, fichas generadas (especies y facciones).
  * - En línea (`\\` escapa el carácter siguiente): `**negrita**`, `*cursiva*`, `` `código` ``, `[[tecla]]` y `[texto](enlace)`.
+ *
+ * Seguridad (los administradores editan el texto desde la Wiki): no hay HTML.
+ * Todo se dibuja como nodos de texto de React, que escapa `<`, `>` y `&`, y los
+ * enlaces solo admiten rutas propias (`/…`, `#…`), `http(s):` y `mailto:`; uno
+ * con otro esquema (`javascript:`, `data:`…) queda como texto (`safeHref`).
  */
 
 export type Inline =
@@ -33,6 +38,17 @@ export function anchorId(text: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+/**
+ * Destino de un enlace si es seguro: rutas del propio sitio (`/wiki/…`, `#ancla`)
+ * y direcciones `http:`, `https:` o `mailto:`. Null para todo lo demás
+ * (`javascript:`, `data:`, `vbscript:`, rutas sin esquema y `//otro-sitio`).
+ */
+export function safeHref(href: string): string | null {
+  if (/^\/(?![/\\])/.test(href) || href.startsWith("#")) return href;
+  if (/^(https?:\/\/|mailto:)[^\s]+$/i.test(href)) return href;
+  return null;
 }
 
 /** Texto plano de un fragmento en línea (para buscar y para las anclas). */
@@ -70,7 +86,10 @@ export function parseInline(src: string): Inline[] {
       out.push({ t: "kbd", v: m[1]! });
     } else if ((m = /^\[([^\]]+)\]\(([^)\s]+)\)/.exec(rest))) {
       flush();
-      out.push({ t: "link", href: m[2]!, c: parseInline(m[1]!) });
+      const href = safeHref(m[2]!);
+      // Un enlace con un esquema no permitido se queda en su texto, sin enlace.
+      if (href) out.push({ t: "link", href, c: parseInline(m[1]!) });
+      else out.push(...parseInline(m[1]!));
     } else {
       text += src[i];
       i++;

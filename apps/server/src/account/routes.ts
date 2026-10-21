@@ -36,6 +36,7 @@ import type { SpaceService } from "../space/service";
 import { maskEmail } from "../auth/tokens";
 import type { SiegeService } from "../war/siege";
 import type { LineageService } from "../lineage/service";
+import type { WikiService } from "../wiki/service";
 
 export interface AccountDeps {
   config: ServerConfig;
@@ -49,6 +50,8 @@ export interface AccountDeps {
   sieges?: SiegeService;
   /** Fase 10: Herederos y muertes en la exportación; eventos de los Herederos al borrar. */
   lineage?: LineageService;
+  /** Wiki: revisiones y cambios hechos como administrador (exportación; al borrar quedan sin autor). */
+  wiki?: WikiService;
 }
 
 function fail(reply: FastifyReply, status: number, error: ApiError["error"]) {
@@ -59,7 +62,7 @@ function fail(reply: FastifyReply, status: number, error: ApiError["error"]) {
  * Derechos del RGPD que el jugador ejerce solo (ver /legal/privacidad.html):
  * descargar sus datos (art. 15 y 20) y borrar su cuenta (art. 17).
  */
-export async function accountRoutes(app: FastifyInstance, { config, db, hub, space, colonies: colonyService, humanity, market, sieges, lineage }: AccountDeps) {
+export async function accountRoutes(app: FastifyInstance, { config, db, hub, space, colonies: colonyService, humanity, market, sieges, lineage, wiki }: AccountDeps) {
   const cookieName = sessionCookieName(config);
   const cookieOptions = { path: "/", httpOnly: true, secure: config.COOKIE_SECURE, sameSite: "lax" } as const;
   // La exportación lee muchas tablas: pocas por cuenta.
@@ -119,7 +122,9 @@ export async function accountRoutes(app: FastifyInstance, { config, db, hub, spa
         lineage: lineage ? await lineage.exportFor(emperor.id) : { heirs: [], deaths: [] },
       };
     }
-    const data = { exportedAt: new Date().toISOString(), account: acc, sessions: sessionRows, game };
+    // Wiki: lo que editó como administrador (las revisiones son públicas; aquí, con su autoría).
+    const wikiData = wiki ? await wiki.exportFor(account.id) : { revisions: [], log: [] };
+    const data = { exportedAt: new Date().toISOString(), account: acc, sessions: sessionRows, game, wiki: wikiData };
     return reply
       .header("Content-Type", "application/json; charset=utf-8")
       .header("Content-Disposition", 'attachment; filename="aeonarch-datos.json"')
@@ -165,6 +170,8 @@ export async function accountRoutes(app: FastifyInstance, { config, db, hub, spa
         // (congeladas, con su nombre, población e instalaciones; conquistables en la Fase 9b).
         await colonyService.makeIndependent(tx, emperor.id, Date.now());
       }
+      // Wiki: sus revisiones se conservan (contenido público) con el autor anónimo.
+      if (wiki) await wiki.anonymize(tx, account.id);
       // Enlaces de acceso pendientes o usados (guardan el correo).
       await tx.delete(magicLinkTokens).where(eq(magicLinkTokens.email, account.email));
       // En cascada: sesiones, Emperador, flotas, naves, descubrimientos, compañeros, bandos de batallas…

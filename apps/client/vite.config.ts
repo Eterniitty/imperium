@@ -3,7 +3,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
-import { WIKI_ARTICLES, WIKI_HOME } from "./src/wiki/slugs.ts";
+// Ruta relativa (no `@imperium/shared/wiki`): así se empaqueta con la configuración en vez de cargarse como .ts sin compilar.
+import { WIKI_ARTICLES, WIKI_HOME } from "../../packages/shared/src/wiki.ts";
 
 const API_PORT = process.env.AEONARCH_API_PORT ?? "3000";
 const root = dirname(fileURLToPath(import.meta.url));

@@ -3,10 +3,12 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { BASE_LOCALES } from "@imperium/shared";
-import { allArticles, articleSource, getArticle } from "../src/wiki/articles";
-import { anchorId, internalLinks, parseInline, parseMarkdown } from "../src/wiki/markdown";
+import { allArticles, articleSource, getArticle, remoteFrom, wikiIndex } from "../src/wiki/articles";
+import { diffChunks, diffLines } from "../src/wiki/diff";
+import { staleLocale } from "../src/wiki/WikiEditor";
+import { anchorId, internalLinks, parseInline, parseMarkdown, safeHref } from "../src/wiki/markdown";
 import { searchArticles } from "../src/wiki/search";
-import { WIKI_ARTICLES, slugFromPath, wikiPath } from "../src/wiki/slugs";
+import { WIKI_ARTICLES, routeSlug, slugFromPath, wikiPath } from "../src/wiki/slugs";
 import { GEN_CARDS, GEN_TABLES, buildCards, buildTable } from "../src/wiki/tables";
 
 const contentDir = resolve(dirname(fileURLToPath(import.meta.url)), "../src/wiki/content");
@@ -134,5 +136,95 @@ describe("Wiki: buscador", () => {
   it("sin coincidencias, nada; consultas de una letra, nada", () => {
     expect(searchArticles(allArticles("es"), "zzqxw")).toEqual([]);
     expect(searchArticles(allArticles("es"), "a")).toEqual([]);
+  });
+});
+
+describe("Wiki editable: seguridad del Markdown", () => {
+  it("los enlaces con esquemas peligrosos se quedan en texto", () => {
+    for (const href of ["javascript:alert%281%29", "JaVaScRiPt:alert%281%29", "data:text/html,<script>x</script>", "vbscript:x", "//malvada.example", "/\\malvada.example", "relativo"]) {
+      expect(safeHref(href)).toBeNull();
+      expect(parseInline(`[pulsa](${href})`)).toEqual([{ t: "text", v: "pulsa" }]);
+    }
+    for (const href of ["/wiki/leyes", "#ancla", "https://aeonarch.de", "http://x.es/a?b=c", "mailto:a@b.es"]) expect(safeHref(href)).toBe(href);
+  });
+
+  it("el HTML del texto es texto (lo escapa React al dibujarlo)", () => {
+    const blocks = parseMarkdown('# <img src=x onerror=alert(1)>\n\n<script>alert(1)</script> **<b>x</b>**');
+    expect(blocks[0]).toMatchObject({ t: "h", text: "<img src=x onerror=alert(1)>" });
+    expect(blocks[1]).toEqual({
+      t: "p",
+      c: [{ t: "text", v: "<script>alert(1)</script> " }, { t: "strong", c: [{ t: "text", v: "<b>x</b>" }] }],
+    });
+  });
+});
+
+describe("Wiki editable: versiones publicadas, índice y rutas", () => {
+  const pub = (slug: string, locale: "es" | "en", body: string, revisionId = 1, at = 1000) => ({ slug, locale, body, revisionId, at });
+
+  it("la versión publicada es la última revisión; sin ella, el repositorio (y las tablas siguen funcionando)", () => {
+    const remote = remoteFrom({ pages: [], published: [pub("leyes", "es", "# Leyes nuevas\n\n{{tabla:minas}}")], admin: false });
+    const a = getArticle("es", "leyes", remote)!;
+    expect(a.title).toBe("Leyes nuevas");
+    expect(a.blocks[1]).toEqual({ t: "gen", id: "minas" });
+    expect(buildTable("minas", "es")).not.toBeNull();
+    // El otro idioma sigue con el repositorio; sin API, todo como antes.
+    expect(getArticle("en", "leyes", remote)!.title).toBe(getArticle("en", "leyes")!.title);
+    expect(getArticle("es", "leyes")!.title).not.toBe("Leyes nuevas");
+  });
+
+  it("artículos nuevos tras los del repositorio en su grupo; los ocultos solo para administradores", () => {
+    const remote = remoteFrom({
+      pages: [
+        { slug: "rutas", group: "start", hidden: false, custom: true, position: 1 },
+        { slug: "lore", group: "people", hidden: true, custom: false, position: 0 },
+        { slug: "leyes", group: "war", hidden: false, custom: false, position: 0 },
+      ],
+      published: [pub("rutas", "es", "# Rutas")],
+      admin: true,
+    });
+    const slugs = wikiIndex(remote).map((e) => e.slug);
+    expect(slugs.slice(0, 3)).toEqual(["inicio", "primeros-pasos", "rutas"]);
+    expect(slugs).not.toContain("lore");
+    expect(slugs.indexOf("leyes")).toBe(slugs.indexOf("guerra") - 1);
+    expect(wikiIndex(remote, true).map((e) => e.slug)).toContain("lore");
+    // Sin texto en inglés, el español.
+    expect(getArticle("en", "rutas", remote)!.title).toBe("Rutas");
+    expect(allArticles("es", remote).map((a) => a.slug)).toContain("rutas");
+  });
+
+  it("rutas de los artículos nuevos: /wiki/?p=<slug>", () => {
+    expect(wikiPath("rutas-comerciales")).toBe("/wiki/?p=rutas-comerciales");
+    expect(routeSlug("/wiki/", "?p=rutas-comerciales")).toBe("rutas-comerciales");
+    expect(routeSlug("/wiki/", "?p=../x")).toBeNull();
+    expect(routeSlug("/wiki/rutas-comerciales/")).toBe("rutas-comerciales");
+    expect(routeSlug("/wiki/")).toBe("inicio");
+    expect(routeSlug("/otra")).toBeNull();
+    expect(slugFromPath("/wiki/rutas-comerciales")).toBeNull();
+  });
+
+  it("aviso de idioma desactualizado", () => {
+    const r = (es: number, en: number) =>
+      remoteFrom({ pages: [], published: [...(es ? [pub("leyes", "es", "a", 1, es)] : []), ...(en ? [pub("leyes", "en", "b", 2, en)] : [])], admin: true });
+    expect(staleLocale(r(0, 0), "leyes")).toBeNull();
+    expect(staleLocale(r(2000, 0), "leyes")).toEqual({ stale: "en", fresh: "es" });
+    expect(staleLocale(r(2000, 3000), "leyes")).toEqual({ stale: "es", fresh: "en" });
+  });
+});
+
+describe("Wiki editable: diferencias", () => {
+  it("líneas iguales, quitadas y añadidas, con contexto", () => {
+    const d = diffLines("a\nb\nc\nd", "a\nB\nc\nd\ne");
+    expect(d).toEqual([
+      { t: "same", text: "a" },
+      { t: "del", text: "b" },
+      { t: "add", text: "B" },
+      { t: "same", text: "c" },
+      { t: "same", text: "d" },
+      { t: "add", text: "e" },
+    ]);
+    expect(diffChunks(diffLines("x", "x"))).toEqual([]);
+    const long = Array.from({ length: 20 }, (_, i) => `l${i}`);
+    const chunks = diffChunks(diffLines(long.join("\n"), [...long.slice(0, 10), "nuevo", ...long.slice(10)].join("\n")), 1);
+    expect(chunks).toEqual([{ t: "gap", count: 9 }, { t: "same", text: "l9" }, { t: "add", text: "nuevo" }, { t: "same", text: "l10" }, { t: "gap", count: 9 }]);
   });
 });

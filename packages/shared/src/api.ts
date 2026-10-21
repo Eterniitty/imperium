@@ -179,6 +179,10 @@ export type ApiErrorCode =
   | "unknown_emperor"
   | "cannot_ally_self"
   | "not_discovered"
+  | "forbidden"
+  | "conflict"
+  | "slug_taken"
+  | "unknown_article"
   | "internal";
 
 /** Respuesta de `GET /api/systems/:systemId`: detalle de un sistema descubierto (niebla de guerra). */

@@ -46,6 +46,8 @@ export default async function globalSetup() {
       // Todas las pruebas piden enlaces desde la misma IP.
       AUTH_REQUESTS_PER_IP: "200",
       API_REQUESTS_PER_IP_MINUTE: "100000",
+      // Administrador de la Wiki (panel de edición; e2e/wiki.spec.ts).
+      ADMIN_EMAILS: "wiki-admin@aeonarch.test",
     },
   });
 

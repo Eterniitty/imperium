@@ -1,60 +1,49 @@
 /**
- * Artículos de la Wiki, en el orden del índice. Sin dependencias de Vite: lo
- * importa también `vite.config.ts` para crear una página por artículo al
- * compilar (`/wiki/<slug>/index.html`), así Caddy las sirve como archivos
- * estáticos sin reglas especiales.
+ * Artículos de la Wiki y sus rutas. La lista del repositorio vive en
+ * `@imperium/shared/wiki` (la usa también el servidor, para el panel de
+ * edición); este archivo no depende de Vite: lo importa `vite.config.ts` para
+ * crear una página por artículo al compilar (`/wiki/<slug>/index.html`), así
+ * Caddy las sirve como archivos estáticos sin reglas especiales.
  *
- * Para añadir un artículo: su slug aquí y un `<slug>.md` en `content/es` y en
- * `content/en` (los tests comprueban que no falte ninguno).
+ * Para añadir un artículo al repositorio: su slug en `packages/shared/src/wiki.ts`
+ * y un `<slug>.md` en `content/es` y en `content/en` (los tests comprueban que no
+ * falte ninguno). Los artículos creados desde el panel de edición no tienen
+ * página propia en `dist`: su ruta es `/wiki/?p=<slug>`.
  */
-export const WIKI_GROUPS = ["start", "world", "ship", "empire", "war", "people"] as const;
-export type WikiGroup = (typeof WIKI_GROUPS)[number];
+import { isValidWikiSlug, isWikiSlug, WIKI_HOME, type WikiSlug } from "@imperium/shared/wiki";
 
-export const WIKI_ARTICLES = [
-  { slug: "inicio", group: "start" },
-  { slug: "primeros-pasos", group: "start" },
-  { slug: "leyes", group: "start" },
-  { slug: "universo", group: "world" },
-  { slug: "niebla", group: "world" },
-  { slug: "pilotar", group: "ship" },
-  { slug: "combate", group: "ship" },
-  { slug: "linaje", group: "ship" },
-  { slug: "humanos", group: "empire" },
-  { slug: "colonias", group: "empire" },
-  { slug: "economia", group: "empire" },
-  { slug: "humanidad", group: "empire" },
-  { slug: "mercado", group: "empire" },
-  { slug: "flotas", group: "empire" },
-  { slug: "naves", group: "empire" },
-  { slug: "guerra", group: "war" },
-  { slug: "conquista", group: "war" },
-  { slug: "carroneros", group: "war" },
-  { slug: "companeros", group: "people" },
-  { slug: "cuenta", group: "people" },
-  { slug: "especies", group: "people" },
-  { slug: "naves-alienigenas", group: "people" },
-  { slug: "ia-territorios", group: "people" },
-  { slug: "lore", group: "people" },
-] as const satisfies ReadonlyArray<{ slug: string; group: WikiGroup }>;
+export { WIKI_ARTICLES, WIKI_GROUPS, WIKI_HOME, isWikiSlug, type WikiGroup, type WikiSlug } from "@imperium/shared/wiki";
 
-export type WikiSlug = (typeof WIKI_ARTICLES)[number]["slug"];
-
-export const WIKI_HOME: WikiSlug = "inicio";
-
-export function isWikiSlug(s: string): s is WikiSlug {
-  return WIKI_ARTICLES.some((a) => a.slug === s);
+/** Artículo del repositorio de una ruta: `/wiki`, `/wiki/`, `/wiki/economia`, `/wiki/economia/`. Null si no es de la Wiki o no existe. */
+export function slugFromPath(pathname: string): WikiSlug | null {
+  const s = routeSlug(pathname);
+  return s !== null && isWikiSlug(s) ? s : null;
 }
 
-/** Artículo de una ruta: `/wiki`, `/wiki/`, `/wiki/economia`, `/wiki/economia/`. Null si no es de la Wiki o no existe. */
-export function slugFromPath(pathname: string): WikiSlug | null {
+/**
+ * Slug de una ruta de la Wiki, exista o no (puede ser un artículo creado desde
+ * el panel de edición): `/wiki/<slug>/` o `/wiki/?p=<slug>`. Null si la ruta no
+ * es de la Wiki o el slug no tiene forma válida.
+ */
+export function routeSlug(pathname: string, search = ""): string | null {
   const m = /^\/wiki(?:\/([^/]*))?\/?$/.exec(pathname);
   if (!m) return null;
-  const s = decodeURIComponent(m[1] ?? "");
-  if (s === "") return WIKI_HOME;
-  return isWikiSlug(s) ? s : null;
+  let s = "";
+  try {
+    s = decodeURIComponent(m[1] ?? "");
+  } catch {
+    return null;
+  }
+  if (s === "") {
+    const p = new URLSearchParams(search).get("p");
+    if (p) return isValidWikiSlug(p) ? p : null;
+    return WIKI_HOME;
+  }
+  return isValidWikiSlug(s) ? s : null;
 }
 
-/** Ruta de un artículo (la portada, `/wiki/`). */
-export function wikiPath(slug: WikiSlug): string {
-  return slug === WIKI_HOME ? "/wiki/" : `/wiki/${slug}/`;
+/** Ruta de un artículo: la portada es `/wiki/`; los del repositorio, `/wiki/<slug>/`; los nuevos, `/wiki/?p=<slug>`. */
+export function wikiPath(slug: string): string {
+  if (slug === WIKI_HOME) return "/wiki/";
+  return isWikiSlug(slug) ? `/wiki/${slug}/` : `/wiki/?p=${encodeURIComponent(slug)}`;
 }

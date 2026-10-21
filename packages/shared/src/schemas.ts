@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { EMPEROR_NAME_MAX, EMPEROR_NAME_MIN, PLANET_NAME_MAX, PLANET_NAME_MIN, VISIBILITIES, type Visibility } from "./api";
 import { BASE_LOCALES, type Locale } from "./i18n";
+import { WIKI_BODY_MAX, WIKI_GROUPS, WIKI_NOTE_MAX, WIKI_SLUG_MAX, WIKI_SLUG_RE, WIKI_TITLE_MAX } from "./wiki";
 
 export const LocaleSchema = z.enum(BASE_LOCALES as [Locale, ...Locale[]]);
 
@@ -203,3 +204,56 @@ export const ClientMessageSchema = z.union([
   z.object({ t: z.literal("leave") }),
   z.object({ t: z.literal("fire"), weapon: z.enum(["cannon", "missile"]), dir: Vec3Schema, target: z.string().max(64).optional() }),
 ]);
+
+// --- Wiki: panel de edición (solo administradores) ---
+
+const WikiSlugSchema = z.string().max(WIKI_SLUG_MAX).regex(WIKI_SLUG_RE);
+/** Markdown de un artículo: texto (el renderizador de la Wiki escapa todo HTML), sin caracteres nulos. */
+const WikiBodySchema = z
+  .string()
+  .transform((s) => s.replace(/\r\n?/g, "\n"))
+  .pipe(z.string().max(WIKI_BODY_MAX).refine((s) => !s.includes("\u0000")));
+const WikiNoteSchema = z
+  .string()
+  .transform((s) => s.replace(/\s+/gu, " ").trim())
+  .pipe(z.string().max(WIKI_NOTE_MAX))
+  .default("");
+
+/** Cuerpo de `POST /api/wiki/save`. `baseRevisionId`: la revisión publicada sobre la que se editó (null: la del repositorio). */
+export const WikiSaveBodySchema = z.object({
+  slug: WikiSlugSchema,
+  locale: LocaleSchema,
+  body: WikiBodySchema,
+  note: WikiNoteSchema,
+  baseRevisionId: z.number().int().positive().nullable(),
+});
+export type WikiSaveBody = z.input<typeof WikiSaveBodySchema>;
+
+/** Cuerpo de `POST /api/wiki/restore`: publica de nuevo el texto de una revisión anterior. */
+export const WikiRestoreBodySchema = z.object({
+  revisionId: z.number().int().positive(),
+  note: WikiNoteSchema,
+});
+export type WikiRestoreBody = z.input<typeof WikiRestoreBodySchema>;
+
+/** Cuerpo de `POST /api/wiki/create`: artículo nuevo (su primera revisión es el título). */
+export const WikiCreateBodySchema = z.object({
+  slug: WikiSlugSchema,
+  group: z.enum(WIKI_GROUPS),
+  locale: LocaleSchema,
+  title: z
+    .string()
+    .transform((s) => s.replace(/\s+/gu, " ").trim())
+    .pipe(z.string().min(1).max(WIKI_TITLE_MAX)),
+});
+export type WikiCreateBody = z.input<typeof WikiCreateBodySchema>;
+
+/** Cuerpo de `POST /api/wiki/meta`: ocultar o mostrar un artículo, o cambiarlo de grupo. */
+export const WikiMetaBodySchema = z
+  .object({
+    slug: WikiSlugSchema,
+    hidden: z.boolean().optional(),
+    group: z.enum(WIKI_GROUPS).optional(),
+  })
+  .refine((b) => b.hidden !== undefined || b.group !== undefined);
+export type WikiMetaBody = z.input<typeof WikiMetaBodySchema>;

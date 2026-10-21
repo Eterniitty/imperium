@@ -321,3 +321,146 @@ kbd {
   color: var(--muted);
 }
 .wiki-badge.small { font-size: 11px; padding: 0 6px; }
+
+/* ---------- Panel de edición (administradores) ---------- */
+
+.wiki-btn {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 6px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  white-space: nowrap;
+}
+.wiki-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+.wiki-btn:disabled { opacity: 0.5; cursor: default; }
+.wiki-btn.primary { border-color: var(--gold); color: var(--gold); background: var(--gold-soft); }
+.wiki-admin-bar { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-bottom: 8px; }
+.wiki-nav-admin .wiki-btn { width: 100%; margin-bottom: 6px; }
+.wiki-nav li.hidden-article > a { opacity: 0.55; font-style: italic; }
+
+.wiki-editor { max-width: 1180px; }
+.wiki-editor-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.wiki-editor-head h1 { font-family: var(--font-display); font-size: 28px; margin: 0; color: #fff; }
+.wiki-editor-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 14px 0 10px; }
+.wiki-tabs { display: flex; border: 1px solid var(--panel-border); border-radius: 6px; overflow: hidden; }
+.wiki-tabs button { background: none; border: 0; padding: 6px 12px; font-family: var(--font-display); font-weight: 700; color: var(--muted); }
+.wiki-tabs button.active { background: var(--gold-soft); color: var(--gold); }
+.wiki-editor-warn {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-left: 3px solid #ff9a3c;
+  background: rgba(255, 154, 60, 0.08);
+  border-radius: 0 6px 6px 0;
+  font-size: 14px;
+}
+.wiki-editor-ok { color: #7fe3a0; }
+.wiki-editor-error { color: #ff8a80; }
+
+.wiki-editor-panes { display: grid; gap: 16px; grid-template-columns: 1fr; }
+.wiki-editor-panes.show-text .wiki-editor-preview { display: none; }
+.wiki-editor-panes.show-preview .wiki-editor-text { display: none; }
+.wiki-editor-text textarea {
+  width: 100%;
+  min-height: 60vh;
+  resize: vertical;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--panel-border);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.55;
+  tab-size: 2;
+}
+.wiki-editor-text textarea:focus { outline: 1px solid var(--gold); border-color: transparent; }
+.wiki-editor-count { margin: 4px 0; font-size: 12px; color: var(--muted); text-align: right; }
+.wiki-editor-count.error { color: #ff8a80; }
+.wiki-editor-help { font-size: 12.5px; }
+.wiki-editor-preview {
+  min-width: 0;
+  padding: 4px 16px 16px;
+  border: 1px dashed var(--panel-border);
+  border-radius: 6px;
+  max-height: 72vh;
+  overflow: auto;
+}
+.wiki-editor-tables summary, .wiki-editor-settings summary { cursor: pointer; font-family: var(--font-display); font-weight: 700; color: var(--gold); }
+.wiki-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.wiki-chip {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.04);
+}
+.wiki-chip:hover { border-color: var(--cyan); color: var(--cyan); }
+
+.wiki-editor-publish { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.wiki-editor-publish label { flex: 1; min-width: 220px; }
+.wiki-editor-publish label span, .wiki-create label span, .wiki-editor-settings label span { display: block; font-size: 13px; color: var(--muted); margin-bottom: 3px; }
+.wiki-editor input, .wiki-editor select {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font: inherit;
+}
+.wiki-editor select option { background: var(--panel-solid); }
+.wiki-editor input[aria-invalid="true"] { border-color: #ff8a80; }
+.wiki-editor-settings { margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--panel-border); }
+.wiki-editor-settings label { display: block; max-width: 320px; margin: 10px 0; }
+
+.wiki-history-list { list-style: none; padding: 0; margin: 0 0 16px; display: grid; gap: 6px; }
+.wiki-history-list button {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.03);
+}
+.wiki-history-list button.active { border-color: var(--gold); background: var(--gold-soft); }
+.wiki-history-list .wiki-badge { margin-left: 8px; }
+.wiki-history-note { display: block; font-size: 13.5px; margin-top: 2px; }
+.wiki-diff-wrap h2 { font-family: var(--font-display); font-size: 18px; color: var(--gold); margin: 8px 0; }
+.wiki-diff {
+  margin: 0 0 12px;
+  padding: 10px 0;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 60vh;
+  overflow: auto;
+}
+.wiki-diff span { display: block; padding: 0 12px; }
+.wiki-diff .add { background: rgba(80, 200, 120, 0.14); color: #a6f0be; }
+.wiki-diff .del { background: rgba(255, 90, 80, 0.14); color: #ffb3ad; }
+.wiki-diff .gap { color: var(--muted); }
+
+.wiki-create { display: grid; gap: 14px; max-width: 520px; margin-top: 16px; }
+.wiki-create small { display: block; margin-top: 3px; }
+.wiki-create-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+/* En pantallas anchas, texto y vista previa lado a lado. */
+@media (min-width: 1100px) {
+  .wiki-tabs .wiki-tab-preview { display: none; }
+  .wiki-editor-panes.show-text, .wiki-editor-panes.show-preview { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .wiki-editor-panes .wiki-editor-text, .wiki-editor-panes .wiki-editor-preview { display: block !important; }
+}
+@media (max-width: 820px) {
+  .wiki-editor-head h1 { font-size: 22px; }
+  .wiki-editor-text textarea { min-height: 55vh; font-size: 14px; }
+  .wiki-editor-publish .wiki-btn { width: 100%; }
+}

@@ -34,6 +34,8 @@ import { SiegeService } from "./war/siege";
 import { LineageService, type LineageEffects, type RebirthInfo } from "./lineage/service";
 import { createMailer, type Mailer } from "./mail";
 import { ipRateKey, RateLimiter } from "./auth/rateLimit";
+import { wikiRoutes } from "./wiki/routes";
+import { WikiService } from "./wiki/service";
 
 /** Versión del servidor; la inyecta esbuild al compilar y en desarrollo vale "dev". */
 declare const __SERVER_VERSION__: string | undefined;
@@ -212,7 +214,10 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   await app.register(alienRoutes, { config, db: deps.db, emperors, discoveries, wars, aliens });
   await app.register(socialRoutes, { config, db: deps.db, emperors, social, hub });
   await app.register(discoveryRoutes, { config, db: deps.db, emperors, discoveries });
-  await app.register(accountRoutes, { config, db: deps.db, hub, space, colonies, humanity, market, sieges, lineage });
+  // Wiki editable por los administradores (ADMIN_EMAILS).
+  const wiki = new WikiService(deps.db);
+  await app.register(wikiRoutes, { config, db: deps.db, wiki });
+  await app.register(accountRoutes, { config, db: deps.db, hub, space, colonies, humanity, market, sieges, lineage, wiki });
   await app.register(colonyRoutes, { config, db: deps.db, emperors, discoveries, colonies, sieges });
 
   // Cola de eventos programados: llegadas de flotas y del Emperador (y, más adelante, construcciones…).

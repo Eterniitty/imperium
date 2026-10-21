@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from "react";
-import { BASE_LOCALES, translate, type I18nKey, type Locale } from "@imperium/shared";
-import { allArticles, getArticle } from "./articles";
-import { anchorId as anchorFor, type Block, type Inline } from "./markdown";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { BASE_LOCALES, translate, type Locale } from "@imperium/shared";
+import { wikiApi } from "./api";
+import { allArticles, EMPTY_REMOTE, getArticle, remoteFrom, wikiIndex, withPage, withPublished, type WikiRemote } from "./articles";
+import type { Block } from "./markdown";
+import { BlockView, type T } from "./render";
 import { searchArticles } from "./search";
-import { buildCards, buildTable } from "./tables";
-import { WIKI_ARTICLES, WIKI_GROUPS, slugFromPath, wikiPath, isWikiSlug, type WikiSlug } from "./slugs";
+import { WIKI_GROUPS, WIKI_HOME, isWikiSlug, routeSlug, wikiPath } from "./slugs";
+import { WikiCreate, WikiEditor } from "./WikiEditor";
 
 /** Misma clave que el juego: el idioma elegido allí vale aquí y al revés. */
 const LOCALE_KEY = "imperium.locale";
@@ -19,247 +21,38 @@ function initialLocale(): Locale {
   return navigator.language.toLowerCase().startsWith("es") ? "es" : "en";
 }
 
-type T = (key: I18nKey, params?: Record<string, string | number>) => string;
-
-/** Ruta interna de un enlace del Markdown (`/wiki/economia#instalaciones`), o null si es externo. */
-function internalHref(href: string): { slug: WikiSlug; hash: string; url: string } | null {
-  if (!href.startsWith("/wiki")) return null;
-  const [path, hash = ""] = href.split("#");
-  const slug = slugFromPath(path!);
-  if (!slug) return null;
-  return { slug, hash, url: wikiPath(slug) + (hash ? `#${hash}` : "") };
-}
-
-function InlineView({ c, go }: { c: Inline[]; go: (url: string) => void }) {
-  return (
-    <>
-      {c.map((i, n) => {
-        switch (i.t) {
-          case "text":
-            return i.v;
-          case "strong":
-            return (
-              <strong key={n}>
-                <InlineView c={i.c} go={go} />
-              </strong>
-            );
-          case "em":
-            return (
-              <em key={n}>
-                <InlineView c={i.c} go={go} />
-              </em>
-            );
-          case "code":
-            return <code key={n}>{i.v}</code>;
-          case "kbd":
-            return <kbd key={n}>{i.v}</kbd>;
-          case "link": {
-            const internal = internalHref(i.href);
-            if (internal)
-              return (
-                <a
-                  key={n}
-                  href={internal.url}
-                  onClick={(e: MouseEvent) => {
-                    if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
-                    e.preventDefault();
-                    go(internal.url);
-                  }}
-                >
-                  <InlineView c={i.c} go={go} />
-                </a>
-              );
-            const same = i.href.startsWith("#") || i.href.startsWith("/");
-            return (
-              <a key={n} href={i.href} {...(same ? {} : { target: "_blank", rel: "noopener" })}>
-                <InlineView c={i.c} go={go} />
-              </a>
-            );
-          }
-        }
-      })}
-    </>
-  );
-}
-
-function BlockView({ b, t, locale, go }: { b: Block; t: T; locale: Locale; go: (url: string) => void }): ReactNode {
-  switch (b.t) {
-    case "h": {
-      const H = `h${b.level}` as "h1" | "h2" | "h3";
-      return (
-        <H id={b.id}>
-          <InlineView c={b.c} go={go} />
-          {b.level > 1 && (
-            <a className="wiki-anchor" href={`#${b.id}`} aria-hidden tabIndex={-1}>
-              #
-            </a>
-          )}
-        </H>
-      );
-    }
-    case "p":
-      return (
-        <p>
-          <InlineView c={b.c} go={go} />
-        </p>
-      );
-    case "ul":
-    case "ol": {
-      const L = b.t;
-      return (
-        <L>
-          {b.items.map((it, n) => (
-            <li key={n}>
-              <InlineView c={it} go={go} />
-            </li>
-          ))}
-        </L>
-      );
-    }
-    case "quote":
-      return (
-        <div className={`wiki-callout wiki-callout-${b.kind}`} role={b.kind === "quote" ? undefined : "note"}>
-          {b.kind !== "quote" && <span className="wiki-callout-label">{t(b.kind === "dev" ? "wiki.inDevelopment" : "wiki.note")}</span>}
-          <InlineView c={b.c} go={go} />
-        </div>
-      );
-    case "table":
-      return (
-        <div className="wiki-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                {b.head.map((h, n) => (
-                  <th key={n}>
-                    <InlineView c={h} go={go} />
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {b.rows.map((r, n) => (
-                <tr key={n}>
-                  {r.map((c, m) => (
-                    <td key={m}>
-                      <InlineView c={c} go={go} />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
-    case "cards": {
-      const cards = buildCards(b.id, locale);
-      if (!cards) return null;
-      return (
-        <div className="wiki-cards" data-cards={b.id}>
-          {cards.map((c) => (
-            <section key={c.title} className="wiki-card" style={c.color ? { borderLeft: `3px solid ${c.color}` } : undefined}>
-              <header>
-                {c.color && <span className="wiki-card-dot" style={{ background: c.color, boxShadow: `0 0 10px ${c.color}` }} />}
-                <h3 id={anchorFor(c.title)}>{c.title}</h3>
-                <span className="wiki-badge">{c.badge}</span>
-              </header>
-              <p className="wiki-card-motto">{c.subtitle}</p>
-              <p>{c.text}</p>
-              {c.facts && c.facts.length > 0 && (
-                <dl className="wiki-card-facts">
-                  {c.facts.map(([k, v]) => (
-                    <div key={k}>
-                      <dt>{k}</dt>
-                      <dd>{v}</dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
-              {c.table && (
-                <div className="wiki-table-wrap">
-                  <table className="wiki-gen">
-                    <thead>
-                      <tr>
-                        {c.table.head.map((h, n) => (
-                          <th key={n} className={c.table!.numeric?.includes(n) ? "num" : undefined}>
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {c.table.rows.map((r, i) => (
-                        <tr key={i}>
-                          {r.map((cell, n) => (
-                            <td key={n} className={c.table!.numeric?.includes(n) ? "num" : undefined}>
-                              {cell}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-              {c.items.length > 0 && (
-                <ul>
-                  {c.items.map((i) => (
-                    <li key={i.name}>
-                      <strong>{i.name}</strong> <span className="wiki-badge small">{i.badge}</span> — {i.text}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          ))}
-          <p className="wiki-gen-note">{t("wiki.generated")}</p>
-        </div>
-      );
-    }
-    case "gen": {
-      const table = buildTable(b.id, locale);
-      if (!table) return null;
-      return (
-        <div className="wiki-table-wrap">
-          <table className="wiki-gen" data-table={b.id}>
-            <thead>
-              <tr>
-                {table.head.map((h, n) => (
-                  <th key={n} className={table.numeric?.includes(n) ? "num" : undefined}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {table.rows.map((r, n) => (
-                <tr key={n}>
-                  {r.map((c, m) => (
-                    <td key={m} className={table.numeric?.includes(m) ? "num" : undefined}>
-                      {c}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="wiki-gen-note">{t("wiki.generated")}</p>
-        </div>
-      );
-    }
-  }
-}
-
 export function WikiApp() {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
-  const [path, setPath] = useState(() => location.pathname);
+  const [url, setUrl] = useState(() => ({ path: location.pathname, search: location.search }));
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  // Ediciones publicadas, artículos nuevos u ocultos y si la sesión es de un administrador.
+  const [remote, setRemote] = useState<WikiRemote>(EMPTY_REMOTE);
+  const [loaded, setLoaded] = useState(false);
+  const [mode, setMode] = useState<"view" | "edit" | "create">("view");
+  const dirty = useRef(false);
   const t: T = (key, params) => translate(locale, key, params);
 
-  const slug = slugFromPath(path);
-  const article = slug ? getArticle(locale, slug) : null;
-  const articles = useMemo(() => allArticles(locale), [locale]);
+  const admin = remote.admin;
+  const entries = useMemo(() => wikiIndex(remote, admin), [remote, admin]);
+  const slug = routeSlug(url.path, url.search);
+  const entry = slug ? entries.find((e) => e.slug === slug) : undefined;
+  const article = entry ? getArticle(locale, entry.slug, remote) : null;
+  const articles = useMemo(() => allArticles(locale, remote, admin), [locale, remote, admin]);
   const hits = useMemo(() => searchArticles(articles, query), [articles, query]);
+
+  // La versión publicada (con las ediciones de los administradores). Si falla, se queda lo del repositorio.
+  useEffect(() => {
+    let live = true;
+    void wikiApi.state().then((res) => {
+      if (!live) return;
+      if (res.ok) setRemote(remoteFrom(res.data));
+      setLoaded(true);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   const setLocale = (l: Locale) => {
     try {
@@ -270,12 +63,15 @@ export function WikiApp() {
     setLocaleState(l);
   };
 
-  const go = (url: string) => {
-    history.pushState(null, "", url);
-    setPath(location.pathname);
+  const go = (to: string) => {
+    if (mode !== "view" && dirty.current && !confirm(t("wiki.edit.unsaved"))) return;
+    history.pushState(null, "", to);
+    setUrl({ path: location.pathname, search: location.search });
     setQuery("");
     setMenuOpen(false);
-    const hash = url.split("#")[1];
+    setMode("view");
+    dirty.current = false;
+    const hash = to.split("#")[1];
     requestAnimationFrame(() => {
       const el = hash ? document.getElementById(hash) : null;
       if (el) el.scrollIntoView();
@@ -284,7 +80,10 @@ export function WikiApp() {
   };
 
   useEffect(() => {
-    const onPop = () => setPath(location.pathname);
+    const onPop = () => {
+      setUrl({ path: location.pathname, search: location.search });
+      setMode("view");
+    };
     addEventListener("popstate", onPop);
     return () => removeEventListener("popstate", onPop);
   }, []);
@@ -297,16 +96,17 @@ export function WikiApp() {
   // Al cargar con un #ancla, ir a ella cuando el artículo ya está dibujado.
   useEffect(() => {
     if (location.hash) document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView();
-  }, []);
+  }, [loaded]);
 
-  const index = WIKI_ARTICLES.findIndex((a) => a.slug === slug);
-  const prev = index > 0 ? WIKI_ARTICLES[index - 1]!.slug : null;
-  const next = index >= 0 && index < WIKI_ARTICLES.length - 1 ? WIKI_ARTICLES[index + 1]!.slug : null;
-  const navLink = (s: WikiSlug, children: ReactNode, className?: string) => (
+  const index = entries.findIndex((e) => e.slug === slug);
+  const prev = index > 0 ? entries[index - 1]!.slug : null;
+  const next = index >= 0 && index < entries.length - 1 ? entries[index + 1]!.slug : null;
+  const titleOf = (s: string) => getArticle(locale, s, remote)?.title ?? s;
+  const navLink = (s: string, children: ReactNode, className?: string) => (
     <a
       className={className}
       href={wikiPath(s)}
-      aria-current={s === slug && !query ? "page" : undefined}
+      aria-current={s === slug && !query && mode === "view" ? "page" : undefined}
       onClick={(e) => {
         if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
         e.preventDefault();
@@ -318,6 +118,89 @@ export function WikiApp() {
   );
   const toc = article ? article.blocks.filter((b): b is Extract<Block, { t: "h" }> => b.t === "h" && b.level === 2) : [];
 
+  let main: ReactNode;
+  if (query.trim()) {
+    main = (
+      <section className="wiki-results" aria-live="polite">
+        <h1>{t("wiki.results", { q: query.trim() })}</h1>
+        {hits.length === 0 ? (
+          <p className="muted">{t("wiki.noResults", { q: query.trim() })}</p>
+        ) : (
+          <ul>
+            {hits.map((h) => (
+              <li key={h.slug}>
+                {navLink(h.slug, h.title)}
+                <p className="muted">{h.snippet}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    );
+  } else if (mode === "create" && admin) {
+    main = (
+      <WikiCreate
+        locale={locale}
+        t={t}
+        onCancel={() => setMode("view")}
+        onCreated={(page, published) => {
+          setRemote((r) => (published ? withPublished(withPage(r, page), published) : withPage(r, page)));
+          history.pushState(null, "", wikiPath(page.slug));
+          setUrl({ path: location.pathname, search: location.search });
+          setMode("edit");
+        }}
+      />
+    );
+  } else if (mode === "edit" && admin && entry) {
+    main = (
+      <WikiEditor
+        key={entry.slug}
+        slug={entry.slug}
+        locale={locale}
+        remote={remote}
+        t={t}
+        go={() => {}}
+        onDirty={(d) => {
+          dirty.current = d;
+        }}
+        onPublished={(p) => setRemote((r) => withPublished(r, p))}
+        onPage={(p) => setRemote((r) => withPage(r, p))}
+        onClose={() => {
+          dirty.current = false;
+          setMode("view");
+        }}
+      />
+    );
+  } else if (article && entry) {
+    main = (
+      <article className="wiki-article">
+        {admin && (
+          <div className="wiki-admin-bar">
+            {entry.hidden && <span className="wiki-badge">{t("wiki.edit.hidden")}</span>}
+            <button className="wiki-btn" onClick={() => setMode("edit")} title={t("wiki.edit.editTitle")}>
+              ✎ {t("wiki.edit.edit")}
+            </button>
+          </div>
+        )}
+        {article.blocks.map((b, n) => (
+          <BlockView key={n} b={b} t={t} locale={locale} go={go} />
+        ))}
+        <nav className="wiki-pager">
+          {prev ? navLink(prev, <>← {titleOf(prev)}</>, "prev") : <span />}
+          {next ? navLink(next, <>{titleOf(next)} →</>, "next") : <span />}
+        </nav>
+      </article>
+    );
+  } else {
+    main = (
+      <article className="wiki-article">
+        <h1>{t("wiki.title")}</h1>
+        {/* Un artículo nuevo solo se conoce tras preguntar a la API. */}
+        <p>{slug && !isWikiSlug(slug) && !loaded ? t("wiki.loading") : t("wiki.notFound")}</p>
+      </article>
+    );
+  }
+
   return (
     <div className="wiki">
       <header className="wiki-top">
@@ -325,7 +208,7 @@ export function WikiApp() {
           ☰
         </button>
         {navLink(
-          "inicio",
+          WIKI_HOME,
           <>
             <span className="wiki-brand-mark">✦</span> {t("app.title")} <span className="wiki-brand-sub">{t("wiki.title")}</span>
           </>,
@@ -353,26 +236,45 @@ export function WikiApp() {
 
       <div className="wiki-body">
         <nav id="wiki-nav" className={menuOpen ? "wiki-nav open" : "wiki-nav"} aria-label={t("wiki.menu")}>
+          {admin && (
+            <section className="wiki-nav-admin">
+              <h2>{t("wiki.edit.admin")}</h2>
+              <button
+                className="wiki-btn"
+                onClick={() => {
+                  if (mode === "edit" && dirty.current && !confirm(t("wiki.edit.unsaved"))) return;
+                  dirty.current = false;
+                  setQuery("");
+                  setMenuOpen(false);
+                  setMode("create");
+                }}
+              >
+                + {t("wiki.edit.newArticle")}
+              </button>
+            </section>
+          )}
           {WIKI_GROUPS.map((g) => (
             <section key={g}>
               <h2>{t(`wiki.group.${g}`)}</h2>
               <ul>
-                {WIKI_ARTICLES.filter((a) => a.group === g).map((a) => (
-                  <li key={a.slug}>
-                    {navLink(a.slug, getArticle(locale, a.slug)?.title ?? a.slug)}
-                    {a.slug === slug && !query && toc.length > 1 && (
-                      <ul className="wiki-toc" aria-label={t("wiki.contents")}>
-                        {toc.map((h) => (
-                          <li key={h.id}>
-                            <a href={`#${h.id}`} onClick={() => setMenuOpen(false)}>
-                              {h.text}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                ))}
+                {entries
+                  .filter((e) => e.group === g)
+                  .map((e) => (
+                    <li key={e.slug} className={e.hidden ? "hidden-article" : undefined}>
+                      {navLink(e.slug, titleOf(e.slug))}
+                      {e.slug === slug && !query && mode === "view" && toc.length > 1 && (
+                        <ul className="wiki-toc" aria-label={t("wiki.contents")}>
+                          {toc.map((h) => (
+                            <li key={h.id}>
+                              <a href={`#${h.id}`} onClick={() => setMenuOpen(false)}>
+                                {h.text}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  ))}
               </ul>
             </section>
           ))}
@@ -381,40 +283,7 @@ export function WikiApp() {
           </a>
         </nav>
 
-        <main className="wiki-main">
-          {query.trim() ? (
-            <section className="wiki-results" aria-live="polite">
-              <h1>{t("wiki.results", { q: query.trim() })}</h1>
-              {hits.length === 0 ? (
-                <p className="muted">{t("wiki.noResults", { q: query.trim() })}</p>
-              ) : (
-                <ul>
-                  {hits.map((h) => (
-                    <li key={h.slug}>
-                      {isWikiSlug(h.slug) && navLink(h.slug, h.title)}
-                      <p className="muted">{h.snippet}</p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          ) : article ? (
-            <article className="wiki-article">
-              {article.blocks.map((b, n) => (
-                <BlockView key={n} b={b} t={t} locale={locale} go={go} />
-              ))}
-              <nav className="wiki-pager">
-                {prev ? navLink(prev, <>← {getArticle(locale, prev)?.title}</>, "prev") : <span />}
-                {next ? navLink(next, <>{getArticle(locale, next)?.title} →</>, "next") : <span />}
-              </nav>
-            </article>
-          ) : (
-            <article className="wiki-article">
-              <h1>{t("wiki.title")}</h1>
-              <p>{t("wiki.notFound")}</p>
-            </article>
-          )}
-        </main>
+        <main className="wiki-main">{main}</main>
       </div>
     </div>
   );

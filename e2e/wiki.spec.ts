@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { lastLoginLink } from "./mail";
 
 const SHOTS = "test-results/capturas";
 
@@ -98,5 +99,101 @@ test("Wiki: especies alienígenas e IA y territorios, con tablas generadas", asy
   await expect(page.getByRole("heading", { level: 1, name: "Carroñeros" })).toBeVisible();
   await expect(page.locator('table[data-table="carroneros-peligro"]').getByRole("cell", { name: "Nave nodriza (50 %)" })).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/wiki-carroneros.png`, fullPage: true });
+  expect(errors).toEqual([]);
+});
+
+test("Wiki: panel de edición para administradores (editar, historial, restaurar, artículo nuevo y ocultarlo)", async ({ page, browser }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("dialog", (d) => void d.accept());
+
+  // Sin sesión no hay panel.
+  await page.goto("/wiki/leyes");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Editar/ })).toHaveCount(0);
+
+  // Entra con la cuenta de administrador (ADMIN_EMAILS del servidor de pruebas): la Wiki usa la misma sesión.
+  const email = "wiki-admin@aeonarch.test";
+  await page.goto("/");
+  await page.getByLabel("Correo electrónico").fill(email);
+  await page.getByRole("checkbox", { name: /acepto los términos/ }).check();
+  await page.getByRole("button", { name: "Enviar enlace de acceso" }).click();
+  const link = await lastLoginLink(email);
+  await page.goto("about:blank");
+  await page.goto(link);
+  await page.getByRole("button", { name: "Entrar", exact: true }).click();
+  await expect(page.getByLabel("Nombre del Emperador")).toBeVisible();
+
+  // Editar «Las tres leyes»: vista previa en vivo y publicar.
+  await page.goto("/wiki/leyes");
+  await page.getByRole("button", { name: /Editar/ }).click();
+  const text = page.getByLabel(/Texto del artículo en Markdown/);
+  const original = await text.inputValue();
+  await text.fill(`${original}\n\nLínea añadida en la prueba.\n\n{{tabla:minas}}`);
+  await expect(page.locator(".wiki-editor-preview").getByText("Línea añadida en la prueba.")).toBeVisible();
+  await expect(page.locator('.wiki-editor-preview table[data-table="minas"]')).toBeVisible();
+  await page.getByLabel("Nota de la edición").fill("prueba e2e");
+  await page.screenshot({ path: `${SHOTS}/wiki-editor.png`, fullPage: true });
+  await page.getByRole("button", { name: "Publicar" }).click();
+  await expect(page.getByText("Publicado.")).toBeVisible();
+  // Aviso: el inglés es anterior a esta edición en español.
+  await expect(page.getByText(/La versión en inglés es anterior/)).toBeVisible();
+  await page.getByRole("button", { name: "Cerrar el editor" }).click();
+  await expect(page.locator(".wiki-article").getByText("Línea añadida en la prueba.")).toBeVisible();
+
+  // Cualquiera (sin sesión) ve la versión publicada.
+  const anon = await browser.newContext();
+  const other = await anon.newPage();
+  await other.goto("/wiki/leyes");
+  await expect(other.locator(".wiki-article").getByText("Línea añadida en la prueba.")).toBeVisible();
+
+  // Historial: diferencias con el texto del repositorio y volver a él.
+  await page.getByRole("button", { name: /Editar/ }).click();
+  await page.getByRole("tab", { name: "Historial" }).click();
+  await expect(page.getByText("prueba e2e")).toBeVisible();
+  await page.getByRole("button", { name: /Texto del repositorio/ }).click();
+  await expect(page.getByTestId("wiki-diff").getByText("− Línea añadida en la prueba.")).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/wiki-historial.png`, fullPage: true });
+  await page.getByRole("button", { name: "Restaurar esta versión" }).click();
+  await expect(page.getByText("Publicado.")).toBeVisible();
+  await page.getByRole("button", { name: "Cerrar el editor" }).click();
+  await expect(page.locator(".wiki-article").getByText("Línea añadida en la prueba.")).toHaveCount(0);
+
+  // Artículo nuevo, con una tabla del juego; se carga también directamente.
+  await page.getByRole("button", { name: /Artículo nuevo/ }).click();
+  await page.getByLabel("Título").fill("Rutas de prueba");
+  await page.getByLabel("Dirección").fill("rutas-prueba");
+  await page.getByLabel("Grupo del índice").selectOption("empire");
+  await page.getByRole("button", { name: "Crear" }).click();
+  await expect(page).toHaveURL(/\/wiki\/\?p=rutas-prueba$/);
+  await page.getByLabel(/Texto del artículo en Markdown/).fill("# Rutas de prueba\n\nUn artículo nuevo.\n\n{{tabla:minas}}");
+  await page.getByRole("button", { name: "Publicar" }).click();
+  await expect(page.getByText("Publicado.")).toBeVisible();
+  await page.getByRole("button", { name: "Cerrar el editor" }).click();
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1, name: "Rutas de prueba" })).toBeVisible();
+  await expect(page.locator('.wiki-article table[data-table="minas"]')).toBeVisible();
+  await expect(page.locator("#wiki-nav").getByRole("link", { name: "Rutas de prueba" })).toBeVisible();
+
+  // Ocultarlo: los demás dejan de verlo.
+  await page.getByRole("button", { name: /Editar/ }).click();
+  await page.getByText("Artículo", { exact: true }).click();
+  await page.getByRole("button", { name: "Ocultar el artículo" }).click();
+  await expect(page.getByText("Artículo oculto: solo lo ven los administradores.")).toBeVisible();
+  await other.goto("/wiki/?p=rutas-prueba");
+  await expect(other.getByText("Ese artículo no existe")).toBeVisible();
+  await anon.close();
+
+  // En el móvil el editor cabe sin desbordar.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/wiki/leyes");
+  await page.getByRole("button", { name: /Editar/ }).click();
+  await expect(page.getByLabel(/Texto del artículo en Markdown/)).toBeVisible();
+  await page.getByRole("tab", { name: "Vista previa" }).click();
+  await expect(page.locator(".wiki-editor-preview h1")).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/wiki-editor-movil.png`, fullPage: false });
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
   expect(errors).toEqual([]);
 });

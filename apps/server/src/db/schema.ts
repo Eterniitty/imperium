@@ -811,3 +811,80 @@ export const emperorDeaths = pgTable(
     check("emperor_deaths_rebirth", sql`${t.rebirthKind} IS NULL OR ${t.rebirthKind} IN ('cradle', 'core', 'heir')`),
   ],
 );
+
+/**
+ * Wiki: revisiones de los artículos editados desde el panel de administración.
+ * Solo inserción (un disparador de la migración impide modificarlas o borrarlas;
+ * solo permite dejar anónimo al autor). La versión publicada de un artículo en
+ * un idioma es su última revisión; si no tiene, el Markdown del repositorio.
+ * Al borrar la cuenta del autor, la revisión se conserva (es contenido público)
+ * con el autor anónimo.
+ */
+export const wikiRevisions = pgTable(
+  "wiki_revisions",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    slug: text("slug").notNull(),
+    locale: text("locale").notNull(),
+    /** Markdown completo del artículo. */
+    body: text("body").notNull(),
+    note: text("note").notNull().default(""),
+    authorId: uuid("author_id").references(() => accounts.id, { onDelete: "set null" }),
+    /** Nombre del Emperador (o correo enmascarado) al editar; null si la cuenta se borró. */
+    authorLabel: text("author_label"),
+    /** Revisión cuyo texto se restauró, si esta es una restauración. */
+    restoredFrom: bigint("restored_from", { mode: "number" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("wiki_revisions_article_idx").on(t.slug, t.locale, t.id),
+    index("wiki_revisions_author_idx").on(t.authorId),
+    check("wiki_revisions_locale", sql`${t.locale} IN ('es', 'en')`),
+  ],
+);
+
+/**
+ * Wiki: datos de los artículos creados desde el panel y de los del repositorio a
+ * los que se cambió el grupo del índice o se ocultaron.
+ */
+export const wikiPages = pgTable(
+  "wiki_pages",
+  {
+    slug: text("slug").primaryKey(),
+    group: text("group").notNull(),
+    hidden: boolean("hidden").notNull().default(false),
+    /** Creado desde el panel (no está en el repositorio). */
+    custom: boolean("custom").notNull().default(false),
+    /** Orden de los artículos nuevos dentro de su grupo. */
+    position: integer("position").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [check("wiki_pages_group", sql`${t.group} IN ('start', 'world', 'ship', 'empire', 'war', 'people')`)],
+);
+
+/**
+ * Wiki: registro de quién cambió qué (ediciones, restauraciones, artículos
+ * nuevos, ocultar y mostrar, cambios de grupo). Solo inserción, como las revisiones.
+ */
+export const wikiLog = pgTable(
+  "wiki_log",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    /** save | restore | create | hide | show | group */
+    action: text("action").notNull(),
+    slug: text("slug").notNull(),
+    locale: text("locale"),
+    revisionId: bigint("revision_id", { mode: "number" }),
+    /** Detalle (p. ej. el grupo nuevo). */
+    detail: text("detail"),
+    authorId: uuid("author_id").references(() => accounts.id, { onDelete: "set null" }),
+    authorLabel: text("author_label"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("wiki_log_slug_idx").on(t.slug, t.id),
+    index("wiki_log_author_idx").on(t.authorId),
+    check("wiki_log_action", sql`${t.action} IN ('save', 'restore', 'create', 'hide', 'show', 'group')`),
+  ],
+);
