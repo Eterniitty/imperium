@@ -486,3 +486,18 @@ export const SHIP_COLLISION = {
   /** Parte de la velocidad de acercamiento que se devuelve al rebotar (0: se para, 1: rebote perfecto). */
   restitution: 0.3,
 } as const;
+
+/**
+ * Choques contra la estrella, planetas, lunas y asteroides (los detecta el
+ * servidor con las posiciones del piloto): si la nave llega a la superficie a
+ * más de `minImpactMps` respecto al cuerpo, recibe `damagePerMps` por cada m/s
+ * por encima de ese umbral, sin tope (estrellarse a toda velocidad destruye la
+ * nave), como mucho una vez cada `cooldownSec`. Aterrizar o rozar despacio no hace daño.
+ */
+export const BODY_COLLISION = {
+  minImpactMps: 20,
+  damagePerMps: 0.5,
+  cooldownSec: 1.5,
+  /** Margen (m) sobre la superficie en el que se cuenta el contacto (desfase de reloj entre cliente y servidor). */
+  contactSlackM: 80,
+} as const;

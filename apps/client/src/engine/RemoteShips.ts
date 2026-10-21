@@ -163,10 +163,12 @@ export class RemoteShips {
   /**
    * Choques de la nave propia contra las demás (el daño lo pone el servidor):
    * si se tocan (suma de los radios de impacto, como en el servidor), la nave
-   * propia se aparta y rebota (`SHIP_COLLISION.restitution`).
+   * propia se aparta y rebota (`SHIP_COLLISION.restitution`). Devuelve la
+   * velocidad de acercamiento del choque más fuerte (m/s; 0 si no hubo).
    */
-  collide(pos: THREE.Vector3, vel: THREE.Vector3, radius: number): void {
+  collide(pos: THREE.Vector3, vel: THREE.Vector3, radius: number): number {
     const { ships } = spaceStore.getState();
+    let impact = 0;
     for (const [id, v] of this.visuals) {
       const s = ships[id]?.state;
       if (!s) continue;
@@ -182,7 +184,9 @@ export class RemoteShips {
       const otherV = this.velocityOf(id) ?? new THREE.Vector3();
       const closing = vel.clone().sub(otherV).dot(n);
       if (closing < 0) vel.addScaledVector(n, -closing * (1 + SHIP_COLLISION.restitution));
+      impact = Math.max(impact, -closing);
     }
+    return impact;
   }
 
   /** Retraso con que se dibujan las naves ajenas (s): para adelantar su posición al apuntar. */

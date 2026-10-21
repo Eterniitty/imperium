@@ -80,6 +80,21 @@ Orden de construcción de lo que pide [diseno.md](diseno.md). Cada fase se divid
 - Organizaciones y miembros. Descubrimientos compartidos y publicables.
 - Traducción comunitaria: personal > organización > pública (votación y moderación) > base.
 
+## Cola autónoma (21-10-2026, tarde)
+
+El usuario delegó el orden: se sigue esta cola sin pedir permiso, un solo agente, copia de seguridad antes de cada punto, `pnpm typecheck` y `pnpm build`, commit, fusionar en `main`, desplegar y marcar. Lo hecho hoy por la tarde (grieta y túnel, insignia de 320 m, espacio profundo y minería, alta con compañero, salto autónomo, crucero, puntería y choques nave-nave) ya está en `main` y desplegado; **nada de eso se ha probado jugando**.
+
+1. [x] **Choques contra cuerpos con daño**: planetas, lunas y asteroides dañan según la velocidad de impacto (umbral para aterrizar o rozar despacio sin daño), autoritativo en el servidor como `SHIP_COLLISION`.
+2. [ ] **Calor de las estrellas**: zona de calor según la clase (escudos y luego casco, cada vez más rápido), aviso en el HUD, el pulso se apaga antes de la zona mortal, agujero negro = destrucción al cruzar el horizonte; cálculo en el servidor (muerte y linaje de la Fase 10).
+3. [ ] **Limitador de destellos** (fotosensibilidad): tope global de destellos por segundo, sin rojo saturado parpadeante, saltos de brillo suavizados en explosiones, impactos, grieta y túnel.
+4. [ ] **Qué hacer mientras viajas**, en orden: puente de mando en el túnel; órdenes tácticas en batallas a distancia; pilotar otras naves de tus flotas a distancia; gestión más profunda de colonias; sondas de exploración a distancia.
+5. [ ] **Nave nodriza**: clase capital portanaves; la nave del Emperador se acopla en su hangar (aproximación y anclaje en 3D, tecla de acoplar) y recarga combustible, munición y energía desde la bodega de la flota.
+6. [ ] **9d. IA de naves** (`docs/ia-naves.md`): pilotaje 3D de piratas y alienígenas, tácticas de grupo, emboscadas; combate pilotado contra naves alienígenas.
+7. [ ] **9c. Combate a gran escala**: por encima de ~5 naves por bando, el combate en tiempo real pasa a rondas.
+8. [ ] **Conquista instalación a instalación** y **red de suministro** (9b/8): la Cuna como objetivo propio, instalaciones aisladas que se debilitan.
+9. [ ] **Emperadores IA completos**: guerra, compañeros y gobierno de colonias de jugadores ausentes.
+10. [ ] **Zonas de interés** por sector en el WebSocket (masividad).
+
 ## Antes de abrir al público (obligatorio, en paralelo)
 
 Lista de `docs/despliegue.md`: estáticos desde Cloudflare, 80/443 solo desde Cloudflare, límites por IP y cuenta, vigilante de tráfico saliente con corte automático. Además: dominio propio, HTTPS, correo real (SMTP con SPF/DKIM/DMARC) y `APP_ENV=production`.

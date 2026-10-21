@@ -1,5 +1,5 @@
-import { AIM_ASSIST, EMPEROR_FLAGSHIP, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, getAlienShipClass, MINING, PIRATE_AI } from "@imperium/content";
-import { isDeepId, type ServerMessage, type ShipPose, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
+import { AIM_ASSIST, BODY_COLLISION, EMPEROR_FLAGSHIP, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, getAlienShipClass, MINING, PIRATE_AI } from "@imperium/content";
+import { IMPACT_CAUSE, isDeepId, type ServerMessage, type ShipPose, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
 import { addToHold, bodiesAt, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { EmperorService } from "../emperor/service";
@@ -60,6 +60,8 @@ interface Member {
   minePending?: boolean;
   /** Refinado en curso (una operación a la vez). */
   refinePending?: boolean;
+  /** Hasta cuándo no cuenta otro choque contra un cuerpo (`BODY_COLLISION.cooldownSec`). */
+  bodyBumpUntil?: number;
 }
 
 const TICK_MS = 100;
@@ -298,11 +300,61 @@ export class SpaceService {
       client.send({ t: "poseRejected", ...m.pose });
       return;
     }
+    this.collideBodies(m, pose, t);
+    if (this.members.get(m.emperorId) !== m) return;
     m.pose = pose;
     m.poseAt = t;
     m.history.push({ t, p: pose.p });
     if (m.history.length > HISTORY_SIZE) m.history.shift();
     m.dirty = true;
+  }
+
+  /**
+   * Choques contra la estrella, planetas, lunas y asteroides. El cliente mantiene
+   * la nave sobre la superficie y le quita la velocidad hacia dentro; aquí se ve
+   * en dos posiciones seguidas: la nueva toca un cuerpo y, respecto a él, la nave
+   * ha perdido de golpe la velocidad hacia dentro que traía en la anterior. El
+   * daño depende de esa velocidad (`BODY_COLLISION`).
+   */
+  private collideBodies(m: Member, pose: ShipPose, now: number): void {
+    if (now < (m.bodyBumpUntil ?? 0)) return;
+    let impact = 0;
+    for (const c of this.contactBodies(m.systemId, now)) {
+      const d = distance(pose.p, c.center);
+      if (d > c.reach + BODY_COLLISION.contactSlackM || d < 1e-3) continue;
+      const n: Vec3 = [(pose.p[0] - c.center[0]) / d, (pose.p[1] - c.center[1]) / d, (pose.p[2] - c.center[2]) / d];
+      const inward = (v: Vec3) => -((v[0] - c.v[0]) * n[0] + (v[1] - c.v[1]) * n[1] + (v[2] - c.v[2]) * n[2]);
+      const before = inward(m.pose.v);
+      if (before > impact && inward(pose.v) < before * 0.5) impact = before;
+    }
+    if (impact < BODY_COLLISION.minImpactMps) return;
+    m.bodyBumpUntil = now + BODY_COLLISION.cooldownSec * 1000;
+    const destroyed = m.combat.damage((impact - BODY_COLLISION.minImpactMps) * BODY_COLLISION.damagePerMps, now);
+    this.broadcastState(m);
+    if (destroyed) void this.destroy(m, IMPACT_CAUSE);
+  }
+
+  /** Cuerpos sólidos de un sistema o región con su velocidad (m/s) y la distancia de contacto desde su centro. */
+  private contactBodies(systemId: string, now: number): Array<{ center: Vec3; v: Vec3; reach: number }> {
+    if (isDeepId(systemId)) {
+      // Los asteroides no se mueven; el cliente los encoge al minarlos (por eso el margen sale de su radio inicial).
+      const region = this.deep?.region(systemId);
+      return (region?.asteroids ?? []).map((a) => ({ center: a.p, v: [0, 0, 0], reach: a.r * 0.85 + FLAGSHIP_HIT_RADIUS_M }));
+    }
+    const layout = this.layout(systemId);
+    if (!layout) return [];
+    const at = bodiesAt(layout, now);
+    const before = bodiesAt(layout, now - 500);
+    return at.map((b, i) => {
+      const [x = 0, y = 0, z = 0] = b.center;
+      const [px = 0, py = 0, pz = 0] = before[i]!.center;
+      return {
+        center: [x, y, z],
+        v: [(x - px) * 2, (y - py) * 2, (z - pz) * 2],
+        // El mismo contacto que el cliente (`SystemView.collide`).
+        reach: b.body.kind === "star" ? b.radius * 1.05 : b.radius + FLAGSHIP_LENGTH_M * 0.6,
+      };
+    });
   }
 
   /**

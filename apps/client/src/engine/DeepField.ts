@@ -192,10 +192,11 @@ export class DeepField {
   }
 
   /** Empuja la nave fuera de las rocas (y le quita la velocidad hacia dentro). */
-  collide(pos: THREE.Vector3, velocity: THREE.Vector3, margin: number): void {
+  collide(pos: THREE.Vector3, velocity: THREE.Vector3, margin: number): number {
     const region = this.region;
-    if (!region) return;
+    if (!region) return 0;
     const n = new THREE.Vector3();
+    let impact = 0;
     for (const a of region.asteroids) {
       const r = this.visibleRadius(a.i) * 0.85 + margin;
       n.set(pos.x - a.p[0], pos.y - a.p[1], pos.z - a.p[2]);
@@ -205,7 +206,9 @@ export class DeepField {
       pos.set(a.p[0] + n.x * r, a.p[1] + n.y * r, a.p[2] + n.z * r);
       const inward = velocity.dot(n);
       if (inward < 0) velocity.addScaledVector(n, -inward);
+      impact = Math.max(impact, -inward);
     }
+    return impact;
   }
 
   /**

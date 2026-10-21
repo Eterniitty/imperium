@@ -46,7 +46,11 @@ The hull **does not heal by leaving the system**: the crew repairs it slowly and
 
 ## Collisions
 
-Ships **collide** with each other: two ships that touch while closing in take damage according to the impact speed and bounce off. Against planets, moons and asteroids the ship stops at the surface (no damage).
+Ships **collide** with each other: two ships that touch while closing in take damage according to the impact speed and bounce off.
+
+Against the star, planets, moons and asteroids the ship stops at the surface and, if it arrives fast, **it is damaged too**: damage grows with the impact speed and has no cap, so crashing at full speed destroys the ship. Landing or grazing slowly does no damage. A hard hit shakes the camera (unless "reduce effects" is on). If the ship is lost this way, the cause of death is "crash".
+
+{{tabla:choques}}
 
 ## Scavengers
 

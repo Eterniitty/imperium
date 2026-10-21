@@ -11,7 +11,7 @@ import { RemoteShips } from "./RemoteShips";
 import { FleetScene } from "./FleetScene";
 import { Effects } from "./Effects";
 import { worldStore } from "../net/world";
-import { EMPEROR_FLAGSHIP, FLIGHT_MODEL, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_SUPPLIES, MINING, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC, QUANTUM_RIFT } from "@imperium/content";
+import { BODY_COLLISION, EMPEROR_FLAGSHIP, FLIGHT_MODEL, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_SUPPLIES, MINING, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC, QUANTUM_RIFT, SHIP_COLLISION } from "@imperium/content";
 import { playQuantumCharge, playQuantumTear, stopQuantumCharge } from "../audio/quantumSfx";
 import { playEngineStart, playEngineStop, stopEngineSound } from "../audio/engineSfx";
 import { RiftField } from "./fx/riftPortal";
@@ -151,6 +151,8 @@ export class SystemView implements View {
   private pendingEmerge = new Map<string, { at: THREE.Vector3; t: number }>();
   /** Sacudida de la cámara aplicada en el último fotograma (se deshace antes de colocarla). */
   private shakeQ = new THREE.Quaternion();
+  /** Sacudida por un choque (0–1); se apaga en medio segundo. */
+  private impactShake = 0;
   /**
    * Motores de la nave propia: al tomar los mandos están apagados y hay que
    * arrancarlos (tecla «engines»); `t` es el tiempo en el estado actual.
@@ -1218,7 +1220,7 @@ export class SystemView implements View {
    * grieta y al salir del rayo, con una sacudida breve al condensarse la nave.
    * Con «reducir efectos», sin sacudida y con la mitad de apertura.
    */
-  private updateCameraFx(): void {
+  private updateCameraFx(dt: number): void {
     const reduce = settingsStore.getState().prefs.reduceEffects;
     let kick = 0;
     let shake = 0;
@@ -1234,6 +1236,10 @@ export class SystemView implements View {
         const c = tb - QUANTUM_RIFT.arriveBeamSec * 0.6;
         shake = c > 0 ? Math.exp(-c * 9) : 0;
       }
+    }
+    if (this.impactShake > 0) {
+      shake = Math.max(shake, this.impactShake * 1.6);
+      this.impactShake = Math.max(0, this.impactShake - dt * 2);
     }
     if (reduce) {
       kick *= 0.5;
@@ -1345,11 +1351,13 @@ export class SystemView implements View {
   /**
    * Evita atravesar la estrella, los planetas y las lunas: la nave se queda
    * sobre su superficie (con el radio físico, el mismo de la gravedad) y pierde
-   * la velocidad que llevaba hacia dentro.
+   * la velocidad que llevaba hacia dentro. Un golpe fuerte sacude la cámara
+   * (el daño lo pone el servidor: `BODY_COLLISION` y `SHIP_COLLISION`).
    */
   private collide(): void {
     const ship = this.ship!;
     const normal = new THREE.Vector3();
+    let hit = 0;
     for (const b of this.bodies()) {
       const radius = b.body.kind === "star" ? b.radius * 1.05 : b.radius + FLAGSHIP_LENGTH_M * 0.6;
       const d = ship.position.distanceTo(b.center);
@@ -1359,11 +1367,14 @@ export class SystemView implements View {
       const v = this.flight!.velocity;
       const inward = v.dot(normal);
       if (inward < 0) v.addScaledVector(normal, -inward);
+      hit = Math.max(hit, -inward - BODY_COLLISION.minImpactMps);
     }
     // Asteroides del espacio profundo.
-    if (this.deepId) this.deep.collide(ship.position, this.flight!.velocity, FLAGSHIP_HIT_RADIUS_M);
-    // Otras naves (el daño del choque lo calcula el servidor).
-    this.remote.collide(ship.position, this.flight!.velocity, FLAGSHIP_HIT_RADIUS_M);
+    if (this.deepId) hit = Math.max(hit, this.deep.collide(ship.position, this.flight!.velocity, FLAGSHIP_HIT_RADIUS_M) - BODY_COLLISION.minImpactMps);
+    // Otras naves.
+    hit = Math.max(hit, this.remote.collide(ship.position, this.flight!.velocity, FLAGSHIP_HIT_RADIUS_M) - SHIP_COLLISION.minClosingMps);
+    // Sacudida según la fuerza del golpe (llena a partir de unos 200 m/s).
+    if (hit > 0) this.impactShake = Math.max(this.impactShake, Math.min(1, 0.25 + hit / 200));
   }
 
   // --- Piloto automático de crucero (ver `Autopilot.ts`) ---
@@ -1613,7 +1624,7 @@ export class SystemView implements View {
       this.updateCombatVisuals(dt);
       // Al entrar en la grieta, la cámara exterior se queda quieta y la ve alejarse; en cabina, entra con ella.
       if (!departing || gameStore.getState().cameraView === "first") this.placeChaseCamera(1 - Math.exp(-dt * 8));
-      this.updateCameraFx();
+      this.updateCameraFx(dt);
       telemetry.freeCam = this.chase.free && gameStore.getState().cameraView !== "first";
       // Vuelo con ratón: el cursor es la retícula (una cruz); en cámara libre, el de siempre.
       const mouseFlight = settingsStore.getState().prefs.flight.mouseFlight;

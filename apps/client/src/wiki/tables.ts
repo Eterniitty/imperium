@@ -31,6 +31,7 @@ import {
   EMPEROR_FLAGSHIP,
   AIM_ASSIST,
   SHIP_COLLISION,
+  BODY_COLLISION,
   FLEET_BATTLE,
   FLAGSHIP_BATTLE,
   FLAGSHIP_REPAIR,
@@ -362,6 +363,17 @@ export const GEN_TABLES: Record<string, Builder> = {
       ["wiki.k.collisionDamage", num(locale, SHIP_COLLISION.damagePerMps)],
       ["wiki.k.collisionMax", num(locale, SHIP_COLLISION.maxDamage)],
       ["wiki.k.collisionCooldown", `${num(locale, SHIP_COLLISION.cooldownSec)} s`],
+    ]),
+
+  choques: (t, locale) =>
+    kv(t, [
+      ["wiki.k.collisionMin", `${num(locale, SHIP_COLLISION.minClosingMps)} m/s`],
+      ["wiki.k.collisionDamage", num(locale, SHIP_COLLISION.damagePerMps)],
+      ["wiki.k.collisionMax", num(locale, SHIP_COLLISION.maxDamage)],
+      ["wiki.k.collisionCooldown", `${num(locale, SHIP_COLLISION.cooldownSec)} s`],
+      ["wiki.k.bodyImpactMin", `${num(locale, BODY_COLLISION.minImpactMps)} m/s`],
+      ["wiki.k.bodyImpactDamage", num(locale, BODY_COLLISION.damagePerMps)],
+      ["wiki.k.bodyImpactCooldown", `${num(locale, BODY_COLLISION.cooldownSec)} s`],
     ]),
 
   carroneros: (t, locale) =>

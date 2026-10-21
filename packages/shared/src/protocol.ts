@@ -12,6 +12,9 @@ import type { DeepRegionView } from "./deepspace";
 // 15: salto junto a un compañero (`emperor.move.near`; rama `salto-autonomo`).
 export const PROTOCOL_VERSION = 15;
 
+/** Causa de muerte (`destroyed.by`, `LineageDeath.by`) cuando la nave se estrella contra un cuerpo y no la derriba nadie. */
+export const IMPACT_CAUSE = "@impact";
+
 /** Tamaño máximo de un mensaje del cliente, en bytes. */
 export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;
 

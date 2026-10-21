@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { distance, isDeepId, translate, type I18nKey, type SectorCoord, type StarSystemSummary, type WorldPosition } from "@imperium/shared";
+import { distance, IMPACT_CAUSE, isDeepId, translate, type I18nKey, type SectorCoord, type StarSystemSummary, type WorldPosition } from "@imperium/shared";
 import { isTravelling, positionAt, quantumFuelCost, regenFuel } from "@imperium/sim";
 import { STAR_CLASSES } from "@imperium/procgen";
 import { spaceStore } from "../net/space";
@@ -361,7 +361,8 @@ export class Engine {
     if (destroyed && !this.destroyedShown) {
       this.destroyedShown = true;
       this.system.explodeOwnShip();
-      this.notify("combat.destroyed", { by: destroyed.by || translate(gameStore.getState().locale, "npc.pirate") });
+      if (destroyed.by === IMPACT_CAUSE) this.notify("combat.destroyedImpact");
+      else this.notify("combat.destroyed", { by: destroyed.by || translate(gameStore.getState().locale, "npc.pirate") });
     }
     const emperor = this.emperor();
     const now = performance.now();

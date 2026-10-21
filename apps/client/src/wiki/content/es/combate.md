@@ -46,7 +46,11 @@ El **PvP es libre** en todo el universo, sin protección para los desconectados:
 
 ## Choques
 
-Las naves **chocan** entre sí: dos naves que se tocan acercándose reciben daño según la velocidad del choque y rebotan. Contra planetas, lunas y asteroides la nave se para en la superficie (sin daño).
+Las naves **chocan** entre sí: dos naves que se tocan acercándose reciben daño según la velocidad del choque y rebotan.
+
+Contra la estrella, los planetas, las lunas y los asteroides la nave se para en la superficie y, si llega deprisa, **también se daña**: el daño crece con la velocidad del impacto y no tiene tope, así que estrellarse a toda velocidad destruye la nave. Aterrizar o rozar despacio no hace daño. Un golpe fuerte sacude la cámara (salvo con «reducir efectos»). Si la nave cae así, la causa de la muerte es «choque».
+
+{{tabla:choques}}
 
 ## Carroñeros
 
