@@ -38,4 +38,4 @@ Tu **capital** es tu colonia **más antigua**. Además de su propio mantenimient
 
 Si un jugador **borra su cuenta**, sus planetas no desaparecen: quedan como **colonias independientes**, con el nombre que les dio. Lo producido hasta ese momento se queda en ellas, sus encargos se cancelan (con el reembolso habitual) y desde entonces quedan **congeladas**: ni producen ni gastan. En el panel aparecen con el dueño **«Independiente»**, y no se pueden reclamar.
 
-> [!dev] Conquistar planetas ajenos o independientes (asedio, presencia sostenida y desembarco de tropas; captura en vez de destrucción) llegará en la fase 9b.
+Las colonias independientes **se pueden conquistar** como cualquier otra: ver [Conquista](/wiki/conquista). Al tomarlas vuelven a producir desde ese momento (no cobran el tiempo que pasaron congeladas).

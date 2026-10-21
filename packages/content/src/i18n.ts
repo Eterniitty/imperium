@@ -100,7 +100,7 @@ export const contentEs: ContentDictionary = {
     "Una espina de contenedores con motores: cuatro veces la bodega del carguero, lento y con algo más de blindaje.",
   "ship.troopship.name": "Transporte de tropas",
   "ship.troopship.description":
-    "Casco blindado con bodegas para 600 personas: traslada población entre colonias y llevará las tropas de asalto.",
+    "Casco blindado con bodegas para 600 personas: traslada población entre colonias y lleva las tropas de asalto para conquistar planetas.",
 
   // Filosofía y actitud de cada especie
   "species.eradicators.philosophy": "La humanidad es un error en la estructura de la existencia. Purificar no es crueldad: es devolver el orden natural, en el que lo que muere permanece muerto.",
@@ -269,7 +269,7 @@ export const contentEn: ContentDictionary = {
     "A spine of containers with engines: four times a freighter's hold, slow and a little better armoured.",
   "ship.troopship.name": "Troopship",
   "ship.troopship.description":
-    "Armoured hull with berths for 600 people: it moves population between colonies and will carry assault troops.",
+    "Armoured hull with berths for 600 people: it moves population between colonies and carries assault troops to conquer planets.",
 
   // Filosofía y actitud de cada especie
   "species.eradicators.philosophy": "Humanity is an error in the fabric of existence. Purification is not cruelty: it restores the natural order, in which what dies stays dead.",

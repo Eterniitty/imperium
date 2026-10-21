@@ -11,6 +11,8 @@ import { RESOURCE_COLORS } from "./common";
 import { contentText } from "./fleets";
 import { ShipThumb } from "./ShipThumb";
 import { formatDuration, useServerNow } from "./useNow";
+import { factionName } from "./aliens";
+import { PlanetSiege } from "./SiegePanel";
 
 const STOCK_COLORS: Record<string, string> = { ...RESOURCE_COLORS, alloys: "#ff9f5a" };
 
@@ -105,8 +107,13 @@ export function PlanetColony({ detail, planet }: { detail: StarSystemDetail; pla
     <div className="colony">
       <dl className="facts">
         <dt>{t("colony.owner")}</dt>
-        <dd className={own ? "owner-own" : claim ? "owner-other" : "muted"}>{own ? t("colony.yours") : claim ? (claim.ownerName ?? t("colony.independent")) : t("colony.free")}</dd>
+        <dd className={own ? "owner-own" : claim ? "owner-other" : "muted"}>
+          {own ? t("colony.yours") : claim ? (claim.ownerFactionId ? factionName(locale, claim.ownerFactionId) : (claim.ownerName ?? t("colony.independent"))) : t("colony.free")}
+        </dd>
       </dl>
+
+      {/* Fase 9b: asedio en curso, o asediar una colonia ajena. */}
+      {(own || claim) && <PlanetSiege systemId={systemId} colonyId={own?.id ?? claim!.colonyId} claim={claim} own={own !== undefined} />}
 
       {!owned && (
         <div className="colony-claim">

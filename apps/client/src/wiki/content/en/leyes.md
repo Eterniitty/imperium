@@ -22,6 +22,6 @@ In Aeonarch, "Emperor" does not necessarily mean the ruler of an empire: **it is
 
 **In the game:** ships destroyed in a fleet battle are gone, along with their cargo and passengers. Resources that do not fit in storage are lost. An empire too large for its volatiles production runs short of supplies. See [War](/wiki/guerra) and [Economy](/wiki/economia#upkeep).
 
-> [!dev] **Conquering other players' planets** (sieges and troop landings) will arrive in phase 9b.
+Law III in practice: your colonies can be **besieged and conquered** ([Conquest](/wiki/conquista)); what is lost passes to someone else, with its losses.
 
 More about the universe and its history in [Lore](/wiki/lore).

@@ -22,6 +22,14 @@ export interface AiPersonalityDefinition {
   trades: boolean;
   /** Probabilidad de mandar a explorar su explorador en cada decisión. */
   explore: number;
+  /** Fase 9b: envía sus naves armadas a romper los asedios a sus colonias. */
+  defends: boolean;
+  /**
+   * Fase 9b: conquista colonias ajenas fuera del Núcleo Humano (independientes
+   * o de Emperadores que no son compañeros ni están en su gracia) cuando reúne
+   * `minWarships` naves armadas; desembarca los colonos de un colonizador.
+   */
+  war: { minWarships: number; rangeLy: number } | null;
 }
 
 export const AI_PERSONALITIES: Readonly<Record<AiPersonality, AiPersonalityDefinition>> = {
@@ -31,6 +39,8 @@ export const AI_PERSONALITIES: Readonly<Record<AiPersonality, AiPersonalityDefin
     ships: [],
     trades: false,
     explore: 0.6,
+    defends: true,
+    war: null,
   },
   merchant: {
     maxColonies: 2,
@@ -38,13 +48,17 @@ export const AI_PERSONALITIES: Readonly<Record<AiPersonality, AiPersonalityDefin
     ships: [["freighter", 1], ["corvette", 1]],
     trades: true,
     explore: 0.3,
+    defends: true,
+    war: null,
   },
   militarist: {
     maxColonies: 2,
-    buildOrder: [["mine", 1], ["power_plant", 1], ["shipyard", 1], ["mine", 3], ["refinery", 1]],
+    buildOrder: [["mine", 1], ["power_plant", 1], ["shipyard", 1], ["mine", 3], ["refinery", 1], ["power_plant", 2], ["defense_platform", 1]],
     ships: [["frigate", 2], ["corvette", 2], ["destroyer", 1]],
     trades: false,
     explore: 0.4,
+    defends: true,
+    war: { minWarships: 3, rangeLy: 45 },
   },
 };
 

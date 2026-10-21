@@ -180,7 +180,7 @@ describe.skipIf(!TEST_DATABASE_URL)("Cuenta: exportar y borrar", () => {
 
     // Los demás la ven como independiente.
     const claims = (await app.inject({ method: "GET", url: `/api/systems/${system.id}/claims`, cookies: other })).json() as SystemClaimsResponse;
-    expect(claims.claims).toEqual([{ planetIndex: 0, name: "Nueva Esperanza", ownerId: null, ownerName: null }]);
+    expect(claims.claims).toEqual([{ colonyId: expect.any(String), planetIndex: 0, name: "Nueva Esperanza", ownerId: null, ownerName: null }]);
 
     // Congelada: nada la resuelve (ni produce ni gasta) aunque pase el tiempo.
     await new Promise((r) => setTimeout(r, 20));

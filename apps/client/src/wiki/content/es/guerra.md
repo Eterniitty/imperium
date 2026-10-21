@@ -68,4 +68,6 @@ Las flotas de las facciones alienígenas combaten **igual que las de un Emperado
 
 Los planetas de los jugadores que borran su cuenta quedan como **colonias independientes**, congeladas y sin dueño. Ver [Colonias](/wiki/colonias#colonias-independientes).
 
-> [!dev] Pendiente: ver las batallas en **3D**, la **conquista** de planetas (asedios, tropas, captura de instalaciones; fase 9b), el **combate a gran escala** (fase 9c) y la **IA de naves** (pilotaje, tácticas de grupo, emboscadas; fase 9d).
+Para tomar planetas ajenos (asedio, defensas y desembarco de tropas), ver [Conquista](/wiki/conquista).
+
+> [!dev] Pendiente: ver las batallas en **3D**, el **combate a gran escala** (fase 9c) y la **IA de naves** (pilotaje, tácticas de grupo, emboscadas; fase 9d).

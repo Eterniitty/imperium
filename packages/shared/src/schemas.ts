@@ -180,6 +180,15 @@ export const ClientMessageSchema = z.union([
     op: z.literal("alien.tribute"),
     args: z.object({ factionId: z.string().regex(/^[a-z_]{1,48}$/), credits: z.number().finite().min(1).max(1e7) }),
   }),
+  // Fase 9b: conquista de planetas.
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("siege.start"), args: z.object({ colonyId: z.uuid() }) }),
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("siege.lift"), args: z.object({ siegeId: z.uuid() }) }),
+  z.object({
+    t: z.literal("cmd"),
+    cmdId: CmdIdSchema,
+    op: z.literal("siege.assault"),
+    args: z.object({ siegeId: z.uuid(), fleetId: z.uuid().optional(), troops: z.number().int().min(1).max(1_000_000).optional() }),
+  }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("colony.disembark"), args: z.object({ colonyId: z.uuid(), humans: z.number().int().min(1).max(100_000) }) }),
   z.object({ t: z.literal("sub"), topic: z.enum(["emperors", "me"]) }),
   z.object({ t: z.literal("pose"), systemId: SystemIdSchema, p: Vec3Schema, q: QuatSchema, v: Vec3Schema }),

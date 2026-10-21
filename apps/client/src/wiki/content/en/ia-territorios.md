@@ -38,6 +38,10 @@ Each faction keeps a **grudge** against each Emperor. Factions **hostile** by na
 - The grudge is **forgotten** little by little.
 - **Tribute** (basic diplomacy): in the **Battles → Known factions** panel you can pay credits to erase the grudge. Those who **never make pacts** (Eradicators, Tharaxi) refuse it. If the faction trades, the credits go to its wallet.
 
+## Attacks on colonies
+
+Factions that do not ignore intruders **besiege the human colonies in their territory** when they are hostile to you (by nature or by grudge): on each decision of their region, with a chance based on their **aggression**, they start a siege if they have a fleet there or send fleets. They land no humans: when the siege is complete they **occupy** the colony (part of the population dies). You can take it back by besieging it yourself (which adds to their grudge). Never in the Human Core nor against Emperors in their grace period. See [Conquest](/wiki/conquista#aliens).
+
 ## Void Nomad trade
 
 The **Void Nomads** have a **habitat** in their territory and a credit wallet. When their region is awake, they **sell volatiles and metal** and **buy crystal** on the [global market](/wiki/mercado), close to the last price, with the same orders as any Emperor. What you buy from them **travels** from their habitat, far from the Core: it takes longer.
@@ -56,4 +60,6 @@ So the universe is not empty with few players, there are a few **AI human Empero
 
 {{tabla:ia-emperadores}}
 
-> [!dev] They do not wage war on their own yet nor accept companions, and the piloting AI for ships in 3D (phase 9d) is designed but not built.
+Since phase 9b, **all of them defend** their besieged colonies (they send their armed ships) and the **militarists conquer**: with enough armed ships, they besiege the weakest foreign colony within reach **outside the Core** (independent ones or those of Emperors who are not companions nor in their grace period; never alien factions) and land the colonists of a colonizer. See [Conquest](/wiki/conquista).
+
+> [!dev] They do not accept companions yet, and the piloting AI for ships in 3D (phase 9d) is designed but not built.

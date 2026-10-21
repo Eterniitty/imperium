@@ -10,6 +10,9 @@ import {
   type AiPersonality,
   ALIEN_AI,
   ALIEN_SHIP_CLASSES,
+  ALIEN_SIEGE,
+  INSTALLATION_DEFENSE,
+  SIEGE,
   alienShipsOf,
   battleProfileOf,
   fleetComposition,
@@ -87,6 +90,7 @@ const INSTALLATION_EFFECT: Record<InstallationId, I18nKey> = {
   power_plant: "wiki.effect.power_plant",
   shipyard: "wiki.effect.shipyard",
   drydock: "wiki.effect.drydock",
+  defense_platform: "wiki.effect.defense_platform",
 };
 
 /** «Astillero, refinería» (las instalaciones que pide una nave). */
@@ -153,6 +157,9 @@ export const GEN_TABLES: Record<string, Builder> = {
         volatiles: num(locale, ECONOMY.refinery.volatiles),
         alloys: num(locale, ECONOMY.refinery.alloys),
         energy: num(locale, ECONOMY.powerPlantEnergyPerStarEnergy),
+        defense: num(locale, INSTALLATION_DEFENSE[i.id]?.defense ?? 0),
+        attack: num(locale, INSTALLATION_DEFENSE[i.id]?.attackPerHour ?? 0),
+        garrison: num(locale, INSTALLATION_DEFENSE[i.id]?.garrison ?? 0),
       }),
     ]),
     numeric: [3, 5],
@@ -396,6 +403,40 @@ export const GEN_TABLES: Record<string, Builder> = {
       ["wiki.k.flagshipSensor", t("wiki.v.ly", { n: num(locale, EMPEROR_FLAGSHIP.scannerRangeLy) })],
     ]),
 
+  // --- Fase 9b: conquista ---
+
+  asedio: (t, locale) =>
+    kv(t, [
+      ["wiki.k.siegeBase", t("wiki.v.hours", { n: num(locale, SIEGE.baseHours) })],
+      ["wiki.k.siegeTick", `${num(locale, SIEGE.tickGameMinutes)} min`],
+      ["wiki.k.defenseBase", num(locale, SIEGE.defenseBase)],
+      ["wiki.k.defensePerPop", num(locale, SIEGE.defensePerPopulation)],
+      ["wiki.k.militia", `${num(locale, SIEGE.militiaShare * 100)} %`],
+      ["wiki.k.attackerLoss", num(locale, SIEGE.attackerLossPerDefender)],
+      ["wiki.k.defenderLoss", num(locale, SIEGE.defenderLossPerAttacker)],
+      ["wiki.k.capturePop", `${num(locale, SIEGE.capture.populationLoss * 100)} %`],
+      ["wiki.k.captureStock", `${num(locale, SIEGE.capture.stockLoss * 100)} %`],
+      ["wiki.k.captureInst", `${num(locale, SIEGE.capture.installationLoss * 100)} %`],
+      ["wiki.k.siegeGrace", t("wiki.v.hours", { n: num(locale, SIEGE.noviceGraceHours) })],
+    ]),
+
+  defensas: (t, locale) => ({
+    head: [t("wiki.col.installation"), t("wiki.col.defense"), t("wiki.col.fire"), t("wiki.col.garrison")],
+    rows: (Object.keys(INSTALLATION_DEFENSE) as InstallationId[]).map((id) => {
+      const d = INSTALLATION_DEFENSE[id]!;
+      return [t(`installation.${id}`), num(locale, d.defense), num(locale, d.attackPerHour), num(locale, d.garrison)];
+    }),
+    numeric: [1, 2, 3],
+  }),
+
+  "asedio-alien": (t, locale) =>
+    kv(t, [
+      ["wiki.k.alienSiegeChance", `${num(locale, ALIEN_SIEGE.chancePerTick * 100)} %`],
+      ["wiki.k.alienSiegeMax", num(locale, ALIEN_SIEGE.maxPerRegion)],
+      ["wiki.k.alienOccupation", `${num(locale, ALIEN_SIEGE.occupationPopulationLoss * 100)} %`],
+      ["wiki.k.siegeGrudge", num(locale, ALIEN_SIEGE.grudge)],
+    ]),
+
   estrellas: (t, locale) => {
     const total = STAR_ORDER.reduce((a, c) => a + STAR_CLASSES[c].weight, 0);
     return {
@@ -537,7 +578,7 @@ export const GEN_TABLES: Record<string, Builder> = {
   },
 
   "ia-emperadores": (t, locale) => ({
-    head: [t("wiki.col.personality"), t("wiki.col.emperors"), t("wiki.col.maxColonies"), t("wiki.col.buildOrder"), t("wiki.col.keeps")],
+    head: [t("wiki.col.personality"), t("wiki.col.emperors"), t("wiki.col.maxColonies"), t("wiki.col.buildOrder"), t("wiki.col.keeps"), t("wiki.col.war")],
     rows: (Object.keys(AI_PERSONALITIES) as AiPersonality[]).map((id) => {
       const p = AI_PERSONALITIES[id];
       return [
@@ -546,6 +587,7 @@ export const GEN_TABLES: Record<string, Builder> = {
         num(locale, p.maxColonies),
         p.buildOrder.map(([i, n]) => `${t(`installation.${i}`)} ×${n}`).join(" → "),
         p.ships.map(([s, n]) => `${shipName(locale, s)} ×${n}`).join(", ") || "—",
+        p.war ? t("wiki.v.war", { n: num(locale, p.war.minWarships), ly: num(locale, p.war.rangeLy) }) : p.defends ? t("wiki.v.defends") : "—",
       ];
     }),
     numeric: [2],

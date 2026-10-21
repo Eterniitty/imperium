@@ -22,6 +22,6 @@ En Aeonarch, «Emperador» no significa necesariamente gobernante de un imperio:
 
 **En el juego:** las naves destruidas en una batalla de flotas desaparecen, con su carga y sus pasajeros. Los recursos que no caben en un almacén se pierden. Un imperio demasiado grande para su producción de volátiles se queda desabastecido. Ver [Guerra](/wiki/guerra) y [Economía](/wiki/economia#mantenimiento).
 
-> [!dev] La **conquista de planetas ajenos** (asedios y desembarco de tropas) llegará en la fase 9b.
+La Ley III en la práctica: tus colonias se pueden **asediar y conquistar** ([Conquista](/wiki/conquista)); lo perdido pasa a otro, con sus pérdidas.
 
 Más sobre el universo y su historia en [Lore](/wiki/lore).

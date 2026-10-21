@@ -13,6 +13,7 @@ import type { Colony, ColonyBuild, CommandError, EmperorHumans, Planet, PlanetCl
 import { PlanetNameSchema } from "@imperium/shared/schemas";
 import {
   canAfford,
+  captureLosses,
   colonyEnergy,
   colonyFlows,
   flagshipHumansAfter,
@@ -34,10 +35,10 @@ import {
   type ColonyState,
   type InstallationCounts,
 } from "@imperium/sim";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { colonies, colonyBuilds, discoveries, emperors, fleets, installations, resourceLedger, ships } from "../db/schema";
+import { colonies, colonyBuilds, discoveries, emperors, fleetRoutes, fleets, installations, resourceLedger, ships } from "../db/schema";
 import { discoverAround, type Discovered } from "../discovery/service";
 import { findSystem, placeFromRow } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
@@ -132,6 +133,11 @@ export class ColonyService {
     return detail && planet ? { detail, planet } : null;
   }
 
+  /** Designación de un planeta (para las vistas de los asedios). */
+  planetName(systemId: string, index: number): string {
+    return this.planet(systemId, index)?.planet.name ?? `${systemId}/${index}`;
+  }
+
   // --- Humanos de la nave del Emperador ---
 
   private humansView(count: number, at: number): EmperorHumans {
@@ -183,7 +189,8 @@ export class ColonyService {
       .select({ id: colonies.id })
       .from(colonies)
       .where(eq(colonies.emperorId, emperorId))
-      .orderBy(asc(colonies.foundedAt), asc(colonies.id))
+      // La más antigua para su dueño: las conquistadas cuentan desde la conquista (Fase 9b).
+      .orderBy(sql`coalesce(${colonies.acquiredAt}, ${colonies.foundedAt})`, asc(colonies.id))
       .limit(1);
     return row?.id ?? null;
   }
@@ -321,7 +328,7 @@ export class ColonyService {
    */
   async claims(systemId: string): Promise<PlanetClaim[]> {
     const rows = await this.db
-      .select({ planetIndex: colonies.planetIndex, name: colonies.name, ownerId: colonies.emperorId, ownerName: emperors.name, ownerFactionId: emperors.factionId })
+      .select({ colonyId: colonies.id, planetIndex: colonies.planetIndex, name: colonies.name, ownerId: colonies.emperorId, ownerName: emperors.name, ownerFactionId: emperors.factionId })
       .from(colonies)
       // Sin dueño (cuenta borrada): colonia independiente, con ownerId y ownerName null.
       .leftJoin(emperors, eq(emperors.id, colonies.emperorId))
@@ -778,6 +785,91 @@ export class ColonyService {
       await tx.insert(resourceLedger).values({ emperorId, colonyId: row.id, reason: "independence", ref: null });
     }
     return rows.length;
+  }
+
+  // --- Fase 9b: conquista ---
+
+  /**
+   * Colonia bloqueada con su estado a la hora `at`, sea de quien sea: las
+   * independientes están congeladas (su estado es el guardado). Para los
+   * asedios (defensa de la colonia) y la captura.
+   */
+  async lockAny(tx: Tx, colonyId: string, at: number): Promise<{ row: ColonyRow; state: ColonyState; counts: InstallationCounts; cap: number } | null> {
+    const [row] = await tx.select().from(colonies).where(eq(colonies.id, colonyId)).for("update").limit(1);
+    if (!row) return null;
+    const counts = (await this.installationCounts(tx, [row.id])).get(row.id) ?? {};
+    const site = this.site(row, counts, await this.extraUpkeepOf(tx, row));
+    if (!site) return null;
+    const state = row.emperorId && at > row.resolvedAt.getTime() ? this.resolve(row, site, at) : { population: row.population, stock: stockOf(row) };
+    return { row, state, counts, cap: populationCap(site.planet.habitability) };
+  }
+
+  /**
+   * Captura (Fase 9b): la colonia pasa a `newOwnerId` con su población,
+   * instalaciones y existencias, con pérdidas (`captureLosses` de
+   * `@imperium/sim`). Antes, quien llama ha cancelado sus órdenes del mercado.
+   * Aquí: el antiguo dueño cobra su capital hasta `at` (puede cambiar de
+   * capital), se resuelve la colonia hasta `at` (una independiente no: estaba
+   * congelada y desde ahora vuelve a producir), se pierde su cola de
+   * construcción (lo pagado se pierde, como lo destruido), se acaban las rutas
+   * de transporte que la usaban, se aplican las pérdidas y se suman las tropas
+   * supervivientes como colonos. Todo queda en el libro.
+   */
+  async capture(
+    tx: Tx,
+    colonyId: string,
+    newOwnerId: string,
+    at: number,
+    opts: { seed: number; survivors: number; extraPopulationLoss?: number; ref: string },
+  ): Promise<{ oldOwnerId: string | null; capitalId: string | null; destroyed: number } | null> {
+    const [pre] = await tx.select({ emperorId: colonies.emperorId }).from(colonies).where(eq(colonies.id, colonyId)).for("update").limit(1);
+    if (!pre) return null;
+    const oldOwnerId = pre.emperorId;
+    // La capital del antiguo dueño se cobra hasta ahora (si era esta, queda resuelta aquí mismo).
+    const capitalId = oldOwnerId ? await this.settleCapital(tx, oldOwnerId, at) : null;
+    const locked = await this.lockAny(tx, colonyId, at);
+    if (!locked) return null;
+    const { row, state } = locked;
+
+    // Cola de construcción: se pierde (lo pagado no se devuelve a nadie).
+    const builds = await tx.select().from(colonyBuilds).where(eq(colonyBuilds.colonyId, row.id));
+    for (const b of builds) await tx.insert(resourceLedger).values({ emperorId: oldOwnerId, colonyId: row.id, reason: "conquest_cancel", ref: `${b.kind}:${b.itemId}` });
+    await tx.delete(colonyBuilds).where(eq(colonyBuilds.colonyId, row.id));
+    // Rutas automáticas que la usaban (de cualquier flota): se acaban.
+    await tx.delete(fleetRoutes).where(or(eq(fleetRoutes.fromColonyId, row.id), eq(fleetRoutes.toColonyId, row.id)));
+
+    const inst = await tx.select({ id: installations.id }).from(installations).where(eq(installations.colonyId, row.id));
+    const losses = captureLosses(state.population, state.stock, inst.map((i) => i.id), opts.seed, opts.extraPopulationLoss ?? 0);
+    if (losses.destroyed.length) await tx.delete(installations).where(inArray(installations.id, losses.destroyed));
+    const population = Math.min(locked.cap, losses.population + Math.max(0, opts.survivors));
+    await tx
+      .update(colonies)
+      .set({ emperorId: newOwnerId, population, ...losses.stock, resolvedAt: new Date(at), acquiredAt: new Date(at) })
+      .where(eq(colonies.id, row.id));
+    const lost = (k: keyof StockAmounts) => losses.stock[k] - state.stock[k];
+    await tx.insert(resourceLedger).values({
+      emperorId: oldOwnerId,
+      colonyId: row.id,
+      reason: "conquest_lost",
+      ref: opts.ref,
+      metal: -state.stock.metal,
+      volatiles: -state.stock.volatiles,
+      crystal: -state.stock.crystal,
+      alloys: -state.stock.alloys,
+      humans: -state.population,
+    });
+    await tx.insert(resourceLedger).values({
+      emperorId: newOwnerId,
+      colonyId: row.id,
+      reason: "conquest",
+      ref: opts.ref,
+      metal: state.stock.metal + lost("metal"),
+      volatiles: state.stock.volatiles + lost("volatiles"),
+      crystal: state.stock.crystal + lost("crystal"),
+      alloys: state.stock.alloys + lost("alloys"),
+      humans: population,
+    });
+    return { oldOwnerId, capitalId: capitalId === row.id ? null : capitalId, destroyed: losses.destroyed.length };
   }
 
   /** Asientos del libro de una colonia, en orden (para auditar y para los tests). */

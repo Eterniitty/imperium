@@ -277,6 +277,8 @@ export interface Colony {
  * cualquiera que haya descubierto el sistema.
  */
 export interface PlanetClaim {
+  /** Id de la colonia (para asediarla, Fase 9b). */
+  colonyId: string;
   planetIndex: number;
   /** Nombre personalizado; null = la designación del planeta. */
   name: string | null;
@@ -285,11 +287,73 @@ export interface PlanetClaim {
   ownerName: string | null;
   /** Si el dueño es una facción alienígena (Fase 11), su id (`FACTIONS`); el cliente muestra su nombre traducido. */
   ownerFactionId?: string | null;
+  /** Fase 9b: la colonia está bajo asedio (de quien sea). */
+  besieged?: boolean;
 }
 
 /** Respuesta de `GET /api/systems/:systemId/claims`: planetas con dueño de un sistema descubierto. */
 export interface SystemClaimsResponse {
   claims: PlanetClaim[];
+}
+
+// --- Fase 9b: conquista de planetas ---
+
+/**
+ * Estado de un asedio en curso: avanza (el atacante tiene naves armadas en el
+ * sistema y nadie se lo impide), disputado (hay naves armadas del defensor),
+ * en batalla (las flotas del atacante combaten allí) o listo para desembarcar.
+ */
+export type SiegeState = "advancing" | "contested" | "battle" | "ready";
+/** Resultado: en curso, planeta tomado, asedio roto (el atacante perdió su presencia), levantado por el atacante o anulado (la colonia cambió de manos por otra vía). */
+export type SiegeOutcome = "ongoing" | "captured" | "broken" | "lifted" | "void";
+
+/** Último desembarco de tropas en un asedio. */
+export interface SiegeAssaultReport {
+  at: number;
+  troops: number;
+  defenders: number;
+  captured: boolean;
+  attackerLosses: number;
+  populationLosses: number;
+}
+
+/**
+ * Asedio visto por el atacante o por el defensor (tema `me`). El progreso es
+ * el de la hora `at`; el cliente lo hace avanzar con `ratePerHour` (por hora
+ * real) mientras el estado sea `advancing`.
+ */
+export interface Siege {
+  id: string;
+  colonyId: string;
+  systemId: string;
+  systemName: string;
+  planetIndex: number;
+  /** Designación del planeta. */
+  planetName: string;
+  /** Nombre puesto por su dueño (null = la designación). */
+  colonyName: string | null;
+  role: "attacker" | "defender";
+  attackerName: string;
+  /** Si asedia una facción alienígena, su id (el cliente muestra su nombre traducido). */
+  attackerFactionId: string | null;
+  /** Dueño de la colonia al empezar (null = independiente). */
+  defenderName: string | null;
+  defenderFactionId: string | null;
+  progress: number;
+  /** Progreso por hora real en `at` (0 si no avanza). */
+  ratePerHour: number;
+  state: SiegeState;
+  outcome: SiegeOutcome;
+  /** Fuerza de asedio del atacante y defensa de la colonia en la última resolución. */
+  attack: number;
+  defense: number;
+  /** Defensores contra un desembarco (milicia y guarnición): hacen falta más tropas que esto. */
+  defenders: number;
+  startedAt: number;
+  endedAt: number | null;
+  nextTickAt: number | null;
+  lastAssault: SiegeAssaultReport | null;
+  at: number;
 }
 
 // --- Fase 9a: combate de flotas ---

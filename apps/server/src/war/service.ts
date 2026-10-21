@@ -111,6 +111,17 @@ export class WarService {
     return pairs;
   }
 
+  /**
+   * ¿Son hostiles dos dueños en este sistema? No si son compañeros mutuos; si
+   * no, la regla de la hostilidad (la de las facciones y el Núcleo Humano).
+   * La usan los asedios (Fase 9b).
+   */
+  async areHostile(db: Database | Tx, a: string, b: string, systemId: string): Promise<boolean> {
+    if (a === b) return false;
+    if ((await this.allyPairs(db, [a, b])).size > 0) return false;
+    return this.hostility(db, a, b, systemId);
+  }
+
   // --- Llegadas y comienzo de las batallas ---
 
   /**
@@ -305,7 +316,7 @@ export class WarService {
    * (proporcional) y los pasajeros sin plaza, más los colonos de las naves
    * destruidas. Todo se asienta en el libro como `battle_loss`.
    */
-  private async loseCargo(tx: Tx, fleetId: string, emperorId: string, leftClasses: string[], humansAboard: number): Promise<void> {
+  async loseCargo(tx: Tx, fleetId: string, emperorId: string, leftClasses: string[], humansAboard: number): Promise<void> {
     const [row] = await tx.select().from(fleetCargo).where(eq(fleetCargo.fleetId, fleetId)).for("update").limit(1);
     const cargo: Cargo = row ? { metal: row.metal, volatiles: row.volatiles, crystal: row.crystal, alloys: row.alloys, humans: row.humans } : { ...EMPTY_CARGO };
     const cap = fleetCapacity(leftClasses);

@@ -59,3 +59,5 @@ En orden, siempre de dos en dos agentes, con copia antes de cada cambio grande:
       comercian). Pendiente: IA de pilotaje 3D (9d), modelos 3D alienígenas (tras fusionar el pilotaje),
       guerra de los Emperadores IA, ataques a colonias (9b).
 - [ ] Fases siguientes de la hoja de ruta: 9b (conquista), 9c, 10 (muerte y linaje).
+  - [x] **9b (conquista)** hecha en la rama `fase-9b` (asedio, plataformas defensivas, desembarco, captura, IA
+        alienígena y Emperadores IA militaristas, Wiki «Conquista»; migración 0015, `PROTOCOL_VERSION` 9). Falta fusionar y desplegar.

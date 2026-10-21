@@ -3,10 +3,10 @@
  * docs/arquitectura.md §8. Los esquemas Zod de lo que envía el cliente están en
  * `schemas.ts`.
  */
-import type { Battle, Cargo, Colony, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, OrderSide, Stock, StockId, Wallet } from "./api";
+import type { Battle, Cargo, Colony, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, OrderSide, Siege, Stock, StockId, Wallet } from "./api";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
-export const PROTOCOL_VERSION = 9;
+export const PROTOCOL_VERSION = 10;
 
 /** Tamaño máximo de un mensaje del cliente, en bytes. */
 export const MAX_CLIENT_MESSAGE_BYTES = 4 * 1024;
@@ -24,7 +24,8 @@ export interface TopicData {
   /** `discovered`: ids de los sistemas descubiertos (niebla de guerra); solo de ellos se puede pedir el detalle. */
   /** `battles`: las batallas en curso y las acabadas hace poco. */
   /** `wallet`: la cartera de créditos (economía de la humanidad). */
-  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans; battles: Battle[]; wallet: Wallet; flagship: FlagshipStatus | null };
+  /** `sieges`: asedios propios y a colonias propias (Fase 9b), en curso y acabados hace poco. */
+  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans; battles: Battle[]; wallet: Wallet; flagship: FlagshipStatus | null; sieges: Siege[] };
 }
 
 /** Emperador visto por los demás jugadores: añade si está conectado. */
@@ -77,6 +78,20 @@ export interface CommandArgs {
   "fleet.intercept": { fleetId: string; targetFleetId: string };
   /** Fase 11: tributo a una facción alienígena para borrar su rencor (diplomacia básica). */
   "alien.tribute": { factionId: string; credits: number };
+  /**
+   * Fase 9b: asedia una colonia ajena del sistema donde hay una flota armada
+   * propia parada (y ningún defensor armado).
+   */
+  "siege.start": { colonyId: string };
+  /** Levanta un asedio propio (las flotas se quedan donde están). */
+  "siege.lift": { siegeId: string };
+  /**
+   * Desembarca tropas en un planeta con el asedio completo. Con `fleetId`,
+   * los humanos de esa flota (pasajeros y colonos); sin ella, los de la nave
+   * del Emperador, que tiene que estar en el sistema. `troops` limita cuántos
+   * (por defecto, todos).
+   */
+  "siege.assault": { siegeId: string; fleetId?: string; troops?: number };
 }
 export type CommandOp = keyof CommandArgs;
 
@@ -172,6 +187,14 @@ export type CommandError =
   | "unknown_faction"
   | "no_diplomacy"
   | "insufficient_fuel"
+  | "own_colony"
+  | "protected"
+  | "already_besieged"
+  | "defended"
+  | "no_armed_fleet"
+  | "no_siege"
+  | "siege_not_ready"
+  | "no_troops"
   | "rate_limited"
   | "internal";
 
@@ -190,7 +213,10 @@ export type DeltaOp =
   /** Batalla propia: empieza, avanza una ronda o termina (null si deja de mostrarse). */
   | { path: `battles.${string}`; v: Battle | null }
   /** La nave del Emperador propio: dónde está aparcada (y, más adelante, sus recursos). */
-  | { path: `flagship.${string}`; v: FlagshipStatus };
+  | { path: `flagship.${string}`; v: FlagshipStatus }
+
+  /** Asedio propio o a una colonia propia: empieza, avanza o termina (null si deja de mostrarse). */
+  | { path: `sieges.${string}`; v: Siege | null };
 
 export type ServerMessage =
   /**

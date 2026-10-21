@@ -16,7 +16,7 @@ Twelve ship classes, all **built in your colonies** (see [Economy](/wiki/economi
 | **Line** | Frigate, Destroyer | The frigate does everything; the destroyer carries heavy turrets and torpedoes. |
 | **Capital** | Cruiser, Carrier | The most expensive: they need an **orbital drydock**. The carrier carries wings of embarked fighters. |
 | **Logistics** | Freighter, Heavy freighter | Hold for resources and berths for passengers; slow and fragile, they need escorts. |
-| **Transport** | Troopship | Armoured hull and 600 berths: it moves population and will carry assault troops. |
+| **Transport** | Troopship | Armoured hull and 600 berths: it moves population and carries the troops for a [landing](/wiki/conquista). |
 | **Colonization** | Colonizer | Carries colonists to found a colony and is dismantled doing so. |
 
 ## What you need to build them

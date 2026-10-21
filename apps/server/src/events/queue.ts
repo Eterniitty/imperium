@@ -26,6 +26,8 @@ export interface EventPayloads {
   "ai.region": { regionKey: string };
   /** Decisión de un Emperador humano de la IA (Fase 11). */
   "ai.emperor": { emperorId: string };
+  /** Resolución periódica de un asedio (Fase 9b). */
+  "siege.tick": { siegeId: string };
 }
 export type EventKind = keyof EventPayloads;
 

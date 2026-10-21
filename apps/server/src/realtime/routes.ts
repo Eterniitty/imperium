@@ -23,6 +23,7 @@ import type { WarService } from "../war/service";
 import type { HumanityService } from "../humanity/service";
 import type { MarketService } from "../market/service";
 import type { AlienService } from "../ai/service";
+import type { SiegeService } from "../war/siege";
 import type { Client, Hub } from "./hub";
 import { TicketStore } from "./tickets";
 
@@ -40,6 +41,8 @@ export interface RealtimeDeps {
   market: MarketService;
   /** Fase 11: facciones alienígenas (tributos y rencor al colonizar su territorio). */
   aliens?: AlienService;
+  /** Fase 9b: asedios y conquista de planetas. */
+  sieges?: SiegeService;
 }
 
 const MINUTE = 60_000;
@@ -48,7 +51,7 @@ const HEARTBEAT_MS = 30_000;
 const MAX_CONNECTIONS_PER_ACCOUNT = 5;
 const MAX_CONNECTIONS = 1_000;
 
-export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, colonies, logistics, wars, space, hub, humanity, market, aliens }: RealtimeDeps) {
+export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges }: RealtimeDeps) {
   const cookieName = sessionCookieName(config);
   const tickets = new TicketStore();
   const ticketsPerAccount = new RateLimiter(30, MINUTE);
@@ -211,6 +214,20 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     if (!aliens) return { ok: false, error: "unknown_faction" } as const;
                     const res = await aliens.tribute(owner.emperorId, msg.args.factionId, msg.args.credits);
                     if (res.ok) await hub.publishWallet(res.emperorId);
+                    return res;
+                  }
+                  // Fase 9b: asedio, desembarco y captura (ver war/siege.ts).
+                  case "siege.start":
+                  case "siege.lift":
+                  case "siege.assault": {
+                    if (!sieges) return { ok: false, error: "no_siege" } as const;
+                    const res =
+                      msg.op === "siege.start"
+                        ? await sieges.start(owner.emperorId, msg.args.colonyId)
+                        : msg.op === "siege.lift"
+                          ? await sieges.lift(owner.emperorId, msg.args.siegeId)
+                          : await sieges.assault(owner.emperorId, msg.args.siegeId, msg.args.fleetId, msg.args.troops);
+                    if (res.ok) hub.publishSiegeFx(res.fx);
                     return res;
                   }
                   // Fase 8: logística (ver logistics/service.ts).

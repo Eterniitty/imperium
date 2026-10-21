@@ -255,7 +255,7 @@ describe.skipIf(!TEST_DATABASE_URL)("colonias y economía", () => {
     // B conoce el sistema: ve el dueño y el nombre, nada más.
     const seen = await claims(b.cookies, home.summary.id);
     expect(seen.statusCode).toBe(200);
-    expect(seen.json()).toEqual({ claims: [{ planetIndex: 0, name: "Nueva Aurelia", ownerId: a.emperor.id, ownerName: "Aurelia" }] });
+    expect(seen.json()).toEqual({ claims: [{ colonyId: id, planetIndex: 0, name: "Nueva Aurelia", ownerId: a.emperor.id, ownerName: "Aurelia" }] });
     // C no lo ha descubierto; sin sesión, nada.
     expect((await claims(c.cookies, home.summary.id)).json()).toEqual({ error: "not_discovered" });
     expect((await claims(undefined, home.summary.id)).statusCode).toBe(401);

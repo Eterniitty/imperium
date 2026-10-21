@@ -8,24 +8,26 @@ import {
   getShipClass,
   HUMANS,
   STARTING_FLEET,
+  SIEGE,
   STOCK_IDS,
   type AiPersonalityDefinition,
 } from "@imperium/content";
-import { minColonists, realDurationMs } from "@imperium/sim";
+import { colonyDefense, gameHours, minColonists, realDurationMs, siegePower, type InstallationCounts } from "@imperium/sim";
 import { distance, type Colony, type Fleet, type StarSystemDetail, type StarSystemSummary } from "@imperium/shared";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import type { FastifyBaseLogger } from "fastify";
 import type { ColonyService } from "../colony/service";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { colonies, emperors, fleets, ships } from "../db/schema";
+import { colonies, emperorAllies, emperors, fleets, installations, ships } from "../db/schema";
 import { discoverAround, fleetScannerRangeLy, type DiscoveryService } from "../discovery/service";
-import { findSystem, nameKey, spawnCandidates, systemsInRange } from "../emperor/world";
+import { findSystem, inHumanCore, nameKey, spawnCandidates, systemsInRange } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
 import type { FleetService } from "../fleet/service";
 import type { HumanityService } from "../humanity/service";
 import type { MarketEffects, MarketService } from "../market/service";
 import type { TerritoryService } from "./territory";
+import type { SiegeEffects, SiegeService } from "../war/siege";
 
 /** Decisiones como poco cada tanto tiempo real (con escalas de tiempo altas). */
 const MIN_DECIDE_MS = 10_000;
@@ -37,6 +39,8 @@ export interface AiEmperorEffects {
   fleets: string[];
   wallet: boolean;
   market: MarketEffects[];
+  /** Fase 9b: asedios empezados o desembarcos. */
+  sieges: SiegeEffects[];
 }
 
 /**
@@ -53,6 +57,8 @@ export class AiEmperorService {
   random: () => number = Math.random;
   /** Aviso a los jugadores (lo enlaza `app.ts`). */
   onEffects: ((fx: AiEmperorEffects) => void) | null = null;
+  /** Asedios (Fase 9b; lo enlaza `app.ts`). */
+  sieges: SiegeService | null = null;
 
   constructor(
     private readonly db: Database,
@@ -153,7 +159,7 @@ export class AiEmperorService {
     const persona = this.personality(me.name);
     // Su cartera (la crea con el saldo inicial, como al conectarse un jugador): cobra renta y lo que venda.
     await this.humanity.wallet(emperorId);
-    const fx: AiEmperorEffects = { emperorId, colonies: [], fleets: [], wallet: false, market: [] };
+    const fx: AiEmperorEffects = { emperorId, colonies: [], fleets: [], wallet: false, market: [], sieges: [] };
     let own = await this.colonyService.list(emperorId);
     const myFleets = await this.fleetService.byEmperor(emperorId);
     const now = this.now();
@@ -173,8 +179,13 @@ export class AiEmperorService {
       own = await this.colonyService.list(emperorId);
     }
 
+    // Guerra (Fase 9b): defender sus colonias asediadas y, si su personalidad lo pide, conquistar.
+    // Las flotas que usa (asedio, tropas) no colonizan ni exploran en esta decisión.
+    const reserved = new Set<string>();
+    if (this.sieges) await this.war(emperorId, persona, myFleets, own, fx, reserved, idle, at);
+
     // 2. Colonizadores: los que han llegado reclaman; los parados van a un buen planeta.
-    for (const f of myFleets.filter((x) => x.ships.some((s) => s.classId === "colonizer") && idle(x))) {
+    for (const f of myFleets.filter((x) => x.ships.some((s) => s.classId === "colonizer") && idle(x) && !reserved.has(x.id))) {
       const sys = findSystem(this.seed, at(f));
       const free = sys ? await this.freePlanets(sys) : [];
       if (sys && free.length > 0 && !this.territory.owner(sys)) {
@@ -211,7 +222,7 @@ export class AiEmperorService {
     }
 
     // 4. Exploración: su explorador va a un sistema sin descubrir cercano.
-    const explorer = myFleets.find((f) => f.ships.every((s) => s.classId === "explorer") && idle(f));
+    const explorer = myFleets.find((f) => f.ships.every((s) => s.classId === "explorer") && idle(f) && !reserved.has(f.id));
     if (explorer && this.random() < persona.explore) {
       const from = findSystem(this.seed, at(explorer));
       if (from) {
@@ -228,6 +239,127 @@ export class AiEmperorService {
     // 5. Comercio: vende los excedentes de su capital.
     if (persona.trades && own.length > 0) await this.trade(emperorId, own, fx);
     return fx;
+  }
+
+  /**
+   * Guerra de un Emperador de la IA (Fase 9b), con las órdenes de un jugador:
+   * 1. Defensa: manda una flota armada parada a cada colonia propia asediada.
+   * 2. Asedios propios: con el progreso completo, desembarca los colonos de un
+   *    colonizador (lo trae si está en otro sitio; si no tiene, lo encarga).
+   * 3. Conquista: con `war.minWarships` naves armadas paradas, elige la colonia
+   *    ajena más débil a su alcance (fuera del Núcleo, sin compañeros ni
+   *    Emperadores en su gracia ni facciones alienígenas), lleva allí sus naves
+   *    y la asedia al llegar.
+   */
+  private async war(
+    emperorId: string,
+    persona: AiPersonalityDefinition,
+    myFleets: Fleet[],
+    own: Colony[],
+    fx: AiEmperorEffects,
+    reserved: Set<string>,
+    idle: (f: Fleet) => boolean,
+    at: (f: Fleet) => string,
+  ): Promise<void> {
+    const sieges = this.sieges!;
+    const armed = (f: Fleet) => siegePower(f.ships.map((s) => s.classId)) > 0;
+    const troopsOf = (f: Fleet) => f.cargo.humans + f.ships.reduce((n, s) => n + s.humans, 0);
+    const move = async (f: Fleet, systemId: string) => {
+      reserved.add(f.id);
+      if (at(f) === systemId) return;
+      const res = await this.fleetService.move(emperorId, f.id, systemId);
+      if (res.ok) fx.fleets.push(f.id);
+    };
+
+    // 1. Defensa.
+    if (persona.defends) {
+      for (const s of await sieges.activeAgainst(this.db, emperorId)) {
+        if (myFleets.some((f) => armed(f) && at(f) === s.systemId)) continue;
+        const helper = myFleets.find((f) => armed(f) && idle(f) && !reserved.has(f.id));
+        if (helper) await move(helper, s.systemId);
+      }
+    }
+    if (!persona.war) return;
+
+    // 2. Asedios propios.
+    const mine = await sieges.activeBy(this.db, emperorId);
+    for (const s of mine) {
+      for (const f of myFleets) if (at(f) === s.systemId && armed(f)) reserved.add(f.id);
+      if (s.progress < 1) continue;
+      const troops = myFleets.filter((f) => idle(f) && !armed(f) && troopsOf(f) >= 1 && !reserved.has(f.id));
+      const here = troops.find((f) => at(f) === s.systemId);
+      if (here) {
+        const res = await sieges.assault(emperorId, s.id, here.id);
+        if (res.ok) {
+          fx.sieges.push(res.fx);
+          fx.fleets.push(here.id);
+        }
+        reserved.add(here.id);
+      } else if (troops[0]) {
+        await move(troops[0], s.systemId);
+      } else {
+        const yard = own.find((c) => (c.installations.shipyard ?? 0) > 0 && !c.builds.some((b) => b.itemId === "colonizer"));
+        const building = own.some((c) => c.builds.some((b) => b.itemId === "colonizer"));
+        if (yard && !building) {
+          const res = await this.colonyService.build(emperorId, yard.id, "ship", "colonizer");
+          if (res.ok) fx.colonies.push(yard.id);
+        }
+      }
+    }
+    if (mine.length > 0) return;
+
+    // 3. Conquista: ¿hay naves armadas suficientes paradas?
+    const warFleets = myFleets.filter((f) => armed(f) && idle(f) && !reserved.has(f.id));
+    const warships = warFleets.reduce((n, f) => n + f.ships.filter((s) => siegePower([s.classId]) > 0).length, 0);
+    if (warships < persona.war.minWarships) return;
+    // Se parte de donde más fuerza tiene reunida.
+    const power = new Map<string, number>();
+    for (const f of warFleets) power.set(at(f), (power.get(at(f)) ?? 0) + siegePower(f.ships.map((s) => s.classId)));
+    const base = [...power.entries()].sort((a, b) => b[1] - a[1])[0]![0];
+    const from = findSystem(this.seed, base);
+    if (!from) return;
+    const target = await this.warTarget(emperorId, from.position, persona.war.rangeLy);
+    if (!target) return;
+    const there = warFleets.find((f) => at(f) === target.systemId);
+    if (there) {
+      const res = await sieges.start(emperorId, target.colonyId);
+      if (res.ok) fx.sieges.push(res.fx);
+    }
+    for (const f of warFleets) await move(f, target.systemId);
+  }
+
+  /** La colonia ajena más débil a su alcance que puede atacar (o null). */
+  private async warTarget(emperorId: string, from: { x: number; y: number; z: number }, rangeLy: number): Promise<{ colonyId: string; systemId: string } | null> {
+    const known = new Set(await this.discoveries.list(emperorId));
+    const near = systemsInRange(this.seed, from, rangeLy).filter((s) => known.has(s.id) && !inHumanCore(s.id));
+    if (near.length === 0) return null;
+    const rows = await this.db
+      .select({ id: colonies.id, systemId: colonies.systemId, emperorId: colonies.emperorId, population: colonies.population, kind: emperors.kind, createdAt: emperors.createdAt })
+      .from(colonies)
+      .leftJoin(emperors, eq(emperors.id, colonies.emperorId))
+      .where(inArray(colonies.systemId, near.map((s) => s.id)));
+    const allies = new Set((await this.db.select({ id: emperorAllies.allyId }).from(emperorAllies).where(eq(emperorAllies.emperorId, emperorId))).map((r) => r.id));
+    const now = this.now();
+    const candidates = rows.filter(
+      (r) =>
+        r.emperorId !== emperorId &&
+        r.kind !== "alien" &&
+        !(r.emperorId && allies.has(r.emperorId)) &&
+        !(r.createdAt && gameHours(r.createdAt.getTime(), now, this.timeScale) < SIEGE.noviceGraceHours),
+    );
+    if (candidates.length === 0) return null;
+    const counts = await this.db
+      .select({ colonyId: installations.colonyId, kind: installations.kind, n: sql<number>`count(*)::int` })
+      .from(installations)
+      .where(inArray(installations.colonyId, candidates.map((c) => c.id)))
+      .groupBy(installations.colonyId, installations.kind);
+    const defense = (c: (typeof candidates)[number]) => {
+      const inst: InstallationCounts = {};
+      for (const r of counts) if (r.colonyId === c.id) inst[r.kind as keyof InstallationCounts] = r.n;
+      return colonyDefense(c.population, inst);
+    };
+    const best = candidates.map((c) => ({ c, d: defense(c) })).sort((a, b) => a.d - b.d)[0]!;
+    return { colonyId: best.c.id, systemId: best.c.systemId };
   }
 
   private nextInstallation(c: Colony, persona: AiPersonalityDefinition): string | null {

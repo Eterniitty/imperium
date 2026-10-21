@@ -14,11 +14,14 @@ import {
   type Fleet,
   type I18nKey,
   type ServerMessage,
+  type Siege,
   type Topic,
   type Wallet,
   type WsTicketResponse,
 } from "@imperium/shared";
 import { api, authStore } from "../state/auth";
+import { gameStore } from "../state/store";
+import { factionName } from "../ui/aliens";
 import { addSample, resetSpace, spaceStore, type RemoteShip } from "./space";
 
 /**
@@ -46,6 +49,8 @@ export interface WorldState {
   wallet: Wallet | null;
   /** Nave del Emperador propio: dónde está aparcada (y sus recursos). */
   flagship: FlagshipStatus | null;
+  /** Asedios propios y a colonias propias (en curso y acabados hace poco), por id (Fase 9b). */
+  sieges: Record<string, Siege>;
   /** Escala del tiempo de juego del servidor (para estimar duraciones de viaje). */
   timeScale: number;
   myEmperorId: string | null;
@@ -63,6 +68,7 @@ export const worldStore = createStore<WorldState>()(() => ({
   battles: {},
   wallet: null,
   flagship: null,
+  sieges: {},
   timeScale: 1,
   myEmperorId: null,
   clockOffset: 0,
@@ -108,7 +114,7 @@ class Connection {
     this.ws?.close(1000, "bye");
     this.ws = null;
     this.failPending();
-    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, battles: {}, wallet: null, flagship: null, myEmperorId: null });
+    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, battles: {}, wallet: null, flagship: null, sieges: {}, myEmperorId: null });
     resetSpace();
   }
 
@@ -204,7 +210,9 @@ class Connection {
           for (const c of msg.data.colonies) colonies[c.id] = c;
           const battles: Record<string, Battle> = {};
           for (const b of msg.data.battles) battles[b.id] = b;
-          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans, battles, wallet: msg.data.wallet, flagship: msg.data.flagship });
+          const sieges: Record<string, Siege> = {};
+          for (const x of msg.data.sieges) sieges[x.id] = x;
+          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans, battles, wallet: msg.data.wallet, flagship: msg.data.flagship, sieges });
         }
         return;
       }
@@ -224,11 +232,18 @@ class Connection {
         let battles = state.battles;
         let wallet = state.wallet;
         let flagship = state.flagship;
+        let sieges = state.sieges;
         for (const op of msg.ops) {
           const dot = op.path.indexOf(".");
-          const kind = op.path.slice(0, dot) as "emperors" | "fleets" | "discovered" | "colonies" | "humans" | "battles" | "wallet" | "flagship";
+          const kind = op.path.slice(0, dot) as "emperors" | "fleets" | "discovered" | "colonies" | "humans" | "battles" | "wallet" | "flagship" | "sieges";
           const id = op.path.slice(dot + 1);
-          if (kind === "colonies") {
+          if (kind === "sieges") {
+            sieges = { ...sieges };
+            if (op.v) {
+              noticeSiege(sieges[id], op.v as Siege);
+              sieges[id] = op.v as Siege;
+            } else delete sieges[id];
+          } else if (kind === "colonies") {
             colonies = { ...colonies };
             if (op.v) colonies[id] = op.v as Colony;
             else delete colonies[id];
@@ -252,7 +267,7 @@ class Connection {
             else delete fleets[id];
           }
         }
-        worldStore.setState({ emperors, fleets, discovered, colonies, humans, battles, wallet, flagship });
+        worldStore.setState({ emperors, fleets, discovered, colonies, humans, battles, wallet, flagship, sieges });
         this.syncOwn();
         return;
       }
@@ -332,3 +347,23 @@ class Connection {
 }
 
 export const connection = new Connection();
+
+/**
+ * Avisos de los asedios (Fase 9b): al defensor, cuando empieza uno contra su
+ * colonia y cuando la pierde; al atacante, cuando puede desembarcar y cuando
+ * toma el planeta o se rompe el asedio.
+ */
+function noticeSiege(prev: Siege | undefined, next: Siege): void {
+  const planet = next.colonyName ?? next.planetName;
+  const enemy = next.attackerFactionId ? factionName(gameStore.getState().locale, next.attackerFactionId) : next.attackerName;
+  const notify = gameStore.getState().notify;
+  if (next.role === "defender") {
+    if (!prev && next.outcome === "ongoing") notify("siege.notice.attacked", { planet, enemy });
+    else if (prev?.outcome === "ongoing" && next.outcome === "captured") notify("siege.notice.lost", { planet, enemy });
+    else if (prev?.outcome === "ongoing" && (next.outcome === "broken" || next.outcome === "lifted")) notify("siege.notice.relieved", { planet });
+  } else {
+    if (prev && prev.state !== "ready" && next.state === "ready" && next.outcome === "ongoing") notify("siege.notice.ready", { planet });
+    else if (prev?.outcome === "ongoing" && next.outcome === "captured") notify("siege.notice.captured", { planet });
+    else if (prev?.outcome === "ongoing" && next.outcome === "broken") notify("siege.notice.broken", { planet });
+  }
+}

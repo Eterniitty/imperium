@@ -9,3 +9,4 @@ export * from "./humanity";
 export * from "./aliens";
 export * from "./aiEmperors";
 export * from "./shipModels";
+export * from "./conquest";

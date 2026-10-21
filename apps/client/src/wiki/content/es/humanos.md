@@ -28,4 +28,4 @@ Cada planeta tiene además un **tope de población** que crece con la habitabili
 - **Colonizador**: al construirlo en un astillero, embarcan colonos de la colonia (hasta su capacidad), **dejando siempre 50** en ella. Funda una colonia nueva en otro planeta y se consume. Ver [Colonias](/wiki/colonias).
 - **Carguero**: tiene **plazas de pasajeros** para trasladar humanos entre tus colonias, a mano o con una ruta automática. Al cargar, la colonia conserva siempre 50 habitantes. Ver [Flotas y logística](/wiki/flotas).
 
-> [!dev] Las **tropas** (humanos que desembarcan para tomar planetas ajenos) llegarán con la conquista (fase 9b).
+Los humanos también son tus **tropas**: para tomar un planeta asediado desembarcan los pasajeros de tus cargueros, los colonos de un colonizador o los de tu nave. Ver [Conquista](/wiki/conquista).

@@ -8,6 +8,7 @@ import type { HumanityService } from "../humanity/service";
 import type { FlagshipService } from "../space/flagship";
 import { canSee, type SocialService } from "../social/service";
 import type { WarEffects, WarService } from "../war/service";
+import type { SiegeEffects, SiegeService } from "../war/siege";
 
 /** Un jugador conectado por WebSocket. */
 export interface Client {
@@ -46,6 +47,8 @@ export class Hub {
   private queue: Promise<unknown> = Promise.resolve();
   /** Apagando el servidor: ya no se difunde nada (la base de datos se va a cerrar). */
   private closing = false;
+  /** Asedios (Fase 9b; lo enlaza `app.ts`). */
+  sieges: SiegeService | null = null;
 
   /** Nave del Emperador (aparcamiento y recursos) para el tema `me`; la pone `buildApp`. */
   flagships: FlagshipService | null = null;
@@ -124,7 +127,7 @@ export class Hub {
         client.known = new Set(visible.map((e) => e.id));
         client.send({ t: "snap", topic, seq: this.emperorsSeq, serverTime: this.now(), data: { emperors: visible.map((e) => this.view(e)) } });
       } else {
-        const [fleets, discovered, colonies, humans, battles, wallet, flagship] = await Promise.all([
+        const [fleets, discovered, colonies, humans, battles, wallet, flagship, sieges] = await Promise.all([
           this.fleets.byEmperor(client.emperorId),
           this.discoveries.list(client.emperorId),
           this.colonies.list(client.emperorId),
@@ -132,6 +135,7 @@ export class Hub {
           this.wars.list(client.emperorId),
           this.humanity.wallet(client.emperorId),
           this.flagships?.status(client.emperorId) ?? null,
+          this.sieges ? this.sieges.list(client.emperorId) : Promise.resolve([]),
         ]);
         if (!this.clients.has(client) || !humans || !wallet) return;
         client.send({
@@ -139,7 +143,7 @@ export class Hub {
           topic,
           seq: this.meSeq.get(client.emperorId) ?? 0,
           serverTime: this.now(),
-          data: { fleets, discovered, colonies, humans, battles, wallet, flagship },
+          data: { fleets, discovered, colonies, humans, battles, wallet, flagship, sieges },
         });
       }
       client.subscribed.add(topic);
@@ -257,6 +261,27 @@ export class Hub {
     for (const [fleetId, emperorId] of fx.fleets) void this.publishFleet(emperorId, fleetId);
     for (const [colonyId, emperorId] of fx.colonies) void this.publishColony(emperorId, colonyId);
     for (const battleId of fx.battles) void this.publishBattle(battleId);
+  }
+
+  /** Envía a atacante y defensor el estado de un asedio, visto desde su lado (Fase 9b). */
+  publishSiege(siegeId: string): Promise<void> {
+    return this.enqueue(async () => {
+      if (!this.sieges) return;
+      for (const emperorId of await this.sieges.participants(siegeId)) {
+        const siege = await this.sieges.view(emperorId, siegeId);
+        this.send("me", this.nextMeSeq(emperorId), [{ path: `sieges.${siegeId}`, v: siege }], (c) => c.emperorId === emperorId);
+      }
+    });
+  }
+
+  /** Difunde lo que ha cambiado por un asedio: el asedio, flotas, colonias (también la perdida), carteras y humanos. */
+  publishSiegeFx(fx: SiegeEffects): void {
+    for (const [fleetId, emperorId] of fx.fleets) void this.publishFleet(emperorId, fleetId);
+    for (const emperorId of fx.allColonies) void this.publishColonies(emperorId);
+    for (const [colonyId, emperorId] of fx.colonies) void this.publishColony(emperorId, colonyId);
+    for (const id of fx.wallets) void this.publishWallet(id);
+    for (const id of fx.humans) void this.publishHumans(id);
+    for (const siegeId of fx.sieges) void this.publishSiege(siegeId);
   }
 
   /** Avisa a su dueño de los sistemas que acaba de descubrir (niebla de guerra). */

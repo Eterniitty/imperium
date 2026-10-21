@@ -16,7 +16,7 @@ Doce clases de nave, todas **construidas en tus colonias** (ver [Economía](/wik
 | **Línea** | Fragata, Destructor | La fragata vale para todo; el destructor lleva torretas pesadas y torpedos. |
 | **Capitales** | Crucero, Portanaves | Las más caras: piden **dique orbital**. El portanaves lleva alas de cazas embarcadas. |
 | **Logística** | Carguero, Carguero pesado | Bodega para los recursos y plazas para pasajeros; lentos y frágiles, necesitan escolta. |
-| **Transporte** | Transporte de tropas | Casco blindado y 600 plazas: traslada población y llevará las tropas de asalto. |
+| **Transporte** | Transporte de tropas | Casco blindado y 600 plazas: traslada población y lleva las tropas para el [desembarco](/wiki/conquista). |
 | **Colonización** | Colonizador | Lleva colonos para fundar una colonia y se desmantela al hacerlo. |
 
 ## Qué hace falta para construirlas

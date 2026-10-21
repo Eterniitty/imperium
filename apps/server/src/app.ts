@@ -30,6 +30,7 @@ import { AlienService } from "./ai/service";
 import { TerritoryService } from "./ai/territory";
 import { warRoutes } from "./war/routes";
 import { WarService } from "./war/service";
+import { SiegeService } from "./war/siege";
 import { createMailer, type Mailer } from "./mail";
 import { ipRateKey, RateLimiter } from "./auth/rateLimit";
 
@@ -119,6 +120,15 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     (db, a, b, systemId) => aliens.hostile(db, a, b, systemId),
     (tx, emperorId, factionId) => aliens.onIntercept(tx, emperorId, factionId),
   );
+  // Fase 9b: asedios y conquista de planetas (jugadores, facciones alienígenas y Emperadores de la IA).
+  const sieges = new SiegeService(deps.db, config, colonies, wars, market);
+  sieges.aliens = {
+    isActor: (id) => aliens.isActor(id),
+    factionOf: (id) => aliens.factionOf(id),
+    onSieged: (tx, emperorId, factionId) => aliens.onSieged(tx, emperorId, factionId),
+  };
+  aliens.sieges = sieges;
+  aiEmperors.sieges = sieges;
   const hub = new Hub(emperors, fleets, social, discoveries, colonies, wars, humanity, app.log, config.TIME_SCALE);
   // Nave del Emperador fuera del pilotaje (aparcada) y disposición de los sistemas, que
   // depende de su detalle secreto.
@@ -132,6 +142,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   space.onFlagship = (emperorId) => void hub.publishFlagship(emperorId);
   // Al reponer la nave cambian las existencias de la colonia.
   space.onColony = (emperorId, colonyId) => void hub.publishColony(emperorId, colonyId);
+  hub.sieges = sieges;
   app.addHook("onClose", async () => space.stop());
   // Antes de cerrar conexiones: dejar de difundir y parar la cola de eventos, para que
   // nada use la base de datos mientras se apaga.
@@ -152,15 +163,17 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     for (const id of fx.colonies) void hub.publishColony(fx.emperorId, id);
     for (const id of fx.fleets) void hub.publishFleet(fx.emperorId, id);
     for (const m of fx.market) aliens.onMarket?.(m);
+    for (const s of fx.sieges) hub.publishSiegeFx(s);
   };
-  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, colonies, logistics, wars, space, hub, humanity, market, aliens });
+  aliens.onSiege = (fx) => hub.publishSiegeFx(fx);
+  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges });
   await app.register(humanityRoutes, { config, db: deps.db, emperors, humanity, market });
   await app.register(warRoutes, { config, db: deps.db, emperors, wars, aliens });
   await app.register(alienRoutes, { config, db: deps.db, emperors, discoveries, wars, aliens });
   await app.register(socialRoutes, { config, db: deps.db, emperors, social, hub });
   await app.register(discoveryRoutes, { config, db: deps.db, emperors, discoveries });
-  await app.register(accountRoutes, { config, db: deps.db, hub, space, colonies, humanity, market });
-  await app.register(colonyRoutes, { config, db: deps.db, emperors, discoveries, colonies });
+  await app.register(accountRoutes, { config, db: deps.db, hub, space, colonies, humanity, market, sieges });
+  await app.register(colonyRoutes, { config, db: deps.db, emperors, discoveries, colonies, sieges });
 
   // Cola de eventos programados: llegadas de flotas y del Emperador (y, más adelante, construcciones…).
   // Al llegar se descubre lo que cubre el escáner (niebla de guerra).
@@ -222,6 +235,12 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
       if (done) void hub.publishColony(done.emperorId, done.colonyId);
     };
   });
+  // Fase 9b: resolución de un asedio (progreso, daño de las defensas, presencia y ocupación alienígena).
+  worker.on("siege.tick", async (tx, { siegeId }) => {
+    await aliens.ensure();
+    const fx = await sieges.tick(tx, siegeId);
+    if (fx) return () => hub.publishSiegeFx(fx);
+  });
   // Fase 11: una decisión de la IA de una región alienígena activa.
   worker.on("ai.region", async (tx, { regionKey }) => aliens.tick(tx, regionKey));
   worker.on("ai.emperor", async (tx, { emperorId }) => aiEmperors.tick(tx, emperorId));
@@ -239,6 +258,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   app.decorate("market", market);
   app.decorate("aliens", aliens);
   app.decorate("aiEmperors", aiEmperors);
+  app.decorate("sieges", sieges);
 
   return app;
 }
@@ -253,5 +273,6 @@ declare module "fastify" {
     aliens: AlienService;
     aiEmperors: AiEmperorService;
     flagships: FlagshipService;
+    sieges: SiegeService;
   }
 }

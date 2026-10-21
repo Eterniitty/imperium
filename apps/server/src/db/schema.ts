@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { FLAGSHIP_SUPPLIES } from "@imperium/content";
-import { bigint, bigserial, boolean, check, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { bigint, bigserial, boolean, check, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 /**
  * Esquema de la base de datos. Tras cambiarlo: `pnpm --filter @imperium/server db:generate`
@@ -257,6 +257,11 @@ export const colonies = pgTable(
     alloys: doublePrecision("alloys").notNull().default(0),
     resolvedAt: timestamp("resolved_at", { withTimezone: true }).notNull(),
     foundedAt: timestamp("founded_at", { withTimezone: true }).notNull().defaultNow(),
+    /**
+     * Fase 9b: cuándo pasó a su dueño actual por conquista (null = la fundó él).
+     * La capital es la colonia más antigua *para su dueño* (coalesce con `foundedAt`).
+     */
+    acquiredAt: timestamp("acquired_at", { withTimezone: true }),
   },
   (t) => [
     unique("colonies_planet_unique").on(t.systemId, t.planetIndex),
@@ -658,4 +663,57 @@ export const alienStandings = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.emperorId, t.factionId] }), check("alien_standings_grudge", sql`${t.grudge} >= 0`)],
+);
+
+// --- Fase 9b: conquista de planetas ---
+
+/**
+ * Asedios de colonias (Fase 9b). Como mucho uno en curso por colonia. El
+ * progreso (0 → 1) se resuelve hasta `resolvedAt` en cada evento `siege.tick`;
+ * con el progreso completo, el atacante puede desembarcar tropas
+ * (`siege.assault`). Se conservan al terminar, como historial.
+ */
+export const sieges = pgTable(
+  "sieges",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    colonyId: uuid("colony_id")
+      .notNull()
+      .references(() => colonies.id, { onDelete: "cascade" }),
+    systemId: text("system_id").notNull(),
+    attackerId: uuid("attacker_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    /** Dueño de la colonia al empezar (null = independiente, o borró su cuenta). */
+    defenderId: uuid("defender_id").references(() => emperors.id, { onDelete: "set null" }),
+    /** Semilla de las resoluciones (daño de las defensas, pérdidas de la captura). */
+    seed: integer("seed").notNull(),
+    /** Resoluciones hechas (cada una deriva su semilla). */
+    step: integer("step").notNull().default(0),
+    progress: doublePrecision("progress").notNull().default(0),
+    /** Hora hasta la que está resuelto el progreso. */
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }).notNull(),
+    /** advancing | contested | battle | ready (ver `SiegeState`). */
+    state: text("state").notNull().default("advancing"),
+    /** Fuerza, defensa y defensores de la última resolución (para mostrarlos). */
+    attack: doublePrecision("attack").notNull().default(0),
+    defense: doublePrecision("defense").notNull().default(0),
+    defenders: integer("defenders").notNull().default(0),
+    /** Último desembarco (informe `SiegeAssaultReport`). */
+    lastAssault: jsonb("last_assault"),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    nextTickAt: timestamp("next_tick_at", { withTimezone: true }),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    /** captured | broken | lifted | void; null mientras dura. */
+    outcome: text("outcome"),
+  },
+  (t) => [
+    uniqueIndex("sieges_active_colony_idx").on(t.colonyId).where(sql`${t.endedAt} IS NULL`),
+    index("sieges_attacker_idx").on(t.attackerId),
+    index("sieges_defender_idx").on(t.defenderId),
+    index("sieges_system_idx").on(t.systemId),
+    check("sieges_state", sql`${t.state} IN ('advancing', 'contested', 'battle', 'ready')`),
+    check("sieges_outcome", sql`${t.outcome} IS NULL OR ${t.outcome} IN ('captured', 'broken', 'lifted', 'void')`),
+    check("sieges_progress", sql`${t.progress} >= 0 AND ${t.progress} <= 1`),
+  ],
 );
