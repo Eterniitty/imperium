@@ -42,17 +42,21 @@ export const GATE_PAGE = /* html */ `<!doctype html>
     <input id="password" name="password" type="password" autocomplete="current-password" required />
     <button type="submit" data-t="enter">Entrar</button>
     <p class="error" id="error" role="alert"></p>
-    <p class="foot"><a href="/legal/" data-t="legal">Aviso legal y privacidad</a></p>
+    <p class="foot"><a id="imprint" href="/legal/aviso-legal.html" data-t="imprint">Aviso legal (Impressum)</a> · <a id="privacy" href="/legal/privacidad.html" data-t="privacy">Privacidad (Datenschutz)</a></p>
   </form>
 </main>
 <script>
 (() => {
   const en = !/^es\\b/i.test(navigator.language || "es");
   const T = en
-    ? { sub: "Alpha · private access", user: "User", password: "Password", enter: "Enter", legal: "Legal notice and privacy", wrong: "Wrong user or password.", limited: "Too many attempts. Wait a few minutes.", fail: "Could not connect. Try again." }
-    : { sub: "Alfa · acceso privado", user: "Usuario", password: "Contraseña", enter: "Entrar", legal: "Aviso legal y privacidad", wrong: "Usuario o contraseña incorrectos.", limited: "Demasiados intentos. Espera unos minutos.", fail: "No se pudo conectar. Inténtalo de nuevo." };
+    ? { sub: "Alpha · private access", user: "User", password: "Password", enter: "Enter", imprint: "Legal notice (Impressum)", privacy: "Privacy (Datenschutz)", wrong: "Wrong user or password.", limited: "Too many attempts. Wait a few minutes.", fail: "Could not connect. Try again." }
+    : { sub: "Alfa · acceso privado", user: "Usuario", password: "Contraseña", enter: "Entrar", imprint: "Aviso legal (Impressum)", privacy: "Privacidad (Datenschutz)", wrong: "Usuario o contraseña incorrectos.", limited: "Demasiados intentos. Espera unos minutos.", fail: "No se pudo conectar. Inténtalo de nuevo." };
   document.documentElement.lang = en ? "en" : "es";
   for (const el of document.querySelectorAll("[data-t]")) el.textContent = T[el.dataset.t];
+  if (en) {
+    document.getElementById("imprint").href = "/legal/imprint.html";
+    document.getElementById("privacy").href = "/legal/privacy.html";
+  }
 
   const form = document.getElementById("gate");
   const error = document.getElementById("error");
