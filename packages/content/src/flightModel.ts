@@ -24,11 +24,12 @@ export const FLIGHT_MODEL = {
    */
   assistGain: 2.2,
   /** Velocidades de giro máximas (rad/s) y aceleración angular de los propulsores de maniobra (rad/s²). */
-  // Nave de 320 m: gira con más peso que un caza.
-  pitchRate: 0.6,
-  yawRate: 0.5,
-  rollRate: 1.0,
-  angularAccel: 1.8,
+  // Nave capital de 320 m con 500 personas a bordo: gira despacio y sin tirones
+  // (unos 15 °/s, y tarda casi un segundo en llegar a ese giro y en frenarlo).
+  pitchRate: 0.28,
+  yawRate: 0.24,
+  rollRate: 0.45,
+  angularAccel: 0.35,
   /**
    * Vuelo con ratón (retícula virtual): a esta distancia del centro de la
    * pantalla, en fracción de media altura, se gira a la velocidad máxima.

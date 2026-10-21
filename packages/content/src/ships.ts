@@ -440,7 +440,7 @@ export const QUANTUM_RIFT = {
 export const COMPANION_ARRIVAL_OFFSET_M = 3000;
 
 /** Velocidad con la que la nave se alinea sola con el destino del salto (radianes por segundo). */
-export const QUANTUM_ALIGN_RAD_PER_SEC = 1.4;
+export const QUANTUM_ALIGN_RAD_PER_SEC = 0.35;
 
 /** Alcance máximo del salto cuántico con el depósito lleno (años luz). */
 export const QUANTUM_MAX_LY = FLAGSHIP_SUPPLIES.fuelMax / FLAGSHIP_SUPPLIES.quantumFuelPerLy;
