@@ -80,8 +80,20 @@ class Trail {
     this.points.frustumCulled = false;
   }
 
+  /**
+   * Origen local de la estela: los puntos se guardan relativos a él (en Float32,
+   * a cientos de millones de metros del centro del sistema se perderían metros).
+   */
+  private origin: THREE.Vector3 | null = null;
+
   /** Añade puntos a lo largo del tramo recorrido este fotograma. */
-  push(from: THREE.Vector3, to: THREE.Vector3, dt: number): void {
+  push(fromW: THREE.Vector3, toW: THREE.Vector3, dt: number): void {
+    if (!this.origin) {
+      this.origin = toW.clone();
+      this.points.position.copy(this.origin);
+    }
+    const from = fromW.clone().sub(this.origin);
+    const to = toW.clone().sub(this.origin);
     this.emit += dt;
     const step = 1 / 60;
     while (this.emit >= step) {
@@ -143,7 +155,8 @@ class Burst {
     const v = new THREE.Vector3();
     for (let i = 0; i < count; i++) {
       v.randomDirection().multiplyScalar(speed * (0.3 + Math.random() * 0.7));
-      this.positions.set([at.x, at.y, at.z], i * 3);
+      // Relativas a `at` (la malla se coloca allí): precisión de Float32 lejos del centro.
+      this.positions.set([0, 0, 0], i * 3);
       this.velocities.set([v.x, v.y, v.z], i * 3);
     }
     const geo = new THREE.BufferGeometry();
@@ -152,6 +165,7 @@ class Burst {
       geo,
       new THREE.PointsMaterial({ map: glowTexture(), color, size, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true }),
     );
+    this.points.position.copy(at);
     this.points.frustumCulled = false;
   }
 

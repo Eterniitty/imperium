@@ -3,10 +3,12 @@
  * (pilotaje) y el servidor (validar que nadie va más rápido de lo posible).
  */
 
-/** Velocidad normal: para maniobrar y combatir. */
-export const PILOT_SPEED = 250;
+import { FLIGHT_MODEL } from "@imperium/content";
+
+/** Velocidad normal: para maniobrar y combatir (`FLIGHT_MODEL` en `@imperium/content`). */
+export const PILOT_SPEED = FLIGHT_MODEL.maxSpeed;
 /** Impulso (Mayús): multiplica la velocidad normal. */
-export const PILOT_BOOST = 4;
+export const PILOT_BOOST = FLIGHT_MODEL.boostFactor;
 
 /**
  * Motor de pulso, al estilo del supercrucero de Elite: solo hacia delante y sin
@@ -16,7 +18,7 @@ export const PILOT_BOOST = 4;
  * aleja. Acelera y frena de forma suave, nunca a saltos.
  */
 export const PULSE_MIN_SPEED = 300;
-export const PULSE_MAX_SPEED = 150_000;
+export const PULSE_MAX_SPEED = 2_000_000;
 /**
  * Segundos "hasta la superficie" que deja el límite al ir de frente hacia un
  * cuerpo: la velocidad máxima es la distancia entre este tiempo. Así la nave

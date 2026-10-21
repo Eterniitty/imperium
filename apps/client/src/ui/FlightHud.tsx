@@ -2,6 +2,7 @@ import { PILOT_BOOST, PILOT_SPEED, PULSE_MAX_SPEED } from "@imperium/sim";
 import { useTelemetry } from "../engine/telemetry";
 import { FlightInstruments } from "./FlightInstruments";
 import { useGame, useT } from "../state/store";
+import { useSettings } from "../state/settings";
 import { useKeyLabels } from "./keys";
 import { formatDuration } from "./useNow";
 
@@ -29,6 +30,7 @@ export function FlightHud() {
   const view = useGame((s) => s.view);
   const camera = useGame((s) => s.cameraView);
   const tel = useTelemetry();
+  const assist = useSettings((s) => s.prefs.flight.assist);
   if (!flight) return null;
   const piloting = view === "system";
   const speed = piloting ? tel.speed : galaxySpeed;
@@ -62,6 +64,16 @@ export function FlightHud() {
           <div className="flight-sub">
             <span className={pulse ? "pulse-key on" : "pulse-key"}>{t("pilot.pulseHint", { key: keys.pulse })}</span>
             {pulse && <span className="muted"> · {t("pilot.pulseLimit", { v: `${limitNum} ${t(limitUnit)}` })}</span>}
+            <span className={assist ? "pulse-key on" : "pulse-key"}>
+              {" "}
+              · {t("pilot.assist")} {assist ? "ON" : "OFF"} ({keys.flightAssist})
+            </span>
+            <div className="muted">
+              {t(`pilot.region.${tel.gravity.region}`)}
+              {tel.gravity.body && ` · ${tel.gravity.body}`}
+              {tel.gravity.g > 0.005 && ` · ${t("pilot.gravity")} ${tel.gravity.g.toFixed(2)} m/s²`}
+            </div>
+            {tel.freeCam && <div className="muted">{t("pilot.freeCam", { key: keys.cameraReset })}</div>}
           </div>
         )}
         {piloting && tel.eta && (

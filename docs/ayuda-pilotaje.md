@@ -6,12 +6,15 @@ Texto para jugadores (lo usará la ventana de ayuda del juego). Las teclas son l
 
 | Tecla | Qué hace |
 |---|---|
-| Arrastrar con el ratón | Orientar la nave (el cursor sigue libre para elegir planetas) |
+| Arrastrar con el ratón | Mover la cámara alrededor de la nave (no la gira); rueda: distancia |
+| B | Cámara: volver detrás de la nave (o mirar al frente en cabina) |
+| Z | Asistencia de vuelo (frenado y estabilización) |
+| G | Pilotaje con ratón: arrastrar con el botón izquierdo gira la nave; el derecho mueve la cámara |
 | W / S | Acelerar / frenar y retroceder |
 | A / D | Desplazarse a izquierda / derecha |
 | Espacio / C | Subir / bajar |
 | Q / E | Alabear (girar sobre el eje del morro) |
-| Flechas | Girar y cabecear |
+| Flechas | Guiñada y cabeceo (con aceleración angular, sin giros bruscos) |
 | Mayús | Impulso (×4 la velocidad de maniobra) |
 | **P** | **Motor de pulso** (encender / apagar) |
 | F (mantener) | Cañón |
@@ -27,12 +30,18 @@ Texto para jugadores (lo usará la ventana de ayuda del juego). Las teclas son l
 - **Motor de pulso (P)**, al estilo del supercrucero: solo hacia delante y sin disparar. Se puede encender **siempre**, también junto a un planeta. Su velocidad máxima depende de lo cerca que estés del cuerpo más próximo (estrella o planeta):
   - pegado a un planeta y **de frente** hacia él, va despacio (unos cientos de m/s) y frena solo al acercarse;
   - si **te alejas** del planeta, el límite es varias veces mayor y la nave acelera de forma progresiva;
-  - en el espacio abierto llega hasta unos **150 km/s**.
+  - en el espacio abierto llega hasta unos **2000 km/s**.
   
   Acelera y frena suavemente, sin saltos: cruzar el sistema de un planeta a otro lleva **uno o dos minutos**. El HUD muestra la velocidad, el límite actual del pulso y el **tiempo estimado** hasta el planeta seleccionado, la nave fijada o el cuerpo que tengas de frente. Al apagar el pulso, la nave frena en un par de segundos.
 - El pulso gasta **combustible** y algo de **energía**. Sin combustible no funciona.
 
-*Nota de diseño (petición del usuario, 21-10-2026): el pulso anterior iba a 30 km/s fijos, se notaba como un teletransporte y no se podía encender junto a un planeta. Ahora el límite es la distancia a la superficie del cuerpo más cercano dividida entre 3 s, multiplicada hasta por 7 si te alejas de él, entre 300 m/s y 150 km/s (`packages/sim/src/flight.ts`). El servidor valida cada posición con el límite más permisivo en ese punto.*
+*Nota de diseño (petición del usuario, 21-10-2026): el pulso anterior iba a 30 km/s fijos, se notaba como un teletransporte y no se podía encender junto a un planeta. Ahora el límite es la distancia a la superficie del cuerpo más cercano dividida entre 3 s, multiplicada hasta por 7 si te alejas de él, entre 300 m/s y 2000 km/s (`packages/sim/src/flight.ts`; 22-10-2026, con la escala nueva: planetas de 20–350 km de radio). El servidor valida cada posición con el límite más permisivo en ese punto.*
+
+## Inercia, asistencia y gravedad
+
+- La nave tiene **inercia**: propulsores principal, de frenado y laterales/verticales con su aceleración (`FLIGHT_MODEL`). Con la **asistencia** (Z) frena sola; sin ella conserva la velocidad.
+- **Gravedad**: planetas, lunas y estrella atraen solo dentro de su esfera de influencia; el HUD muestra la región (espacio profundo, aproximación orbital, proximidad a la superficie) y la aceleración. El pulso la ignora.
+- En **Ajustes → Controles**: aceleración, inercia, velocidad máxima, pilotaje con ratón e invertir la cámara.
 
 ## Instrumentos (HUD)
 

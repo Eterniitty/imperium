@@ -11,3 +11,5 @@ export * from "./aiEmperors";
 export * from "./shipModels";
 export * from "./conquest";
 export * from "./lineage";
+export * from "./bodies";
+export * from "./flightModel";

@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
 import type { I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, WeaponKind, WorldPosition } from "@imperium/shared";
-import { ARRIVAL_EDGE, defaultPark, parkedPosition, PILOT_BOOST, PILOT_SPEED, planetAngle, pulseLimitAt, systemLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
+import { ARRIVAL_EDGE, defaultPark, moonOffset, parkedPosition, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
 import { resetSpace, shipName, spaceStore } from "../net/space";
 import { telemetry, type FlightTelemetry } from "./telemetry";
 import { connection, serverNow } from "../net/world";
@@ -16,7 +16,8 @@ import { distanceGain, playCannon, playExplosion, playHit, playMissile } from ".
 import { isBound, settingsStore, type Action } from "../state/settings";
 import { gameStore } from "../state/store";
 import { Backdrop } from "./Backdrop";
-import { FlightController } from "./FlightController";
+import { ShipController, type Maneuver } from "./ShipController";
+import { ChaseCamera } from "./ChaseCamera";
 import type { Keyboard } from "./input";
 import { createFlagship, disposeShip, SHIP_SCALE, shipRig } from "./shipModel";
 import { createCockpit } from "./cockpit";
@@ -37,7 +38,8 @@ interface PlanetVisual {
   pivot: THREE.Object3D;
   mesh: THREE.Mesh;
   orbitLine: THREE.LineLoop;
-  moons: Array<{ mesh: THREE.Mesh; radius: number; speed: number; phase: number }>;
+  /** Lunas: cuerpos físicos (colisión, gravedad, pulso) con la órbita de `@imperium/sim`. */
+  moons: Array<{ mesh: THREE.Mesh; layout: MoonLayout; name: string }>;
 }
 
 /** Avisos de la vista de sistema al motor. */
@@ -55,10 +57,6 @@ export interface SystemViewEvents {
 /** Cada cuánto se envía la posición propia al servidor mientras se pilota. */
 const POSE_INTERVAL = 0.125;
 
-/** Cámara de persecución (tercera persona): detrás y algo por encima de la nave. */
-const CHASE_OFFSET = new THREE.Vector3(0, 24, 100);
-/** Cámara de cabina (primera persona): en el puente, mirando al frente. */
-const COCKPIT_OFFSET = new THREE.Vector3(0, 5.5, -4);
 
 /**
  * Vista de un sistema estelar, con la disposición de `@imperium/sim` (distancias
@@ -69,8 +67,8 @@ const COCKPIT_OFFSET = new THREE.Vector3(0, 5.5, -4);
  */
 export class SystemView implements View {
   readonly scene = new THREE.Scene();
-  // De medio metro a cientos de miles de km: lo permite el búfer de profundidad logarítmico.
-  readonly camera = new THREE.PerspectiveCamera(50, 1, 0.5, 5e8);
+  // De medio metro a decenas de millones de km: lo permite el búfer de profundidad logarítmico.
+  readonly camera = new THREE.PerspectiveCamera(50, 1, 0.5, 1e11);
   readonly controls: OrbitControls;
 
   private content = new THREE.Group();
@@ -91,8 +89,11 @@ export class SystemView implements View {
   private dom: HTMLElement;
   private layout: SystemLayout | null = null;
   private ship: THREE.Group | null = null;
-  private flight: FlightController | null = null;
-  private chaseTarget = new THREE.Vector3();
+  private flight: ShipController | null = null;
+  /** Cuerpos con su posición en este fotograma (para la gravedad). */
+  private gravitySources: GravitySource[] = [];
+  /** Cámara del piloto (exterior orbital o cabina), independiente de la orientación de la nave. */
+  private chase: ChaseCamera;
   private leaving = false;
   private systemId: string | null = null;
   private starName = "";
@@ -132,6 +133,7 @@ export class SystemView implements View {
     this.controls.minDistance = 200;
     this.controls.maxDistance = 600;
     this.controls.enabled = false;
+    this.chase = new ChaseCamera(this.camera, dom);
 
     this.selectRing = new THREE.Sprite(
       new THREE.SpriteMaterial({ map: ringTexture(), color: 0xe8b64c, depthTest: false, sizeAttenuation: false, transparent: true }),
@@ -197,9 +199,9 @@ export class SystemView implements View {
     const light = new THREE.PointLight(starColor, isBlackHole ? 1.5 : 4.5, 0, 0);
     this.content.add(light);
 
-    for (const belt of layout.belts) this.content.add(this.makeBelt(belt.orbitRadius, rng));
+    for (const belt of layout.belts) this.content.add(this.makeBelt(belt.orbitRadius, belt.halfWidth, rng));
 
-    let radius = starRadius * 3 + 8;
+    let radius = starRadius * 3;
     for (const pl of layout.planets) {
       const p = detail.planets.find((x) => x.index === pl.index)!;
       const size = pl.size;
@@ -244,31 +246,31 @@ export class SystemView implements View {
       }
 
       const moons: PlanetVisual["moons"] = [];
-      p.moons.forEach((m, mi) => {
-        const moonRadius = size * (0.12 + rng.range(0, 0.12));
+      for (const m of pl.moons) {
+        // Radio y órbita físicos (los mismos de las colisiones y la gravedad), de `@imperium/sim`.
+        const moonRadius = m.body.radius;
         const moon = new THREE.Mesh(
           this.sphereLevel(moonRadius, 32),
-          createPlanetMaterial(planetLook(m.type, `${summary.id}:${p.index}:m${mi}`), moonRadius, this.bodyUniforms, false),
+          createPlanetMaterial(planetLook(m.type, `${summary.id}:${p.index}:m${m.index}`), moonRadius, this.bodyUniforms, false),
         );
         this.trackLod(moon, moonRadius);
-        mesh.add(moon);
-        // Las lunas: posiciones relativas a la malla del planeta (que no está escalada), en metros.
-        moons.push({ mesh: moon, radius: size * (2.5 + mi * 1.2), speed: rng.range(0.004, 0.012), phase: rng.range(0, Math.PI * 2) });
-      });
+        this.content.add(moon);
+        moons.push({ mesh: moon, layout: m, name: `${p.name} ${String.fromCharCode(97 + m.index)}` });
+      }
 
       const orbitLine = this.makeOrbit(radius);
       this.content.add(orbitLine, pivot);
       this.planets.push({ index: p.index, designation: p.name, label: null, layout: pl, pivot, mesh, orbitLine, moons });
-      radius += size * 2 + 7;
     }
+    radius = Math.max(radius, layout.boundary * 0.9);
 
     if (detail.anomaly) {
       const anomaly = new THREE.Sprite(
         new THREE.SpriteMaterial({ map: glowTexture(), color: 0xb57bff, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }),
       );
       const a = rng.range(0, Math.PI * 2);
-      anomaly.position.set(Math.cos(a) * (radius + 60_000), rng.range(-4000, 4000), Math.sin(a) * (radius + 60_000));
-      anomaly.scale.setScalar(60_000);
+      anomaly.position.set(Math.cos(a) * radius, rng.range(-1, 1) * 200_000, Math.sin(a) * radius);
+      anomaly.scale.setScalar(400_000);
       anomaly.userData.anomaly = true;
       this.content.add(anomaly);
     }
@@ -321,19 +323,19 @@ export class SystemView implements View {
     );
   }
 
-  private makeBelt(radius: number, rng: Rng): THREE.Points {
-    const n = 700;
+  private makeBelt(radius: number, halfWidth: number, rng: Rng): THREE.Points {
+    const n = 1400;
     const pos = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) {
       const a = rng.range(0, Math.PI * 2);
-      const r = radius + rng.bell() * 8000;
+      const r = radius + rng.bell() * halfWidth * 0.5;
       pos[i * 3] = Math.cos(a) * r;
-      pos[i * 3 + 1] = rng.bell() * 1500;
+      pos[i * 3 + 1] = rng.bell() * halfWidth * 0.12;
       pos[i * 3 + 2] = Math.sin(a) * r;
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    return new THREE.Points(geo, new THREE.PointsMaterial({ color: 0x9a8f80, size: 900, sizeAttenuation: true }));
+    return new THREE.Points(geo, new THREE.PointsMaterial({ color: 0x9a8f80, size: halfWidth * 0.004, sizeAttenuation: true }));
   }
 
   private clear(): void {
@@ -364,7 +366,7 @@ export class SystemView implements View {
    */
   private parkHere(): ParkedOrbit {
     const flagship = worldStore.getState().flagship;
-    if (flagship && flagship.systemId === this.systemId) return flagship.park;
+    if (flagship && flagship.systemId === this.systemId) return sanitizePark(this.layout!, flagship.park);
     return defaultPark(this.layout!);
   }
 
@@ -387,13 +389,17 @@ export class SystemView implements View {
     ship.rotateY(Math.PI);
     this.content.add(ship);
     this.ship = ship;
-    const flight = new FlightController(ship, this.dom, this.keyboard);
-    flight.baseSpeed = PILOT_SPEED;
-    flight.boostFactor = PILOT_BOOST;
+    const flight = new ShipController(ship, this.dom, this.keyboard);
     flight.enabled = true;
+    // Gravedad de los cuerpos cercanos (esferas de influencia), en cada subpaso de la física.
+    flight.gravity = (pos, out) => {
+      const g = gravityAt([pos.x, pos.y, pos.z], this.gravitySources);
+      out.set(g.acc[0], g.acc[1], g.acc[2]);
+    };
     this.flight = flight;
     this.leaving = false;
     this.controls.enabled = false;
+    this.chase.reset();
     this.placeChaseCamera(1);
     gameStore.getState().setFlight(true, 0);
   }
@@ -495,22 +501,15 @@ export class SystemView implements View {
     gameStore.getState().setFlight(false, 0);
   }
 
+  /** Coloca la cámara del piloto; con `k` = 1, de golpe (al empezar o tras una corrección). */
   private placeChaseCamera(k: number): void {
     const ship = this.ship!;
     const first = gameStore.getState().cameraView === "first";
     // En primera persona el casco taparía la vista: se oculta la nave y se ve la cabina.
     ship.visible = !first;
     this.cockpit.visible = first;
-    if (first) {
-      this.camera.position.copy(COCKPIT_OFFSET).applyQuaternion(ship.quaternion).add(ship.position);
-      this.camera.quaternion.copy(ship.quaternion);
-      return;
-    }
-    const desired = CHASE_OFFSET.clone().applyQuaternion(ship.quaternion).add(ship.position);
-    this.camera.position.lerp(desired, k);
-    this.camera.up.copy(new THREE.Vector3(0, 1, 0).applyQuaternion(ship.quaternion));
-    this.chaseTarget.copy(new THREE.Vector3(0, 0, -300).applyQuaternion(ship.quaternion).add(ship.position));
-    this.camera.lookAt(this.chaseTarget);
+    if (k >= 1) this.chase.snap(ship, first);
+    else this.chase.place(ship, first, k);
   }
 
   /** Morro de la nave propia (vector unitario). */
@@ -526,18 +525,27 @@ export class SystemView implements View {
     flight.pulse = !flight.pulse;
   }
 
+  /** Cambia un ajuste de pilotaje (asistencia, pilotaje con ratón) y lo avisa. */
+  private toggleFlightPref(key: "assist" | "mouseFlight", on: I18nKey, off: I18nKey): void {
+    const st = settingsStore.getState();
+    const value = !st.prefs.flight[key];
+    st.setPrefs({ flight: { ...st.prefs.flight, [key]: value } });
+    this.events.notify(value ? on : off);
+  }
+
   /** Sin combustible (según el servidor) no hay pulso. */
   private outOfFuel(): boolean {
     const supplies = spaceStore.getState().supplies;
     return supplies !== null && supplies.fuel < 0.5;
   }
 
-  /** Estrella y planetas con su posición actual (para el pulso, el altímetro y las colisiones). */
-  private bodies(): Array<{ name: string; center: THREE.Vector3; radius: number; planetIndex: number | null }> {
+  /** Estrella, planetas y lunas con su posición actual (pulso, altímetro, gravedad y colisiones). */
+  private bodies(): Array<{ name: string; center: THREE.Vector3; radius: number; planetIndex: number | null; body: CelestialBody }> {
     if (!this.layout) return [];
-    const out = [{ name: this.starName, center: new THREE.Vector3(), radius: this.layout.starRadius, planetIndex: null as number | null }];
+    const out = [{ name: this.starName, center: new THREE.Vector3(), radius: this.layout.starRadius, planetIndex: null as number | null, body: this.layout.star }];
     for (const p of this.planets) {
-      out.push({ name: p.label ? p.label.key.split("|")[0]! : p.designation, center: p.mesh.getWorldPosition(new THREE.Vector3()), radius: p.layout.size, planetIndex: p.index });
+      out.push({ name: p.label ? p.label.key.split("|")[0]! : p.designation, center: p.mesh.getWorldPosition(new THREE.Vector3()), radius: p.layout.size, planetIndex: p.index, body: p.layout.body });
+      for (const m of p.moons) out.push({ name: m.name, center: m.mesh.position.clone(), radius: m.layout.body.radius, planetIndex: null, body: m.layout.body });
     }
     return out;
   }
@@ -554,6 +562,13 @@ export class SystemView implements View {
     const pos = ship.position;
     const fwd = this.forward();
     const bodies = this.bodies();
+    this.gravitySources = bodies.map((b) => ({ center: [b.center.x, b.center.y, b.center.z], body: b.body }));
+    const grav = gravityAt([pos.x, pos.y, pos.z], this.gravitySources);
+    telemetry.gravity = {
+      g: flight.pulse ? 0 : grav.g,
+      region: grav.region,
+      body: grav.dominant ? (bodies.find((b) => b.body === grav.dominant)?.name ?? null) : null,
+    };
     const heading = [fwd.x, fwd.y, fwd.z];
     flight.pulseLimit = pulseLimitAt([pos.x, pos.y, pos.z], heading, bodies.map((b) => ({ center: [b.center.x, b.center.y, b.center.z], radius: b.radius })));
 
@@ -769,19 +784,24 @@ export class SystemView implements View {
     connection.send({ t: "pose", systemId: this.systemId, p: [r(p.x), r(p.y), r(p.z)], q: [r(q.x), r(q.y), r(q.z), r(q.w)], v: [r(v.x), r(v.y), r(v.z)] });
   }
 
-  /** Evita atravesar la estrella y los planetas: la nave se queda en su superficie. */
+  /**
+   * Evita atravesar la estrella, los planetas y las lunas: la nave se queda
+   * sobre su superficie (con el radio físico, el mismo de la gravedad) y pierde
+   * la velocidad que llevaba hacia dentro.
+   */
   private collide(): void {
     const ship = this.ship!;
-    const layout = this.layout!;
-    const pushOut = (center: THREE.Vector3, radius: number) => {
-      const d = ship.position.distanceTo(center);
-      if (d >= radius || d === 0) return;
-      ship.position.sub(center).setLength(radius).add(center);
-      this.flight!.velocity.multiplyScalar(0.3);
-    };
-    pushOut(new THREE.Vector3(), layout.starRadius * 1.05);
-    const tmp = new THREE.Vector3();
-    for (const p of this.planets) pushOut(p.mesh.getWorldPosition(tmp), p.layout.size + 40);
+    const normal = new THREE.Vector3();
+    for (const b of this.bodies()) {
+      const radius = b.body.kind === "star" ? b.radius * 1.05 : b.radius + 40;
+      const d = ship.position.distanceTo(b.center);
+      if (d >= radius || d === 0) continue;
+      normal.copy(ship.position).sub(b.center).divideScalar(d);
+      ship.position.copy(b.center).addScaledVector(normal, radius);
+      const v = this.flight!.velocity;
+      const inward = v.dot(normal);
+      if (inward < 0) v.addScaledVector(normal, -inward);
+    }
   }
 
   activate(): void {
@@ -804,13 +824,16 @@ export class SystemView implements View {
     this.bodyUniforms.uTime.value = this.time % 100_000;
     const now = serverNow();
     const selected = gameStore.getState().selectedPlanet;
+    const center = new THREE.Vector3();
     for (const p of this.planets) {
       p.pivot.rotation.y = planetAngle(p.layout, now);
-      // Rotación lenta: a esta escala, la superficie de un planeta de varios km se movería deprisa.
-      p.mesh.rotation.y += dt * 0.005;
+      // Rotación sobre su eje con la hora del servidor (periodos de 14 a 60 h).
+      p.mesh.rotation.y = planetSpinAngle(p.layout, now);
+      p.pivot.updateMatrixWorld(true);
+      p.mesh.getWorldPosition(center);
       for (const m of p.moons) {
-        const a = m.phase + this.time * m.speed;
-        m.mesh.position.set(Math.cos(a) * m.radius, Math.sin(a * 0.7) * m.radius * 0.05, Math.sin(a) * m.radius);
+        const o = moonOffset(m.layout, now);
+        m.mesh.position.set(center.x + o.x, center.y + o.y, center.z + o.z);
       }
       const mat = p.orbitLine.material as THREE.LineBasicMaterial;
       mat.opacity = p.index === selected ? 0.55 : p.index === this.hoveredPlanet ? 0.32 : 0.14;
@@ -839,10 +862,13 @@ export class SystemView implements View {
       this.remote.update(dt, this.time);
       const rig = shipRig(this.ship);
       rig.setThrust(this.flight.thrust, this.flight.pulse);
+      // Propulsores de maniobra del modelo, si los tiene (lo expone el generador de naves).
+      (rig as { setManeuver?: (m: Maneuver) => void }).setManeuver?.(this.flight.maneuver);
       rig.tick(this.time, dt, Math.max(0, 1 - this.flight.speed / 40));
       this.fireCannon();
       this.updateCombatVisuals(dt);
       this.placeChaseCamera(1 - Math.exp(-dt * 8));
+      telemetry.freeCam = this.chase.free && gameStore.getState().cameraView !== "first";
       gameStore.getState().setFlight(true, this.flight.speed, this.flight.pulse);
       // Más allá del borde: espacio interestelar.
       if (!this.leaving && this.layout && this.ship.position.length() > this.boundary) {
@@ -907,6 +933,9 @@ export class SystemView implements View {
       else if (this.quantum && (code === "Escape" || isBound("jump", code))) this.cancelQuantum();
       else if (this.quantum) return;
       else if (isBound("pulse", code)) this.togglePulse();
+      else if (isBound("cameraReset", code)) this.chase.reset();
+      else if (isBound("flightAssist", code)) this.toggleFlightPref("assist", "pilot.assistOn", "pilot.assistOff");
+      else if (isBound("mouseFlight", code)) this.toggleFlightPref("mouseFlight", "pilot.mouseFlightOn", "pilot.mouseFlightOff");
       else if (isBound("lockTarget", code)) this.cycleTarget();
       else if (isBound("fireMissile", code)) this.fireMissile();
       return;
@@ -919,5 +948,6 @@ export class SystemView implements View {
     this.fleetScene.clear();
     this.clear();
     this.controls.dispose();
+    this.chase.dispose();
   }
 }

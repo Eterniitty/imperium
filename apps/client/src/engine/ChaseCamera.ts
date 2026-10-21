@@ -1,0 +1,138 @@
+import * as THREE from "three";
+import { settingsStore } from "../state/settings";
+
+/** Distancia de la vista de seguimiento (m): la nave mide unos 45. */
+const DEFAULT_DIST = 102;
+
+/**
+ * Cámara del piloto, separada de la nave: mover la cámara nunca gira la nave.
+ *
+ * - Exterior: órbita libre alrededor de la nave (arriba, abajo, lados, detrás)
+ *   arrastrando con el ratón (botón derecho siempre; izquierdo si no está el
+ *   pilotaje con ratón) y rueda para acercar o alejar. Los ángulos son relativos
+ *   a la nave: si la nave gira, la cámara la acompaña desde el mismo ángulo,
+ *   con un seguimiento suave (sin saltos). La tecla de «vista de seguimiento»
+ *   la devuelve detrás de la nave.
+ * - Cabina (primera persona): el ratón mira alrededor (girando la cabeza), con
+ *   límites; la misma tecla vuelve a mirar al frente.
+ */
+export class ChaseCamera {
+  /** Ángulos de la órbita respecto a la nave (rad): 0, 0 = detrás. Objetivo y valor suavizado. */
+  private yaw = 0;
+  private pitch = 0;
+  private wantYaw = 0;
+  private wantPitch = 0;
+  /** Distancia a la nave (m). */
+  private dist = DEFAULT_DIST;
+  private wantDist = DEFAULT_DIST;
+  /** Orientación de referencia (la de la nave, suavizada). */
+  private frame = new THREE.Quaternion();
+  private drag: { x: number; y: number } | null = null;
+  private first = false;
+
+  static readonly DEFAULT_DIST = DEFAULT_DIST;
+  /** Altura de la cámara sobre la línea de mira (m): la nave queda en el tercio inferior. */
+  static readonly HEIGHT = 0.235;
+  static readonly MIN_DIST = 45;
+  static readonly MAX_DIST = 3000;
+  /** Cabina: posición en el puente (m, ejes de la nave). */
+  static readonly COCKPIT = new THREE.Vector3(0, 5.5, -4);
+
+  constructor(
+    private camera: THREE.PerspectiveCamera,
+    private dom: HTMLElement,
+  ) {
+    dom.addEventListener("pointerdown", this.onDown);
+    window.addEventListener("pointermove", this.onMove);
+    window.addEventListener("pointerup", this.onUp);
+    dom.addEventListener("wheel", this.onWheel, { passive: true });
+  }
+
+  /** ¿La cámara está fuera de la vista de seguimiento (para avisar en el HUD)? */
+  get free(): boolean {
+    return Math.abs(this.wantYaw) > 0.02 || Math.abs(this.wantPitch) > 0.02;
+  }
+
+  private onDown = (e: PointerEvent) => {
+    const mouseFlight = settingsStore.getState().prefs.flight.mouseFlight;
+    // Izquierdo: cámara (salvo pilotando con ratón); derecho: siempre cámara.
+    if (e.button === 2 || (e.button === 0 && !mouseFlight)) this.drag = { x: e.clientX, y: e.clientY };
+  };
+
+  private onMove = (e: PointerEvent) => {
+    if (!this.drag) return;
+    const dx = e.clientX - this.drag.x;
+    const dy = e.clientY - this.drag.y;
+    this.drag = { x: e.clientX, y: e.clientY };
+    const k = 0.005;
+    const invert = settingsStore.getState().prefs.flight.invertCameraY ? -1 : 1;
+    this.wantYaw -= dx * k;
+    this.wantPitch -= dy * k * invert;
+    if (this.first) {
+      // Cabeza: hasta ~110° a los lados y ~70° arriba y abajo.
+      this.wantYaw = Math.max(-1.9, Math.min(1.9, this.wantYaw));
+      this.wantPitch = Math.max(-1.2, Math.min(1.2, this.wantPitch));
+    } else {
+      this.wantPitch = Math.max(-1.45, Math.min(1.45, this.wantPitch));
+    }
+  };
+
+  private onUp = () => {
+    this.drag = null;
+  };
+
+  private onWheel = (e: WheelEvent) => {
+    if (this.first) return;
+    this.wantDist = Math.max(ChaseCamera.MIN_DIST, Math.min(ChaseCamera.MAX_DIST, this.wantDist * Math.exp(e.deltaY * 0.001)));
+  };
+
+  /** Vuelve a la vista de seguimiento, detrás de la nave (o a mirar al frente en cabina). */
+  reset(): void {
+    this.wantYaw = 0;
+    this.wantPitch = 0;
+    if (!this.first) this.wantDist = ChaseCamera.DEFAULT_DIST;
+  }
+
+  /** Coloca la cámara de golpe (al empezar a pilotar o tras una corrección del servidor). */
+  snap(ship: THREE.Object3D, first: boolean): void {
+    this.frame.copy(ship.quaternion);
+    this.yaw = this.wantYaw;
+    this.pitch = this.wantPitch;
+    this.dist = this.wantDist;
+    this.place(ship, first, 1);
+  }
+
+  /** Sigue a la nave; `k` (0–1) es cuánto se acerca este fotograma a su sitio ideal. */
+  place(ship: THREE.Object3D, first: boolean, k: number): void {
+    if (first !== this.first) {
+      // Al cambiar de cámara se vuelve a mirar al frente (los ángulos de la cabina y de la órbita no se mezclan).
+      this.first = first;
+      this.wantYaw = this.wantPitch = this.yaw = this.pitch = 0;
+    }
+    this.yaw += (this.wantYaw - this.yaw) * Math.min(1, k * 1.4);
+    this.pitch += (this.wantPitch - this.pitch) * Math.min(1, k * 1.4);
+    this.dist += (this.wantDist - this.dist) * Math.min(1, k);
+    const look = new THREE.Quaternion().setFromEuler(new THREE.Euler(this.pitch, this.yaw, 0, "YXZ"));
+    if (first) {
+      // Cabina: va pegada a la nave (sin retraso); la cabeza gira con el ratón.
+      this.frame.copy(ship.quaternion);
+      this.camera.position.copy(ChaseCamera.COCKPIT).applyQuaternion(ship.quaternion).add(ship.position);
+      this.camera.quaternion.copy(ship.quaternion).multiply(look);
+      return;
+    }
+    // La referencia sigue la orientación de la nave con un poco de retraso: los giros se notan sin sacudidas.
+    this.frame.slerp(ship.quaternion, Math.min(1, k)).normalize();
+    const orient = this.frame.clone().multiply(look);
+    // Detrás y algo por encima de la nave según la órbita, mirando en la dirección de la órbita.
+    const back = new THREE.Vector3(0, ChaseCamera.HEIGHT, 1).multiplyScalar(this.dist).applyQuaternion(orient);
+    this.camera.position.copy(ship.position).add(back);
+    this.camera.quaternion.copy(orient);
+  }
+
+  dispose(): void {
+    this.dom.removeEventListener("pointerdown", this.onDown);
+    window.removeEventListener("pointermove", this.onMove);
+    window.removeEventListener("pointerup", this.onUp);
+    this.dom.removeEventListener("wheel", this.onWheel);
+  }
+}

@@ -9,3 +9,5 @@ export * from "./park";
 export * from "./supplies";
 export * from "./siege";
 export * from "./lineage";
+export * from "./bodies";
+export * from "./gravity";

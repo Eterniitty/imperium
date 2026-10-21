@@ -41,7 +41,23 @@ Desde el panel del sistema puedes **trasladar a tu Emperador** allí (o pulsar [
 
 ## Dentro de un sistema
 
-Los sistemas están a escala de las naves: tu nave mide unos **45 m**, un planeta rocoso de 1,5 a 8 km de radio, un gigante gaseoso hasta unos 30 km y una estrella de 120 a 225 km (un agujero negro, 60 km). Las órbitas están a cientos o miles de kilómetros, comprimidas para cruzarlas con el motor de pulso en uno o dos minutos. Los planetas **giran alrededor de su estrella según la hora del servidor**, así que todos los jugadores los ven en el mismo sitio. Los planetas reclamados llevan un rótulo con su nombre (dorado si son tuyos).
+Los sistemas tienen una **escala propia del juego**: proporciones astronómicas plausibles, pero comprimidas para poder jugar. Tu nave mide unos **45 m**; un planeta rocoso, de **20 a 95 km** de radio (cientos o miles de veces la nave); un gigante gaseoso, de **220 a 350 km**; las lunas, de **4 a 35 km** (menores que su planeta, como la Luna y la Tierra), y una estrella como el Sol, **2500 km**. Las órbitas están a decenas de miles de kilómetros (crecen con la raíz de la distancia real) y nunca se solapan las esferas de influencia de dos cuerpos: con el motor de pulso se va de un planeta al vecino en menos de un minuto.
+
+Cada cuerpo tiene **un solo radio**: el que se dibuja es el mismo de las colisiones y de la gravedad. Los planetas y las lunas **giran según la hora del servidor**, así que todos los jugadores los ven en el mismo sitio; las órbitas son muy lentas (decenas de m/s), así que una nave siempre alcanza a un planeta. Los planetas reclamados llevan un rótulo con su nombre (dorado si son tuyos).
+
+### Estrellas
+
+{{tabla:escala-estrellas}}
+
+La gravedad simulada de las estrellas está recortada (ver [Pilotar](/wiki/pilotar#gravedad)).
+
+### Planetas y lunas
+
+{{tabla:cuerpos}}
+
+Las lunas usan la tabla de su tipo con su propio radio.
+
+> [!dev] **Aterrizar** aún no es posible. Cada cuerpo ya tiene definidos su atmósfera, su superficie, las condiciones de entrada y si se podrá aterrizar en él; los gigantes gaseosos no tienen superficie.
 
 ## Tiempo
 

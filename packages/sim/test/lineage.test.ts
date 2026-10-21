@@ -1,3 +1,4 @@
+import { rockyBody, starBody } from "../src/bodies";
 import { describe, expect, it } from "vitest";
 import { ECONOMY, HEIR_NAMES, LINEAGE } from "@imperium/content";
 import { decayedStreak, doctrineDefense, doctrineExtraction, gestationMinutes, gestationMs, governorChoice, heirName, incarnateReadyAt, parkNearPlanet, planetPosition, type SystemLayout } from "../src";
@@ -50,11 +51,14 @@ describe("linaje (Fase 10)", () => {
   });
 
   it("la nave renacida aparece junto al planeta de la Cuna", () => {
+    const body = rockyBody("p2", "planet", "star", "rocky", 5_000 / 637_100);
     const layout: SystemLayout = {
       starRadius: 100_000,
-      planets: [{ index: 2, orbitRadius: 2_000_000, size: 5_000, angularSpeed: 1e-5, phase: 0.3 }],
+      star: starBody("G"),
+      planets: [{ index: 2, orbitRadius: 2_000_000, size: 5_000, angularSpeed: 1e-5, phase: 0.3, body, moons: [], spin: 1e-4 }],
       belts: [],
       boundary: 5_000_000,
+      parkMinRadius: 600_000,
     };
     const t = 123_456_789;
     const park = parkNearPlanet(layout, 2, t)!;

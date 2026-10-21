@@ -41,7 +41,23 @@ From the system panel you can **move your Emperor** there (or press [[J]]) and *
 
 ## Inside a system
 
-Systems are at ship scale: your ship is about **45 m** long, a rocky planet has a radius of 1.5 to 8 km, a gas giant up to about 30 km and a star 120 to 225 km (a black hole, 60 km). Orbits are hundreds or thousands of kilometres apart, compressed so the pulse drive crosses them in one or two minutes. Planets **orbit their star according to the server clock**, so every player sees them in the same place. Claimed planets carry a label with their name (gold if they are yours).
+Systems have a **game scale of their own**: plausible astronomical proportions, compressed so that the game is playable. Your ship is about **45 m** long; a rocky planet has a radius of **20 to 95 km** (hundreds or thousands of times the ship); a gas giant, **220 to 350 km**; moons, **4 to 35 km** (smaller than their planet, like the Moon and the Earth), and a Sun-like star, **2500 km**. Orbits lie tens of thousands of kilometres apart (they grow with the square root of the real distance) and the spheres of influence of two bodies never overlap: with the pulse drive you go from one planet to the next in under a minute.
+
+Each body has **a single radius**: the one drawn is the same one used for collisions and gravity. Planets and moons **move by the server clock**, so every player sees them in the same place; orbits are very slow (tens of m/s), so a ship can always catch up with a planet. Claimed planets carry a label with their name (golden if they are yours).
+
+### Stars
+
+{{tabla:escala-estrellas}}
+
+The stars' simulated gravity is capped (see [Piloting](/wiki/pilotar#gravity)).
+
+### Planets and moons
+
+{{tabla:cuerpos}}
+
+Moons use the row of their type with their own radius.
+
+> [!dev] **Landing** is not possible yet. Every body already defines its atmosphere, surface, entry conditions and whether it will be landable; gas giants have no surface.
 
 ## Time
 
