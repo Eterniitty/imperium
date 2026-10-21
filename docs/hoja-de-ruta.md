@@ -100,7 +100,7 @@ El usuario delegó el orden: se sigue esta cola sin pedir permiso, un solo agent
 Informe completo en Claude Docs («Aeonarch — Plan de juego»). Cinco fases, cada una cerrada con una prueba del usuario jugando:
 
 1. [ ] **Nave nodriza completa**: ✔ viaje acoplado con su flota (se llega acoplado), ✔ taller que repara la flota (`MOTHERSHIP_WORKSHOP`), ✔ hangar con ala de cazas que escoltan (`MOTHERSHIP_HANGAR`), ✔ puente de mando a bordo, ✔ si cae en batalla con el Emperador acoplado, cae con ella (decisión del usuario, `MOTHERSHIP_CAUSE`); los módulos pasan a la fase 4.
-2. [ ] **La galaxia contraataca**: ✔ nivel de amenaza por facción («Te persigue» en Batallas), ✔ flotas de castigo (`ALIEN_AI.punish`), ✔ emboscadas en las salidas de salto (`PIRATE_AMBUSH`), ✔ jefes Carroñeros (líder `scav_breaker` de las flotas profundas); pendientes: incursiones a rutas, guaridas.
+2. [x] **La galaxia contraataca** (21-10-2026, sin probar jugando): nivel de amenaza por facción («Te persigue» en Batallas), flotas de castigo (`ALIEN_AI.punish`), emboscadas en las salidas de salto (`PIRATE_AMBUSH`), incursiones a las rutas (`ROUTE_RAID`, evento `ai.raidEnd`), guaridas de Carroñeros (`SCAVENGER_LAIR`) y jefes Carroñeros (líderes de las flotas profundas).
 3. [ ] **Aliados de verdad**: petición de ayuda, pactos con Emperadores de la IA, refuerzos de la milicia, mercenarios, reputación.
 4. [ ] **Guerra que evoluciona**: tecnología por niveles, módulos de nave, armas nuevas, formaciones, comandantes, batallas de flotas en 3D.
 5. [ ] **Metas**: prestigio y clasificación, objetivos de era, crisis galácticas, victoria y derrota con legado.
