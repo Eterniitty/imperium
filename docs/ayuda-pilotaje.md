@@ -84,7 +84,7 @@ Cuando dejas de pilotar (mapa, cerrar el juego), la nave **se queda donde estaba
 ## Viaje cuántico entre sistemas
 
 1. Pulsa **J** al pilotar: aparece la lista de sistemas **al alcance de tu combustible**, con la distancia, la duración del viaje y el combustible que gasta. También puedes elegir la estrella en el **mapa** (M) y pulsar J o «Saltar aquí».
-2. La nave se **alinea** sola con el destino y **carga el motor** cuántico (5 s, con su sonido). J o Esc cancelan. Delante del morro se abre una **grieta en el espacio** (un objeto del mundo: la ven los demás pilotos del sistema); al saltar, la nave entra en ella y, al llegar, sale de otra en el destino.
+2. La nave se **alinea** sola con el destino y **carga el motor** cuántico (5 s, con su sonido). J o Esc cancelan. Delante del morro se abre una **grieta en el espacio** (un objeto del mundo: la ven los demás pilotos del sistema); al saltar, la nave se estira hacia ella (espaguetización, ~0,5 s) y desaparece dentro; al llegar, un rayo de luz sale de otra grieta en el destino y se contrae en la nave.
 3. Al saltar, ves el **túnel cuántico** con el destino, el **tiempo restante** y el progreso. Con **M** miras el mapa (la cámara sigue a tu nave) y vuelves al túnel.
 4. Con **K** (o el botón del túnel) puedes **salir a mitad de viaje**: quedas en una región de espacio profundo, pagas solo el combustible recorrido y desde allí vuelves a saltar con J. Puede haber asteroides que minar con **L** (bodega, refinería de a bordo y descarga en tus colonias; ver la Wiki «Espacio profundo y minería»).
 5. Al llegar apareces en el **borde del sistema de destino**, del lado por el que llegas, a los mandos. El sistema queda descubierto (lo que cubre tu escáner).

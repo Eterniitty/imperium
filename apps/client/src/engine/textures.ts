@@ -47,6 +47,31 @@ export function glowTexture(): THREE.Texture {
   return glowTex;
 }
 
+let streakTex: THREE.Texture | null = null;
+/**
+ * Raya de luz: a lo largo (u) crece de la cola (0, transparente) a la cabeza
+ * (1, brillante); a lo ancho (v), un núcleo fino con halo.
+ */
+export function streakTexture(): THREE.Texture {
+  streakTex ??= canvasTexture(128, (ctx, s) => {
+    const img = ctx.createImageData(s, s);
+    for (let y = 0; y < s; y++) {
+      const v = (y + 0.5) / s - 0.5;
+      const across = Math.exp(-((v / 0.07) ** 2)) * 0.85 + Math.exp(-((v / 0.22) ** 2)) * 0.3;
+      for (let x = 0; x < s; x++) {
+        const u = (x + 0.5) / s;
+        const along = u ** 1.6 * Math.min(1, (1 - u) * 14);
+        const a = Math.min(1, across * along);
+        const i = (y * s + x) * 4;
+        img.data[i] = img.data[i + 1] = img.data[i + 2] = 255;
+        img.data[i + 3] = Math.round(a * 255);
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  });
+  return streakTex;
+}
+
 /** Rótulo de texto para un sprite: devuelve la textura y su proporción ancho/alto. */
 export function labelTexture(text: string, color: string): { texture: THREE.Texture; aspect: number } {
   const font = "600 30px Rajdhani, system-ui, sans-serif";
