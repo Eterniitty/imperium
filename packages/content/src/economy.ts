@@ -177,6 +177,13 @@ export function getInstallation(id: string): InstallationDefinition | undefined 
 export const ECONOMY = {
   /** Parte del coste que se devuelve al cancelar un encargo ya empezado (sin empezar: todo). */
   cancelRefundStarted: 0.5,
+  /**
+   * Red de suministro (Fase 8): una colonia está abastecida si está a menos de
+   * `supplyRangeLy` de la capital o de otra colonia abastecida (en cadena); si
+   * no, está aislada y extrae solo `isolatedExtraction` de lo normal.
+   */
+  supplyRangeLy: 30,
+  isolatedExtraction: 0.6,
   /** Parte del coste que se recupera al derribar una instalación construida. */
   demolishRefund: 0.5,
   /** Extracción por hora y punto de riqueza sin minas (la colonia rasca la superficie). */

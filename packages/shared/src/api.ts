@@ -340,6 +340,8 @@ export interface Colony {
   capital: boolean;
   /** Le faltan volátiles para el mantenimiento: la refinería está parada. */
   shortage: boolean;
+  /** Fuera de la red de suministro (lejos de la capital y de las demás colonias): extrae menos (`ECONOMY.isolatedExtraction`). */
+  isolated: boolean;
   /** Instalaciones construidas, por id. */
   installations: Record<string, number>;
   builds: ColonyBuild[];

@@ -82,6 +82,12 @@ A colony on a planet with richness 2 in metal, 1 in volatiles and 1 in crystal, 
 
 Ship costs and build times are in [Fleets](/wiki/flotas#ships).
 
+## Supply network
+
+Your colonies form a **network** from the capital: a colony is **supplied** if it is close to the capital or to another supplied colony (in a chain, within the distance in the table). The ones far from everything are **isolated** and extract less. The colony panel warns you; to reconnect it, found colonies in between.
+
+{{tabla:suministro}}
+
 ## Managing colonies from anywhere
 
 In the **Colonies** panel, **Manage colonies** opens a window with all your colonies: population, stock and production, installations and build queue for each one. From there you can order and cancel builds **without being in the system**, also during a quantum trip (on the command bridge, clicking a colony opens it here). What needs you to be present, such as landing humans or unloading the hold, stays in the planet panel.

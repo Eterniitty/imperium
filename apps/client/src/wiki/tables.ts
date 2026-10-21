@@ -513,6 +513,12 @@ export const GEN_TABLES: Record<string, Builder> = {
     numeric: [1, 2],
   }),
 
+  suministro: (t, locale) =>
+    kv(t, [
+      ["wiki.k.supplyRange", `${num(locale, ECONOMY.supplyRangeLy)} a.l.`],
+      ["wiki.k.isolatedExtraction", `${num(locale, ECONOMY.isolatedExtraction * 100)} %`],
+    ]),
+
   milicia: (t, locale) =>
     kv(t, [
       ["wiki.k.militiaShips", CORE_MILITIA.ships.map((id) => shipName(locale, id)).join(", ")],

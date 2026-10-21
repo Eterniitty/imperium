@@ -82,6 +82,12 @@ Una colonia en un planeta con riqueza 2 de metal, 1 de volátiles y 1 de cristal
 
 Los costes y tiempos de las naves están en [Flotas](/wiki/flotas#naves).
 
+## Red de suministro
+
+Tus colonias forman una **red** desde la capital: una colonia está **abastecida** si está cerca de la capital o de otra colonia abastecida (en cadena, a la distancia de la tabla). Las que quedan lejos de todo están **aisladas** y extraen menos. La ficha de la colonia lo avisa; para reconectarla, funda colonias entre medias.
+
+{{tabla:suministro}}
+
 ## Gestionar colonias desde cualquier sitio
 
 En el panel **Colonias**, **Gestionar colonias** abre una ventana con todas tus colonias: población, existencias y producción, instalaciones y cola de obras de cada una. Desde ahí puedes encargar y cancelar obras **sin estar en el sistema**, también durante un viaje cuántico (en el puente de mando, pulsar una colonia la abre aquí). Lo que pide estar presente, como desembarcar humanos o descargar la bodega, sigue en la ficha del planeta.

@@ -10,7 +10,7 @@ import {
   type StockId,
 } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
-import type { Colony, ColonyBuild, CommandError, EmperorHumans, Planet, PlanetClaim, StarSystemDetail, StarSystemSummary } from "@imperium/shared";
+import { distance, type Colony, type ColonyBuild, type CommandError, type EmperorHumans, type Planet, type PlanetClaim, type StarSystemDetail, type StarSystemSummary } from "@imperium/shared";
 import { PlanetNameSchema } from "@imperium/shared/schemas";
 import {
   canAfford,
@@ -180,9 +180,55 @@ export class ColonyService {
   private site(row: ColonyRow, counts: InstallationCounts, extraUpkeep = 0): (ColonySite & { planet: Planet }) | null {
     const found = this.planet(row.systemId, row.planetIndex);
     if (!found) return null;
-    // Fase 10: el Heredero que la gobierna (su doctrina) también multiplica la extracción.
-    const extractionMultiplier = this.bonuses().extraction * doctrineExtraction(row.governor);
+    // Fase 10: el Heredero que la gobierna (su doctrina) también multiplica la extracción; fuera de la red de suministro, menos.
+    const extractionMultiplier = this.bonuses().extraction * doctrineExtraction(row.governor) * (this.isIsolated(row) ? ECONOMY.isolatedExtraction : 1);
     return { planet: found.planet, starEnergy: found.detail.energy, installations: counts, extraUpkeep, extractionMultiplier };
+  }
+
+  // --- Red de suministro (Fase 8) ---
+
+  /** Colonias aisladas de cada Emperador (en caché un minuto: solo cambia al ganar o perder colonias). */
+  private supply = new Map<string, { at: number; isolated: Set<string>; loading: boolean }>();
+
+  /** ¿Está esta colonia fuera de la red de suministro? Sin dato todavía, se la da por abastecida y se calcula. */
+  private isIsolated(row: ColonyRow): boolean {
+    if (!row.emperorId) return false;
+    const c = this.supply.get(row.emperorId);
+    if (!c || (!c.loading && this.now() - c.at > 60_000)) void this.refreshSupply(row.emperorId).catch(() => undefined);
+    return c?.isolated.has(row.id) ?? false;
+  }
+
+  /** Recalcula la red: desde la capital, en cadena, las colonias a `supplyRangeLy` unas de otras. */
+  async refreshSupply(emperorId: string): Promise<void> {
+    const prev = this.supply.get(emperorId);
+    if (prev?.loading) return;
+    const entry = { at: this.now(), isolated: prev?.isolated ?? new Set<string>(), loading: true };
+    this.supply.set(emperorId, entry);
+    try {
+      const rows = await this.db
+        .select({ id: colonies.id, systemId: colonies.systemId })
+        .from(colonies)
+        .where(eq(colonies.emperorId, emperorId))
+        .orderBy(sql`coalesce(${colonies.acquiredAt}, ${colonies.foundedAt})`, asc(colonies.id));
+      const at = rows.map((r) => ({ id: r.id, p: findSystem(this.seed, r.systemId)?.position ?? null }));
+      const reached = new Set<string>();
+      const queue = at.length && at[0]!.p ? [at[0]!] : [];
+      if (queue[0]) reached.add(queue[0].id);
+      while (queue.length) {
+        const cur = queue.shift()!;
+        for (const o of at) {
+          if (reached.has(o.id) || !o.p || !cur.p || distance(cur.p, o.p) > ECONOMY.supplyRangeLy) continue;
+          reached.add(o.id);
+          queue.push(o);
+        }
+      }
+      entry.isolated = new Set(at.filter((o) => !reached.has(o.id)).map((o) => o.id));
+    } catch (err) {
+      entry.at = 0;
+      throw err;
+    } finally {
+      entry.loading = false;
+    }
   }
 
   // --- Mantenimiento de las flotas: lo paga la capital ---
@@ -268,6 +314,7 @@ export class ColonyService {
       upkeepPerHour: flows.upkeep * this.timeScale,
       capital,
       shortage: upkeepShortage(state.stock, flows),
+      isolated: this.isIsolated(row),
       installations: installed,
       builds: builds.map(
         (b): ColonyBuild => ({

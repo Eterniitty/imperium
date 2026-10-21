@@ -378,6 +378,8 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     // Colonizar territorio alienígena despierta a su facción y le suma rencor.
                     if (res.ok && aliens) await aliens.onColonyClaimed(res.emperorId, msg.args.systemId);
                     if (res.ok) {
+                      // Red de suministro: la colonia nueva puede unir (o no) a otras.
+                      await colonies.refreshSupply(res.emperorId).catch(() => undefined);
                       // Todas sus colonias: la capital puede haber cambiado de mantenimiento (colonizador gastado).
                       await hub.publishColonies(res.emperorId);
                       await hub.publishColony(res.emperorId, res.colonyId);

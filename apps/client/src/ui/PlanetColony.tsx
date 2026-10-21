@@ -329,6 +329,11 @@ export function ColonyDetail({
         </p>
       )}
       {colony.capital && <p className="muted small">{t("colony.capitalHint")}</p>}
+      {colony.isolated && (
+        <p className="auth-warning small" role="status">
+          {t("colony.isolated", { pct: Math.round(ECONOMY.isolatedExtraction * 100), ly: ECONOMY.supplyRangeLy })}
+        </p>
+      )}
 
       <h3>{t("colony.stock")}</h3>
       <div className="deposits">

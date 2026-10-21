@@ -68,6 +68,7 @@ export function ColonyManager() {
                       {c.builds.length > 0 && <> · {t("colony.queue")}: {c.builds.length}</>}
                     </span>
                     {c.shortage && <span className="small battle-tag">{t("colony.shortageShort")}</span>}
+                    {c.isolated && <span className="small route-tag">{t("colony.isolatedShort")}</span>}
                   </button>
                 </li>
               ))}
