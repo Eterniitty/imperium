@@ -47,7 +47,12 @@ export function ServerStatus() {
           <span className={status === "open" ? "server-dot online" : "server-dot"} aria-hidden="true" />
           <span className="hide-sm">{t("server.label")}:</span> {label}
         </span>
-        {status === "open" && ais > 0 && <span className="server-ai">{t("server.ai", { count: ais })}</span>}
+        {status === "open" && ais > 0 && (
+          <span className="server-line server-ai">
+            <span className="server-dot online" aria-hidden="true" />
+            {t("server.ai", { count: ais })}
+          </span>
+        )}
       </span>
     );
   }
