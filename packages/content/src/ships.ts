@@ -244,7 +244,8 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     nameKey: "ship.mothership.name",
     descriptionKey: "ship.mothership.description",
     role: "combat",
-    cost: { metal: 3200, volatiles: 1200, crystal: 240, alloys: 420, rare_metals: 140, exotic: 14 },
+    // El metal, al tope del almacén de una colonia (si no, nunca se podría pagar).
+    cost: { metal: 3000, volatiles: 1200, crystal: 240, alloys: 420, rare_metals: 140, exotic: 14 },
     requires: DRYDOCK,
     buildTimeHours: 36,
     hull: 2600,
@@ -253,7 +254,8 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     battleProfile: 8,
     battleShield: 60,
     speedLyPerHour: 80,
-    cargo: 3000,
+    // Menos que el carguero: su espacio es el hangar y el taller.
+    cargo: 800,
     scannerRangeLy: 25,
     upkeepVolatilesPerHour: 16,
     consumedOnUse: false,

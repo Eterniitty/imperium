@@ -3,6 +3,7 @@ import {
   PILOT_BOOST,
   PILOT_SPEED,
   plausibleMove,
+  PULSE_ACCEL_MIN,
   PULSE_MAX_SPEED,
   PULSE_MIN_SPEED,
   pulseLimitAt,
@@ -20,14 +21,18 @@ describe("motor de pulso (supercrucero)", () => {
     expect(pulseSpeedLimit(1e9, 1)).toBe(PULSE_MAX_SPEED);
   });
 
-  it("acelera y frena sin saltos bruscos", () => {
+  it("tras la carga acelera casi de inmediato, sin saltos de un fotograma a otro, y frena suave", () => {
     let v = 0;
-    for (let i = 0; i < 600; i++) {
+    let t = 0;
+    while (v < PULSE_MAX_SPEED * 0.99 && t < 60) {
       const next = stepPulseSpeed(v, PULSE_MAX_SPEED, 1 / 60);
-      // Nunca más de un 1 % (o 7 m/s) de cambio en un fotograma.
-      expect(next - v).toBeLessThanOrEqual(Math.max(7, v * 0.01));
+      // Crece de forma continua: como mucho un 9 % (o lo de la aceleración mínima) en un fotograma.
+      expect(next - v).toBeLessThanOrEqual(Math.max(PULSE_ACCEL_MIN / 60 + 1, v * 0.09));
       v = next;
+      t += 1 / 60;
     }
+    // Casi inmediato (petición del usuario, 21-10-2026): a la velocidad máxima en pocos segundos.
+    expect(t).toBeLessThan(5);
     const braked = stepPulseSpeed(v, 1000, 1 / 60);
     expect(braked).toBeLessThan(v);
     expect(v - braked).toBeLessThan(v * 0.05);
@@ -48,7 +53,8 @@ describe("motor de pulso (supercrucero)", () => {
       x += v * dt;
       t += dt;
     }
-    expect(t).toBeGreaterThan(20);
+    // Rápido, pero no un teletransporte: frena al acercarse al segundo planeta.
+    expect(t).toBeGreaterThan(5);
     expect(t).toBeLessThan(60);
   });
 

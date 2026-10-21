@@ -60,7 +60,8 @@ describe("equilibrio de las naves humanas (mismo presupuesto)", () => {
   });
 
   it("ninguna nave de combate gana o pierde casi siempre contra todas", () => {
-    const ids = SHIP_CLASSES.filter((s) => s.role === "combat").map((s) => s.id);
+    // La nodriza (`dockFlagship`) no es una nave de línea: paga el acople, el taller y el hangar.
+    const ids = SHIP_CLASSES.filter((s) => s.role === "combat" && !s.dockFlagship).map((s) => s.id);
     for (const a of ids) {
       const rates = ids.filter((b) => b !== a).map((b) => winRate(a, b, 3));
       const mean = rates.reduce((x, y) => x + y, 0) / rates.length;
