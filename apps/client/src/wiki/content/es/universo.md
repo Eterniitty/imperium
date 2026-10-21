@@ -51,7 +51,7 @@ Cada cuerpo tiene **un solo radio**: el que se dibuja es el mismo de las colisio
 
 La gravedad simulada de las estrellas está recortada (ver [Pilotar](/wiki/pilotar#gravedad)).
 
-Las estrellas **giran** (más deprisa en el ecuador que en los polos, como el Sol) y muestran granulado, manchas, el filo rojizo de la cromosfera y **llamas en 3D** que salen de la superficie y asoman por el borde. Al acercarte, su **resplandor** crece hasta llenar la vista (la mitad con «reducir efectos»).
+Las estrellas **giran** (más deprisa en el ecuador que en los polos, como el Sol) y **arden**: su superficie es una masa de fuego en movimiento, con **llamas en 3D** que salen de ella y asoman por el borde. Al acercarte, su **resplandor** crece hasta llenar la vista (la mitad con «reducir efectos»).
 
 ### Calor de las estrellas
 

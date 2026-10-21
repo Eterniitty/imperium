@@ -436,61 +436,38 @@ const STAR_FRAGMENT = /* glsl */ `
     float sn = sin(spin);
     vec3 dir = vec3(cs * d0.x + sn * d0.z, d0.y, -sn * d0.x + cs * d0.z);
     float t = uTime;
-    float gf = 80.0;
+    // La estrella ES fuego: una masa de llamas que se revuelve. Turbulencia (suma de
+    // ruidos en valor absoluto): volutas que se hinchan como llamaradas, con pliegues
+    // oscuros entre ellas; algo deformada por otro ruido que se mueve, y que fluye.
     float footprint = max(length(fwidth(dir)), 1e-7);
-    // Granulado: celdas brillantes con canales oscuros, que hierven con el tiempo
-    // (Voronoi con puntos en movimiento, algo deformado para que sea orgánico).
-    // De lejos el granulado es más pequeño que un píxel: se usa su valor medio (sin
-    // calcularlo, que es lo más caro del shader) en vez de dejarlo parpadear.
-    float granK = clamp(1.6 - footprint * gf * 2.5, 0.0, 1.0);
-    float gran = 0.8;
-    if (granK > 0.0) {
-      vec3 q = dir * gf + uSeed;
-      q += 0.6 * vec3(snoise(q * 0.3 + vec3(0.0, t * 0.03, 0.0)), snoise(q * 0.3 + vec3(t * 0.03, 7.3, 0.0)), 0.0);
-      vec2 w = worley(q, t * 0.35, 1.0);
-      float cells = smoothstep(0.0, 0.14, w.y - w.x) * (1.0 - 0.3 * w.x);
-      float oct = clamp(log2(0.5 / (footprint * gf * 3.0)) + 1.0, 0.0, uMaxOctaves - 3.0);
-      if (oct > 0.0) {
-        vec2 w2 = worley(q * 3.1 + vec3(4.0), t * 0.5, 1.0);
-        cells = cells * (1.0 - 0.12 * (1.0 - smoothstep(0.0, 0.12, w2.y - w2.x)) * clamp(oct, 0.0, 1.0));
-      }
-      gran = mix(0.8, cells, granK);
+    int octs = int(clamp(log2(0.5 / (footprint * 24.0)) + 2.0, 3.0, min(uMaxOctaves - 2.0, 7.0)));
+    vec3 p = dir * 2.4 + uSeed;
+    vec3 warp = vec3(snoise(p * 0.8 + vec3(0.0, t * 0.06, 0.0)), snoise(p * 0.8 + vec3(4.1, -t * 0.05, 2.3)), snoise(p * 0.8 + vec3(7.7, 1.9, t * 0.055)));
+    vec3 pp = p + warp * 0.55;
+    float turb = 0.0;
+    float amp = 0.5;
+    float fq = 1.0;
+    for (int k = 0; k < 7; k++) {
+      if (k >= octs) break;
+      turb += amp * abs(snoise(pp * fq + vec3(0.0, 0.0, t * 0.09 * fq)));
+      fq *= 2.03;
+      amp *= 0.5;
     }
-    // Manchas (umbra y penumbra) que derivan despacio, más frecuentes en latitudes medias.
-    float s = snoise(dir * 2.6 + uSeed * 0.5 + vec3(t * 0.004, 0.0, 0.0)) + 0.35 * snoise(dir * 7.0 + uSeed + vec3(0.0, t * 0.006, 0.0));
-    s -= abs(dir.y) * 0.35;
-    float penumbra = smoothstep(0.46, 0.6, s);
-    float umbra = smoothstep(0.64, 0.74, s);
-    float mottle = fbm(dir * 6.0 + uSeed.yzx + vec3(t * 0.01), 3.0);
-    // Supergranulación: una red de celdas grandes con bordes algo más brillantes.
-    vec2 sg = worley(dir * 11.0 + uSeed.zxy, t * 0.05, 1.0);
-    float network = 1.0 - smoothstep(0.0, 0.22, sg.y - sg.x);
-    // Celdas casi blancas y canales del color de la estrella: brilla, no parece barro.
-    // Plasma: lenguas de fuego que fluyen y se retuercen sobre la superficie (ruido
-    // deformado por otro ruido que se mueve), con zonas más calientes y más oscuras.
-    vec3 fp = dir * 3.2 + uSeed.zyx;
-    // Octavas según la calidad elegida (la estrella puede llenar la pantalla).
-    float wo = clamp(uMaxOctaves - 3.0, 1.0, 2.0);
-    vec3 warp = vec3(fbm(fp + vec3(0.0, t * 0.05, 0.0), wo), fbm(fp + vec3(5.2, -t * 0.04, 1.3), wo), fbm(fp + vec3(1.7, 9.2, t * 0.045), wo));
-    float flame = fbm(fp * 1.6 + warp * 2.4 + vec3(t * 0.03), clamp(uMaxOctaves - 2.0, 2.0, 4.0));
-    float tongues = smoothstep(0.35, 0.85, flame);
-    // Menos blanco que antes: la estrella se ve de su color y con relieve, no como un disco lavado.
-    vec3 hot = mix(uColor, vec3(1.0, 0.95, 0.82), 0.45);
-    vec3 deep = uColor * vec3(0.95, 0.55, 0.35);
-    vec3 lane = mix(deep, uColor * 0.85, 0.5);
-    vec3 col = mix(lane, hot, gran) * (0.95 + 0.25 * mottle + 0.12 * network);
-    col = mix(col * vec3(0.8, 0.6, 0.5), col * 1.25 + hot * 0.15, tongues);
-    col = mix(col, uColor * 0.5, penumbra * 0.6);
-    col = mix(col, uColor * uColor * 0.22, umbra * 0.8);
-    // Fáculas brillantes cerca del borde y oscurecimiento del limbo.
-    col += hot * 0.28 * smoothstep(0.25, 0.7, mottle) * (1.0 - mu);
-    col *= 0.38 + 0.62 * pow(mu, 0.45);
-    col = mix(col, uColor * 0.55, (1.0 - mu) * (1.0 - mu) * 0.5);
-    // Cromosfera: un filo rojizo y brillante justo en el borde del disco, con llamas
-    // que lo recorren (las mismas lenguas de fuego, más intensas hacia el borde).
-    float edge = pow(1.0 - mu, 6.0);
-    col += mix(uColor, vec3(1.0, 0.45, 0.3), 0.5) * edge * (0.6 + 1.2 * tongues);
-    gl_FragColor = vec4(col * 0.95, 1.0);
+    float fire = snoise(p * 0.6 - vec3(t * 0.03));
+    float I = clamp(1.15 - 1.75 * turb + 0.25 * fire, 0.0, 1.0);
+    // Rampa de fuego teñida por el color de la estrella: brasa → naranja → amarillo → blanco.
+    vec3 ember = uColor * vec3(0.55, 0.14, 0.05);
+    vec3 orange = mix(uColor, vec3(1.0, 0.45, 0.1), 0.55);
+    vec3 yellow = mix(uColor, vec3(1.0, 0.85, 0.35), 0.6);
+    vec3 white = vec3(1.0, 0.97, 0.88);
+    vec3 col = mix(ember, orange, smoothstep(0.0, 0.4, I));
+    col = mix(col, yellow, smoothstep(0.45, 0.85, I));
+    col = mix(col, white, smoothstep(0.88, 1.0, I));
+    col *= 0.6 + 0.9 * I;
+    // Borde: el fuego visto de lado se acumula y brilla más (al revés que una superficie).
+    col *= 0.85 + 0.5 * pow(1.0 - mu, 2.0);
+    col += orange * pow(1.0 - mu, 6.0) * (0.6 + 0.8 * I);
+    gl_FragColor = vec4(col, 1.0);
   }
 `;
 
@@ -576,9 +553,9 @@ const FLAME_FRAGMENT = /* glsl */ `
       if (tin > 0.0) t1 = min(t1, tin);
     }
     if (t1 <= t0) discard;
-    // Las llamas se ven sobre todo en el contorno (de frente, sobre el disco, apenas: como el Sol).
+    // Las llamas salen de toda la bola (en el contorno, que se ven de lado, algo más).
     float impact = length(cross(rd, cc));
-    float facing = 0.12 + 0.88 * smoothstep(0.72, 1.0, impact);
+    float facing = 0.3 + 0.7 * smoothstep(0.72, 1.0, impact);
     int steps = int(clamp((uMaxOctaves - 3.0) * 3.0, 8.0, 24.0));
     float dt = (t1 - t0) / float(steps);
     float cs = cos(uSpin);

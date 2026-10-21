@@ -51,7 +51,7 @@ Each body has **a single radius**: the one drawn is the same one used for collis
 
 The stars' simulated gravity is capped (see [Piloting](/wiki/pilotar#gravity)).
 
-Stars **rotate** (faster at the equator than at the poles, like the Sun) and show granulation, spots, the reddish rim of the chromosphere and **3D flames** rising off the surface and breaking the outline. As you get closer, their **glare** grows until it fills your view (half as much with "reduce effects").
+Stars **rotate** (faster at the equator than at the poles, like the Sun) and **burn**: their surface is a churning mass of fire, with **3D flames** rising off it and breaking the outline. As you get closer, their **glare** grows until it fills your view (half as much with "reduce effects").
 
 ### Stellar heat
 
