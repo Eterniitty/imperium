@@ -15,6 +15,7 @@ import {
   ALIEN_AI,
   ROUTE_RAID,
   SCAVENGER_LAIR,
+  MERCENARIES,
   getAlienShipClass,
   ALIEN_SHIP_CLASSES,
   ALIEN_SIEGE,
@@ -715,6 +716,16 @@ export const GEN_TABLES: Record<string, Builder> = {
     };
   },
 
+  mercenarios: (t, locale) => ({
+    head: [t("wiki.col.offer"), t("wiki.col.ships"), t("wiki.col.cost"), t("wiki.col.time")],
+    rows: MERCENARIES.offers.map((o) => [
+      t(o.nameKey as I18nKey),
+      o.ships.map(([id, n]) => `${num(locale, n)}× ${shipName(locale, id)}`).join(", "),
+      `₢ ${num(locale, o.credits)}`,
+      t("colony.costHours", { h: num(locale, o.hours) }),
+    ]),
+    numeric: [2],
+  }),
   guaridas: (t, locale) => {
     const L = SCAVENGER_LAIR;
     const cls = getAlienShipClass(L.classId)!;

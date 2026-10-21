@@ -37,10 +37,10 @@ import {
   type ColonyState,
   type InstallationCounts,
 } from "@imperium/sim";
-import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { colonies, colonyBuilds, discoveries, emperors, fleetRoutes, fleets, heirs, installations, resourceLedger, ships } from "../db/schema";
+import { colonies, colonyBuilds, discoveries, emperors, fleetRoutes, fleets, heirs, installations, mercenaryContracts, resourceLedger, ships } from "../db/schema";
 import { discoverAround, type Discovered } from "../discovery/service";
 import { findSystem, placeFromRow } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
@@ -245,13 +245,14 @@ export class ColonyService {
     return row?.id ?? null;
   }
 
-  /** Mantenimiento por hora de juego de todas las naves de las flotas del Emperador. */
+  /** Mantenimiento por hora de juego de todas las naves de las flotas del Emperador (los mercenarios no: lo cubre su contrato). */
   private async fleetUpkeep(db: Database | Tx, emperorId: string): Promise<number> {
     const rows = await db
       .select({ classId: ships.classId, n: sql<number>`count(*)::int` })
       .from(ships)
       .innerJoin(fleets, eq(fleets.id, ships.fleetId))
-      .where(eq(fleets.emperorId, emperorId))
+      .leftJoin(mercenaryContracts, eq(mercenaryContracts.fleetId, fleets.id))
+      .where(and(eq(fleets.emperorId, emperorId), isNull(mercenaryContracts.fleetId)))
       .groupBy(ships.classId);
     let total = 0;
     for (const r of rows) total += (getShipClass(r.classId as ShipClassId)?.upkeepVolatilesPerHour ?? 0) * r.n;

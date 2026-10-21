@@ -5,7 +5,7 @@ import { isTravelling, travelDurationMs } from "@imperium/sim";
 import { and, asc, eq, inArray, isNull, lte, or } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { colonies, emperors, fleetCargo, fleetRoutes, fleets, resourceLedger, ships } from "../db/schema";
+import { colonies, emperors, fleetCargo, fleetRoutes, fleets, mercenaryContracts, resourceLedger, ships } from "../db/schema";
 import type { RemotePilot } from "../realtime/hub";
 import { findSystem, placeFromRow } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
@@ -78,9 +78,10 @@ export class FleetService {
       .where(inArray(ships.fleetId, rows.map((r) => r.id)))
       .orderBy(asc(ships.createdAt));
     const ids = rows.map((r) => r.id);
-    const [cargoRows, routeRows] = await Promise.all([
+    const [cargoRows, routeRows, contractRows] = await Promise.all([
       db.select().from(fleetCargo).where(inArray(fleetCargo.fleetId, ids)),
       db.select().from(fleetRoutes).where(inArray(fleetRoutes.fleetId, ids)),
+      db.select({ fleetId: mercenaryContracts.fleetId, endsAt: mercenaryContracts.endsAt }).from(mercenaryContracts).where(inArray(mercenaryContracts.fleetId, ids)),
     ]);
     const now = this.now();
     return rows.map((r) => {
@@ -99,6 +100,7 @@ export class FleetService {
           : null,
         battleId: r.battleId,
         tactic: asTactic(r.tactic),
+        mercenaryUntil: contractRows.find((x) => x.fleetId === r.id)?.endsAt.getTime() ?? null,
       };
     });
   }

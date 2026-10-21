@@ -30,6 +30,7 @@ import {
   ships,
   systemParks,
   probes,
+  mercenaryContracts,
 } from "../db/schema";
 import type { ColonyService } from "../colony/service";
 import type { HumanityService } from "../humanity/service";
@@ -109,6 +110,7 @@ export async function accountRoutes(app: FastifyInstance, { config, db, hub, spa
         // Memoria de posición: el último punto de su nave en cada sistema donde estuvo.
         systemParks: await db.select().from(systemParks).where(eq(systemParks.emperorId, emperor.id)),
         probes: await db.select().from(probes).where(eq(probes.emperorId, emperor.id)),
+        mercenaryContracts: await db.select().from(mercenaryContracts).where(eq(mercenaryContracts.emperorId, emperor.id)),
         resourceLedger: await db.select().from(resourceLedger).where(eq(resourceLedger.emperorId, emperor.id)),
         // Batallas en las que ha combatido (bando, resultado y la batalla).
         battles: await db

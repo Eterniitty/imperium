@@ -14,3 +14,4 @@ export * from "./lineage";
 export * from "./bodies";
 export * from "./flightModel";
 export * from "./deepspace";
+export * from "./mercenaries";

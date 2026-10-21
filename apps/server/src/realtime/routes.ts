@@ -23,6 +23,7 @@ import type { FlagshipService } from "../space/flagship";
 import type { WarService } from "../war/service";
 import type { HumanityService } from "../humanity/service";
 import type { ProbeService } from "../probe/service";
+import type { MercenaryService } from "../fleet/mercenaries";
 import { FLAGSHIP_DOCK } from "@imperium/content";
 import { fleetRallyPoint, fleetSlotPosition } from "@imperium/sim";
 import type { MarketService } from "../market/service";
@@ -55,6 +56,7 @@ export interface RealtimeDeps {
   onLineage?: (fx: LineageEffects) => void;
   /** Sondas de exploración. */
   probes?: ProbeService;
+  mercenaries?: MercenaryService;
 }
 
 const MINUTE = 60_000;
@@ -63,7 +65,7 @@ const HEARTBEAT_MS = 30_000;
 const MAX_CONNECTIONS_PER_ACCOUNT = 5;
 const MAX_CONNECTIONS = 1_000;
 
-export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage, probes }: RealtimeDeps) {
+export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage, probes , mercenaries }: RealtimeDeps) {
   const cookieName = sessionCookieName(config);
   const tickets = new TicketStore();
   const ticketsPerAccount = new RateLimiter(30, MINUTE);
@@ -387,6 +389,15 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     const res = await probes.launch(owner.emperorId, msg.args.systemId);
                     if (res.ok) {
                       await hub.publishProbe(res.emperorId, res.probe.id, res.probe);
+                      await hub.publishWallet(res.emperorId);
+                    }
+                    return res;
+                  }
+                  case "mercenary.hire": {
+                    if (!mercenaries) return { ok: false, error: "invalid_command" } as const;
+                    const res = await mercenaries.hire(owner.emperorId, msg.args.offerId);
+                    if (res.ok) {
+                      await hub.publishFleet(res.emperorId, res.fleetId);
                       await hub.publishWallet(res.emperorId);
                     }
                     return res;

@@ -48,3 +48,9 @@ A fleet can repeat a trip by itself between **two of your colonies in different 
 - If the fleet ends up in combat, the route **waits** and resumes if it survives.
 
 > [!dev] **Escorts** that accompany your ship in real time and the **supply network** are still to come.
+
+## Mercenaries
+
+With credits you can **hire mercenaries** in the system where your ship is (in the system panel, "Mercenaries" section). The company appears there as **one more of your fleets**: you can move it, send it to intercept, besiege or pilot it remotely. It costs no upkeep (the contract covers it), but it **leaves when the contract ends**; if it is fighting, when the battle is over. The fleet list shows how long it has left. You can have 2 contracts at a time.
+
+{{tabla:mercenarios}}

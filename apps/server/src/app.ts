@@ -21,6 +21,7 @@ import { LogisticsService } from "./logistics/service";
 import { humanityRoutes } from "./humanity/routes";
 import { HumanityService } from "./humanity/service";
 import { ProbeService } from "./probe/service";
+import { MercenaryService } from "./fleet/mercenaries";
 import { gateRoutes } from "./gate/routes";
 import { MarketService } from "./market/service";
 import { inHumanCore } from "./emperor/world";
@@ -114,6 +115,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   const humanity = new HumanityService(deps.db, config, colonies);
   // Sondas de exploración: se compran con créditos y descubren un sistema lejano.
   const probes = new ProbeService(deps.db, config, emperors, humanity);
+  // Mercenarios: flotas contratadas con créditos que se marchan al acabar el contrato.
+  const mercenaries = new MercenaryService(deps.db, config.TIME_SCALE, emperors, humanity);
   // Niveles de los proyectos comunes: al arrancar (index.ts) o, si no, la primera vez que hagan falta.
   colonies.setBonuses(() => humanity.bonuses());
   wars.setShieldFactor((systemId) => (inHumanCore(systemId) ? humanity.bonuses().coreShield : 1));
@@ -245,7 +248,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     for (const s of fx.sieges) hub.publishSiegeFx(s);
   };
   aliens.onSiege = (fx) => hub.publishSiegeFx(fx);
-  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage: announceLineage, probes });
+  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage: announceLineage, probes, mercenaries });
   await app.register(humanityRoutes, { config, db: deps.db, emperors, humanity, market });
   await app.register(warRoutes, { config, db: deps.db, emperors, wars, aliens });
   await app.register(alienRoutes, { config, db: deps.db, emperors, discoveries, wars, aliens });
@@ -356,6 +359,14 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
           (err: unknown) => app.log.error({ err, emperorId }, "Fallo en la autogestión de colonias"),
         );
   });
+  worker.on("mercenary.leave", async (tx, { fleetId }) => {
+    const gone = await mercenaries.leave(tx, fleetId);
+    if (gone)
+      return () => {
+        void hub.publishFleet(gone.emperorId, gone.fleetId);
+        void hub.publishColonies(gone.emperorId);
+      };
+  });
   worker.on("probe.arrive", async (tx, { probeId }) => {
     const done = await probes.arrive(tx, probeId);
     if (done)
@@ -392,6 +403,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   app.decorate("aiEmperors", aiEmperors);
   app.decorate("sieges", sieges);
   app.decorate("lineage", lineage);
+  app.decorate("mercenaries", mercenaries);
   app.decorate("wars", wars);
 
   return app;
@@ -410,5 +422,6 @@ declare module "fastify" {
     sieges: SiegeService;
     lineage: LineageService;
     wars: WarService;
+    mercenaries: MercenaryService;
   }
 }

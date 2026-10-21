@@ -116,6 +116,8 @@ export interface CommandArgs {
   "colony.autoGovern": { on: boolean };
   /** Lanza una sonda de exploración a un sistema sin descubrir (`PROBE`: cuesta créditos y tiene alcance). */
   "probe.launch": { systemId: string };
+  /** Contrata mercenarios (`MERCENARIES`): aparecen como flota propia donde está la nave del Emperador, hasta que acaba el contrato. */
+  "mercenary.hire": { offerId: string };
   /** Pilota a distancia una nave de una flota propia parada (ni viajando ni en batalla); `leave` deja de pilotarla. */
   "fleet.pilot": { fleetId: string; shipId: string };
   /** Cambia la táctica de una flota propia en las batallas por rondas (desde cualquier sitio; en plena batalla vale desde la ronda siguiente). */

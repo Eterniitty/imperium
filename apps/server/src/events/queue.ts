@@ -40,6 +40,8 @@ export interface EventPayloads {
   "colony.govern": { emperorId: string };
   /** Una sonda de exploración llega a su destino. */
   "probe.arrive": { probeId: string };
+  /** Acaba el contrato de una flota de mercenarios: se marcha. */
+  "mercenary.leave": { fleetId: string };
 }
 export type EventKind = keyof EventPayloads;
 

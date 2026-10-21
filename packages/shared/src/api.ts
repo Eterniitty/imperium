@@ -130,6 +130,8 @@ export interface Fleet {
   battleId: string | null;
   /** Táctica en las batallas por rondas (se puede cambiar a distancia, también en plena batalla). */
   tactic: FleetTactic;
+  /** Flota de mercenarios: cuándo acaba el contrato y se marcha (ms del servidor); null si es propia. */
+  mercenaryUntil: number | null;
 }
 
 /** Sonda de exploración en vuelo (privada): a qué sistema va, desde dónde y cuándo llega. */

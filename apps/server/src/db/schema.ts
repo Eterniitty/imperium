@@ -195,6 +195,22 @@ export const probes = pgTable(
   (t) => [index("probes_emperor_id_idx").on(t.emperorId)],
 );
 
+/** Contratos de mercenarios (`MERCENARIES`): la flota contratada y cuándo se marcha. */
+export const mercenaryContracts = pgTable(
+  "mercenary_contracts",
+  {
+    fleetId: uuid("fleet_id")
+      .primaryKey()
+      .references(() => fleets.id, { onDelete: "cascade" }),
+    emperorId: uuid("emperor_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    offerId: text("offer_id").notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("mercenary_contracts_emperor_id_idx").on(t.emperorId)],
+);
+
 export const systemParks = pgTable(
   "system_parks",
   {

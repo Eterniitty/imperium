@@ -48,3 +48,9 @@ Una flota puede repetir sola un trayecto entre **dos colonias tuyas de sistemas 
 - Si la flota entra en combate, la ruta **espera** y se reanuda si sobrevive.
 
 > [!dev] Las **escoltas** que acompañan a tu nave en tiempo real y la **red de suministro** están por llegar.
+
+## Mercenarios
+
+Con créditos puedes **contratar mercenarios** en el sistema donde está tu nave (en el panel del sistema, apartado «Mercenarios»). La compañía aparece allí como **una flota tuya más**: la puedes mover, enviar a interceptar, asediar o pilotar a distancia. No cuesta mantenimiento (lo cubre el contrato), pero **se marcha al acabar el contrato**; si está combatiendo, al terminar la batalla. En la lista de flotas verás cuánto le queda. Puedes tener 2 contratos a la vez.
+
+{{tabla:mercenarios}}
