@@ -49,7 +49,8 @@ export class Engine {
   private lastHover = 0;
   private unsubscribeSettings: () => void;
   /** Salto en curso seguido por la cámara: origen y destino, para entrar al llegar por el lado correcto. */
-  private jumping: { from: WorldPosition; to: WorldPosition } | null = null;
+  /** Viaje cuántico en curso que se está mostrando (túnel o mapa): origen, destino y hora de llegada. */
+  private jumping: { from: WorldPosition; to: WorldPosition; arriveAt: number } | null = null;
   private destroyedShown = false;
   /** Fase 10: el Emperador propio estaba muerto (gestándose) en el fotograma anterior, y desde cuándo. */
   private deadSince: number | null = null;
@@ -369,7 +370,7 @@ export class Engine {
     if (!emperor?.travel) return;
     if (this.active === this.system) this.system.stopPiloting();
     this.galaxy.follow(null);
-    this.jumping = { from: emperor.location.position, to: emperor.travel.to.position };
+    this.jumping = { from: emperor.location.position, to: emperor.travel.to.position, arriveAt: emperor.travel.arriveAt };
     // Colores del túnel: de la estrella de origen a la de destino.
     const color = (id: string) => STAR_CLASSES[findSystemSummary(id)?.starClass ?? "G"].color;
     this.tunnel.setJourney(color(emperor.location.systemId), color(emperor.travel.to.systemId), emperor.travel.departAt, emperor.travel.arriveAt);
@@ -468,12 +469,15 @@ export class Engine {
     if (!emperor || isTravelling(emperor, serverNow())) return;
     // Volviendo a la pestaña mucho después de llegar: la nave ya está en el destino;
     // se entra pilotando allí sin repetir la salida de la grieta (los demás ya la ven aparcada).
-    const late = serverNow() - (emperor.travel?.arriveAt ?? 0) > ARRIVAL_REPLAY_MS;
-    const fromTunnel = this.active === this.tunnel && !late;
-    if (this.pilot(null) && fromTunnel) {
-      // Se abre una grieta en el destino y la nave sale de ella.
+    // La hora de llegada es la recordada al empezar el viaje: el servidor manda al
+    // Emperador ya asentado en el destino (sin viaje) en cuanto llega, y sin ella
+    // parecería que llegó hace mucho y no se vería la llegada.
+    const late = serverNow() - this.jumping.arriveAt > ARRIVAL_REPLAY_MS;
+    const fromTunnel = this.active === this.tunnel;
+    if (this.pilot(null) && !late) {
+      // Se abre una grieta en el destino y la nave sale de ella (también llegando desde el mapa).
       this.system.arriveFromJump();
-      this.rift.arrive();
+      if (fromTunnel) this.rift.arrive();
       playQuantumTear(0.6);
     }
   }
