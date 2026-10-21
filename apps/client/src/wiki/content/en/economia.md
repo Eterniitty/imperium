@@ -10,6 +10,8 @@ Each colony has its **own inventory**: there is no global store. What a colony p
 | **Volatiles** | Fuel and upkeep for ships and installations. |
 | **Rare crystal** | Scarce; the shipyard and almost every ship need it. |
 | **Alloys** | Made in the refinery from metal and volatiles. |
+| **Rare metals** | No colony produces them: they are mined in [deep space](/wiki/espacio-profundo) or bought on the market. Capital ships need them. |
+| **Exotic matter** | Very scarce; only in some deep space asteroids (or on the market). |
 | **Energy** | Produced and used in the colony itself; **it is neither stored nor transported**. |
 
 Each storable resource has a **storage cap** per colony. **Whatever does not fit is lost**, so spend it or ship it out in freighters.

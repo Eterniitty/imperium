@@ -1165,6 +1165,24 @@ export const es = {
   "photo.reduce": "Activar «Reducir efectos visuales»",
   "photo.continue": "Continuar",
   "photo.show": "Ver el aviso de fotosensibilidad",
+  // Wiki: espacio profundo y minería.
+  "wiki.minedOnly": "Solo en la bodega de la nave del Emperador y por el mercado",
+  "wiki.col.asteroid": "Asteroide",
+  "wiki.col.yields": "Qué da al minarlo",
+  "wiki.col.unitsPerRadius": "Unidades por metro de radio",
+  "wiki.col.region": "Región",
+  "wiki.col.asteroids": "Asteroides",
+  "wiki.col.mix": "Tipos",
+  "wiki.col.fieldRadius": "Radio del campo",
+  "wiki.deep.cell": "Lado de una región (celda del espacio)",
+  "wiki.deep.asteroidRadius": "Radio de los asteroides",
+  "wiki.deep.regen": "Un asteroide agotado se regenera del todo en",
+  "wiki.deep.range": "Alcance del láser de minería (hasta la superficie)",
+  "wiki.deep.rate": "Unidades extraídas por segundo",
+  "wiki.deep.energy": "Energía del láser por segundo",
+  "wiki.deep.hold": "Capacidad de la bodega de la nave",
+  "wiki.deep.refineRatio": "Refinería de a bordo: volátiles por unidad de combustible",
+  "wiki.deep.refineRate": "Refinería de a bordo: combustible por segundo",
 } as const;
 
 export type I18nKey = keyof typeof es;

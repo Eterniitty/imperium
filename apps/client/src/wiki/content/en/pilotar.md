@@ -90,6 +90,10 @@ Fly to the **edge of the system** (a few thousand kilometres beyond the outermos
 - On arrival, your scanner [discovers](/wiki/niebla) the system and those within range.
 - You can jump to any star within range, discovered or not.
 
+### Dropping out halfway
+
+In the tunnel, [[K]] (or the **Drop out here** button) stops the trip: you stay in **deep space**, between the two stars, and only spend the fuel for the distance covered. There may be asteroids there to mine with [[L]]. See [Deep space and mining](/wiki/espacio-profundo).
+
 ## Shared flight
 
 Inside a system you see the other Emperors flying there, and they see you. Outside the Human Core you may run into pirates. See [Combat](/wiki/combate).
