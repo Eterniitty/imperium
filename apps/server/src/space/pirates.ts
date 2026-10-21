@@ -2,11 +2,11 @@
  * Piratas Carroñeros (IA): dónde viven y cómo se mueven. Funciones puras; el
  * estado y la difusión los lleva SpaceService.
  */
-import { getAlienShipClass, scavengerDanger, type AlienFlight } from "@imperium/content";
+import { getAlienShipClass, PIRATE_AI, scavengerDanger, type AlienFlight } from "@imperium/content";
 import { hashString } from "@imperium/procgen";
 import { isDeepId, parseSystemId, type Quat, type Vec3 } from "@imperium/shared";
 import { HUMAN_CORE_RADIUS } from "../emperor/world";
-import { planetPosition, type SystemLayout } from "@imperium/sim";
+import { planetPosition, type PirateMode, type SystemLayout } from "@imperium/sim";
 import { normalize } from "./combat";
 
 /** Anillo de un sistema: distancia al Núcleo Humano en sectores (el mayor de |x|, |y|, |z|). */
@@ -103,16 +103,35 @@ export interface PirateStep {
   q: Quat;
 }
 
+/** Lo que decidió el piloto (`packages/sim` ai/pirate.ts) para este paso. */
+export interface PirateIntent {
+  mode: PirateMode;
+  /** Enemigo más cercano (del que huye o al que no da la espalda). */
+  threat: Vec3 | null;
+  /** Corrección para no chocar con planetas, lunas ni la estrella (m/s). */
+  avoid: Vec3;
+  /** Maniobra lateral si le están dando (m/s), o null. */
+  jink: Vec3 | null;
+}
+
 /**
- * Un paso de la IA. Con objetivo: se acerca hasta su distancia preferida y
- * luego lo rodea; sin objetivo: vuelve despacio a casa. La velocidad cambia
- * poco a poco (inercia) y el morro mira hacia donde va o hacia el objetivo.
+ * Un paso de la IA. Cazando, con objetivo: se acerca hasta su distancia
+ * preferida y luego lo rodea (esquivando si le dan); sin objetivo: vuelve
+ * despacio a casa. Huyendo: se aleja a toda máquina del enemigo más cercano.
+ * Reagrupándose: vuelve a casa sin dejar que se le acerquen. Siempre esquiva
+ * los cuerpos. La velocidad cambia poco a poco (inercia) y el morro mira
+ * hacia donde va o hacia el objetivo.
  */
-export function stepPirate(p: Vec3, v: Vec3, home: Vec3, target: Vec3 | null, dtSec: number, phase: number, flight: AlienFlight): PirateStep {
+export function stepPirate(p: Vec3, v: Vec3, home: Vec3, target: Vec3 | null, dtSec: number, phase: number, flight: AlienFlight, intent?: PirateIntent): PirateStep {
   const max = flight.speedU;
   let desired: Vec3;
   let face: Vec3 | null = null;
-  if (target) {
+  const away = intent?.threat ? normalize([p[0] - intent.threat[0], p[1] - intent.threat[1], p[2] - intent.threat[2]]) : null;
+  if (intent?.mode === "flee" && away) {
+    desired = [away[0] * max, away[1] * max, away[2] * max];
+  } else if (intent?.mode === "regroup" && away && intent.threat && Math.hypot(p[0] - intent.threat[0], p[1] - intent.threat[1], p[2] - intent.threat[2]) < PIRATE_AI.fleeDistanceU) {
+    desired = [away[0] * max * 0.8, away[1] * max * 0.8, away[2] * max * 0.8];
+  } else if (target && intent?.mode !== "regroup") {
     const to: Vec3 = [target[0] - p[0], target[1] - p[1], target[2] - p[2]];
     const d = Math.hypot(...to);
     const dir = normalize(to) ?? [0, 0, -1];
@@ -131,6 +150,12 @@ export function stepPirate(p: Vec3, v: Vec3, home: Vec3, target: Vec3 | null, dt
     const d = Math.hypot(...back);
     const dir = normalize(back);
     desired = dir && d > 200 ? [dir[0] * max * 0.4, dir[1] * max * 0.4, dir[2] * max * 0.4] : [0, 0, 0];
+  }
+  if (intent) {
+    if (intent.jink && intent.mode !== "regroup") desired = [desired[0] + intent.jink[0], desired[1] + intent.jink[1], desired[2] + intent.jink[2]];
+    desired = [desired[0] + intent.avoid[0], desired[1] + intent.avoid[1], desired[2] + intent.avoid[2]];
+    const s = Math.hypot(...desired);
+    if (s > max * 1.2) desired = [(desired[0] / s) * max * 1.2, (desired[1] / s) * max * 1.2, (desired[2] / s) * max * 1.2];
   }
   const k = 1 - Math.exp(-dtSec * 1.5);
   const nv: Vec3 = [v[0] + (desired[0] - v[0]) * k, v[1] + (desired[1] - v[1]) * k, v[2] + (desired[2] - v[2]) * k];

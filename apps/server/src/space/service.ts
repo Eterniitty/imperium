@@ -1,6 +1,6 @@
-import { AIM_ASSIST, BODY_COLLISION, EMPEROR_FLAGSHIP, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, getAlienShipClass, getShipClass, MINING, PIRATE_AI, type ShipClassId } from "@imperium/content";
+import { AIM_ASSIST, BODY_COLLISION, EMPEROR_FLAGSHIP, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, getAlienShipClass, getShipClass, MINING, PIRATE_AI, type ShipClassId } from "@imperium/content";
 import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, isDeepId, type CommandError, type ServerMessage, type ShipPose, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
-import { addToHold, bodiesAt, fleetRallyPoint, fleetSlotPosition, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
+import { addToHold, avoidObstacles, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { EmperorService } from "../emperor/service";
 import type { Client, RemotePilot } from "../realtime/hub";
@@ -21,8 +21,8 @@ interface Member {
   classId?: string;
   fleetId?: string;
   shipId?: string;
-  /** Solo piratas: dónde viven, un valor fijo para variar su forma de rodear, su clase de nave y su puntería. */
-  ai?: { home: Vec3; phase: number; classId: string; aimJitter: number };
+  /** Solo piratas: dónde viven, un valor fijo para variar su forma de rodear, su clase de nave, su puntería y su modo (Fase 9d). */
+  ai?: { home: Vec3; phase: number; classId: string; aimJitter: number; mode?: PirateMode };
   /** Radio de impacto (metros): las naves grandes son más fáciles de acertar. */
   radius: number;
   name: string;
@@ -1159,47 +1159,90 @@ export class SpaceService {
    * (los arponeros se pegan, los bombarderos se quedan lejos) y apunta con el
    * error de su nivel de peligro.
    */
+  /**
+   * IA de los Carroñeros (Fase 9d, reglas en `packages/sim` ai/pirate.ts): la
+   * manada de cada sistema elige una presa común (la más débil cerca de ella),
+   * cada pirata caza, huye con el casco bajo o se reagrupa hasta recargar el
+   * escudo, esquiva cuando le dan y los cuerpos siempre, y no dispara con un
+   * compañero en la línea de tiro.
+   */
   private stepPirates(now: number): void {
     const dt = TICK_MS / 1000;
-    for (const room of this.rooms.values()) {
-      for (const m of room) {
-        if (m.kind !== "pirate" || !m.ai) continue;
-        // El enemigo más cercano dentro de su radio de detección.
-        let target: Member | null = null;
-        let best: number = PIRATE_AI.aggroRangeU;
-        for (const o of room) {
-          // Solo naves pilotadas: una nave aparcada, sin nadie a bordo, no les llama la atención.
-          if (o.kind === "pirate" || o.clients.size === 0) continue;
-          const d = distance(m.pose.p, o.pose.p);
-          if (d < best) {
-            best = d;
-            target = o;
-          }
-        }
-        const step = stepPirate(m.pose.p, m.pose.v, m.ai.home, target?.pose.p ?? null, dt, m.ai.phase, pirateFlight(m.ai.classId));
-        m.pose = step;
-        m.poseAt = now;
-        m.history.push({ t: now, p: step.p });
-        if (m.history.length > HISTORY_SIZE) m.history.shift();
-        m.dirty = true;
-        if (target) {
-          const to = normalize([target.pose.p[0] - step.p[0], target.pose.p[1] - step.p[1], target.pose.p[2] - step.p[2]]);
-          // El cañón apunta al punto de adelanto (los impactos se calculan contra el movimiento del blanco).
-          const cannonDef = m.combat.weapons.get("cannon")?.def;
-          const lead = cannonDef ? leadPoint(step.p, step.v, target.pose.p, target.pose.v, cannonDef.speedU) : null;
-          // Puntería imperfecta: de lejos fallan más, de cerca casi nunca.
-          const jitter = m.ai.aimJitter;
-          const j = () => (Math.random() - 0.5) * jitter;
-          const cannon = m.combat.weapons.get("cannon");
-          const aim = lead?.dir ?? to;
-          if (aim && cannon && best <= cannon.def.rangeU) this.fireFrom(m, "cannon", [aim[0] + j(), aim[1] + j(), aim[2] + j()]);
-          const missile = m.combat.weapons.get("missile");
-          if (to && missile && best <= missile.def.rangeU && (missile.ammo ?? 0) > 0 && now >= missile.readyAt) this.fireFrom(m, "missile", to, target.emperorId);
-        }
+    for (const [systemId, room] of this.rooms) {
+      const pack = [...room].filter((m) => m.kind === "pirate" && m.ai);
+      if (pack.length > 0) {
+        // Solo naves pilotadas: una nave aparcada, sin nadie a bordo, no les llama la atención.
+        const enemies = [...room].filter((o) => o.kind !== "pirate" && o.clients.size > 0 && o.combat.hull > 0);
+        const preyId = packTarget(
+          pack.map((m) => m.pose.p),
+          enemies.map((o) => ({ id: o.emperorId, p: o.pose.p, hull: o.combat.hull, shield: o.combat.shield })),
+        );
+        const obstacles = this.pirateObstacles(systemId, now);
+        for (const m of pack) this.stepPirate(m, pack, enemies, preyId, obstacles, dt, now);
       }
       // Reaparecen los que ya cumplieron su espera.
       const any = room.values().next().value as Member | undefined;
       if (any) this.spawnPirates(any.systemId, room);
+    }
+  }
+
+  /** Lo que los piratas no deben tocar: planetas y lunas (con margen) y la estrella con su zona de calor. */
+  private pirateObstacles(systemId: string, now: number): PirateObstacle[] {
+    const layout = isDeepId(systemId) ? null : this.layout(systemId);
+    if (!layout) return [];
+    return bodiesAt(layout, now).map((b) => ({
+      center: [b.center[0] ?? 0, b.center[1] ?? 0, b.center[2] ?? 0] as const,
+      radius: b.body.kind === "star" && layout.starClass ? b.radius * STAR_HEAT[layout.starClass].zoneRadii : b.radius,
+    }));
+  }
+
+  private stepPirate(m: Member, pack: Member[], enemies: Member[], preyId: string | null, obstacles: PirateObstacle[], dt: number, now: number): void {
+    const ai = m.ai!;
+    // El enemigo más cercano (amenaza) y la presa: la de la manada si está a tiro de detección; si no, la más cercana.
+    let nearest: Member | null = null;
+    let nearestD = Infinity;
+    for (const o of enemies) {
+      const d = distance(m.pose.p, o.pose.p);
+      if (d < nearestD) {
+        nearestD = d;
+        nearest = o;
+      }
+    }
+    const prey = enemies.find((o) => o.emperorId === preyId);
+    let target: Member | null = prey && distance(m.pose.p, prey.pose.p) <= PIRATE_AI.packRadiusU ? prey : nearestD <= PIRATE_AI.aggroRangeU ? nearest : null;
+    const underFire = now - m.combat.lastHitAt < PIRATE_AI.underFireSec * 1000;
+    ai.mode = nextPirateMode(ai.mode ?? "hunt", m.combat.hull / m.combat.hullMax, m.combat.shieldMax > 0 ? m.combat.shield / m.combat.shieldMax : 1, underFire, nearest ? nearestD : null);
+    if (ai.mode !== "hunt") target = null;
+    const best = target ? distance(m.pose.p, target.pose.p) : Infinity;
+    const flight = pirateFlight(ai.classId);
+    const toward = target ? normalize([target.pose.p[0] - m.pose.p[0], target.pose.p[1] - m.pose.p[1], target.pose.p[2] - m.pose.p[2]]) : null;
+    const intent = {
+      mode: ai.mode,
+      threat: nearest?.pose.p ?? null,
+      avoid: avoidObstacles(m.pose.p, m.pose.v, obstacles, flight.speedU),
+      jink: underFire && toward ? jinkVector(toward, ai.phase, now / 1000, flight.speedU) : null,
+    };
+    const step = stepPirate(m.pose.p, m.pose.v, ai.home, target?.pose.p ?? null, dt, ai.phase, flight, intent);
+    m.pose = step;
+    m.poseAt = now;
+    m.history.push({ t: now, p: step.p });
+    if (m.history.length > HISTORY_SIZE) m.history.shift();
+    m.dirty = true;
+    if (target) {
+      const to = normalize([target.pose.p[0] - step.p[0], target.pose.p[1] - step.p[1], target.pose.p[2] - step.p[2]]);
+      // El cañón apunta al punto de adelanto (los impactos se calculan contra el movimiento del blanco).
+      const cannonDef = m.combat.weapons.get("cannon")?.def;
+      const lead = cannonDef ? leadPoint(step.p, step.v, target.pose.p, target.pose.v, cannonDef.speedU) : null;
+      // Puntería imperfecta: de lejos fallan más, de cerca casi nunca.
+      const jitter = ai.aimJitter;
+      const j = () => (Math.random() - 0.5) * jitter;
+      const cannon = m.combat.weapons.get("cannon");
+      const aim = lead?.dir ?? to;
+      // Disciplina de fuego: nunca con un compañero de manada en la línea de tiro.
+      const friends = pack.filter((o) => o !== m).map((o) => o.pose.p);
+      if (aim && cannon && best <= cannon.def.rangeU && !friendInLine(step.p, aim, best, friends)) this.fireFrom(m, "cannon", [aim[0] + j(), aim[1] + j(), aim[2] + j()]);
+      const missile = m.combat.weapons.get("missile");
+      if (to && missile && best <= missile.def.rangeU && (missile.ammo ?? 0) > 0 && now >= missile.readyAt) this.fireFrom(m, "missile", to, target.emperorId);
     }
   }
 

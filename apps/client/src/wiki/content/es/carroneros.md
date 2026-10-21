@@ -20,6 +20,16 @@ Cada una tiene su modelo de chatarra (placas sin simetría, púas, motores de di
 
 > [!dev] El abordaje (robar carga en vez de destruir la nave) llegará con la logística de la conquista; por ahora el arponero solo golpea fuerte de cerca.
 
+## Cómo pelean
+
+Los Carroñeros buscan botín con el menor riesgo:
+
+- **Cazan en manada**: los de un sistema eligen la **misma presa**, la nave que menos aguanta (casco y escudo) cerca de alguno de ellos, y van a por ella juntos.
+- **Esquivan** con maniobras laterales cuando les están dando, para romper tu puntería.
+- **Acosan, no se suicidan**: con el casco bajo y bajo fuego, **huyen**; lejos de ti se **reagrupan** hasta recargar el escudo y vuelven a cazar.
+- **No se estrellan**: rodean planetas y lunas y no entran en la zona de calor de la estrella.
+- **No se disparan entre ellos**: no tiran si un compañero está en la línea de tiro.
+
 ## Peligro por zona
 
 Cuanto más lejos del Núcleo, más numerosos, más pesados y con mejor puntería. El anillo es la distancia al Núcleo en sectores (ver [Universo](/wiki/universo)).

@@ -315,6 +315,23 @@ export const PIRATE_AI = {
   aggroRangeU: 6000,
   /** Segundos hasta que reaparecen tras ser destruidos. */
   respawnSec: 300,
+  /** Huyen con el casco por debajo de esta fracción si les están dando (acosan, no se suicidan). */
+  fleeHullPct: 0.35,
+  /** Dejan de huir a esta distancia del enemigo más cercano y se reagrupan. */
+  fleeDistanceU: 9000,
+  /** Vuelven a cazar cuando el escudo se ha recargado hasta esta fracción. */
+  regroupShieldPct: 0.8,
+  /** Segundos que cuenta un impacto como «me están dando» (esquivar y huir). */
+  underFireSec: 2.5,
+  /** Fuerza de las maniobras laterales para romper la puntería (fracción de su velocidad). */
+  jink: 0.45,
+  /** La manada elige presa entre las naves a esta distancia de cualquiera de sus miembros. */
+  packRadiusU: 9000,
+  /** Esquivar cuerpos: segundos de anticipación y margen sobre su superficie (m). */
+  avoidLookaheadSec: 5,
+  avoidMarginM: 4000,
+  /** No disparan si un compañero de manada está a menos de esto de la línea de tiro (m). */
+  friendlyFireClearanceU: 150,
 } as const;
 
 /** Nivel de peligro de los Carroñeros de un sistema (según su distancia al Núcleo Humano). */

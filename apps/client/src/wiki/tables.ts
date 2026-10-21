@@ -384,6 +384,9 @@ export const GEN_TABLES: Record<string, Builder> = {
   carroneros: (t, locale) =>
     kv(t, [
       ["wiki.k.aggro", `${num(locale, PIRATE_AI.aggroRangeU)} m`],
+      ["wiki.k.packRadius", `${num(locale, PIRATE_AI.packRadiusU)} m`],
+      ["wiki.k.fleeHull", `${num(locale, PIRATE_AI.fleeHullPct * 100)} %`],
+      ["wiki.k.regroupShield", `${num(locale, PIRATE_AI.regroupShieldPct * 100)} %`],
       ["wiki.k.respawn", `${num(locale, PIRATE_AI.respawnSec / 60)} min`],
     ]),
 

@@ -20,6 +20,16 @@ Each one has its own scrap model (asymmetric plates, spikes, engines of differen
 
 > [!dev] Boarding (stealing cargo instead of destroying the ship) will come with the logistics of conquest; for now the harpooner just hits hard at close range.
 
+## How they fight
+
+Scavengers look for loot with the least risk:
+
+- **They hunt in packs**: those in a system pick **the same prey**, the ship that can take the least (hull and shield) near any of them, and go for it together.
+- **They jink** sideways when they are being hit, to throw off your aim.
+- **They harass, they do not die for it**: with low hull and under fire they **flee**; far from you they **regroup** until their shield recharges and come back hunting.
+- **They do not crash**: they steer around planets and moons and stay out of the star's heat zone.
+- **They do not shoot each other**: they hold fire when a packmate is in the line of fire.
+
 ## Danger by zone
 
 The farther from the Core, the more numerous, the heavier and the better their aim. The ring is the distance to the Core in sectors (see [Universe](/wiki/universo)).
