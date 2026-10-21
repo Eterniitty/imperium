@@ -1,15 +1,15 @@
 import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, getShipClass, HUMANS, STARTING_FLEET } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
-import { deepRegionIdAt, distance, isDeepId, type CommandError, type Emperor, type WorldPosition } from "@imperium/shared";
+import { deepRegionIdAt, distance, isDeepId, type CommandError, type Emperor, type StarSystemSummary, type WorldPosition } from "@imperium/shared";
 import { arrivalPark, isTravelling, positionAt, quantumFuelCost, regenFuel, travelDurationMs, type SystemLayout } from "@imperium/sim";
 import { eq, ne, sql } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { emperors, fleets, ships } from "../db/schema";
+import { companionRequests, emperorAllies, emperors, fleets, ships } from "../db/schema";
 import { discoverAround, discoverNear, fleetScannerRangeLy } from "../discovery/service";
 import { schedule } from "../events/queue";
 import { parkColumns } from "../space/flagship";
-import { findSystem, nameKey, pickSpawnSystem, placeFromRow, type PlaceRow } from "./world";
+import { findSystem, nameKey, pickSpawnNear, pickSpawnSystem, placeFromRow, type PlaceRow } from "./world";
 
 const columns = {
   id: emperors.id,
@@ -23,7 +23,8 @@ const columns = {
 };
 type Row = PlaceRow & { name: string; kind: string; deadAt: Date | null };
 
-export type CreateResult = { ok: true; emperor: Emperor } | { ok: false; error: "emperor_exists" | "name_taken" };
+/** `companionId`: el compañero cerca del que apareció (alta con compañero aceptada). */
+export type CreateResult = { ok: true; emperor: Emperor; companionId: string | null } | { ok: false; error: "emperor_exists" | "name_taken" };
 export type MoveResult = { ok: true; emperor: Emperor } | { ok: false; error: CommandError };
 /** Salida del túnel: el Emperador, la región donde queda y los sistemas que descubre su escáner desde allí. */
 export type DropResult = { ok: true; emperor: Emperor; regionId: string; discovered: string[] } | { ok: false; error: CommandError };
@@ -86,10 +87,30 @@ export class EmperorService {
    * Crea el Emperador y su flota inicial en el mismo sistema, todo o nada. Nace
    * conociendo su sistema y lo que cubren el escáner de su nave y el de su
    * flota inicial (que está en el mismo sitio).
+   *
+   * Alta con compañero: si la cuenta tiene una solicitud aceptada, aparece en un
+   * sistema inicial cercano al del compañero y quedan como compañeros (los dos
+   * sentidos de `emperor_allies`). La solicitud se borra al crear, aceptada o no
+   * (empezar en solitario cancela la que estuviera pendiente).
    */
   async create(accountId: string, name: string): Promise<CreateResult> {
-    const spawn = pickSpawnSystem(this.seed);
+    let companionId: string | null = null;
     const created = await this.db.transaction(async (tx) => {
+      const [request] = await tx
+        .select({ id: companionRequests.id, targetId: companionRequests.targetId, status: companionRequests.status })
+        .from(companionRequests)
+        .where(eq(companionRequests.accountId, accountId))
+        .for("update")
+        .limit(1);
+      let spawn: StarSystemSummary | null = null;
+      if (request?.status === "accepted") {
+        const [target] = await tx.select(columns).from(emperors).where(eq(emperors.id, request.targetId)).limit(1);
+        if (target) {
+          spawn = pickSpawnNear(this.seed, this.toEmperor(target).location.position);
+          companionId = target.id;
+        }
+      }
+      spawn ??= pickSpawnSystem(this.seed);
       // Sin objetivo de conflicto: si ya hay Emperador en la cuenta o el nombre está
       // cogido, no inserta nada. Así dos peticiones simultáneas no crean dos.
       const [row] = await tx
@@ -104,9 +125,19 @@ export class EmperorService {
       );
       const range = Math.max(EMPEROR_FLAGSHIP.scannerRangeLy, fleetScannerRangeLy(STARTING_FLEET));
       await discoverAround(tx, this.seed, row.id, spawn, range);
+      if (companionId) {
+        await tx
+          .insert(emperorAllies)
+          .values([
+            { emperorId: row.id, allyId: companionId },
+            { emperorId: companionId, allyId: row.id },
+          ])
+          .onConflictDoNothing();
+      }
+      if (request) await tx.delete(companionRequests).where(eq(companionRequests.id, request.id));
       return row;
     });
-    if (created) return { ok: true, emperor: this.toEmperor(created) };
+    if (created) return { ok: true, emperor: this.toEmperor(created), companionId };
     const existing = await this.byAccount(accountId);
     return { ok: false, error: existing ? "emperor_exists" : "name_taken" };
   }

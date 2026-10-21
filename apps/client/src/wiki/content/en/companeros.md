@@ -14,6 +14,18 @@ Being companions means:
 - Your fleets **do not fight each other** and do not show up as [contacts](/wiki/guerra#contacts-and-interception).
 - With the "Only my companions" visibility, they can see where you are.
 
+## Starting next to a companion
+
+When you **name your Emperor** (only when signing up) you can ask to start near someone who already plays:
+
+1. Enter their Emperor's name under **Start near a companion** and press **Send request**. It only works with another player's Emperor (not the AI's).
+2. They get a **Companion request** in the game with your name: **Accept** or **Decline**.
+3. While you wait you can close the game and come back: the start page keeps waiting. You can also **withdraw the request** (and try someone else) or **start alone** with the name you chose.
+4. If they **accept**, your Emperor is crowned automatically and starts in one of the starting systems (F, G or K stars of the Human Core) **closest to theirs**. You are also **companions** already.
+5. If they **decline**, or do not answer within **24 hours**, you are told and can start alone or try another companion.
+
+Your Emperor's name is not reserved while you wait: if someone takes it first, you will have to choose another (the accepted request is kept).
+
 ## Who sees where you are
 
 In **Settings → Companions → Who sees where you are** you choose who can see your Emperor's position on the map (where they are and where they are travelling to):

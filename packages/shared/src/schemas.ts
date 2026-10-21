@@ -72,6 +72,12 @@ export const AllyRemoveBodySchema = z.object({ emperorId: z.uuid() });
 export const EmperorCreateBodySchema = z.object({ name: EmperorNameSchema });
 export type EmperorCreateBody = z.input<typeof EmperorCreateBodySchema>;
 
+/** Cuerpo de `POST /api/emperor/companion`: pedir aparecer cerca de un compañero. */
+export const CompanionRequestBodySchema = z.object({ name: EmperorNameSchema, companion: z.string().min(1).max(64) });
+
+/** Cuerpo de `POST /api/companion-requests/respond`: aceptar o rechazar una solicitud de alta. */
+export const CompanionRespondBodySchema = z.object({ id: z.uuid(), accept: z.boolean() });
+
 /** Identificador de sistema. Coordenadas de sector acotadas para no generar sectores absurdos. */
 export const SystemIdSchema = z.string().regex(/^-?\d{1,7}:-?\d{1,7}:-?\d{1,7}:\d{1,3}$/);
 

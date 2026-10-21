@@ -13,6 +13,7 @@ import {
   battleSides,
   colonies,
   colonyBuilds,
+  companionRequests,
   discoveries,
   emperorAllies,
   emperorWallets,
@@ -124,7 +125,16 @@ export async function accountRoutes(app: FastifyInstance, { config, db, hub, spa
     }
     // Wiki: lo que editó como administrador (las revisiones son públicas; aquí, con su autoría).
     const wikiData = wiki ? await wiki.exportFor(account.id) : { revisions: [], log: [] };
-    const data = { exportedAt: new Date().toISOString(), account: acc, sessions: sessionRows, game, wiki: wikiData };
+    // Alta con compañero: la solicitud que envió y aún no se ha usado (con el nombre del compañero).
+    const companionRequest =
+      (
+        await db
+          .select({ name: companionRequests.name, companion: emperors.name, status: companionRequests.status, createdAt: companionRequests.createdAt, respondedAt: companionRequests.respondedAt })
+          .from(companionRequests)
+          .innerJoin(emperors, eq(emperors.id, companionRequests.targetId))
+          .where(eq(companionRequests.accountId, account.id))
+      )[0] ?? null;
+    const data = { exportedAt: new Date().toISOString(), account: acc, sessions: sessionRows, game, companionRequest, wiki: wikiData };
     return reply
       .header("Content-Type", "application/json; charset=utf-8")
       .header("Content-Disposition", 'attachment; filename="aeonarch-datos.json"')

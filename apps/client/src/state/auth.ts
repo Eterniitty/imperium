@@ -1,11 +1,13 @@
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
+import { openPhotoNotice } from "./photoNotice";
 import {
   LOGIN_TOKEN_PARAM,
   type ApiError,
   type AuthAccount,
   type AuthMeResponse,
   type AuthPeekResponse,
+  type CompanionRequestResponse,
   type Emperor,
   type EmperorResponse,
   type I18nKey,
@@ -21,9 +23,13 @@ import {
  * - confirm: la URL trae un enlace; se muestra a qué cuenta lleva y se pide confirmación.
  * - verifying: canjeando el enlace.
  * - naming: sesión abierta, pero la cuenta aún no tiene Emperador; se pide su nombre.
+ * - waiting: sin Emperador y con una solicitud de alta con compañero enviada
+ *   (esperando respuesta, o ya respondida: aceptada se crea sola).
  * - authenticated: sesión abierta y Emperador cargado.
  */
-export type AuthStatus = "loading" | "offline" | "anonymous" | "sent" | "confirm" | "verifying" | "naming" | "authenticated";
+export type AuthStatus = "loading" | "offline" | "anonymous" | "sent" | "confirm" | "verifying" | "naming" | "waiting" | "authenticated";
+
+export type CompanionRequest = NonNullable<CompanionRequestResponse["request"]>;
 
 export interface AuthState {
   status: AuthStatus;
@@ -34,6 +40,8 @@ export interface AuthState {
   pending: { token: string; email: string } | null;
   busy: boolean;
   error: I18nKey | null;
+  /** Alta con compañero: la solicitud enviada (o null). */
+  companion: CompanionRequest | null;
 
   init(): Promise<void>;
   requestLink(email: string, locale: Locale): Promise<void>;
@@ -44,6 +52,12 @@ export interface AuthState {
   /** Borra la cuenta y todos sus datos. Devuelve el error, si lo hay. */
   deleteAccount(): Promise<I18nKey | null>;
   createEmperor(name: string): Promise<void>;
+  /** Alta con compañero: pide aparecer cerca del Emperador `companion`. */
+  requestCompanion(name: string, companion: string): Promise<void>;
+  /** Vuelve a consultar la solicitud enviada; si la aceptaron, crea el Emperador. */
+  refreshCompanion(): Promise<void>;
+  /** Retira la solicitud; con `alone`, crea el Emperador en solitario con el nombre pedido. */
+  cancelCompanion(alone: boolean): Promise<void>;
   /** Traslada al Emperador al sistema indicado. Devuelve el error, si lo hay. */
   moveEmperor(systemId: string): Promise<I18nKey | null>;
   /** Sale del túnel cuántico a mitad de viaje (espacio profundo). */
@@ -98,8 +112,13 @@ let initialized = false;
 async function idle(account: AuthAccount | null): Promise<Partial<AuthState>> {
   if (!account) return { status: "anonymous", account: null, emperor: null };
   const res = await api<EmperorResponse>("GET", "/api/emperor");
-  if (res.ok) return { status: "authenticated", account, emperor: res.data.emperor };
-  if (res.status === 404) return { status: "naming", account, emperor: null };
+  if (res.ok) return { status: "authenticated", account, emperor: res.data.emperor, companion: null };
+  if (res.status === 404) {
+    // Sin Emperador: puede haber enviado una solicitud de alta con compañero.
+    const req = await api<CompanionRequestResponse>("GET", "/api/emperor/companion");
+    const companion = req.ok ? req.data.request : null;
+    return { status: companion ? "waiting" : "naming", account, emperor: null, companion };
+  }
   if (res.status === 401) return { status: "anonymous", account: null, emperor: null, error: res.error };
   return { status: "offline", account: null, emperor: null };
 }
@@ -112,6 +131,7 @@ export const authStore = createStore<AuthState>()((set, get) => ({
   pending: null,
   busy: false,
   error: null,
+  companion: null,
 
   init: async () => {
     // Una sola vez: el enlace es de un solo uso y React en modo estricto monta dos veces.
@@ -146,7 +166,7 @@ export const authStore = createStore<AuthState>()((set, get) => ({
 
   cancelLogin: () => {
     const { account, emperor } = get();
-    set({ status: !account ? "anonymous" : emperor ? "authenticated" : "naming", pending: null, error: null });
+    set({ status: !account ? "anonymous" : emperor ? "authenticated" : get().companion ? "waiting" : "naming", pending: null, error: null });
   },
 
   requestLink: async (email, locale) => {
@@ -161,7 +181,7 @@ export const authStore = createStore<AuthState>()((set, get) => ({
   logout: async () => {
     set({ busy: true });
     await api("POST", "/api/auth/logout");
-    set({ busy: false, status: "anonymous", account: null, emperor: null, sentTo: null, error: null });
+    set({ busy: false, status: "anonymous", account: null, emperor: null, sentTo: null, error: null, companion: null });
   },
 
   deleteAccount: async () => {
@@ -180,11 +200,48 @@ export const authStore = createStore<AuthState>()((set, get) => ({
   createEmperor: async (name) => {
     set({ busy: true, error: null });
     const res = await api<EmperorResponse>("POST", "/api/emperor", { name });
-    if (res.ok) return set({ busy: false, status: "authenticated", emperor: res.data.emperor });
+    if (res.ok) {
+      set({ busy: false, status: "authenticated", emperor: res.data.emperor, companion: null });
+      // Fin del alta: aviso de fotosensibilidad antes de entrar a jugar (una vez).
+      openPhotoNotice();
+      return;
+    }
     // Si otra pestaña ya lo creó, se carga el existente.
     if (res.status === 409 && res.error === "error.emperor_exists") return set({ busy: false, ...(await idle(get().account)) });
     if (res.status === 401) return set({ busy: false, status: "anonymous", account: null, error: res.error });
+    // Nombre cogido mientras esperaba: vuelve al formulario (la solicitud aceptada se conserva).
+    set({ busy: false, status: "naming", error: res.error });
+  },
+
+  requestCompanion: async (name, companion) => {
+    set({ busy: true, error: null });
+    const res = await api<CompanionRequestResponse>("POST", "/api/emperor/companion", { name, companion });
+    if (res.ok) return set({ busy: false, status: "waiting", companion: res.data.request });
+    if (res.status === 409 && res.error === "error.emperor_exists") return set({ busy: false, ...(await idle(get().account)) });
+    if (res.status === 401) return set({ busy: false, status: "anonymous", account: null, error: res.error });
     set({ busy: false, error: res.error });
+  },
+
+  refreshCompanion: async () => {
+    if (get().busy) return;
+    const res = await api<CompanionRequestResponse>("GET", "/api/emperor/companion");
+    if (!res.ok) return;
+    const companion = res.data.request;
+    if (!companion) return set({ companion: null, status: "naming" });
+    set({ companion });
+    if (companion.status === "accepted") await get().createEmperor(companion.name);
+  },
+
+  cancelCompanion: async (alone) => {
+    const name = get().companion?.name;
+    set({ busy: true, error: null });
+    if (alone && name) {
+      // Crear en solitario ya retira la solicitud en el servidor.
+      set({ busy: false });
+      return get().createEmperor(name);
+    }
+    await api("POST", "/api/emperor/companion/cancel");
+    set({ busy: false, status: "naming", companion: null });
   },
 
   // Importación diferida: la conexión importa este módulo.

@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { EMPEROR_NAME_MAX, EMPEROR_NAME_MIN, isDeepId, MAGIC_LINK_TTL_MINUTES } from "@imperium/shared";
+import { COMPANION_REQUEST_TTL_HOURS, EMPEROR_NAME_MAX, EMPEROR_NAME_MIN, isDeepId, MAGIC_LINK_TTL_MINUTES } from "@imperium/shared";
 import { music } from "../audio/music";
 import { ACCOUNT_DELETED_FLAG, authStore, useAuth } from "../state/auth";
 import { settingsStore } from "../state/settings";
@@ -13,10 +13,13 @@ import { PhotosensitivityNotice } from "./PhotosensitivityNotice";
 function AuthPanel() {
   const t = useT();
   const locale = useGame((s) => s.locale);
-  const { status, account, emperor, sentTo, pending, busy, error } = useAuth((s) => s);
+  const { status, account, emperor, sentTo, pending, busy, error, companion } = useAuth((s) => s);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [accepted, setAccepted] = useState(false);
+  const [companionName, setCompanionName] = useState("");
+  // Alta con compañero ya aceptada (el nombre estaba cogido): solo falta elegir otro nombre.
+  const accepted = companion?.status === "accepted" ? companion : null;
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const enter = (
     <button
@@ -41,7 +44,10 @@ function AuthPanel() {
 
   const crown = (e: FormEvent) => {
     e.preventDefault();
-    if (!busy) void authStore.getState().createEmperor(name);
+    if (busy) return;
+    const wanted = companionName.trim();
+    if (wanted && !accepted) void authStore.getState().requestCompanion(name, wanted);
+    else void authStore.getState().createEmperor(name);
   };
 
   const signedIn = (
@@ -111,16 +117,45 @@ function AuthPanel() {
               autoFocus
             />
             <p className="muted small">{t("emperor.nameRules", { min: EMPEROR_NAME_MIN, max: EMPEROR_NAME_MAX })}</p>
+            {accepted ? (
+              <p className="muted small">{t("companion.acceptedRename", { companion: accepted.companion })}</p>
+            ) : (
+              <>
+                <label className="auth-label" htmlFor="companion-name">
+                  {t("companion.label")}
+                </label>
+                <input
+                  id="companion-name"
+                  className="auth-input"
+                  type="text"
+                  autoComplete="off"
+                  spellCheck={false}
+                  maxLength={64}
+                  placeholder={t("companion.placeholder")}
+                  value={companionName}
+                  onChange={(e) => setCompanionName(e.target.value)}
+                />
+                <p className="muted small">{t("companion.hint")}</p>
+              </>
+            )}
             {error && (
               <p className="auth-error" role="alert">
                 {t(error)}
               </p>
             )}
             <button className="btn btn-primary" type="submit" disabled={busy}>
-              {t(busy ? "emperor.creating" : "emperor.create")}
+              {t(busy ? "emperor.creating" : companionName.trim() && !accepted ? "companion.send" : "emperor.create")}
             </button>
             <p className="start-hint">{t("emperor.hint")}</p>
           </form>
+          {signedIn}
+        </>
+      );
+
+    case "waiting":
+      return (
+        <>
+          <CompanionWaiting />
           {signedIn}
         </>
       );
@@ -169,19 +204,73 @@ function AuthPanel() {
             onChange={(e) => setEmail(e.target.value)}
             autoFocus
           />
-          <AcceptTerms checked={accepted} onChange={setAccepted} />
+          <AcceptTerms checked={termsAccepted} onChange={setTermsAccepted} />
           {error && (
             <p className="auth-error" role="alert">
               {t(error)}
             </p>
           )}
-          <button className="btn btn-primary" type="submit" disabled={busy || !accepted} title={accepted ? undefined : t("legal.mustAccept")}>
+          <button className="btn btn-primary" type="submit" disabled={busy || !termsAccepted} title={termsAccepted ? undefined : t("legal.mustAccept")}>
             {t(busy ? "auth.sending" : "auth.send")}
           </button>
           <p className="start-hint">{t("auth.noPassword")}</p>
         </form>
       );
   }
+}
+
+/** Cada cuánto se pregunta si el compañero ya respondió. */
+const COMPANION_POLL_MS = 5000;
+
+/**
+ * Alta con compañero: esperando a que el compañero acepte (se puede retirar la
+ * solicitud o empezar en solitario). Si la acepta, el Emperador se crea solo
+ * cerca de él; si la rechaza o no responde a tiempo, se avisa.
+ */
+function CompanionWaiting() {
+  const t = useT();
+  const { companion, busy, error } = useAuth((s) => s);
+  const status = companion?.status;
+
+  useEffect(() => {
+    if (status !== "pending" && status !== "accepted") return;
+    void authStore.getState().refreshCompanion();
+    const timer = window.setInterval(() => void authStore.getState().refreshCompanion(), COMPANION_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [status]);
+
+  if (!companion) return null;
+  const params = { companion: companion.companion, name: companion.name };
+  const text =
+    companion.status === "pending"
+      ? t("companion.waiting", params)
+      : companion.status === "accepted"
+        ? t("companion.accepted", params)
+        : companion.status === "rejected"
+          ? t("companion.rejected", params)
+          : t("companion.expired", params);
+  return (
+    <div className="auth-box" role="status">
+      <h2 className="auth-title">{t("companion.title")}</h2>
+      <p>{text}</p>
+      {companion.status === "pending" && <p className="muted small">{t("companion.waitingHint", { hours: COMPANION_REQUEST_TTL_HOURS })}</p>}
+      {error && (
+        <p className="auth-error" role="alert">
+          {t(error)}
+        </p>
+      )}
+      {companion.status !== "accepted" && (
+        <>
+          <button className="btn btn-primary" onClick={() => void authStore.getState().cancelCompanion(true)} disabled={busy}>
+            {t("companion.alone", params)}
+          </button>
+          <button className="link-btn" onClick={() => void authStore.getState().cancelCompanion(false)} disabled={busy}>
+            {t(companion.status === "pending" ? "companion.cancel" : "companion.other")}
+          </button>
+        </>
+      )}
+    </div>
+  );
 }
 
 export function StartScreen() {

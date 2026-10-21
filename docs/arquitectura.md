@@ -235,7 +235,7 @@ Guía para jugadores en [ayuda-pilotaje.md](ayuda-pilotaje.md).
 - **Contenido**: capa determinista y secreta (`packages/sim` deepspace.ts, semilla HMAC de `DETAIL_SEED` con la etiqueta `deepspace:v1`, solo `+ - * / sqrt`; no cambia `GENERATOR_VERSION`). Datos en `packages/content` deepspace.ts (`ASTEROID_KINDS`, `DEEP_REGIONS`, `DEEP_SPACE`, `MINING`, `FLAGSHIP_HOLD`). El cliente recibe la región solo al subir a bordo allí (mensaje `field`).
 - **Minería**: `DeepSpaceService` (`apps/server/src/space/deep.ts`) con lo minado por asteroide en `asteroid_depletion` (regeneración lineal, `asteroidLeft`). Mensaje `mine` (un pulso por intervalo; alcance, energía del reactor y bodega comprobados en el servidor), avisos `asteroid`, `beam`, `hold`, `mineFail`. Bodega en `emperors.hold` (jsonb), refinería de a bordo (`flagship.refine`, en memoria) y descarga (`flagship.unload` → `ColonyService.adjustStock`, motivo `flagship_unload` en el libro).
 - **Recursos nuevos**: `rare_metals` y `exotic` (columnas en colonias, libro, envíos y proyectos; órdenes del mercado). No los producen las colonias ni los llevan las flotas (`CARGO_STOCK_IDS`); los piden el crucero y el portanaves. Preparado para piratas/alienígenas en el espacio profundo (no implementado).
-- **Cliente**: `DeepField` (asteroides instanciados, láseres, puntería), `MiningHud`, teclas K (`dropOut`) y L (`mine`). Aviso de fotosensibilidad al entrar (`PhotosensitivityNotice`, `prefs.photosensitivityAck`).
+- **Cliente**: `DeepField` (asteroides instanciados, láseres, puntería), `MiningHud`, teclas K (`dropOut`) y L (`mine`). Aviso de fotosensibilidad (`PhotosensitivityNotice`): desde la rama `alta-con-companero` sale solo una vez al terminar el alta (al crear el Emperador, antes de «Despertar») y desde Ajustes; ya no al entrar ni depende de `prefs.photosensitivityAck` (eliminado). Lo abre `openPhotoNotice()` (`apps/client/src/state/photoNotice.ts`).
 - **Tras fusionar con `vuelo-y-salto`** (nave de 320 m): el alcance del láser (`MINING.rangeM`) se mide desde el casco (`FLAGSHIP_HIT_RADIUS_M`) en cliente y servidor; asteroides de 80–1200 m (`DEEP_SPACE.asteroidRadiusM`, con `unitsPerRadiusM` reducido para conservar las cantidades; esto cambia las regiones ya generadas) y restos con campo de 3–6 km; colisión con las rocas con el radio de la nave; el láser no funciona con los motores apagados (solo en el cliente, como el resto del arranque). La salida del túnel con K pasa por `arriveFromJump` y abre la grieta de llegada.
 
 ### Implementado: grieta en el mundo, túnel, insignia de 320 m, arranque y ratón (21-10-2026, rama `vuelo-y-salto`)
@@ -245,6 +245,11 @@ Guía para jugadores en [ayuda-pilotaje.md](ayuda-pilotaje.md).
 - **Misiles**: salen de los lanzadores visibles de los hábitats y, 450 ms, siguen al lanzador dibujado (`Effects`).
 - **Motores** (`SystemView.updateEngines`, `ShipController.powered`, `ShipRig.setPower`, `audio/engineSfx.ts`): apagados al tomar los mandos; tecla `engines` (I), arranque `FLIGHT_MODEL.engineStartSec`. Solo en el cliente: el servidor no sabe si están encendidos (los demás ven la nave según su velocidad).
 - **Ratón**: `prefs.flight.mouseFlight` alterna cámara libre (arrastrar orbita) y vuelo con retícula virtual (cursor respecto al centro, `mouseSensitivity`, `mouseDeadzone`, `mouseInvertY`, `FLIGHT_MODEL.mouseReticleRadius`); tecla G.
+
+### Implementado: alta con compañero (rama `alta-con-companero`, migración `0021`)
+- Al nombrar al Emperador se puede indicar el nombre de otro Emperador (de un jugador, `kind = 'player'`). Se guarda una solicitud en `companion_requests` (una por cuenta, `account_id` único con borrado en cascada; `target_id` → `emperors`, en cascada; `name` deseado, que **no se reserva**; `status` `pending`/`accepted`/`rejected`). Caduca sin respuesta a las `COMPANION_REQUEST_TTL_HOURS` (24 h; se calcula al leer, `expired`).
+- API (`apps/server/src/emperor/routes.ts`, `CompanionService` en `emperor/companion.ts`): quien se da de alta usa `GET|POST /api/emperor/companion` y `POST /api/emperor/companion/cancel`; el compañero, `GET /api/companion-requests` y `POST /api/companion-requests/respond` (`{ id, accept }`). Sin cambios de protocolo: el cliente pregunta cada 5 s mientras espera (portada, estado `waiting` de `authStore`) y cada 30 s en el juego (`CompanionInbox`).
+- Al crear el Emperador (`EmperorService.create`), si la cuenta tiene la solicitud aceptada aparece con `pickSpawnNear` (`emperor/world.ts`): mismas reglas que `pickSpawnSystem` (estrellas F/G/K del Núcleo Humano), al azar entre los `COMPANION_SPAWN_CHOICES` (3) candidatos más cercanos a la posición actual del compañero, y se insertan los dos sentidos de `emperor_allies` (quedan como compañeros). La solicitud se borra al crear, aceptada o no (empezar en solitario la retira). Va en la exportación de datos de la cuenta.
 
 ## 9. Autenticación por enlace mágico
 
@@ -258,7 +263,7 @@ Guía para jugadores en [ayuda-pilotaje.md](ayuda-pilotaje.md).
 
 ## 10. Modelo de datos (tablas previstas)
 
-- `accounts`, `sessions`, `magic_link_tokens`, `ws_tickets`
+- `accounts`, `sessions`, `magic_link_tokens`, `ws_tickets`, `companion_requests` (alta con compañero, hecha)
 - `organizations`, `organization_members`
 - `emperors`, `heirs`, `emperor_deaths` (hechas en la Fase 10; las Cunas son la instalación `lineage_cradle`)
 - `sectors_touched` (solo sectores con cambios), `sector_leases`
