@@ -143,6 +143,7 @@ export const ClientMessageSchema = z.union([
     op: z.literal("fleet.move"),
     args: z.object({ fleetId: z.uuid(), systemId: SystemIdSchema }),
   }),
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("fleet.refuel"), args: z.object({ fleetId: z.uuid() }) }),
   z.object({
     t: z.literal("cmd"),
     cmdId: CmdIdSchema,

@@ -15,6 +15,17 @@ Tus naves (salvo la tuya, la del Emperador) se agrupan en **flotas** («Flota 1�
 - Mientras viaja no se le pueden dar otras órdenes de viaje.
 - Al llegar, su mejor escáner [descubre](/wiki/niebla) el sistema y los cercanos. Si allí hay flotas paradas de otro Emperador que no es tu compañero, puede empezar una [batalla](/wiki/guerra).
 
+## Combustible
+
+Cada nave lleva su **depósito**, medido en **años luz de alcance**. Un viaje gasta la distancia en **cada nave**, y la flota **no sale** si a alguna no le llega. El alcance de la flota (⛽ en la lista de flotas, en naranja si a alguna le queda menos de un cuarto) es el de la nave con menos combustible.
+
+- **Repostar**: en un sistema con una **colonia tuya**, la flota reposta **sola al llegar**, con **volátiles** de la colonia (la que más tenga). También puedes pulsar **Repostar** en la lista de flotas. Si no hay volátiles para todas, se llenan las que se puedan pagar.
+- Las naves grandes gastan más volátiles por año luz.
+- Las naves del [Astillero](/wiki/astillero) tienen el alcance de sus depósitos y su motor cuántico: **sin motor cuántico no viajan entre estrellas**.
+- Los Emperadores de la IA no gastan combustible.
+
+{{tabla:combustible}}
+
 ## Naves
 
 Se construyen en una colonia con **astillero** (ver [Economía](/wiki/economia#cola-de-construccion)). El mantenimiento de todas tus naves lo paga tu [capital](/wiki/colonias#la-capital), en volátiles por hora.

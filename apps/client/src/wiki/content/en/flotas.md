@@ -15,6 +15,17 @@ Your ships (except yours, the Emperor's) are grouped into **fleets** ("Fleet 1",
 - While travelling it cannot be given another travel order.
 - On arrival, its best scanner [discovers](/wiki/niebla) the system and those nearby. If there are stopped fleets of another Emperor who is not your companion, a [battle](/wiki/guerra) may start.
 
+## Fuel
+
+Each ship carries its own **tank**, measured in **light years of range**. A trip spends the distance on **every ship**, and the fleet **does not leave** if any of them cannot make it. The fleet's range (⛽ in the fleet list, orange if any ship has less than a quarter left) is that of the ship with the least fuel.
+
+- **Refuelling**: in a system with **one of your colonies**, the fleet **refuels by itself on arrival** with the colony's **volatiles** (the one that has most). You can also press **Refuel** in the fleet list. If there are not enough volatiles for all, the ships that can be paid for are filled.
+- Big ships use more volatiles per light year.
+- [Shipyard](/wiki/astillero) ships have the range of their tanks and quantum drive: **without a quantum drive they cannot travel between stars**.
+- AI Emperors do not use fuel.
+
+{{tabla:combustible}}
+
 ## Ships
 
 They are built in a colony with a **shipyard** (see [Economy](/wiki/economia#build-queue)). The upkeep of all your ships is paid by your [capital](/wiki/colonias#the-capital), in volatiles per hour.

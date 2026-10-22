@@ -289,6 +289,8 @@ export const ships = pgTable(
     humans: integer("humans").notNull().default(0),
     /** Nave del Astillero: foto de su diseño (nombre, casco, piezas); `class_id` es la clase base del casco. */
     design: jsonb("design").$type<ShipDesignSnapshot>(),
+    /** Combustible (años luz de alcance); null = depósito lleno (`FLEET_FUEL`). */
+    fuel: doublePrecision("fuel"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("ships_fleet_id_idx").on(t.fleetId), check("ships_humans_nonnegative", sql`${t.humans} >= 0`)],

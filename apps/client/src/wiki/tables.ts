@@ -48,6 +48,8 @@ import {
   MOTHERSHIP_HANGAR,
   HULLS,
   PARTS,
+  FLEET_FUEL,
+  fleetFuelMax,
   type PartCost,
   type PartDef,
   TRAVEL_SPEED_SCALE,
@@ -204,6 +206,16 @@ function partEffect(locale: Locale, p: PartDef): string {
 }
 
 export const GEN_TABLES: Record<string, Builder> = {
+  combustible: (t, locale) => ({
+    head: [t("wiki.col.ship"), t("fleet.fuel"), t("wiki.col.fullTank")],
+    rows: SHIP_CLASSES.map((s) => [
+      shipName(locale, s.id),
+      t("wiki.v.ly", { n: num(locale, fleetFuelMax(s.id)) }),
+      `${num(locale, Math.ceil(fleetFuelMax(s.id) * FLEET_FUEL.volatilesPerLy * (s.hull / 100)))} ${t("resource.volatiles").toLowerCase()}`,
+    ]),
+    numeric: [1, 2],
+  }),
+
   cascos: (t, locale) => ({
     head: [t("shipEditor.hull"), t("shipEditor.col.size"), t("shipEditor.stat.mass"), t("shipEditor.stat.hull"), t("shipEditor.slots"), t("shipEditor.cost"), t("shipEditor.col.builtAt")],
     rows: HULLS.map((h) => [

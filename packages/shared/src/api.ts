@@ -109,6 +109,9 @@ export interface FleetShip {
   humans: number;
   /** Nave construida con un diseño del Astillero: su foto (nombre, casco y piezas). `classId` es la clase base de su casco. */
   design?: ShipDesignSnapshot;
+  /** Combustible y depósito lleno, en años luz de alcance (`FLEET_FUEL`). */
+  fuel: number;
+  fuelMax: number;
 }
 
 /**

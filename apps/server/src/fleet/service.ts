@@ -1,7 +1,8 @@
 import { anyFleetSpeedLyPerHour, FLEET_TACTICS, getAnyShipClass, getShipClass, MOTHERSHIP_HANGAR, MOTHERSHIP_WORKSHOP, SHIP_CLASSES, SHIP_PASSENGERS, type ShipClassId } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
-import type { Cargo, CommandError, Fleet, FleetRoute, FleetTactic } from "@imperium/shared";
-import { isTravelling, travelDurationMs } from "@imperium/sim";
+import { distance, type Cargo, type CommandError, type Fleet, type FleetRoute, type FleetTactic } from "@imperium/shared";
+import { isTravelling, refuelCost, shipFuel, shipFuelMax, travelDurationMs } from "@imperium/sim";
+import type { ColonyService } from "../colony/service";
 import { and, asc, eq, inArray, isNull, lte, or } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
@@ -73,7 +74,7 @@ export class FleetService {
   private async toFleets(db: Database | Tx, rows: Row[]): Promise<Fleet[]> {
     if (rows.length === 0) return [];
     const shipRows = await db
-      .select({ id: ships.id, fleetId: ships.fleetId, classId: ships.classId, hull: ships.hull, humans: ships.humans, design: ships.design })
+      .select({ id: ships.id, fleetId: ships.fleetId, classId: ships.classId, hull: ships.hull, humans: ships.humans, design: ships.design, fuel: ships.fuel })
       .from(ships)
       .where(inArray(ships.fleetId, rows.map((r) => r.id)))
       .orderBy(asc(ships.createdAt));
@@ -85,7 +86,15 @@ export class FleetService {
     ]);
     const now = this.now();
     return rows.map((r) => {
-      const fleetShips = shipRows.filter((s) => s.fleetId === r.id).map(({ id, classId, hull, humans, design }) => ({ id, classId, hull, humans, ...(design ? { design } : {}) }));
+      const fleetShips = shipRows.filter((s) => s.fleetId === r.id).map(({ id, classId, hull, humans, design, fuel }) => ({
+          id,
+          classId,
+          hull,
+          humans,
+          ...(design ? { design } : {}),
+          fuel: shipFuel({ classId, design, fuel }),
+          fuelMax: shipFuelMax({ classId, design }),
+        }));
       const c = cargoRows.find((x) => x.fleetId === r.id);
       const route = routeRows.find((x) => x.fleetId === r.id);
       return {
@@ -303,6 +312,14 @@ export class FleetService {
       if (isTravelling(current, now)) return { ok: false, error: "in_transit" };
       if (current.location.systemId === dest.id) return { ok: false, error: "already_there" };
 
+      // Combustible (solo los jugadores: la IA no se queda tirada): cada nave gasta la distancia.
+      const [owner] = await tx.select({ kind: emperors.kind }).from(emperors).where(eq(emperors.id, emperorId)).limit(1);
+      if (owner?.kind === "player") {
+        const ly = distance(current.location.position, dest.position);
+        if (current.ships.some((s) => s.fuel + 1e-6 < ly)) return { ok: false, error: "no_fuel_fleet" };
+        for (const s of current.ships) await tx.update(ships).set({ fuel: Math.max(0, s.fuel - ly) }).where(eq(ships.id, s.id));
+      }
+
       const speed = anyFleetSpeedLyPerHour(current.ships.map((s) => s.classId)) * this.config.TIME_SCALE;
       const arriveAt = now + travelDurationMs(current.location.position, dest.position, speed);
       // Salir de un sistema donde combate es huir: deja la batalla.
@@ -327,5 +344,42 @@ export class FleetService {
     if (row.arriveAt.getTime() > this.now() + ARRIVAL_TOLERANCE_MS) return null;
     await tx.update(fleets).set({ systemId: row.destSystemId, destSystemId: null, departAt: null, arriveAt: null }).where(eq(fleets.id, fleetId));
     return row.emperorId;
+  }
+
+  /**
+   * Llena los depósitos de una flota parada con volátiles de una colonia propia
+   * de su sistema (la que más tenga). Reposta nave a nave mientras alcance.
+   * `auto`: al llegar (sin colonia, o sin nada que repostar, no es un error).
+   */
+  async refuel(tx: Tx, emperorId: string, fleetId: string, colonyService: ColonyService, auto = false): Promise<{ ok: true; colonyId: string | null } | { ok: false; error: CommandError }> {
+    const rows = await tx.select(columns).from(fleets).where(and(eq(fleets.id, fleetId), eq(fleets.emperorId, emperorId))).for("update").limit(1);
+    const [fleet] = await this.toFleets(tx, rows);
+    if (!fleet) return { ok: false, error: "no_fleet" };
+    const now = this.now();
+    if (isTravelling(fleet, now)) return { ok: false, error: "in_transit" };
+    const shipRows = await tx.select({ id: ships.id, classId: ships.classId, hull: ships.hull, design: ships.design, fuel: ships.fuel }).from(ships).where(eq(ships.fleetId, fleetId));
+    const needs = shipRows.map((s) => ({ s, cost: refuelCost(s) })).filter((x) => x.cost > 0);
+    if (needs.length === 0) return { ok: true, colonyId: null };
+    const own = await tx
+      .select({ id: colonies.id, volatiles: colonies.volatiles })
+      .from(colonies)
+      .where(and(eq(colonies.emperorId, emperorId), eq(colonies.systemId, fleet.location.systemId)));
+    if (own.length === 0) return auto ? { ok: true, colonyId: null } : { ok: false, error: "no_colony_here" };
+    const colony = own.sort((a, b) => b.volatiles - a.volatiles)[0]!;
+    // Lo que se puede pagar con las existencias de ahora (resueltas): nave a nave.
+    const stock = await colonyService.stockAt(tx, emperorId, colony.id, now);
+    if (!stock) return auto ? { ok: true, colonyId: null } : { ok: false, error: "no_colony_here" };
+    let budget = stock.volatiles;
+    let paid = 0;
+    for (const { s, cost } of needs) {
+      if (cost > budget) continue;
+      budget -= cost;
+      paid += cost;
+      await tx.update(ships).set({ fuel: null }).where(eq(ships.id, s.id));
+    }
+    if (paid === 0) return auto ? { ok: true, colonyId: null } : { ok: false, error: "insufficient_resources" };
+    const res = await colonyService.adjustStock(tx, emperorId, colony.id, { volatiles: -paid }, "refuel", `fleet:${fleetId}`, now);
+    if (!res.ok) return auto ? { ok: true, colonyId: null } : res;
+    return { ok: true, colonyId: colony.id };
   }
 }

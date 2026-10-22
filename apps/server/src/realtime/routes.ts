@@ -249,6 +249,13 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     await space.setRefining(owner.emperorId, msg.args.on);
                     return { ok: true } as const;
                   }
+                  case "fleet.refuel": {
+                    const res = await db.transaction((tx) => fleets.refuel(tx, owner.emperorId, msg.args.fleetId, colonies));
+                    if (!res.ok) return res;
+                    await hub.publishFleet(owner.emperorId, msg.args.fleetId);
+                    if (res.colonyId) await hub.publishColony(owner.emperorId, res.colonyId);
+                    return { ok: true } as const;
+                  }
                   case "fleet.move": {
                     // Viaje acoplado: si la nave del Emperador va en el hangar de esta flota, viaja con ella.
                     const carried = space.dockedFleet(owner.emperorId) === msg.args.fleetId;

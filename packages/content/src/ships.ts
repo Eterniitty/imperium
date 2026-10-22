@@ -1,6 +1,6 @@
 import type { FleetTactic } from "@imperium/shared";
 import { withHardpoints } from "./shipModels";
-import type { ShipClassDefinition, ShipClassId, ShipCombat, ShipHardpoints, WeaponDefinition } from "./types";
+import type { ShipClassDefinition, ShipClassId, ShipCombat, ShipHardpoints, ShipRole, WeaponDefinition } from "./types";
 
 /**
  * Eslora de la nave insignia del Emperador (m). Lleva hasta 500 humanos
@@ -610,3 +610,27 @@ export const BODY_COLLISION = {
   /** Margen (m) sobre la superficie en el que se cuenta el contacto (desfase de reloj entre cliente y servidor). */
   contactSlackM: 80,
 } as const;
+
+/**
+ * Combustible de las naves de flota (petición del usuario, 22-10-2026: «cada
+ * nave tenga que reabastecer»). Cada nave lleva su depósito medido en años luz
+ * de alcance; un viaje gasta la distancia en cada nave y la flota no sale si
+ * alguna no llega. Se reposta en los sistemas con colonia propia (volátiles de
+ * la colonia, al llegar o a mano). `volatilesPerLy` es por cada 100 de casco
+ * de la nave: las grandes gastan más.
+ */
+export const FLEET_FUEL = {
+  /** Alcance con el depósito lleno, por papel de la nave (a.l.). */
+  rangeByRole: { exploration: 900, combat: 450, logistics: 600, colonization: 500, transport: 500 } as Record<ShipRole, number>,
+  /** Excepciones: la nodriza lleva depósitos enormes; los cazas, casi nada (viven en su hangar). */
+  rangeByClass: { mothership: 1500, fighter: 120, interceptor: 200 } as Partial<Record<ShipClassId, number>>,
+  /** Volátiles por año luz repostado, por cada 100 de casco de la nave. */
+  volatilesPerLy: 0.05,
+} as const;
+
+/** Alcance con el depósito lleno de una nave de serie (a.l.). */
+export function fleetFuelMax(classId: string): number {
+  const id = classId as ShipClassId;
+  const c = getShipClass(id);
+  return FLEET_FUEL.rangeByClass[id] ?? (c ? FLEET_FUEL.rangeByRole[c.role] : 400);
+}

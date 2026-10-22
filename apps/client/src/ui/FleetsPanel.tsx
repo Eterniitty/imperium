@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { getShipClass, type ShipClassId } from "@imperium/content";
-import type { Fleet } from "@imperium/shared";
+import type { Colony, Fleet } from "@imperium/shared";
 import { engineRef } from "../engineRef";
-import { useWorld } from "../net/world";
+import { connection, useWorld } from "../net/world";
 import { useAliens } from "../state/aliens";
 import { factionName, speciesColor } from "./aliens";
-import { useGame, useT } from "../state/store";
+import { gameStore, useGame, useT } from "../state/store";
 import { cargoSummary } from "./FleetLogistics";
 import { contentText, shipCounts } from "./fleets";
 import { ShipThumb } from "./ShipThumb";
@@ -22,11 +22,19 @@ function armedShip(f: Fleet): Fleet["ships"][number] | undefined {
   return best?.ship;
 }
 
+/** ¿Le queda a la flota menos de un cuarto de depósito a alguna nave? */
+function fuelLow(f: Fleet): boolean {
+  return f.ships.some((s) => s.fuelMax > 0 && s.fuel < s.fuelMax * 0.25);
+}
+
+const ownColonyIn = (colonies: Record<string, Colony>, systemId: string) => Object.values(colonies).some((c) => c.systemId === systemId);
+
 /** Lista de las flotas propias: dónde están, a dónde van y con qué naves. Clic: centrar en la flota. */
 export function FleetsPanel() {
   const t = useT();
   const locale = useGame((s) => s.locale);
   const fleets = useWorld((s) => s.fleets);
+  const colonies = useWorld((s) => s.colonies);
   const territory = useAliens((s) => s.territory);
   const now = useServerNow();
   const [open, setOpen] = useState(true);
@@ -71,9 +79,21 @@ export function FleetsPanel() {
                       {t("fleet.inTerritory", { faction: factionName(locale, territory[at.systemId]!.factionId) })}
                     </span>
                   )}
+                  {/* Combustible: el alcance de la flota es el de la nave con menos. */}
+                  {f.ships.length > 0 && (
+                    <span className={fuelLow(f) ? "small fuel-low" : "muted small"} title={t("fleet.fuel")}>
+                      ⛽ {t("fleet.fuelRange", { ly: Math.floor(Math.min(...f.ships.map((s) => s.fuel))) })}
+                    </span>
+                  )}
                   {f.route && <span className="small route-tag">{t("logistics.onRoute")}</span>}
                   {f.battleId && <span className="small battle-tag">{t("fleet.inBattle")}</span>}
                 </button>
+                {/* Repostar en una colonia propia del sistema (también lo hace sola al llegar). */}
+                {!moving && f.ships.some((s) => s.fuel < s.fuelMax - 0.5) && ownColonyIn(colonies, at.systemId) && (
+                  <button className="link-btn small" title={t("fleet.refuelHint")} onClick={() => void connection.command("fleet.refuel", { fleetId: f.id }).then((e) => e && gameStore.getState().notify(e))}>
+                    {t("fleet.refuel")}
+                  </button>
+                )}
                 {/* Pilotar a distancia una nave armada de la flota parada. */}
                 {!moving && !f.battleId && armedShip(f) && (
                   <button className="link-btn small" title={t("remote.pilotTitle")} onClick={() => void engineRef.current?.pilotFleetShip(f.id, armedShip(f)!.id)}>

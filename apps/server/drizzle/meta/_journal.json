@@ -218,6 +218,13 @@
       "when": 1792649349499,
       "tag": "0031_disenos_en_construccion",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792650030825,
+      "tag": "0032_combustible_de_flota",
+      "breakpoints": true
     }
   ]
 }

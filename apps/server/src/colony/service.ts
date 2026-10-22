@@ -934,6 +934,11 @@ export class ColonyService {
    * para quien vaya a cambiar sus existencias o población (logística). Null si
    * no existe o no es de `emperorId`.
    */
+  /** Existencias de una colonia propia resueltas a `at` (bloquea la fila hasta el final de la transacción). */
+  async stockAt(tx: Tx, emperorId: string, colonyId: string, at: number): Promise<StockAmounts | null> {
+    return (await this.lockResolved(tx, emperorId, colonyId, at))?.state.stock ?? null;
+  }
+
   async lockResolved(tx: Tx, emperorId: string, colonyId: string, at: number): Promise<{ row: ColonyRow; state: ColonyState; cap: number } | null> {
     const [row] = await tx
       .select()

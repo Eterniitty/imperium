@@ -76,6 +76,8 @@ export interface CommandArgs {
   /** Tira por la borda todo un recurso de la bodega (para hacer sitio). */
   "flagship.jettison": { resource: StockId };
   "fleet.move": { fleetId: string; systemId: string };
+  /** Llena los depósitos de las naves con volátiles de una colonia propia del sistema. */
+  "fleet.refuel": { fleetId: string };
   /**
    * Reclama un planeta libre de un sistema descubierto. Sin `fleetId`, desembarca
    * `humans` de la nave del Emperador, que tiene que estar allí (no de viaje);
@@ -242,6 +244,8 @@ export type CommandError =
   | "invalid_command"
   | "insufficient_credits"
   | "unknown_design"
+  | "no_fuel_fleet"
+  | "no_colony_here"
   | "design_not_buildable"
   | "invalid_order"
   | "too_many_orders"

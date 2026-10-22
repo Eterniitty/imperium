@@ -943,3 +943,4 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .ship-ok { color: #7ef0b0; }
 .ship-bad { color: var(--danger); }
 @media (max-width: 1000px) { .ship-editor-body { grid-template-columns: 1fr; } }
+.fuel-low { color: #ff9f5a; }

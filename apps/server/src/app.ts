@@ -286,7 +286,10 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     const raid = raider ? await wars.onArrive(tx, raider) : null;
     // Ruta automática: descarga, carga y sale hacia la otra colonia.
     const step = owner && !war?.inBattle && !raid?.fx.fleets.has(fleetId) ? await logistics.onArrive(tx, fleetId) : null;
+    // Combustible: en un sistema con colonia propia, reposta sola (si la ruta no la ha vuelto a sacar).
+    const refuel = owner && !alien && !war?.inBattle ? await fleets.refuel(tx, owner, fleetId, colonies, true) : null;
     return () => {
+      if (refuel?.ok && refuel.colonyId && owner) void hub.publishColony(owner, refuel.colonyId);
       if (owner && !alien) void hub.publishFleet(owner, fleetId);
       if (found) void hub.publishDiscovered(found.emperorId, found.systemIds);
       if (step) for (const id of step.colonyIds) void hub.publishColony(step.emperorId, id);
