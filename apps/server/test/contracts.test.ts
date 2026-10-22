@@ -6,13 +6,13 @@
  */
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { CONTRACTS, RANK_XP, RANKS, rankOf, rankPerks } from "@imperium/content";
+import { CONTRACTS, GOALS, goalXp, RANK_XP, RANKS, rankOf, rankPerks } from "@imperium/content";
 import { LOGIN_TOKEN_PARAM, type Emperor } from "@imperium/shared";
 import { buildApp } from "../src/app";
 import { sessionCookieName } from "../src/auth/routes";
 import { loadConfig } from "../src/config";
 import { createDb } from "../src/db/client";
-import { contracts, emperors, resourceLedger } from "../src/db/schema";
+import { contracts, emperors, goals, resourceLedger } from "../src/db/schema";
 import type { Mailer } from "../src/mail";
 import { resetTestDatabase } from "./resetDb";
 
@@ -128,6 +128,38 @@ describe.skipIf(!TEST_DATABASE_URL)("contratos y rango", () => {
     const r = await app.contracts.progress(e.id, "rescue", 1, row!.id);
     expect(r.completed.map((c) => c.id)).toEqual([row!.id]);
     expect(seen).toEqual([]);
+  });
+
+  it("objetivos del día y de la semana: deterministas, se cumplen solos, pagan y hacen racha", async () => {
+    const e = await emperor("Constante");
+    const view = await app.goals.view(e.id);
+    expect(view.daily).toHaveLength(GOALS.dailyCount);
+    expect(new Set(view.daily.map((g) => g.kind)).size).toBe(GOALS.dailyCount);
+    expect(view.weekly).toBeTruthy();
+    expect(view.streak).toBe(0);
+    expect((await app.goals.view(e.id)).daily.map((g) => [g.kind, g.target])).toEqual(view.daily.map((g) => [g.kind, g.target]));
+
+    // Cumplir los tres del día: experiencia, créditos y un día de racha (una sola vez).
+    const xp0 = (await db.select().from(emperors).where(eq(emperors.id, e.id)))[0]!.xp;
+    for (const g of view.daily) await app.goals.progress(e.id, g.kind, g.target);
+    const after = await app.goals.view(e.id);
+    expect(after.daily.every((g) => g.done)).toBe(true);
+    expect(after.streak).toBe(1);
+    const me = (await db.select().from(emperors).where(eq(emperors.id, e.id)))[0]!;
+    expect(me.xp - xp0).toBeGreaterThanOrEqual(GOALS.dailyCount * GOALS.daily.xp);
+    const paid = await db.select().from(resourceLedger).where(and(eq(resourceLedger.emperorId, e.id), eq(resourceLedger.reason, "goal")));
+    expect(paid.reduce((n, p) => n + (p.credits ?? 0), 0)).toBeGreaterThanOrEqual(GOALS.dailyCount * GOALS.daily.credits);
+    // Un objetivo ya cumplido no vuelve a pagar.
+    expect((await app.goals.progress(e.id, view.daily[0]!.kind, 999)).changed).toBe(view.weekly!.kind === view.daily[0]!.kind);
+
+    // La racha: si ayer se cumplieron, sigue; si no, se rompe. Con racha, más experiencia.
+    await db.update(emperors).set({ goalStreak: 3, goalStreakDay: me.goalStreakDay - 1 }).where(eq(emperors.id, e.id));
+    expect((await app.goals.view(e.id)).streak).toBe(3);
+    expect((await app.goals.view(e.id)).daily[0]!.xp).toBe(goalXp(GOALS.daily.xp, 3));
+    await db.update(emperors).set({ goalStreakDay: me.goalStreakDay - 2 }).where(eq(emperors.id, e.id));
+    expect((await app.goals.view(e.id)).streak).toBe(0);
+    // Solo se guardan los del periodo en curso.
+    expect((await db.select().from(goals).where(eq(goals.emperorId, e.id))).length).toBe(GOALS.dailyCount + 1);
   });
 
   it("las mejoras del rango: más huecos, más ofertas (las primeras no cambian) y más recompensa", async () => {

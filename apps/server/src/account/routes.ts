@@ -34,6 +34,7 @@ import {
   shipDesigns,
   legends,
   contracts,
+  goals,
 } from "../db/schema";
 import type { ColonyService } from "../colony/service";
 import type { HumanityService } from "../humanity/service";
@@ -114,6 +115,7 @@ export async function accountRoutes(app: FastifyInstance, { config, db, hub, spa
         systemParks: await db.select().from(systemParks).where(eq(systemParks.emperorId, emperor.id)),
         probes: await db.select().from(probes).where(eq(probes.emperorId, emperor.id)),
         contracts: await db.select().from(contracts).where(eq(contracts.emperorId, emperor.id)),
+        goals: await db.select().from(goals).where(eq(goals.emperorId, emperor.id)),
         mercenaryContracts: await db.select().from(mercenaryContracts).where(eq(mercenaryContracts.emperorId, emperor.id)),
         shipDesigns: await db.select().from(shipDesigns).where(eq(shipDesigns.emperorId, emperor.id)),
         legends: await db.select().from(legends).where(eq(legends.emperorId, emperor.id)),

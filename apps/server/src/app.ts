@@ -33,6 +33,7 @@ import { ResearchService } from "./research/service";
 import { researchRoutes } from "./research/routes";
 import { ReputationService } from "./reputation/service";
 import { RankService } from "./rank/service";
+import { GoalService } from "./goal/service";
 import { CrisisService } from "./crisis/service";
 import { gateRoutes } from "./gate/routes";
 import { MarketService } from "./market/service";
@@ -158,6 +159,20 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   // Rango: experiencia por esos mismos sucesos y por cada contrato cumplido (sus mejoras cambian el tablero).
   const rank = new RankService(deps.db, app.log);
   const contracts = new ContractService(deps.db, config, humanity, reputation, rank);
+  const goals = new GoalService(deps.db, config, humanity, rank);
+  /** Objetivos del día y de la semana: avanzan con los mismos sucesos y con cada contrato cumplido. */
+  const pushGoal = (emperorId: string, kind: "hunt" | "explore" | "mine" | "contract", amount: number) =>
+    void goals
+      .progress(emperorId, kind, amount)
+      .then(async (r) => {
+        if (!r.changed) return;
+        await hub.publishGoals(emperorId);
+        if (r.rank) {
+          await hub.publishWallet(emperorId);
+          await publishRank(emperorId, r.rank.up);
+        }
+      })
+      .catch((err: unknown) => app.log.error(err, "Error en el progreso de un objetivo"));
   const publishRank = async (emperorId: string, up: boolean) => {
     await hub.publishRank(emperorId);
     if (up) await hub.publishContracts(emperorId);
@@ -170,12 +185,14 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
         await hub.publishContracts(emperorId);
         if (r.completed.length) await hub.publishWallet(emperorId);
         if (r.rank) await publishRank(emperorId, r.rank.up);
+        if (r.completed.length) pushGoal(emperorId, "contract", r.completed.length);
       })
       .catch((err: unknown) => app.log.error(err, "Error en el progreso de un contrato"));
   /** Un suceso que cuenta para los contratos y da experiencia (`RANK_XP`). */
   let minedXp = new Map<string, number>();
   const deed = (emperorId: string, kind: "hunt" | "explore" | "mine", amount: number) => {
     pushContract(emperorId, kind, amount);
+    pushGoal(emperorId, kind, amount);
     let xp = 0;
     if (kind === "hunt") xp = RANK_XP.pirateKill * amount;
     else if (kind === "explore") xp = RANK_XP.discovery * amount;
@@ -215,6 +232,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   const hub = new Hub(emperors, fleets, social, discoveries, colonies, wars, humanity, app.log, config.TIME_SCALE);
   hub.contracts = contracts;
   hub.rank = rank;
+  hub.goals = goals;
   hub.onDiscovered = (emperorId, n) => deed(emperorId, "explore", n);
   // Nave del Emperador fuera del pilotaje (aparcada) y disposición de los sistemas, que
   // depende de su detalle secreto.
@@ -531,6 +549,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   app.decorate("sieges", sieges);
   app.decorate("contracts", contracts);
   app.decorate("rank", rank);
+  app.decorate("goals", goals);
   app.decorate("lineage", lineage);
   app.decorate("mercenaries", mercenaries);
   app.decorate("wars", wars);
@@ -555,5 +574,6 @@ declare module "fastify" {
     mercenaries: MercenaryService;
     contracts: ContractService;
     rank: RankService;
+    goals: GoalService;
   }
 }

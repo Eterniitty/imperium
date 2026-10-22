@@ -91,6 +91,9 @@ export const emperors = pgTable("emperors", {
   reputation: doublePrecision("reputation").notNull().default(0),
   /** Experiencia del rango del Emperador (`RANKS`; no se pierde al morir). */
   xp: integer("xp").notNull().default(0),
+  /** Racha de días con los objetivos del día cumplidos, y el último día que contó. */
+  goalStreak: integer("goal_streak").notNull().default(0),
+  goalStreakDay: integer("goal_streak_day").notNull().default(-1),
   /** Tecnología investigada (`TECH_TREES` → nivel). */
   tech: jsonb("tech").$type<Record<string, number>>().notNull().default({}),
   /** Investigación en marcha: rama, nivel al que llega y cuándo termina (ms). */
@@ -1090,6 +1093,25 @@ export const asteroidDepletion = pgTable(
  * recompensa, estado y plazo. Las ofertas no se guardan (se generan cada día);
  * `offer_id` (día:índice) impide aceptar dos veces la misma.
  */
+/** Objetivos del día y de la semana (`GOALS`): los del periodo en curso de cada Emperador. */
+export const goals = pgTable(
+  "goals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    emperorId: uuid("emperor_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    /** `d:<día>` o `w:<semana>` (días y semanas de juego). */
+    period: text("period").notNull(),
+    idx: integer("idx").notNull(),
+    kind: text("kind").notNull(),
+    target: integer("target").notNull(),
+    progress: doublePrecision("progress").notNull().default(0),
+    doneAt: timestamp("done_at", { withTimezone: true }),
+  },
+  (t) => [index("goals_emperor_id_idx").on(t.emperorId), unique("goals_emperor_period_idx_unique").on(t.emperorId, t.period, t.idx)],
+);
+
 export const contracts = pgTable(
   "contracts",
   {

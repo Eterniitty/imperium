@@ -1,21 +1,21 @@
 import { useState } from "react";
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
-import { RANK_XP, RANKS, rankOf, rankPerks, type RankPerk } from "@imperium/content";
-import type { Contract, ContractOffer, I18nKey } from "@imperium/shared";
+import { GOALS, RANK_XP, RANKS, rankOf, rankPerks, type RankPerk } from "@imperium/content";
+import type { Contract, ContractOffer, Goal as GoalItem, I18nKey } from "@imperium/shared";
 import { connection, useWorld } from "../net/world";
 import { useT } from "../state/store";
 import { engineRef } from "../engineRef";
 import { HudIcon } from "./hudIcons";
 import { formatDuration, useServerNow } from "./useNow";
 
-type Tab = "offers" | "active" | "history" | "rank";
+type Tab = "goals" | "offers" | "active" | "history" | "rank";
 
 /** Abierta o no y pestaña (se recuerda en este navegador). */
 function load(): { open: boolean; tab: Tab } {
   try {
     const raw = JSON.parse(localStorage.getItem("aeon.contractsWin") ?? "{}") as { open?: boolean; tab?: Tab };
-    return { open: raw.open === true, tab: raw.tab === "active" || raw.tab === "history" || raw.tab === "rank" ? raw.tab : "offers" };
+    return { open: raw.open === true, tab: raw.tab === "goals" || raw.tab === "active" || raw.tab === "history" || raw.tab === "rank" ? raw.tab : "offers" };
   } catch {
     return { open: false, tab: "offers" };
   }
@@ -41,6 +41,52 @@ function perkLines(t: ReturnType<typeof useT>, p: RankPerk): string[] {
   if (p.contractOffers) out.push(t("rank.perk.contractOffers", { n: p.contractOffers }));
   if (p.contractRewardPct) out.push(t("rank.perk.contractRewardPct", { n: p.contractRewardPct }));
   return out;
+}
+
+/** Pestaña «Objetivos»: los tres del día, el de la semana y la racha. */
+function GoalsTab() {
+  const t = useT();
+  const view = useWorld((s) => s.goals);
+  const now = useServerNow(1000);
+  if (!view) return null;
+  const row = (g: GoalItem) => (
+    <li key={g.id} className={g.done ? "contract-row done" : "contract-row"}>
+      <div className="contract-main">
+        <strong>
+          {g.done && <span className="tutorial-check">✓ </span>}
+          {g.kind === "contract" ? t("goal.desc.contract", { n: g.target }) : t(`contract.desc.${g.kind}` as I18nKey, { n: g.target })}
+        </strong>
+        <div className="contract-progress" aria-label={`${g.progress} / ${g.target}`}>
+          <span style={{ width: `${Math.min(100, (g.progress / Math.max(1, g.target)) * 100)}%` }} />
+        </div>
+        <span className="muted small">
+          <span className="mono">
+            {g.progress} / {g.target}
+          </span>{" "}
+          · {t("goal.reward", { xp: g.xp, credits: g.credits })}
+        </span>
+      </div>
+    </li>
+  );
+  const pct = Math.min(GOALS.streakMaxPct, view.streak * GOALS.streakBonusPct);
+  return (
+    <div className="rank-tab">
+      <p className="muted small">{view.streak > 0 ? t("goal.streak", { n: view.streak, pct }) : t("goal.streakNone")}</p>
+      <h3>
+        {t("goal.daily")} · <span className="mono">{t("goal.dayEnds", { time: formatDuration(Math.max(0, view.dayEndsAt - now)) })}</span>
+      </h3>
+      <ul className="contract-list">{view.daily.map(row)}</ul>
+      {view.weekly && (
+        <>
+          <h3>
+            {t("goal.weekly")} · <span className="mono">{t("goal.weekEnds", { time: formatDuration(Math.max(0, view.weekEndsAt - now)) })}</span>
+          </h3>
+          <ul className="contract-list">{row(view.weekly)}</ul>
+        </>
+      )}
+      <p className="muted small">{t("goal.hint")}</p>
+    </div>
+  );
 }
 
 /** Pestaña «Rango»: título, experiencia hasta el siguiente, mejoras, tabla de rangos y cómo se gana. */
@@ -133,6 +179,7 @@ export function ContractsWindow() {
   const tab = useStore(contractsStore, (s) => s.tab);
   const view = useWorld((s) => s.contracts);
   const rankXp = useWorld((s) => s.rank?.xp ?? 0);
+  const goals = useWorld((s) => s.goals);
   const now = useServerNow(1000);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<I18nKey | null>(null);
@@ -151,6 +198,7 @@ export function ContractsWindow() {
     { id: "history", n: history.length },
   ];
   const rankIndex = rankOf(rankXp).index;
+  const goalsLeft = goals ? goals.daily.filter((g) => !g.done).length : 0;
   const offer = (o: ContractOffer) => (
     <li key={o.id} className="contract-row">
       <div className="contract-main">
@@ -202,6 +250,10 @@ export function ContractsWindow() {
     <section className="empire-win contracts-win panel" aria-label={t("contract.title")}>
       <header className="empire-head">
         <nav className="planet-win-tabs empire-tabs" role="tablist">
+          <button type="button" role="tab" aria-selected={tab === "goals"} className={tab === "goals" ? "planet-win-tab active" : "planet-win-tab"} onClick={() => set({ tab: "goals" })}>
+            {t("goal.tab")}
+            <span className="empire-count">{goalsLeft}</span>
+          </button>
           {tabs.map((x) => (
             <button key={x.id} type="button" role="tab" aria-selected={x.id === tab} className={x.id === tab ? "planet-win-tab active" : "planet-win-tab"} onClick={() => set({ tab: x.id })}>
               {t(`contract.tab.${x.id}` as I18nKey)}
@@ -219,7 +271,8 @@ export function ContractsWindow() {
       </header>
       <div className="empire-body" key={tab}>
         {tab === "rank" && <RankTab />}
-        {tab !== "rank" && <p className="muted small">
+        {tab === "goals" && <GoalsTab />}
+        {tab !== "rank" && tab !== "goals" && <p className="muted small">
           {t("contract.slots", { n: active.length, max: view.maxActive })} · {t("contract.refresh", { time: formatDuration(view.refreshAt - now) })}
         </p>}
         {tab === "offers" && (view.offers.length ? <ul className="contract-list">{view.offers.map(offer)}</ul> : <p className="muted">{t("contract.noOffers")}</p>)}

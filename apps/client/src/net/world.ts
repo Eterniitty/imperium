@@ -23,6 +23,7 @@ import {
   type WsTicketResponse,
   type ContractsView,
   type RankView,
+  type GoalsView,
   translate,
 } from "@imperium/shared";
 import { rankOf } from "@imperium/content";
@@ -64,6 +65,8 @@ export interface WorldState {
   contracts: ContractsView | null;
   /** Rango del Emperador: su experiencia (el rango sale de `RANKS`). */
   rank: RankView | null;
+  /** Objetivos del día y de la semana. */
+  goals: GoalsView | null;
   /** Linaje propio (Fase 10): muerte y gestación, Cunas, Herederos. */
   lineage: LineageStatus | null;
   /** Escala del tiempo de juego del servidor (para estimar duraciones de viaje). */
@@ -87,6 +90,7 @@ export const worldStore = createStore<WorldState>()(() => ({
   probes: {},
   contracts: null,
   rank: null,
+  goals: null,
   lineage: null,
   timeScale: 1,
   myEmperorId: null,
@@ -133,7 +137,7 @@ class Connection {
     this.ws?.close(1000, "bye");
     this.ws = null;
     this.failPending();
-    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, battles: {}, wallet: null, flagship: null, sieges: {}, probes: {}, contracts: null, rank: null, lineage: null, myEmperorId: null });
+    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, battles: {}, wallet: null, flagship: null, sieges: {}, probes: {}, contracts: null, rank: null, goals: null, lineage: null, myEmperorId: null });
     resetSpace();
   }
 
@@ -233,7 +237,7 @@ class Connection {
           for (const x of msg.data.sieges) sieges[x.id] = x;
           const probes: Record<string, Probe> = {};
           for (const p of msg.data.probes ?? []) probes[p.id] = p;
-          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans, battles, wallet: msg.data.wallet, flagship: msg.data.flagship, sieges, lineage: msg.data.lineage, probes, contracts: msg.data.contracts ?? null, rank: msg.data.rank ?? null });
+          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans, battles, wallet: msg.data.wallet, flagship: msg.data.flagship, sieges, lineage: msg.data.lineage, probes, contracts: msg.data.contracts ?? null, rank: msg.data.rank ?? null, goals: msg.data.goals ?? null });
         }
         return;
       }
@@ -258,7 +262,13 @@ class Connection {
         let probes = state.probes;
         let contracts = state.contracts;
         let rank = state.rank;
+        let goals = state.goals;
         for (const op of msg.ops) {
+          if (op.path === "goals") {
+            noticeGoals(goals, op.v as GoalsView);
+            goals = op.v as GoalsView;
+            continue;
+          }
           if (op.path === "rank") {
             noticeRank(rank, op.v as RankView);
             rank = op.v as RankView;
@@ -307,7 +317,7 @@ class Connection {
             else delete fleets[id];
           }
         }
-        worldStore.setState({ emperors, fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes, contracts, rank });
+        worldStore.setState({ emperors, fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes, contracts, rank, goals });
         this.syncOwn();
         return;
       }
@@ -443,6 +453,15 @@ export const connection = new Connection();
  * toma el planeta o se rompe el asedio.
  */
 /** Aviso al cumplirse un contrato (llega con su recompensa ya pagada). */
+/** Objetivos recién cumplidos: aviso con su recompensa. */
+function noticeGoals(prev: GoalsView | null, next: GoalsView): void {
+  if (!prev) return;
+  const before = new Map([...prev.daily, ...(prev.weekly ? [prev.weekly] : [])].map((g) => [g.id, g.done]));
+  for (const g of [...next.daily, ...(next.weekly ? [next.weekly] : [])]) {
+    if (g.done && before.get(g.id) === false) gameStore.getState().notify("goal.done", { xp: g.xp, credits: g.credits });
+  }
+}
+
 /** Al subir de rango: aviso con el título nuevo. */
 function noticeRank(prev: RankView | null, next: RankView): void {
   if (!prev) return;

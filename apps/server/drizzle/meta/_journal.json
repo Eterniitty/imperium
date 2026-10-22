@@ -337,6 +337,13 @@
       "when": 1792703889149,
       "tag": "0048_contrato_rescate",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1792704408864,
+      "tag": "0049_objetivos",
+      "breakpoints": true
     }
   ]
 }

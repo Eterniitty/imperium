@@ -14,6 +14,8 @@ import {
   type ContractKind,
   RANKS,
   RANK_XP,
+  GOALS,
+  type GoalKind,
   type RankPerk,
   AI_PERSONALITIES,
   type AiPersonality,
@@ -297,6 +299,20 @@ export const GEN_TABLES: Record<string, Builder> = {
     rows: RANKS.map((r) => [t(`rank.title.${r.id}` as I18nKey), num(locale, r.xp), r.perk ? rankPerkText(t, r.perk) : "—"]),
     numeric: [1],
   }),
+
+  "objetivos-diarios": (t, locale) => {
+    const goal = (k: GoalKind, n: string) => (k === "contract" ? t("goal.desc.contract", { n }) : t(`contract.desc.${k}` as I18nKey, { n }));
+    const list = (d: { kinds: Record<GoalKind, readonly number[]> }) =>
+      (Object.keys(d.kinds) as GoalKind[]).map((k) => goal(k, d.kinds[k].map((n) => num(locale, n)).join(" / "))).join(" · ");
+    return {
+      head: [t("wiki.col.concept"), t("wiki.col.goal"), t("wiki.col.reward")],
+      rows: [
+        [t("goal.daily"), list(GOALS.daily), t("goal.reward", { xp: GOALS.daily.xp, credits: num(locale, GOALS.daily.credits) })],
+        [t("goal.weekly"), list(GOALS.weekly), t("goal.reward", { xp: GOALS.weekly.xp, credits: num(locale, GOALS.weekly.credits) })],
+        [t("goal.streakName"), "—", t("goal.streakRule", { pct: GOALS.streakBonusPct, max: GOALS.streakMaxPct })],
+      ],
+    };
+  },
 
   "rango-experiencia": (t) => ({
     head: [t("rank.how")],

@@ -197,6 +197,29 @@ export interface ContractsView {
   refreshAt: number;
 }
 
+/** Objetivo del día o de la semana (`GOALS` de `@imperium/content`). */
+export interface Goal {
+  id: string;
+  kind: "hunt" | "explore" | "mine" | "contract";
+  target: number;
+  progress: number;
+  done: boolean;
+  /** Recompensa (la experiencia ya con la racha). */
+  xp: number;
+  credits: number;
+}
+
+/** Objetivos del Emperador (tema `me`, `goals`). */
+export interface GoalsView {
+  daily: Goal[];
+  weekly: Goal | null;
+  /** Días seguidos con los tres objetivos del día cumplidos. */
+  streak: number;
+  /** Cuándo cambian los del día y los de la semana (ms). */
+  dayEndsAt: number;
+  weekEndsAt: number;
+}
+
 /** Rango del Emperador (tema `me`, `rank`): su experiencia; el rango y las mejoras salen de `RANKS` (`@imperium/content`). */
 export interface RankView {
   xp: number;
