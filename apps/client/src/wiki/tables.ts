@@ -46,6 +46,7 @@ import {
   INTEREST,
   MOTHERSHIP_WORKSHOP,
   MOTHERSHIP_HANGAR,
+  TRAVEL_SPEED_SCALE,
   FLEET_TACTIC_IDS,
   STAR_HEAT_LETHAL_DPS,
   FLEET_BATTLE,
@@ -277,7 +278,7 @@ export const GEN_TABLES: Record<string, Builder> = {
       cost(t, locale, s.cost),
       requiresText(t, locale, s.requires),
       t("colony.costHours", { h: num(locale, s.buildTimeHours) }),
-      t("wiki.v.lyh", { n: num(locale, s.speedLyPerHour) }),
+      t("wiki.v.lyh", { n: num(locale, s.speedLyPerHour * TRAVEL_SPEED_SCALE) }),
       num(locale, s.cargo),
       num(locale, shipHumans(s) || (SHIP_PASSENGERS[s.id] ?? 0)),
       t("wiki.v.ly", { n: num(locale, s.scannerRangeLy) }),
@@ -692,7 +693,7 @@ export const GEN_TABLES: Record<string, Builder> = {
         num(locale, s.hull),
         num(locale, s.attack),
         num(locale, s.battleShield),
-        t("wiki.v.lyh", { n: num(locale, s.speedLyPerHour) }),
+        t("wiki.v.lyh", { n: num(locale, s.speedLyPerHour * TRAVEL_SPEED_SCALE) }),
         t("wiki.v.ly", { n: num(locale, s.scannerRangeLy) }),
         `${num(locale, s.model.lengthM)} m`,
         `${t(`wiki.shape.${s.model.hullShape}`)} · ${t(`wiki.style.${SPECIES.find((x) => x.id === s.speciesId)?.visual.silhouette ?? "geometric"}`)}`,
@@ -969,7 +970,7 @@ export const GEN_CARDS: Record<string, CardBuilder> = {
         table: ships.length
           ? {
               head: [t("wiki.k.ships"), t("wiki.col.role"), t("combat.hull"), t("wiki.col.attack"), t("wiki.col.battleShield"), t("wiki.col.speed")],
-              rows: ships.map((a) => [shipName(locale, a.id), t(`wiki.role.${a.role}`), num(locale, a.hull), num(locale, a.attack), num(locale, a.battleShield), t("wiki.v.lyh", { n: num(locale, a.speedLyPerHour) })]),
+              rows: ships.map((a) => [shipName(locale, a.id), t(`wiki.role.${a.role}`), num(locale, a.hull), num(locale, a.attack), num(locale, a.battleShield), t("wiki.v.lyh", { n: num(locale, a.speedLyPerHour * TRAVEL_SPEED_SCALE) })]),
               numeric: [2, 3, 4],
             }
           : undefined,

@@ -12,7 +12,7 @@
  */
 import { factionsOfSpecies } from "./factions";
 import { withHardpoints } from "./shipModels";
-import { SHIP_CLASSES } from "./ships";
+import { SHIP_CLASSES, TRAVEL_SPEED_SCALE } from "./ships";
 import { SPECIES } from "./species";
 import type { FleetDoctrine, HullShape, ShipCombat, ShipClassId, ShipModelHints, WeaponDefinition } from "./types";
 
@@ -498,7 +498,7 @@ export function anyFleetSpeedLyPerHour(classIds: readonly string[]): number {
     speed = Math.min(speed, c.speedLyPerHour);
   }
   if (!Number.isFinite(speed)) throw new Error("Una flota sin naves no puede viajar");
-  return speed;
+  return speed * TRAVEL_SPEED_SCALE;
 }
 
 /**

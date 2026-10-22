@@ -381,7 +381,7 @@ export const FLAGSHIP_SUPPLIES = {
   /** Combustible por segundo de pulso. */
   pulseFuelPerSec: 0.4,
   /** Combustible por año luz de salto cuántico: con el depósito lleno, unos 133 a.l. (unos 40 min de viaje). */
-  quantumFuelPerLy: 7.5,
+  quantumFuelPerLy: 2.5,
   /** Reserva de emergencia: el combustible se regenera solo hasta aquí… */
   emergencyFuelMax: 150,
   /** …a este ritmo (por hora real): de vacío a la reserva, unas 5 horas. */
@@ -408,7 +408,7 @@ export const EMPEROR_FLAGSHIP: {
   hull: number;
   combat: ShipCombat;
 } = {
-  speedLyPerHour: 200,
+  speedLyPerHour: 600,
   scannerRangeLy: 15,
   hull: 400,
   combat: { shield: 200, shieldRegenPerSec: 20, shieldDelaySec: 4, weapons: [FLAGSHIP_CANNON, FLAGSHIP_MISSILE], hardpoints: FLAGSHIP_HARDPOINTS },
@@ -495,7 +495,7 @@ export const CONTACT_SENSORS = {
  */
 export const PROBE = {
   costCredits: 120,
-  speedLyPerHour: 600,
+  speedLyPerHour: 1800,
   maxRangeLy: 50,
   maxActive: 3,
   scannerRangeLy: 4,
@@ -549,7 +549,14 @@ export const MOTHERSHIP_HANGAR = {
 /** Naves con las que empieza cada Emperador nuevo, como su primera flota. */
 export const STARTING_FLEET: readonly ShipClassId[] = ["explorer"];
 
-/** Velocidad de una flota: la de su nave más lenta (años luz por hora). */
+/**
+ * Los viajes entre estrellas, ×3 desde la galaxia de ~30 000 estrellas
+ * (22-10-2026): están unas tres veces más separadas. Las velocidades de las
+ * clases son las de antes; esta escala se aplica al calcular el viaje.
+ */
+export const TRAVEL_SPEED_SCALE = 3;
+
+/** Velocidad de una flota: la de su nave más lenta (años luz por hora), ya con `TRAVEL_SPEED_SCALE`. */
 export function fleetSpeedLyPerHour(classIds: readonly string[]): number {
   let speed = Infinity;
   for (const id of classIds) {
@@ -558,7 +565,7 @@ export function fleetSpeedLyPerHour(classIds: readonly string[]): number {
     speed = Math.min(speed, c.speedLyPerHour);
   }
   if (!Number.isFinite(speed)) throw new Error("Una flota sin naves no puede viajar");
-  return speed;
+  return speed * TRAVEL_SPEED_SCALE;
 }
 
 /**

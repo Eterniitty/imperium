@@ -55,7 +55,10 @@ export function generateSector(
   // Desde la versión 2, la forma de la galaxia (disco, brazos, bulbo): fuera de ella, nada.
   const shape = generatorVersion >= 2 ? galaxyDensity(coord) : 1;
   const isCenter = generatorVersion >= 2 && coord.x === GALAXY_CENTER_SECTOR.x && coord.y === GALAXY_CENTER_SECTOR.y && coord.z === GALAXY_CENTER_SECTOR.z;
-  const count = generatorVersion >= 2 ? Math.max(isCenter ? 1 : 0, Math.floor(raw * shape + rng.next())) : raw;
+  // Desde la 3, solo una fracción (≈ 30 000 estrellas), salvo en el Núcleo Humano.
+  const ring = Math.max(Math.abs(coord.x), Math.abs(coord.y), Math.abs(coord.z));
+  const keep = generatorVersion < 3 ? 1 : ring <= GALAXY.coreRings ? GALAXY.coreStarFraction : GALAXY.starFraction;
+  const count = generatorVersion >= 2 ? Math.max(isCenter ? 1 : 0, Math.floor(raw * shape * keep + rng.next())) : raw;
 
   // Algunos sectores tienen cúmulos: parte de sus estrellas se agrupan.
   const clusterCount = rng.chance(0.35 + density * 0.4) ? rng.int(1, 2) : 0;

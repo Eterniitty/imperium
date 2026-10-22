@@ -12,7 +12,7 @@ export const SECTOR_SIZE = 100;
  * fue tocado por primera vez, para que una mejora del algoritmo no altere
  * sistemas donde ya hay colonias.
  */
-export const GENERATOR_VERSION = 2;
+export const GENERATOR_VERSION = 3;
 
 /** Número mínimo y máximo de sistemas estelares por sector. */
 export const MIN_SYSTEMS_PER_SECTOR = 4;
@@ -40,6 +40,15 @@ export const GALAXY = {
   armWind: 4.3,
   /** Densidad entre brazos, respecto a la de un brazo. */
   interArm: 0.3,
+  /**
+   * Desde la versión 3: fracción de las estrellas que se quedan (≈ 30 000 en
+   * toda la galaxia, a ~135 a.l. de su vecina) y, en el Núcleo Humano (anillos
+   * hasta `coreRings`), la que se queda allí: el hogar de la humanidad sigue
+   * poblado para que haya donde aparecer y colonizar.
+   */
+  starFraction: 0.0066,
+  coreStarFraction: 0.4,
+  coreRings: 1,
   /** Nombre del sistema del agujero negro supermasivo (índice 0 de su sector). */
   centerName: "Ónfalo",
 } as const;

@@ -73,7 +73,6 @@ export const es = {
   "emperor.you": "tú",
   "server.connecting": "Conectando…",
   "server.players": "{count} en línea",
-  "server.ai": "IA: {count}",
   "emperor.title": "Nombra a tu Emperador",
   "emperor.hint": "Es el nombre que verán los demás jugadores. No se podrá cambiar.",
   "emperor.nameLabel": "Nombre del Emperador",

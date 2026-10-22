@@ -80,9 +80,9 @@ export class Backdrop {
             // Hacia el centro de la galaxia la banda brilla más y se ve el bulbo dorado; hacia fuera, se apaga.
             float toward = max(dot(d, uCenterDir), 0.0);
             float side = 0.45 + 1.1 * pow(toward, 3.0) * uCenterGlow;
-            vec3 milky = vec3(0.07, 0.065, 0.07) * band * side * (0.55 + 0.45 * fbm(d * 12.0)) * mix(1.0, 0.35, lanes * band);
+            vec3 milky = vec3(0.12, 0.11, 0.115) * band * side * (0.55 + 0.45 * fbm(d * 12.0)) * mix(1.0, 0.35, lanes * band);
             float bulge = pow(toward, 10.0) * uCenterGlow * (0.6 + 0.4 * n) * mix(1.0, 0.45, lanes);
-            milky += vec3(0.2, 0.15, 0.08) * bulge;
+            milky += vec3(0.3, 0.22, 0.12) * bulge;
             // Nebulosas: ruido deformado (filamentos), dos o tres colores y núcleos más brillantes.
             vec3 q = d * 1.6 + uShift;
             vec3 w = vec3(fbm(q + 1.7), fbm(q + 9.2), fbm(q + 4.4));
@@ -93,7 +93,7 @@ export class Backdrop {
             vec3 tint = mix(uColA, uColB, smoothstep(0.35, 0.65, mixer));
             tint = mix(tint, uColC, smoothstep(0.6, 0.8, fbm(q * 3.3 + 5.0)) * 0.7);
             float fil = 0.6 + 0.4 * fbm(q * 9.0 + w * 3.0);
-            vec3 nebula = tint * (mask * 0.22 + core * 0.3) * fil;
+            vec3 nebula = tint * (mask * 0.38 + core * 0.5) * fil;
             vec3 base = vec3(0.01, 0.013, 0.028);
             gl_FragColor = vec4(base + milky + nebula, 1.0);
           }

@@ -80,7 +80,7 @@ export class GalaxyView implements View {
     this.controls.dampingFactor = 0.08;
     this.controls.minDistance = 4;
     // Lejos, hasta ver la galaxia entera (30 000 a.l.).
-    this.controls.maxDistance = 45_000;
+    this.controls.maxDistance = 32_000;
     this.controls.zoomSpeed = 1.2;
     this.controls.screenSpacePanning = true;
     this.controls.target.set(0, 0, 0);

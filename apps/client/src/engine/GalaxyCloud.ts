@@ -36,7 +36,7 @@ export class GalaxyCloud {
       const r = Math.hypot(x, z) / R;
       if (r < 0.13) c.setHSL(0.1, 0.55, 0.62);
       else if (rng.chance(0.06)) c.setHSL(0.95, 0.55, 0.6);
-      else c.setHSL(0.6 - r * 0.05, 0.25 + r * 0.25, 0.55 + rng.range(0, 0.25));
+      else c.setHSL(0.6 - r * 0.05, 0.35 + r * 0.25, 0.45 + rng.range(0, 0.2));
       col[n * 3] = c.r;
       col[n * 3 + 1] = c.g;
       col[n * 3 + 2] = c.b;
@@ -46,7 +46,7 @@ export class GalaxyCloud {
     geo.setAttribute("position", new THREE.BufferAttribute(pos.subarray(0, n * 3), 3));
     geo.setAttribute("color", new THREE.BufferAttribute(col.subarray(0, n * 3), 3));
     this.material = new THREE.PointsMaterial({
-      size: 2,
+      size: 1.5,
       sizeAttenuation: false,
       vertexColors: true,
       transparent: true,
@@ -81,7 +81,8 @@ export class GalaxyCloud {
     this.object.visible = a > 0.01;
     if (!this.object.visible) return;
     this.object.position.set(GALAXY.center.x - origin.x, GALAXY.center.y - origin.y, GALAXY.center.z - origin.z);
-    this.material.opacity = a * 0.9;
-    (this.glow.material as THREE.SpriteMaterial).opacity = a * 0.8;
+    // Mezcla aditiva de 30 000 puntos: con poca opacidad, para que el bulbo no se queme y se vean los brazos.
+    this.material.opacity = a * 0.3;
+    (this.glow.material as THREE.SpriteMaterial).opacity = a * 0.55;
   }
 }

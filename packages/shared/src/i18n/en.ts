@@ -71,7 +71,6 @@ export const en: Record<I18nKey, string> = {
   "emperor.you": "you",
   "server.connecting": "Connecting…",
   "server.players": "{count} online",
-  "server.ai": "AI: {count}",
   "emperor.title": "Name your Emperor",
   "emperor.hint": "Other players will see this name. It cannot be changed.",
   "emperor.nameLabel": "Emperor's name",

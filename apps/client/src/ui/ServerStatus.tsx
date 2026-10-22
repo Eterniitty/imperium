@@ -15,9 +15,8 @@ export function ServerStatus() {
   const t = useT();
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const status = useWorld((s) => s.status);
-  // Solo jugadores reales; los Emperadores de la IA se cuentan aparte, debajo.
-  const players = useWorld((s) => Object.values(s.emperors).filter((e) => e.online && !e.ai).length);
-  const ais = useWorld((s) => Object.values(s.emperors).filter((e) => e.ai).length);
+  // Todos juntos: jugadores en línea y Emperadores de la IA (que siempre lo están).
+  const players = useWorld((s) => Object.values(s.emperors).filter((e) => e.online || e.ai).length);
 
   useEffect(() => {
     if (status !== "idle") return;
@@ -47,12 +46,6 @@ export function ServerStatus() {
           <span className={status === "open" ? "server-dot online" : "server-dot"} aria-hidden="true" />
           <span className="hide-sm">{t("server.label")}:</span> {label}
         </span>
-        {status === "open" && ais > 0 && (
-          <span className="server-line server-ai">
-            <span className="server-dot online" aria-hidden="true" />
-            {t("server.ai", { count: ais })}
-          </span>
-        )}
       </span>
     );
   }
