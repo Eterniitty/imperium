@@ -265,7 +265,7 @@ export class SystemView implements View {
     this.camera.add(this.cockpit);
     // Luz de relleno desde la cámara (algo por encima y a un lado): deja ver la cara de las naves que no da al
     // sol, sin borrar la sombra. Los planetas y lunas tienen su propia luz en el shader y no la reciben.
-    const fill = new THREE.DirectionalLight(0xb8c6e6, 0.55);
+    const fill = new THREE.DirectionalLight(0xb8c6e6, 0.85);
     fill.position.set(-0.4, 0.5, 0);
     fill.target.position.set(0, 0, -1);
     this.camera.add(fill, fill.target);

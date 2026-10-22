@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { distance, isDeepId, translate, type I18nKey, type SectorCoord, type StarSystemSummary, type WorldPosition } from "@imperium/shared";
 import { killerLabel, naturalCause } from "../ui/deathCause";
 import { isTravelling, positionAt, quantumFuelCost, regenFuel } from "@imperium/sim";
@@ -99,6 +100,12 @@ export class Engine {
         this.notify(key, action ? { key: code ? keyLabel(code, gameStore.getState().locale) : "—" } : undefined);
       },
     });
+    // Reflejos suaves para los metales de las naves y la cabina (sin entorno, el metal sale negro).
+    // Los planetas y las estrellas tienen sus propios shaders y no lo usan.
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    this.system.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    this.system.scene.environmentIntensity = 0.3;
+    pmrem.dispose();
     this.active = this.galaxy;
     this.active.activate();
 

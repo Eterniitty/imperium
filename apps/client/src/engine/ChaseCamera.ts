@@ -3,7 +3,7 @@ import { FLAGSHIP_LENGTH_M } from "@imperium/content";
 import { settingsStore } from "../state/settings";
 
 /** Distancia de la vista de seguimiento (m), en esloras de la nave insignia. */
-const DEFAULT_DIST = FLAGSHIP_LENGTH_M * 2.2;
+const DEFAULT_DIST = FLAGSHIP_LENGTH_M * 1.9;
 
 /**
  * Cámara del piloto, separada de la nave: mover la cámara nunca gira la nave.
@@ -33,8 +33,8 @@ export class ChaseCamera {
   private first = false;
 
   static readonly DEFAULT_DIST = DEFAULT_DIST;
-  /** Altura de la cámara sobre la línea de mira (m): la nave queda en el tercio inferior. */
-  static readonly HEIGHT = 0.235;
+  /** Altura de la cámara sobre la línea de mira (fracción de la distancia): la nave queda algo por debajo del centro, por encima de los paneles del HUD. */
+  static readonly HEIGHT = 0.15;
   static readonly MIN_DIST = FLAGSHIP_LENGTH_M * 0.9;
   static readonly MAX_DIST = FLAGSHIP_LENGTH_M * 60;
   /** Cabina: posición en el puente (m, ejes de la nave; ver la receta `flagship`). */
