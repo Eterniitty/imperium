@@ -125,7 +125,8 @@ Informe completo en Claude Docs («Aeonarch — Plan de juego»). Cinco fases, c
 - [x] Naves pequeñas más grandes; dial de crucero rehecho.
 - [x] Ventana del planeta con pestañas, minimizable bajo la barra superior.
 - [ ] Robar o remolcar naves aparcadas ajenas (abordaje).
-- [ ] Revisar velocidades de combate con el usuario (qué velocidad le parece bien).
+- [x] Velocidades: marchas cercanía/normal/rápida y pulso a 1800 km/s; alcances de combate ×4.
+- [ ] **Passkeys (opcional)** para entrar al juego: cada jugador decide si registra una (Windows Hello, Touch ID, gestor del navegador o llave FIDO2) en Ajustes → Cuenta, varias por cuenta y borrables; el enlace por correo sigue siendo la entrada por defecto. WebAuthn con rpId `aeonarch.de`. **Al desplegarlo**, actualizar la política de privacidad (es/en; y términos si hace falta, subiendo `LEGAL_VERSION`): se guardan la clave pública, el ID de la credencial, el contador de firmas, la etiqueta y las fechas de alta y último uso; la biometría y la clave privada nunca salen del dispositivo; base legal: ejecución del contrato y seguridad de la cuenta; se borran al eliminar la passkey o la cuenta (y entran en la exportación de datos).
 
 ## Antes de abrir al público (obligatorio, en paralelo)
 
