@@ -55,6 +55,8 @@ interface Member {
    * puede disparar). Null mientras alguien la pilota.
    */
   park: ParkedOrbit | null;
+  /** Aparcada y empujada por otra nave: falta guardar su nueva posición. */
+  parkUnsaved?: boolean;
   /** Solo Emperadores pilotados: si el piloto lleva los motores encendidos (se guarda al aparcar). */
   engines?: boolean;
   /** Solo Emperadores: colonias propias en el sistema (para reponer) y cuándo se consultaron. */
@@ -1945,6 +1947,10 @@ export class SpaceService {
     for (const [systemId, room] of this.rooms) {
       for (const m of room) {
         if (!m.park || now - m.poseAt < PARKED_POSE_MS) continue;
+        if (m.parkUnsaved) {
+          m.parkUnsaved = false;
+          void this.flagships.savePark(m.emperorId, m.park).catch((err: unknown) => this.log.error(err, "Error al guardar la nave aparcada"));
+        }
         const layout = this.layout(systemId);
         const p = parkedPosition(m.park, now, layout);
         m.pose = { p, q: m.pose.q, v: parkedVelocity(m.park, now, layout) };
@@ -1979,11 +1985,17 @@ export class SpaceService {
           if (d >= reach || d < 1e-3) continue;
           const n: Vec3 = [(b.pose.p[0] - a.pose.p[0]) / d, (b.pose.p[1] - a.pose.p[1]) / d, (b.pose.p[2] - a.pose.p[2]) / d];
           const closing = -((b.pose.v[0] - a.pose.v[0]) * n[0] + (b.pose.v[1] - a.pose.v[1]) * n[1] + (b.pose.v[2] - a.pose.v[2]) * n[2]);
-          // Los piratas (los mueve el servidor) se apartan.
+          // Los piratas (los mueve el servidor) se apartan; las naves aparcadas, sin piloto, se dejan empujar (y se quedan donde acaben).
           for (const [m, sign] of [[a, -1], [b, 1]] as const) {
-            if (m.kind !== "pirate") continue;
-            const push = (reach - d) * (a.kind === "pirate" && b.kind === "pirate" ? 0.5 : 1);
-            m.pose = { ...m.pose, p: [m.pose.p[0] + n[0] * push * sign, m.pose.p[1] + n[1] * push * sign, m.pose.p[2] + n[2] * push * sign] };
+            if (m.kind !== "pirate" && !m.park) continue;
+            const other = m === a ? b : a;
+            const push = (reach - d) * ((other.kind === "pirate" || other.park) ? 0.5 : 1);
+            const p: Vec3 = [m.pose.p[0] + n[0] * push * sign, m.pose.p[1] + n[1] * push * sign, m.pose.p[2] + n[2] * push * sign];
+            if (m.park) {
+              m.park = parkAt(isDeepId(m.systemId) ? null : this.layout(m.systemId), p, now, { q: m.park.q, engines: m.park.engines });
+              m.parkUnsaved = true;
+            }
+            m.pose = { ...m.pose, p };
             m.dirty = true;
           }
           if (closing < SHIP_COLLISION.minClosingMps) continue;
