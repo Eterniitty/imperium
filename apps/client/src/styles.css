@@ -972,3 +972,4 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 @keyframes crisis-pulse { 50% { border-color: rgba(255, 179, 107, 0.85); } }
 @media (prefers-reduced-motion: reduce) { .crisis-chip { animation: none; } }
 .logistics-items li { display: flex; gap: 10px; align-items: center; }
+.goals.legends li { grid-template-columns: 1fr auto; }
