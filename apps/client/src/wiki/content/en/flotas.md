@@ -8,6 +8,8 @@ Your ships (except yours, the Emperor's) are grouped into **fleets** ("Fleet 1",
 
 You can **rename** each fleet with the pencil on its row (on hover) in the fleets panel (empty: back to "Fleet N").
 
+Each ship can also have **its own name**: expand **Ships** in the fleet's row and press the pencil next to the ship (same limits as the fleet name; empty removes it). In space it shows as “Emperor · name”.
+
 And you can **gift** it to another player with the gift button on its row (type their Emperor's name): it must be stopped and out of battle; it becomes theirs where it is, without route or commander.
 
 ## Travelling

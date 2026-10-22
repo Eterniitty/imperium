@@ -104,6 +104,8 @@ export interface Emperor {
 export interface FleetShip {
   id: string;
   classId: string;
+  /** Nombre propio de la nave, si se le ha puesto. */
+  name?: string;
   hull: number;
   /** Humanos a bordo (colonos del colonizador). */
   humans: number;

@@ -314,6 +314,8 @@ export const ships = pgTable(
     /** Humanos a bordo (los colonos de un colonizador). */
     humans: integer("humans").notNull().default(0),
     /** Nave del Astillero: foto de su diseño (nombre, casco, piezas); `class_id` es la clase base del casco. */
+    /** Nombre propio de la nave (opcional; mismos límites que el de las flotas). */
+    name: text("name"),
     design: jsonb("design").$type<ShipDesignSnapshot>(),
     /** Combustible (años luz de alcance); null = depósito lleno (`FLEET_FUEL`). */
     fuel: doublePrecision("fuel"),

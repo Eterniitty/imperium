@@ -174,6 +174,17 @@ describe.skipIf(!TEST_DATABASE_URL)("logística", () => {
     expect(delivered.reduce((x, y) => x + y, 0)).toBeCloseTo(80, 3);
   });
 
+  it("nombre propio de una nave: con los límites de los nombres, y vacío lo quita", async () => {
+    const { fleetId, cmd } = await setup();
+    const [ship] = await db.select().from(ships).where(eq(ships.fleetId, fleetId));
+    expect(await cmd("fleet.renameShip", { fleetId, shipId: ship!.id, name: "Estrella Fugaz" })).toMatchObject({ ok: true });
+    expect((await db.select().from(ships).where(eq(ships.id, ship!.id)))[0]!.name).toBe("Estrella Fugaz");
+    expect(await cmd("fleet.renameShip", { fleetId, shipId: ship!.id, name: "x" })).toMatchObject({ ok: false, error: "invalid_name" });
+    expect(await cmd("fleet.renameShip", { fleetId: "00000000-0000-4000-8000-000000000000", shipId: ship!.id, name: "Otra" })).toMatchObject({ ok: false, error: "no_fleet" });
+    expect(await cmd("fleet.renameShip", { fleetId, shipId: ship!.id, name: "" })).toMatchObject({ ok: true });
+    expect((await db.select().from(ships).where(eq(ships.id, ship!.id)))[0]!.name).toBeNull();
+  });
+
   it("rutas no válidas: misma colonia, nada que llevar o sin bodega", async () => {
     const { a, b, fleetId, cmd } = await setup();
     expect(await cmd("fleet.route", { fleetId, fromColonyId: a.id, toColonyId: a.id, carry: ["metal"], humans: false })).toMatchObject({ ok: false, error: "invalid_route" });

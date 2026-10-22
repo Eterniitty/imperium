@@ -365,6 +365,13 @@
       "when": 1792711622559,
       "tag": "0052_peticiones_colonia",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1792713182453,
+      "tag": "0053_nombre_naves",
+      "breakpoints": true
     }
   ]
 }

@@ -2064,6 +2064,8 @@ export const en: Record<I18nKey, string> = {
   "wiki.v.requestReward": "+{pop} % population, +{rep} reputation and +{xp} experience",
   "wiki.k.requestPenalty": "If it expires",
   "wiki.v.requestPenalty": "−{pop} % population",
+  "fleet.shipsList": "Ships ({n})",
+  "fleet.renameShip": "Name this ship",
   "shipEditor.open": "Shipyard",
   "shipEditor.openTitle": "Design your ships part by part",
   "shipEditor.title": "Shipyard · ship design",

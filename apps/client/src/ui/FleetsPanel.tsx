@@ -43,6 +43,9 @@ export function FleetsPanel() {
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
   const [renameError, setRenameError] = useState<I18nKey | null>(null);
   const [gifting, setGifting] = useState<{ id: string; to: string } | null>(null);
+  /** Flota con la lista de naves desplegada, y la nave que se está renombrando. */
+  const [shipsOf, setShipsOf] = useState<string | null>(null);
+  const [shipRenaming, setShipRenaming] = useState<{ id: string; name: string } | null>(null);
   const list = (Object.values(fleets) as Fleet[]).sort((a, b) => a.number - b.number);
   if (list.length === 0) return null;
 
@@ -159,6 +162,55 @@ export function FleetsPanel() {
                   <button className="link-btn small" title={t("fleet.refuelHint")} onClick={() => void connection.command("fleet.refuel", { fleetId: f.id }).then((e) => e && gameStore.getState().notify(e))}>
                     {t("fleet.refuel")}
                   </button>
+                )}
+                {/* Naves de la flota, cada una con su nombre propio (opcional). */}
+                {f.ships.length > 0 && (
+                  <button className="link-btn small" aria-expanded={shipsOf === f.id} onClick={() => setShipsOf(shipsOf === f.id ? null : f.id)}>
+                    {t("fleet.shipsList", { n: f.ships.length })} {shipsOf === f.id ? "▾" : "▸"}
+                  </button>
+                )}
+                {shipsOf === f.id && (
+                  <ul className="fleet-ship-list">
+                    {f.ships.map((s) => (
+                      <li key={s.id}>
+                        <ShipThumb classId={s.classId} size={26} design={s.design} />
+                        {shipRenaming?.id === s.id ? (
+                          <form
+                            className="fleet-rename"
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              void connection.command("fleet.renameShip", { fleetId: f.id, shipId: s.id, name: shipRenaming.name }).then((err) => (err ? setRenameError(err) : setShipRenaming(null)));
+                            }}
+                          >
+                            <input autoFocus maxLength={PLANET_NAME_MAX} value={shipRenaming.name} placeholder={s.design?.name ?? contentText(locale, `ship.${s.classId}.name`)} onChange={(e) => setShipRenaming({ id: s.id, name: e.target.value })} onKeyDown={(e) => e.key === "Escape" && (e.stopPropagation(), setShipRenaming(null))} />
+                            <button className="btn btn-small" type="submit">
+                              {t("colony.save")}
+                            </button>
+                            {renameError && <span className="auth-error small">{t(renameError, { min: PLANET_NAME_MIN, max: PLANET_NAME_MAX })}</span>}
+                          </form>
+                        ) : (
+                          <>
+                            <span className="fleet-ship-name">
+                              {s.name ?? s.design?.name ?? contentText(locale, `ship.${s.classId}.name`)}
+                              {s.name && <span className="muted small"> · {s.design?.name ?? contentText(locale, `ship.${s.classId}.name`)}</span>}
+                            </span>
+                            <button
+                              type="button"
+                              className="icon-btn ship-rename-btn"
+                              title={t("fleet.renameShip")}
+                              aria-label={t("fleet.renameShip")}
+                              onClick={() => {
+                                setRenameError(null);
+                                setShipRenaming({ id: s.id, name: s.name ?? "" });
+                              }}
+                            >
+                              <HudIcon name="edit" size={13} />
+                            </button>
+                          </>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 )}
                 {/* Pilotar a distancia una nave armada de la flota parada. */}
                 {!moving && !f.battleId && armedShip(f) && (

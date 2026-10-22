@@ -528,6 +528,15 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     await hub.publishFleet(owner.emperorId, msg.args.fleetId);
                     return { ok: true } as const;
                   }
+                  case "fleet.renameShip": {
+                    const raw = msg.args.name.trim();
+                    const parsed = raw === "" ? null : PlanetNameSchema.safeParse(raw);
+                    if (parsed && !parsed.success) return { ok: false, error: "invalid_name" } as const;
+                    const ok = await fleets.renameShip(owner.emperorId, msg.args.fleetId, msg.args.shipId, parsed ? parsed.data : null);
+                    if (!ok) return { ok: false, error: "no_fleet" } as const;
+                    await hub.publishFleet(owner.emperorId, msg.args.fleetId);
+                    return { ok: true } as const;
+                  }
                   case "fleet.tactic": {
                     const ok = await fleets.setTactic(owner.emperorId, msg.args.fleetId, msg.args.tactic);
                     if (!ok) return { ok: false, error: "no_fleet" } as const;

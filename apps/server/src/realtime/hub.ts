@@ -29,6 +29,8 @@ export interface RemotePilot {
   name: string;
   /** Nave del Astillero: su diseño (sus piezas mandan en el combate). */
   design?: ShipDesignSnapshot;
+  /** Nombre propio de la nave, si tiene. */
+  label?: string;
 }
 
 export interface Client {

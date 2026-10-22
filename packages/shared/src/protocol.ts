@@ -150,6 +150,8 @@ export interface CommandArgs {
   "fleet.gift": { fleetId: string; to: string };
   /** Renombrar una flota propia (vacío: vuelve a «Flota N»). */
   "fleet.rename": { fleetId: string; name: string };
+  /** Nombre propio de una nave de una flota (vacío: sin nombre). */
+  "fleet.renameShip": { fleetId: string; shipId: string; name: string };
   /**
    * Intercepta una flota enemiga visible en tránsito: la flota propia viaja al
    * destino de la otra y combaten allí al coincidir.
@@ -221,6 +223,8 @@ export interface ShipState extends ShipPose {
    */
   classId?: string;
   name: string;
+  /** Nave de flota con nombre propio (se muestra «Emperador · nombre» en lugar de la clase). */
+  label?: string;
   /** Compañero del jugador que la recibe (se dibuja distinto; con fuego amigo, también se le puede dañar). */
   ally: boolean;
   hull: number;

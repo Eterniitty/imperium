@@ -2066,6 +2066,8 @@ export const es = {
   "wiki.v.requestReward": "+{pop} % de población, +{rep} de reputación y +{xp} de experiencia",
   "wiki.k.requestPenalty": "Si vence",
   "wiki.v.requestPenalty": "−{pop} % de población",
+  "fleet.shipsList": "Naves ({n})",
+  "fleet.renameShip": "Ponerle nombre a esta nave",
   "shipEditor.open": "Astillero",
   "shipEditor.openTitle": "Diseña tus naves pieza a pieza",
   "shipEditor.title": "Astillero · diseño de naves",

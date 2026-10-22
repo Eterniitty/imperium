@@ -237,6 +237,7 @@ export const ClientMessageSchema = z.union([
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("contract.abandon"), args: z.object({ contractId: z.uuid() }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("fleet.gift"), args: z.object({ fleetId: z.uuid(), to: z.string().min(1).max(64) }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("fleet.rename"), args: z.object({ fleetId: z.uuid(), name: z.string().max(PLANET_NAME_MAX * 4) }) }),
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("fleet.renameShip"), args: z.object({ fleetId: z.uuid(), shipId: z.uuid(), name: z.string().max(PLANET_NAME_MAX * 4) }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("fleet.tactic"), args: z.object({ fleetId: z.uuid(), tactic: z.enum(["balanced", "aggressive", "defensive", "focus"]) }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("fleet.intercept"), args: z.object({ fleetId: z.uuid(), targetFleetId: z.uuid() }) }),
   // Fase 11: tributo a una facción alienígena para borrar rencor (diplomacia básica).

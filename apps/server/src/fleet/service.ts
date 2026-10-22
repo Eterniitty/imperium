@@ -84,7 +84,7 @@ export class FleetService {
   private async toFleets(db: Database | Tx, rows: Row[]): Promise<Fleet[]> {
     if (rows.length === 0) return [];
     const shipRows = await db
-      .select({ id: ships.id, fleetId: ships.fleetId, classId: ships.classId, hull: ships.hull, humans: ships.humans, design: ships.design, fuel: ships.fuel })
+      .select({ id: ships.id, fleetId: ships.fleetId, classId: ships.classId, name: ships.name, hull: ships.hull, humans: ships.humans, design: ships.design, fuel: ships.fuel })
       .from(ships)
       .where(inArray(ships.fleetId, rows.map((r) => r.id)))
       .orderBy(asc(ships.createdAt));
@@ -96,7 +96,8 @@ export class FleetService {
     ]);
     const now = this.now();
     return rows.map((r) => {
-      const fleetShips = shipRows.filter((s) => s.fleetId === r.id).map(({ id, classId, hull, humans, design, fuel }) => ({
+      const fleetShips = shipRows.filter((s) => s.fleetId === r.id).map(({ id, classId, name, hull, humans, design, fuel }) => ({
+          ...(name ? { name } : {}),
           id,
           classId,
           hull,
@@ -137,7 +138,7 @@ export class FleetService {
     if (f.destSystemId && f.arriveAt && f.arriveAt.getTime() > this.now()) return { ok: false, error: "in_transit" };
     if (f.battleId) return { ok: false, error: "in_battle" };
     const [s] = await this.db
-      .select({ id: ships.id, classId: ships.classId, hull: ships.hull, design: ships.design })
+      .select({ id: ships.id, classId: ships.classId, hull: ships.hull, design: ships.design, label: ships.name })
       .from(ships)
       .where(and(eq(ships.id, shipId), eq(ships.fleetId, fleetId)))
       .limit(1);
@@ -146,7 +147,7 @@ export class FleetService {
     if (s.design ? designStats(s.design).weapons.length === 0 : cls.combat.weapons.length === 0) return { ok: false, error: "ship_unarmed" };
     const [{ name } = { name: "" }] = await this.db.select({ name: emperors.name }).from(emperors).where(eq(emperors.id, emperorId)).limit(1);
     const systemId = f.destSystemId ?? f.systemId;
-    return { ok: true, pilot: { shipId: s.id, fleetId, systemId, classId: s.classId, hull: s.hull, name, ...(s.design ? { design: s.design } : {}) } };
+    return { ok: true, pilot: { shipId: s.id, fleetId, systemId, classId: s.classId, hull: s.hull, name, ...(s.design ? { design: s.design } : {}), ...(s.label ? { label: s.label } : {}) } };
   }
 
   /**
@@ -174,9 +175,9 @@ export class FleetService {
    * Naves que salen a escoltar al Emperador en `systemId` (Fase 9d): las
    * armadas de sus flotas paradas allí fuera de batalla, las más grandes primero.
    */
-  async escorts(emperorId: string, systemId: string, max: number): Promise<Array<{ fleetId: string; shipId: string; classId: string; hull: number; design?: ShipDesignSnapshot }>> {
+  async escorts(emperorId: string, systemId: string, max: number): Promise<Array<{ fleetId: string; shipId: string; classId: string; hull: number; design?: ShipDesignSnapshot; label?: string }>> {
     const all = await this.byEmperor(emperorId);
-    const out: Array<{ fleetId: string; shipId: string; classId: string; hull: number; size: number; design?: ShipDesignSnapshot }> = [];
+    const out: Array<{ fleetId: string; shipId: string; classId: string; hull: number; size: number; design?: ShipDesignSnapshot; label?: string }> = [];
     for (const f of all) {
       if (f.travel || f.battleId || f.location.systemId !== systemId) continue;
       for (const s of f.ships) {
@@ -188,7 +189,7 @@ export class FleetService {
         }
         // Las del Astillero escoltan si llevan armas (sus piezas mandan, fase E4).
         const armed = s.design ? designStats(s.design).weapons.length > 0 : !!cls && cls.combat.weapons.length > 0;
-        if (cls && armed) out.push({ fleetId: f.id, shipId: s.id, classId: s.classId, hull: s.hull, size: s.design ? designStats(s.design).hull : cls.hull, ...(s.design ? { design: s.design } : {}) });
+        if (cls && armed) out.push({ fleetId: f.id, shipId: s.id, classId: s.classId, hull: s.hull, size: s.design ? designStats(s.design).hull : cls.hull, ...(s.design ? { design: s.design } : {}), ...(s.name ? { label: s.name } : {}) });
       }
     }
     // Las naves de la flota primero (por tamaño); el ala de cazas aparte, sin contar en el tope.
@@ -325,6 +326,14 @@ export class FleetService {
       .set({ name })
       .where(and(eq(fleets.id, fleetId), eq(fleets.emperorId, emperorId)))
       .returning({ id: fleets.id });
+    return rows.length > 0;
+  }
+
+  /** Pone (o quita, con null) el nombre de una nave de una flota propia. */
+  async renameShip(emperorId: string, fleetId: string, shipId: string, name: string | null): Promise<boolean> {
+    const [f] = await this.db.select({ id: fleets.id }).from(fleets).where(and(eq(fleets.id, fleetId), eq(fleets.emperorId, emperorId))).limit(1);
+    if (!f) return false;
+    const rows = await this.db.update(ships).set({ name }).where(and(eq(ships.id, shipId), eq(ships.fleetId, fleetId))).returning({ id: ships.id });
     return rows.length > 0;
   }
 

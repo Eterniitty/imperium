@@ -105,12 +105,14 @@ export function resetSpace(): void {
 const MAX_SAMPLES = 8;
 
 /** Nombre visible de una nave: el del Emperador, o el de su tipo si es de la IA. */
-export function shipName(state: Pick<ShipState, "kind" | "name" | "classId">, locale: Locale): string {
+export function shipName(state: Pick<ShipState, "kind" | "name" | "classId" | "label">, locale: Locale): string {
   // Nave de flota pilotada a distancia: «Emperador · Fragata».
   if (state.kind === "fleet") {
     const cls = state.classId ? contentDictionaries[locale][`ship.${state.classId}.name`] : undefined;
     // Nave alienígena: «Facción · clase».
     const owner = state.name.startsWith("#alien:") ? factionName(locale, state.name.slice(7)) : state.name === "#militia" ? translate(locale, "npc.militia") : state.name;
+    // Con nombre propio (`label`), ese en lugar de la clase.
+    if (state.label) return `${owner} · ${state.label}`;
     return cls ? `${owner} · ${cls}` : owner;
   }
   if (state.kind !== "pirate") return state.name;

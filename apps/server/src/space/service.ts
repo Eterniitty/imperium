@@ -28,6 +28,8 @@ interface Member {
   classId?: string;
   fleetId?: string;
   shipId?: string;
+  /** Solo naves de flota: su nombre propio, si tiene (se ve en lugar de la clase). */
+  label?: string;
   /** Solo piratas: dónde viven, un valor fijo para variar su forma de rodear, su clase de nave, su puntería y su modo (Fase 9d). */
   ai?: { home: Vec3; phase: number; classId: string; aimJitter: number; mode?: PirateMode; anchored?: boolean };
   /** Radio de impacto (metros): las naves grandes son más fáciles de acertar. */
@@ -181,7 +183,7 @@ export class SpaceService {
     moveFleet?(emperorId: string, fleetId: string, p: [number, number, number]): Promise<void>;
     destroyed(emperorId: string, fleetId: string, shipId: string): Promise<void>;
     /** Naves armadas de las flotas paradas en el sistema que salen a escoltar (Fase 9d). */
-    escorts(emperorId: string, systemId: string, max: number): Promise<Array<{ fleetId: string; shipId: string; classId: string; hull: number; design?: ShipDesignSnapshot }>>;
+    escorts(emperorId: string, systemId: string, max: number): Promise<Array<{ fleetId: string; shipId: string; classId: string; hull: number; design?: ShipDesignSnapshot; label?: string }>>;
     /** Naves de las flotas alienígenas paradas en el sistema (Fase 9d). */
     aliensIn?(systemId: string, max: number): Promise<Array<{ actorId: string; factionId: string; fleetId: string; shipId: string; classId: string; hull: number }>>;
   } | null = null;
@@ -335,6 +337,7 @@ export class SpaceService {
       kind: m.kind,
       ...(classId ? { classId } : {}),
       name: m.name,
+      ...(m.label ? { label: m.label } : {}),
       // Compañeros, y las naves propias entre sí (la insignia aparcada y la nave de flota que se pilota).
       ally: viewer !== null && viewer !== m && (viewer.allies.has(owner) || (viewer.owner ?? viewer.emperorId) === owner),
       ...m.pose,
@@ -635,6 +638,7 @@ export class SpaceService {
         escort: { leader: leader.emperorId, slot: i, mode: "hunt" },
         radius: Math.max(HIT_RADIUS, cls.model.lengthM * 0.45),
         name: leader.name,
+        ...(e.label ? { label: e.label } : {}),
         systemId: leader.systemId,
         clients: new Set(),
         pose: { p, q: leader.pose.q, v: leader.pose.v },
@@ -816,6 +820,7 @@ export class SpaceService {
       shipId: pilot.shipId,
       radius: Math.max(HIT_RADIUS, cls.model.lengthM * 0.45),
       name: pilot.name,
+      ...(pilot.label ? { label: pilot.label } : {}),
       systemId,
       clients: new Set([client]),
       pose: { p: pose.p, q: pose.q, v: pose.v },

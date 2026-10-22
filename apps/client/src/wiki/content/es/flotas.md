@@ -8,6 +8,8 @@ Tus naves (salvo la tuya, la del Emperador) se agrupan en **flotas** («Flota 1�
 
 Puedes **renombrar** cada flota con el lápiz de su fila (al pasar el ratón) en el panel de flotas (vacío: vuelve a «Flota N»).
 
+Cada nave puede llevar también **su propio nombre**: despliega **Naves** en la fila de la flota y pulsa el lápiz junto a la nave (mismos límites que el nombre de la flota; vacío lo quita). En el espacio se ve como «Emperador · nombre».
+
 Y puedes **regalarla** a otro jugador con el botón de regalo de su fila (escribe el nombre de su Emperador): tiene que estar parada y fuera de batalla; pasa a ser suya donde está, sin ruta ni comandante.
 
 ## Viajar
