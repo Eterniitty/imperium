@@ -134,7 +134,7 @@ Pendiente, en este orden:
    - decidir si vacía las entradas antiguas del registro de accesos de la puerta (IP completa hasta el 22-10);
    - decidir si quita `MAIL_LOG_LINKS`: el journal guarda el enlace de acceso.
 2. **Sábado 24-10**: planificar que Claude se ejecute con un usuario del sistema aparte, sin acceso a la base ni a los secretos (regla 11 de CLAUDE.md).
-3. **Rango del Emperador**: era la siguiente tarea de juego y aún no está empezado.
+3. Rango, tutorial 1–4 y rescate: hechos esa misma noche (ver la lista de abajo). **Nada de la interfaz con sesión se ha probado en vivo** (el hook bloquea las sesiones de prueba hasta que el usuario apruebe `scripts/sesion-prueba.sh`).
 4. Luego, el resto de «Siguiente: que se sienta como un juego» y los textos legales en alemán, con el mismo enfoque de proyecto privado (sin § 5 DDG).
 5. **Revisar**:
    - con la galaxia v3 hay regiones alienígenas de un solo sistema; ahí la guarnición no aparece, porque no se crea en el sistema del intruso. Quizá convenga dejarla aparecer en ese sistema;
@@ -145,9 +145,10 @@ Pendiente, en este orden:
 Plan en `docs/juego-solitario.md` y `docs/tutorial.md`. Orden:
 
 - [x] Contratos (fase 1, 22-10-2026): caza de Carroñeros, exploración y minería, con tablero diario, plazos y pago en créditos y reputación (`ContractService`, migración 0046, Wiki «Contratos»).
-- [ ] Contratos (fase 2): reparto de recursos y rescate; objetivo marcado en el mapa y en el crucero.
-- [ ] Rango del Emperador (experiencia, títulos y mejoras).
-- [ ] Tutorial: motor, menú y capítulos 1–4.
+- [x] Contratos (fase 2, 22-10-2026): rescate con restos a la deriva, señal en el sistema, destino del crucero y «Ver en el mapa» (migración 0048).
+- [ ] Contratos: reparto de recursos que obligue a transportar de verdad (que no se cumpla cargando y descargando en el mismo sistema).
+- [x] Rango del Emperador (22-10-2026): experiencia, diez títulos y mejoras de los contratos (`RANKS`, `RankService`, migración 0047, Wiki «Rango»). Pendiente: mejoras de la nave (bodega, combustible, misiles).
+- [x] Tutorial: motor, menú (Ajustes → Tutorial) y capítulos 1–4 (22-10-2026).
 - [ ] Eventos en el espacio con decisiones.
 - [ ] Objetivos diarios y semanales.
 - [ ] Tutorial: capítulos 5–12.
