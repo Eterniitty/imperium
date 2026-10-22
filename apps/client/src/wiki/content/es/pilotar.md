@@ -88,12 +88,13 @@ En la cabina ves el **horizonte artificial** (respecto al plano de las órbitas)
 
 ## Escoltas
 
-Cuando tomas los mandos en un sistema donde tienes flotas paradas (fuera de batalla), sus **naves armadas salen a escoltarte**: las más grandes, hasta el tope de la tabla. Vuelan en cuña detrás de ti y, si un Carroñero se acerca, van a por el más cercano (con su propia puntería y sin disparar si tú u otra escolta estáis en la línea de tiro). Con el pulso no te siguen el paso: si se quedan muy atrás, se reúnen contigo de un salto.
+Cuando tomas los mandos en un sistema donde tienes flotas paradas (fuera de batalla), sus **naves armadas salen a escoltarte**: las más grandes, hasta el tope de la tabla. Vuelan en cuña detrás de ti y, si un Carroñero se acerca, van a por el más cercano (con su propia puntería y sin disparar si tú u otra escolta estáis en la línea de tiro). Con el pulso te acompañan en formación (o esperan, si lo eliges; ver abajo).
 
 - Las escoltas son naves de verdad de tu flota: si las destruyen, **la flota las pierde**; al aparcar, saltar o dejar el sistema vuelven a su flota con el casco que les quede.
 - Los Carroñeros también las atacan, y las demás naves las ven con tu nombre.
 - Si pilotas a distancia una de ellas, deja de escoltarte y pasa a tus mandos.
 - **Órdenes**: abajo a la derecha tienes **Seguir** (lo normal), **Atacar blanco** (van a por la nave que tengas fijada, también otro jugador, y después vuelven), **Mantener** (se quedan donde están y defienden ese punto) y **Replegar** (vuelven a tu lado sin combatir).
+- **Con el pulso**: el botón **Pulso: conmigo / Pulso: esperan** decide si la escolta **viaja contigo en formación** cuando enciendes el pulso, o si **se queda esperando** donde está y vuelve a seguirte cuando regresas cerca.
 
 {{tabla:escoltas}}
 

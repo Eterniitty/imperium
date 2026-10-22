@@ -88,12 +88,13 @@ In the cockpit you see the **artificial horizon** (relative to the orbital plane
 
 ## Escorts
 
-When you take the controls in a system where you have stationary fleets (not in battle), their **armed ships come out to escort you**: the biggest ones, up to the cap in the table. They fly in a wedge behind you and, if a Scavenger comes close, go after the nearest one (with their own aim, and holding fire when you or another escort is in the line of fire). They cannot keep up with the pulse: if they fall far behind, they rejoin you in one jump.
+When you take the controls in a system where you have stationary fleets (not in battle), their **armed ships come out to escort you**: the biggest ones, up to the cap in the table. They fly in a wedge behind you and, if a Scavenger comes close, go after the nearest one (with their own aim, and holding fire when you or another escort is in the line of fire). With the pulse drive they travel with you in formation (or wait, if you choose; see below).
 
 - Escorts are real ships of your fleet: if they are destroyed, **the fleet loses them**; when you park, jump or leave the system they return to their fleet with whatever hull they have left.
 - Scavengers attack them too, and other ships see them with your name.
 - If you remotely pilot one of them, it stops escorting you and comes under your control.
 - **Orders**: at the bottom right you have **Follow** (the default), **Attack target** (they go after your locked ship, another player too, and then come back), **Hold** (they stay where they are and defend that spot) and **Fall back** (they return to your side without fighting).
+- **With the pulse drive**: the **Pulse: with me / Pulse: they wait** button decides whether the escort **travels with you in formation** when you engage the pulse drive, or **waits** where it is and follows you again when you come back close.
 
 {{tabla:escoltas}}
 

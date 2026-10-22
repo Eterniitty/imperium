@@ -198,6 +198,7 @@ export const ClientMessageSchema = z.union([
   }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("fleet.routeStop"), args: z.object({ fleetId: z.uuid() }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("escort.order"), args: z.object({ order: z.enum(["follow", "attack", "hold", "recall"]), targetId: z.string().max(80).optional() }) }),
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("escort.cruise"), args: z.object({ on: z.boolean() }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("flagship.dock"), args: z.object({ fleetId: z.uuid() }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("flagship.undock"), args: z.object({}).strict() }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("help.call"), args: z.object({}).strict() }),

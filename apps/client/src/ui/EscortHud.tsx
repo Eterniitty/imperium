@@ -18,6 +18,7 @@ export function EscortHud() {
   const remote = useStore(spaceStore, (s) => s.remote);
   const fleets = useWorld((s) => s.fleets);
   const [order, setOrder] = useState<EscortOrder>("follow");
+  const [cruise, setCruise] = useState(true);
   const [error, setError] = useState<I18nKey | null>(null);
   if (remote) return null;
   const own = new Set((Object.values(fleets) as Fleet[]).flatMap((f) => f.ships.map((s) => fleetShipId(s.id))));
@@ -37,6 +38,17 @@ export function EscortHud() {
             {t(`escort.${o}`)}
           </button>
         ))}
+        <button
+          className={cruise ? "lang-btn active" : "lang-btn"}
+          title={t(cruise ? "escort.cruise.onHint" : "escort.cruise.offHint")}
+          onClick={async () => {
+            const err = await connection.command("escort.cruise", { on: !cruise });
+            setError(err);
+            if (!err) setCruise(!cruise);
+          }}
+        >
+          {t(cruise ? "escort.cruise.on" : "escort.cruise.off")}
+        </button>
       </div>
       {error && <span className="auth-error small">{t(error)}</span>}
     </div>

@@ -561,6 +561,19 @@ export class SpaceService {
     });
   }
 
+  /**
+   * Escolta en crucero (petición del usuario): si el Emperador lo elige, sus
+   * escoltas le acompañan en formación también con el pulso; si no, cuando se
+   * aleja con el pulso se quedan esperando donde estaban y vuelven a seguirle
+   * cuando regresa cerca. En memoria, por Emperador (por defecto, le acompañan).
+   */
+  private readonly escortCruise = new Map<string, boolean>();
+  setEscortCruise(client: Client, on: boolean): CommandError | null {
+    if (client.piloting) return "not_present";
+    this.escortCruise.set(client.emperorId, on);
+    return null;
+  }
+
   /** Orden a las escoltas de la nave que pilota este cliente. */
   orderEscorts(client: Client, order: EscortOrder, targetId: string | null): CommandError | null {
     const m = client.piloting ? null : this.members.get(client.emperorId);
@@ -635,9 +648,14 @@ export class SpaceService {
         else e.holdAt = undefined;
         const slot = e.holdAt ?? escortSlot(leader.pose.p, leader.pose.q, e.slot);
         let step: { p: Vec3; v: Vec3; q: Quat };
-        if (!target && !e.holdAt && distance(m.pose.p, slot) > ESCORT.catchUpM) {
-          // Se quedó atrás (el Emperador va con el pulso): se reúne con él.
+        const cruiseWith = this.escortCruise.get(leader.emperorId) ?? true;
+        const leaderPulsing = Math.hypot(...leader.pose.v) > PILOT_SPEED * PILOT_BOOST * 1.5;
+        if (!target && !e.holdAt && cruiseWith && (leaderPulsing || distance(m.pose.p, slot) > ESCORT.catchUpM)) {
+          // Con el pulso le acompañan en formación (y si se quedaron atrás, se reúnen con él).
           step = { p: slot, v: leader.pose.v, q: leader.pose.q };
+        } else if (!target && !e.holdAt && !cruiseWith && distance(m.pose.p, slot) > ESCORT.catchUpM) {
+          // No le acompañan: esperan donde están hasta que vuelva cerca.
+          step = { p: m.pose.p, v: [0, 0, 0], q: m.pose.q };
         } else if (target) {
           const toward = normalize([target.pose.p[0] - m.pose.p[0], target.pose.p[1] - m.pose.p[1], target.pose.p[2] - m.pose.p[2]]);
           const underFire = now - m.combat.lastHitAt < PIRATE_AI.underFireSec * 1000;

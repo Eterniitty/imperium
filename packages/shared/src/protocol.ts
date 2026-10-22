@@ -106,6 +106,8 @@ export interface CommandArgs {
    * defender), atacar el blanco fijado, mantener la posición o replegarse sin combatir.
    */
   "escort.order": { order: EscortOrder; targetId?: string };
+  /** Escolta en crucero: las escoltas acompañan con el pulso (true) o esperan (false). */
+  "escort.cruise": { on: boolean };
   /** Acopla la nave del Emperador (pilotada, cerca) en la nave nodriza de una flota propia parada en el mismo sistema. */
   "flagship.dock": { fleetId: string };
   /** Desacopla la nave del Emperador de su nave nodriza. */
