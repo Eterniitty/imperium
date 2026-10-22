@@ -15,7 +15,7 @@
  */
 import { WORLD_SCALE } from "@imperium/content";
 import { hashString, Rng } from "@imperium/procgen";
-import type { PlanetType, StarClass, StarSystemDetail } from "@imperium/shared";
+import { GALAXY, type PlanetType, type StarClass, type StarSystemDetail, type StarSystemSummary } from "@imperium/shared";
 import { moonRadiusEarth, rockyBody, starBody, type CelestialBody } from "./bodies";
 import type { PulseBody } from "./flight";
 
@@ -62,6 +62,8 @@ export interface SystemLayout {
   parkMinRadius: number;
   /** Clase de la estrella (calor, horizonte de sucesos); sin ella (espacio profundo), no hay estrella. */
   starClass?: StarClass;
+  /** Ónfalo: el agujero negro supermasivo del centro de la galaxia. */
+  supermassive?: boolean;
 }
 
 /** Número en [0, 1) estable para una clave. */
@@ -113,7 +115,8 @@ function moonsOf(systemId: string, planetIndex: number, type: PlanetType, radius
 
 export function systemLayout(detail: StarSystemDetail): SystemLayout {
   const { summary } = detail;
-  const star = starBody(summary.starClass);
+  const supermassive = isGalacticCore(summary);
+  const star = starBody(summary.starClass, supermassive);
   const starRadius = star.radius;
 
   // Planetas y cinturones comparten huecos en orden de distancia. La distancia
@@ -154,7 +157,7 @@ export function systemLayout(detail: StarSystemDetail): SystemLayout {
     });
     edge = radius + body.influenceRadius;
   }
-  return { starRadius, star, planets, belts, boundary: Math.max(edge, starRadius * 6) + S.boundaryMarginM, parkMinRadius: star.influenceRadius, starClass: summary.starClass };
+  return { starRadius, star, planets, belts, boundary: Math.max(edge, starRadius * 6) + S.boundaryMarginM, parkMinRadius: star.influenceRadius, starClass: summary.starClass, ...(supermassive ? { supermassive: true } : {}) };
 }
 
 /** Ángulo orbital de un planeta a la hora `serverTimeMs` (milisegundos del servidor). */
@@ -208,4 +211,10 @@ export function bodiesAt(layout: SystemLayout, serverTimeMs: number): PlacedBody
     }
   }
   return out;
+}
+
+/** ¿Es Ónfalo, el agujero negro supermasivo del centro de la galaxia? */
+export function isGalacticCore(summary: Pick<StarSystemSummary, "starClass" | "name" | "position">): boolean {
+  const c = GALAXY.center;
+  return summary.starClass === "BH" && summary.name === GALAXY.centerName && Math.abs(summary.position.x - c.x) < 1 && Math.abs(summary.position.z - c.z) < 1;
 }

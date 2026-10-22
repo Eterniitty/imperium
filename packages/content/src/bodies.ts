@@ -133,6 +133,18 @@ export const STAR_HEAT: Record<StarClass, { zoneRadii: number; surfaceDps: numbe
   BH: { zoneRadii: 4, surfaceDps: 200 },
 };
 
+/**
+ * Ónfalo, el agujero negro supermasivo del centro de la galaxia (`GALAXY` en
+ * `@imperium/shared`): su horizonte es como tres soles (250 veces el de un
+ * agujero negro normal) y la zona mortal llega mucho más lejos. La masa es
+ * lógica (para la gravedad del juego), no la real de millones de soles.
+ */
+export const SUPERMASSIVE = {
+  radiusSolar: 3,
+  massSolar: 60,
+  heat: { zoneRadii: 6, surfaceDps: 1500 },
+} as const;
+
 /** Calor por encima del cual la zona es mortal: el HUD lo avisa en rojo y el pulso se corta si vas hacia la estrella. */
 export const STAR_HEAT_LETHAL_DPS = 40;
 

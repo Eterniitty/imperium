@@ -2,7 +2,13 @@
 
 ## Sectors and stars
 
-The universe is procedurally generated from a seed: the same sector always produces the same stars. It is divided into **cubic sectors 100 light years** across, each with 4 to 56 systems, and has no practical limits. Only what changes is stored (colonies, fleets, discoveries); everything else is regenerated.
+The universe is procedurally generated from a seed: the same sector always produces the same stars. It is divided into **cubic sectors 100 light years** across. Only what changes is stored (colonies, fleets, discoveries); everything else is regenerated.
+
+## The galaxy
+
+Everything happens in **a spiral galaxy 30,000 light years** across: a thin disc with **four arms**, a dense **bulge** at the centre and nothing outside the disc. Stars gather in the arms; between them there are far fewer. In the **galaxy map**, zooming out shows the whole galaxy; from each system, the **Milky Way** in the sky shines brighter towards the centre.
+
+At the centre lies **Omphalos** (Ónfalo), a **supermassive black hole**: its event horizon is the size of three suns and its deadly zone reaches much further than any star's. It is about 9,000 light years from the Human Core, deep in alien territory: reaching it is the game's great goal.
 
 The **Human Core** is the 27 sectors around the origin (−1 to 1 on each axis). New Emperors appear there and fallen ones are reborn there, and there are no pirates.
 

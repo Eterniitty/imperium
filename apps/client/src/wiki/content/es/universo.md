@@ -2,7 +2,13 @@
 
 ## Sectores y estrellas
 
-El universo se genera por procedimientos a partir de una semilla: el mismo sector produce siempre las mismas estrellas. Está dividido en **sectores cúbicos de 100 años luz** de lado, con entre 4 y 56 sistemas cada uno, y no tiene límites prácticos. Solo se guarda lo que cambia (colonias, flotas, descubrimientos); lo demás se regenera.
+El universo se genera por procedimientos a partir de una semilla: el mismo sector produce siempre las mismas estrellas. Está dividido en **sectores cúbicos de 100 años luz** de lado. Solo se guarda lo que cambia (colonias, flotas, descubrimientos); lo demás se regenera.
+
+## La galaxia
+
+Todo ocurre en **una galaxia espiral de 30 000 años luz** de diámetro: un disco fino con **cuatro brazos**, un **bulbo** denso en el centro y nada fuera del disco. Las estrellas se concentran en los brazos; entre ellos hay muchas menos. En el **mapa galáctico**, alejando la cámara, se ve la galaxia entera; desde cada sistema, la **Vía Láctea** del cielo brilla más hacia el centro.
+
+En el centro está **Ónfalo**, un **agujero negro supermasivo**: su horizonte de sucesos es como tres soles y su zona mortal llega mucho más lejos que la de cualquier estrella. Está a unos 9000 años luz del Núcleo Humano, en lo más hondo del territorio alienígena: llegar allí es el gran objetivo del juego.
 
 El **Núcleo Humano** son los 27 sectores alrededor del origen (de −1 a 1 en cada eje). Allí aparecen los Emperadores nuevos y renacen los caídos, y allí no hay piratas.
 

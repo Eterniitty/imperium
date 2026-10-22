@@ -10,7 +10,7 @@
  * se puede aterrizar. Hoy lo usan el pulso, las colisiones, el altímetro, la
  * gravedad y la validación del servidor.
  */
-import { MOON_SIZE, PLANET_BODIES, STAR_BODIES, WORLD_SCALE, type EntryKind, type SurfaceKind } from "@imperium/content";
+import { MOON_SIZE, PLANET_BODIES, STAR_BODIES, SUPERMASSIVE, WORLD_SCALE, type EntryKind, type SurfaceKind } from "@imperium/content";
 import type { PlanetType, ResourceId, StarClass } from "@imperium/shared";
 
 export type BodyKind = "star" | "planet" | "moon" | "asteroid";
@@ -62,14 +62,15 @@ function finishBody(b: Omit<CelestialBody, "mu" | "surfaceGravity" | "approachAl
 }
 
 /** Radio de una estrella en metros según su clase. */
-export function starRadiusM(starClass: StarClass): number {
-  const r = STAR_BODIES[starClass].radiusSolar;
+export function starRadiusM(starClass: StarClass, supermassive = false): number {
+  const r = supermassive ? SUPERMASSIVE.radiusSolar : STAR_BODIES[starClass].radiusSolar;
   return Math.max(S.minStarRadiusM, S.sunRadiusM * Math.pow(r, S.starRadiusExponent));
 }
 
-export function starBody(starClass: StarClass): CelestialBody {
-  const info = STAR_BODIES[starClass];
-  const radius = starRadiusM(starClass);
+/** La estrella de un sistema; `supermassive`: Ónfalo, el agujero negro del centro de la galaxia. */
+export function starBody(starClass: StarClass, supermassive = false): CelestialBody {
+  const info = supermassive ? SUPERMASSIVE : STAR_BODIES[starClass];
+  const radius = starRadiusM(starClass, supermassive);
   // Gravedad lógica: 28 g en el Sol, ∝ M / R² (con el radio lógico, sin comprimir).
   const g = (28 * info.massSolar) / (info.radiusSolar * info.radiusSolar);
   return finishBody({

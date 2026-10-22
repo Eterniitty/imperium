@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { GALAXY, type WorldPosition } from "@imperium/shared";
 import { galaxyDensityAt, Rng } from "@imperium/procgen";
+import { labelTexture } from "./textures";
 
 /** Puntos con que se dibuja la galaxia entera vista de lejos (no son estrellas reales: dan la forma). */
 const POINTS = 30_000;
@@ -15,6 +16,7 @@ export class GalaxyCloud {
   readonly object = new THREE.Group();
   private readonly material: THREE.PointsMaterial;
   private readonly glow: THREE.Sprite;
+  private readonly label: THREE.Sprite;
 
   constructor() {
     const rng = new Rng(0x6a1a);
@@ -71,7 +73,13 @@ export class GalaxyCloud {
     tex.colorSpace = THREE.SRGBColorSpace;
     this.glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 }));
     this.glow.scale.setScalar(GALAXY.bulgeRadius * 3);
-    this.object.add(points, this.glow);
+    // Rótulo del centro: Ónfalo, el objetivo final.
+    const { texture, aspect } = labelTexture(`◉ ${GALAXY.centerName}`, "#ffd27a");
+    const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, sizeAttenuation: false, transparent: true }));
+    label.scale.set(0.03 * aspect, 0.03, 1);
+    label.center.set(0.5, -0.6);
+    this.label = label;
+    this.object.add(points, this.glow, label);
     this.object.visible = false;
   }
 
@@ -84,5 +92,6 @@ export class GalaxyCloud {
     // Mezcla aditiva de 30 000 puntos: con poca opacidad, para que el bulbo no se queme y se vean los brazos.
     this.material.opacity = a * 0.3;
     (this.glow.material as THREE.SpriteMaterial).opacity = a * 0.55;
+    (this.label.material as THREE.SpriteMaterial).opacity = a;
   }
 }
