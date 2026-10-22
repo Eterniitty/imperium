@@ -89,7 +89,7 @@ Dentro de un sistema (o de una región de espacio profundo) la nave puede ir sol
 - **Velocidad**: el dial circular del panel (y del aviso mientras va el piloto) fija su velocidad máxima, de 1 km/s a la del pulso; del todo a la derecha, «máx.». Arrástralo alrededor o gira la rueda del ratón encima.
 - **Orbitar**: en la lista, junto a un planeta o una luna, **Orbitar** lleva la nave hasta él y la deja dando vueltas por su ecuador, a la misma altura segura, con el morro en el sentido de la órbita, hasta que la canceles.
 - **Seguir una nave**: el botón **Seguir** sigue a la nave fijada ([[X]]) o, si no hay, a la nave a la vista más cercana (primero los compañeros); pulsarla otra vez pasa a la siguiente. La tuya se pone en formación detrás y a un lado, igualando su velocidad (con pulso si ella lo lleva). Si salta fuera del sistema o deja de verse, el piloto automático se desactiva con un aviso.
-- **Cancelar**: **Parar crucero**, Esc o **cualquier mando de pilotaje** (moverse, girar, impulso, pulso, motores; en vuelo con ratón, mover el cursor fuera de la zona muerta). Un aviso en el HUD muestra el modo, el destino, la distancia y la tecla para cancelar.
+- **Cancelar**: **Parar crucero**, Esc o **cualquier mando de pilotaje** (moverse, girar, impulso, pulso, motores; en vuelo con ratón, un clic sobre la vista; mover el cursor suelto no lo cancela). Un aviso en el HUD muestra el modo, el destino, la distancia y la tecla para cancelar.
 - Si los motores están apagados, se arrancan solos. Sin combustible, va solo con los propulsores (mucho más despacio). Disparar y minar no lo cancelan.
 
 ## Gravedad

@@ -89,7 +89,7 @@ Inside a system (or a deep-space region) the ship can fly itself to a place or f
 - **Speed**: the circular dial in the panel (and in the notice while the autopilot is on) sets its top speed, from 1 km/s to the pulse drive's; all the way right, "max". Drag around it or turn the mouse wheel over it.
 - **Orbit**: in the list, next to a planet or a moon, **Orbit** takes the ship there and leaves it circling its equator at the same safe altitude, nose along the orbit, until you cancel.
 - **Follow a ship**: the **Follow** button follows the locked ship ([[X]]) or, if there is none, the nearest ship in sight (companions first); press it again to switch to the next one. Your ship takes up formation behind and to one side, matching its speed (with the pulse drive if it uses it). If it jumps out of the system or goes out of sight, the autopilot disengages with a notice.
-- **Cancel**: **Stop cruise**, Esc or **any flight control** (move, turn, boost, pulse, engines; in mouse flight, moving the cursor out of the dead zone). A HUD notice shows the mode, destination, distance and the key to cancel.
+- **Cancel**: **Stop cruise**, Esc or **any flight control** (move, turn, boost, pulse, engines; in mouse flight, a click on the view; moving the free cursor does not cancel it). A HUD notice shows the mode, destination, distance and the key to cancel.
 - If the engines are off, they start on their own. Without fuel it uses thrusters only (much slower). Firing and mining do not cancel it.
 
 ## Gravity

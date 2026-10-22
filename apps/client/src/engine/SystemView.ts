@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { escapeJustUnlocked, pointerXY } from "./pointerLock";
+import { escapeJustUnlocked, lockedPointer, pointerXY } from "./pointerLock";
 import { fleetName } from "../ui/fleetName";
 import { flightSound, playCruiseArrive } from "../audio/flightSfx";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
@@ -2038,11 +2038,14 @@ export class SystemView implements View {
       flight.autopilot = null;
       return;
     }
-    // Cualquier mando manual lo desactiva (en vuelo con ratón, también llevar el cursor fuera de la zona muerta).
+    // Cualquier mando manual lo desactiva; en vuelo con ratón, un clic sobre la vista (o mover el ratón atrapado).
+    // Mover el cursor suelto no cuenta: al elegir el destino queda sobre la lista, lejos del centro, y cualquier
+    // movimiento cancelaba el crucero nada más ponerlo (la velocidad «se reiniciaba»; aviso del usuario, 22-10).
     // Con el mapa abierto (crucero en segundo plano) las teclas y el ratón son del mapa: no cuentan.
     const cursor = this.backgroundCruise ? null : flight.cursorAt;
     const moved = cursor !== null && (!this.cruiseCursor || Math.hypot(cursor.x - this.cruiseCursor.x, cursor.y - this.cruiseCursor.y) > 0.15);
-    if (!this.backgroundCruise && (MANUAL_ACTIONS.some((a) => this.keyboard.action(a)) || (flight.mouseSteering && moved))) return this.cancelCruise("cruise.manual");
+    const clicked = flight.takeTakeover();
+    if (!this.backgroundCruise && (MANUAL_ACTIONS.some((a) => this.keyboard.action(a)) || clicked || (lockedPointer.active && flight.mouseSteering && moved))) return this.cancelCruise("cruise.manual");
     const { spots, obstacles } = this.cruiseWorld();
     const spot = spots.find((s) => s.id === target.id) ?? null;
     if (!spot) {

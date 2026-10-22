@@ -258,8 +258,17 @@ export class ShipController {
 
   /** Botones del ratón pulsados sobre la vista. */
   private buttons = 0;
+  /** Clic sobre la vista con el piloto automático puesto y el vuelo con ratón: el piloto quiere los mandos. */
+  private takeover = false;
+  /** ¿Se pidió tomar los mandos con un clic desde la última consulta? (la consulta lo borra) */
+  takeTakeover(): boolean {
+    const t = this.takeover;
+    this.takeover = false;
+    return t;
+  }
   private onButtons = (e: PointerEvent) => {
     this.buttons = e.buttons;
+    if (e.type === "pointerdown" && e.target === this.dom && e.button === 0 && !e.altKey && this.autopilot !== null && settingsStore.getState().prefs.flight.mouseFlight) this.takeover = true;
     // Un clic sobre la vista con el vuelo con ratón atrapa el ratón (el navegador lo pide con un gesto). Sale donde estaba el cursor.
     if (e.type === "pointerdown" && e.target === this.dom && this.lockWanted && !lockedPointer.active && !e.altKey) {
       const r = this.dom.getBoundingClientRect();

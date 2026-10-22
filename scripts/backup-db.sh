@@ -17,4 +17,7 @@ pg_dump -h /var/run/postgresql -d "$DB" -Fc -Z 6 -f "$file.part"
 pg_restore -l "$file.part" > /dev/null
 mv "$file.part" "$file"
 find "$BACKUP_DIR" -name "$DB-*.dump" -mtime +"$((KEEP_DAYS - 1))" -delete
+# También las copias sueltas con datos de jugadores: volcados .sql.gz y los
+# .dump guardados a mano (p. ej. en proyecto/ antes de reiniciar el mundo).
+find "$BACKUP_DIR" \( -name "*.sql.gz" -o -name "*.dump" \) -mtime +"$((KEEP_DAYS - 1))" -delete
 echo "Copia hecha: $file ($(du -h "$file" | cut -f1)); copias guardadas: $(find "$BACKUP_DIR" -name "$DB-*.dump" | wc -l)"
