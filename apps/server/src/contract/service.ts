@@ -5,7 +5,7 @@
  * existen (descubrir sistemas, derribar Carroñeros, extraer mineral); el
  * servidor decide y paga: el juego sigue sin el jugador.
  */
-import { CONTRACTS, type ContractKind as Kind } from "@imperium/content";
+import { CONTRACTS, RANK_XP, rankOf, rankPerks, type ContractKind as Kind } from "@imperium/content";
 import type { CommandError, Contract, ContractKind, ContractOffer, ContractsView } from "@imperium/shared";
 import { and, desc, eq, inArray, lt, sql } from "drizzle-orm";
 import type { ServerConfig } from "../config";
@@ -13,6 +13,7 @@ import type { Database } from "../db/client";
 import { contracts } from "../db/schema";
 import type { Tx } from "../events/queue";
 import type { HumanityService } from "../humanity/service";
+import type { RankService } from "../rank/service";
 import type { ReputationService } from "../reputation/service";
 
 const DAY_MS = 24 * 3_600_000;
@@ -31,6 +32,12 @@ function rng(seed: string): () => number {
 }
 
 type Row = typeof contracts.$inferSelect;
+
+/** Nivel de dificultad de un contrato (1 = el objetivo más fácil de su tipo). */
+function tierOf(kind: Kind, target: number): number {
+  const i = CONTRACTS.kinds[kind]?.targets.indexOf(target) ?? -1;
+  return i >= 0 ? i + 1 : 1;
+}
 
 function toContract(r: Row): Contract {
   return {
@@ -54,21 +61,31 @@ export class ContractService {
     private readonly config: ServerConfig,
     private readonly humanity: HumanityService,
     private readonly reputation: ReputationService,
+    private readonly rank: RankService | null = null,
     private readonly now: () => number = Date.now,
   ) {}
+
+  /** Mejoras del rango de un Emperador (más contratos a la vez, más ofertas, más recompensa). */
+  private async perks(emperorId: string) {
+    const xp = this.rank ? await this.rank.of(emperorId) : 0;
+    return rankPerks(rankOf(xp).index);
+  }
 
   /** Día de juego (las ofertas cambian al pasar de uno a otro). */
   private day(now: number): number {
     return Math.floor((now * this.config.TIME_SCALE) / DAY_MS);
   }
 
-  /** Ofertas del día para un Emperador (las mismas cada vez que se piden ese día). */
-  offers(emperorId: string, now = this.now()): ContractOffer[] {
+  /**
+   * Ofertas del día para un Emperador (las mismas cada vez que se piden ese día). Las mejoras del rango
+   * añaden ofertas al final (las primeras no cambian) y suben la recompensa en créditos.
+   */
+  offers(emperorId: string, now = this.now(), perks = rankPerks(0)): ContractOffer[] {
     const day = this.day(now);
     const next = rng(`${emperorId}:${day}`);
     const total = KINDS.reduce((n, k) => n + CONTRACTS.kinds[k].weight, 0);
     const out: ContractOffer[] = [];
-    for (let i = 0; i < CONTRACTS.offersPerDay; i++) {
+    for (let i = 0; i < CONTRACTS.offersPerDay + perks.contractOffers; i++) {
       let roll = next() * total;
       let kind: Kind = KINDS[0]!;
       for (const k of KINDS) {
@@ -81,7 +98,8 @@ export class ContractService {
       const def = CONTRACTS.kinds[kind];
       const tier = Math.min(def.targets.length - 1, Math.floor(next() * def.targets.length));
       const target = def.targets[tier]!;
-      out.push({ id: `${day}:${i}`, kind, target, credits: Math.round(target * def.creditsPer), reputation: def.reputationPerTier * (tier + 1), hours: def.hours });
+      const credits = Math.round(target * def.creditsPer * (1 + perks.contractRewardPct / 100));
+      out.push({ id: `${day}:${i}`, kind, target, credits, reputation: def.reputationPerTier * (tier + 1), hours: def.hours });
     }
     return out;
   }
@@ -93,10 +111,11 @@ export class ContractService {
     const rows = await this.db.select().from(contracts).where(eq(contracts.emperorId, emperorId)).orderBy(desc(contracts.acceptedAt)).limit(30);
     const taken = new Set(rows.map((r) => r.offerId));
     const day = this.day(now);
+    const perks = await this.perks(emperorId);
     return {
-      offers: this.offers(emperorId, now).filter((o) => !taken.has(o.id)),
+      offers: this.offers(emperorId, now, perks).filter((o) => !taken.has(o.id)),
       list: rows.map(toContract),
-      maxActive: CONTRACTS.maxActive,
+      maxActive: CONTRACTS.maxActive + perks.contractSlots,
       refreshAt: Math.ceil(((day + 1) * DAY_MS) / this.config.TIME_SCALE),
     };
   }
@@ -111,14 +130,15 @@ export class ContractService {
 
   async accept(emperorId: string, offerId: string): Promise<{ ok: true } | { ok: false; error: CommandError }> {
     const now = this.now();
-    const offer = this.offers(emperorId, now).find((o) => o.id === offerId);
+    const perks = await this.perks(emperorId);
+    const offer = this.offers(emperorId, now, perks).find((o) => o.id === offerId);
     if (!offer) return { ok: false, error: "unknown_contract" };
     await this.expire(emperorId, now);
     const [{ n } = { n: 0 }] = await this.db
       .select({ n: sql<number>`count(*)::int` })
       .from(contracts)
       .where(and(eq(contracts.emperorId, emperorId), eq(contracts.status, "active")));
-    if (n >= CONTRACTS.maxActive) return { ok: false, error: "too_many_contracts" };
+    if (n >= CONTRACTS.maxActive + perks.contractSlots) return { ok: false, error: "too_many_contracts" };
     const rows = await this.db
       .insert(contracts)
       .values({ emperorId, offerId, kind: offer.kind, target: offer.target, credits: offer.credits, reputation: offer.reputation, expiresAt: new Date(now + offer.hours * 3_600_000) })
@@ -141,7 +161,7 @@ export class ContractService {
    * Avanza los contratos en curso de este tipo; los que llegan a su objetivo se
    * cumplen y pagan (créditos a la cartera y reputación). Devuelve si cambió algo.
    */
-  async progress(emperorId: string, kind: ContractKind, amount: number): Promise<{ changed: boolean; completed: Contract[] }> {
+  async progress(emperorId: string, kind: ContractKind, amount: number): Promise<{ changed: boolean; completed: Contract[]; rank?: { xp: number; up: boolean } }> {
     if (!(amount > 0)) return { changed: false, completed: [] };
     const now = this.now();
     return this.db.transaction(async (tx: Tx) => {
@@ -153,6 +173,7 @@ export class ContractService {
       const live = active.filter((r) => r.expiresAt.getTime() >= now);
       if (live.length === 0) return { changed: false, completed: [] };
       const completed: Contract[] = [];
+      let xp = 0;
       for (const r of live) {
         const progress = Math.min(r.target, r.progress + amount);
         const done = progress >= r.target;
@@ -162,12 +183,16 @@ export class ContractService {
           .where(eq(contracts.id, r.id))
           .returning();
         if (done && row) {
+          // Sin cartera aún (nunca se ha conectado desde que se creó), el pago se perdería: se crea antes.
+          if (completed.length === 0) await this.humanity.recompute(tx, emperorId, now);
           await this.humanity.credit(tx, emperorId, r.credits, "contract", `contract:${r.id}`);
           await this.reputation.add(emperorId, r.reputation, tx);
+          xp += RANK_XP.contractPerTier * tierOf(r.kind as Kind, r.target);
           completed.push(toContract(row));
         }
       }
-      return { changed: true, completed };
+      const rank = xp > 0 && this.rank ? await this.rank.add(emperorId, xp, tx) : null;
+      return { changed: true, completed, ...(rank ? { rank } : {}) };
     });
   }
 

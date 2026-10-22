@@ -1,3 +1,4 @@
+import { RANK_XP } from "@imperium/content";
 import cookie from "@fastify/cookie";
 import { ContractService } from "./contract/service";
 import Fastify from "fastify";
@@ -28,6 +29,7 @@ import { rankingRoutes } from "./ranking/routes";
 import { ResearchService } from "./research/service";
 import { researchRoutes } from "./research/routes";
 import { ReputationService } from "./reputation/service";
+import { RankService } from "./rank/service";
 import { CrisisService } from "./crisis/service";
 import { gateRoutes } from "./gate/routes";
 import { MarketService } from "./market/service";
@@ -143,7 +145,13 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   research.setWallet(humanity);
   const reputation = new ReputationService(deps.db, app.log);
   // Contratos: el progreso lo empujan descubrimientos, derribos de Carroñeros y minería; al cumplirse, pagan.
-  const contracts = new ContractService(deps.db, config, humanity, reputation);
+  // Rango: experiencia por esos mismos sucesos y por cada contrato cumplido (sus mejoras cambian el tablero).
+  const rank = new RankService(deps.db, app.log);
+  const contracts = new ContractService(deps.db, config, humanity, reputation, rank);
+  const publishRank = async (emperorId: string, up: boolean) => {
+    await hub.publishRank(emperorId);
+    if (up) await hub.publishContracts(emperorId);
+  };
   const pushContract = (emperorId: string, kind: "hunt" | "explore" | "mine", amount: number) =>
     void contracts
       .progress(emperorId, kind, amount)
@@ -151,8 +159,25 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
         if (!r.changed) return;
         await hub.publishContracts(emperorId);
         if (r.completed.length) await hub.publishWallet(emperorId);
+        if (r.rank) await publishRank(emperorId, r.rank.up);
       })
       .catch((err: unknown) => app.log.error(err, "Error en el progreso de un contrato"));
+  /** Un suceso que cuenta para los contratos y da experiencia (`RANK_XP`). */
+  let minedXp = new Map<string, number>();
+  const deed = (emperorId: string, kind: "hunt" | "explore" | "mine", amount: number) => {
+    pushContract(emperorId, kind, amount);
+    let xp = 0;
+    if (kind === "hunt") xp = RANK_XP.pirateKill * amount;
+    else if (kind === "explore") xp = RANK_XP.discovery * amount;
+    else {
+      // El mineral llega en tandas pequeñas: se acumula hasta completar puntos enteros.
+      const total = (minedXp.get(emperorId) ?? 0) + amount;
+      xp = Math.floor(total / RANK_XP.minedPerXp);
+      minedXp.set(emperorId, total - xp * RANK_XP.minedPerXp);
+      if (minedXp.size > 10_000) minedXp = new Map();
+    }
+    if (xp > 0) rank.addLater(emperorId, xp, (r) => void publishRank(emperorId, r.up).catch((err: unknown) => app.log.error(err, "Error al enviar el rango")));
+  };
   humanity.reputation = reputation;
   const crisis = new CrisisService(deps.db);
   colonies.crisis = crisis;
@@ -179,7 +204,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   aiEmperors.sieges = sieges;
   const hub = new Hub(emperors, fleets, social, discoveries, colonies, wars, humanity, app.log, config.TIME_SCALE);
   hub.contracts = contracts;
-  hub.onDiscovered = (emperorId, n) => pushContract(emperorId, "explore", n);
+  hub.rank = rank;
+  hub.onDiscovered = (emperorId, n) => deed(emperorId, "explore", n);
   // Nave del Emperador fuera del pilotaje (aparcada) y disposición de los sistemas, que
   // depende de su detalle secreto.
   const flagships = new FlagshipService(deps.db, config, (summary) => discoveries.detail(summary), colonies);
@@ -188,8 +214,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   fleets.layoutOf = (systemId) => flagships.layout(systemId);
   const space = new SpaceService(flagships, emperors, social, app.log);
   space.onReputation = (emperorId, delta) => reputation.addLater(emperorId, delta);
-  space.onPirateKill = (emperorId) => pushContract(emperorId, "hunt", 1);
-  space.onMined = (emperorId, amount) => pushContract(emperorId, "mine", amount);
+  space.onPirateKill = (emperorId) => deed(emperorId, "hunt", 1);
+  space.onMined = (emperorId, amount) => deed(emperorId, "mine", amount);
   space.crisis = crisis;
   emperors.crisis = crisis;
   fleets.crisis = crisis;
@@ -469,6 +495,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   app.decorate("aliens", aliens);
   app.decorate("aiEmperors", aiEmperors);
   app.decorate("sieges", sieges);
+  app.decorate("contracts", contracts);
+  app.decorate("rank", rank);
   app.decorate("lineage", lineage);
   app.decorate("mercenaries", mercenaries);
   app.decorate("wars", wars);
@@ -491,5 +519,7 @@ declare module "fastify" {
     lineage: LineageService;
     wars: WarService;
     mercenaries: MercenaryService;
+    contracts: ContractService;
+    rank: RankService;
   }
 }

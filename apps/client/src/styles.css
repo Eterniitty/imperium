@@ -1152,3 +1152,17 @@ button.legend-title { background: none; border: none; padding: 0; width: 100%; t
 .contract-kind { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
 .contract-progress { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
 .contract-progress span { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--gold)); transition: width 0.3s; }
+
+/* Rango del Emperador (pestaña de la ventana de contratos). */
+.rank-head { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid rgba(232, 182, 76, 0.3); border-radius: 6px; background: rgba(232, 182, 76, 0.05); }
+.rank-title { font-size: 18px; letter-spacing: 0.06em; color: var(--gold); }
+.rank-tab h3 { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+.rank-perks { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 2px; }
+.rank-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.rank-list li { display: grid; grid-template-columns: 16px minmax(0, 1.2fr) 56px minmax(0, 2fr); gap: 8px; align-items: baseline; padding: 4px 6px; border-radius: 4px; }
+.rank-list li.current { background: rgba(232, 182, 76, 0.1); }
+.rank-list li.current .rank-name { color: var(--gold); }
+.rank-list li.reached .rank-name { color: var(--text); }
+.rank-list li:not(.current):not(.reached) { opacity: 0.7; }
+.rank-mark { color: var(--gold); text-align: center; }
+.rank-perk { color: var(--muted); }

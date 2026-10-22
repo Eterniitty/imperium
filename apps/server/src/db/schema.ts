@@ -89,6 +89,8 @@ export const emperors = pgTable("emperors", {
   kind: text("kind").notNull().default("player"),
   /** Reputación ante la humanidad (`REPUTATION`). */
   reputation: doublePrecision("reputation").notNull().default(0),
+  /** Experiencia del rango del Emperador (`RANKS`; no se pierde al morir). */
+  xp: integer("xp").notNull().default(0),
   /** Tecnología investigada (`TECH_TREES` → nivel). */
   tech: jsonb("tech").$type<Record<string, number>>().notNull().default({}),
   /** Investigación en marcha: rama, nivel al que llega y cuándo termina (ms). */

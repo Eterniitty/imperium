@@ -1,4 +1,5 @@
 import type { FastifyBaseLogger } from "fastify";
+import type { RankService } from "../rank/service";
 import type { ContractService } from "../contract/service";
 import { distance, PROTOCOL_VERSION, type CommandError, type DeltaOp, type Emperor, type EmperorView, type Probe, type ServerMessage, type ShipDesignSnapshot, type Topic } from "@imperium/shared";
 import { INTEREST } from "@imperium/content";
@@ -77,6 +78,8 @@ export class Hub {
   probes: ProbeService | null = null;
   /** Tablero de contratos (tema `me`, `contracts.all`). */
   contracts: ContractService | null = null;
+  /** Rango del Emperador (tema `me`, `rank`). */
+  rank: RankService | null = null;
   /** Nuevos descubrimientos de un Emperador (contratos de exploración). */
   onDiscovered: ((emperorId: string, count: number) => void) | null = null;
   /**
@@ -159,7 +162,7 @@ export class Hub {
       if (topic === "emperors") {
         await this.emperorsSnapshot(client);
       } else {
-        const [fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes, contracts] = await Promise.all([
+        const [fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes, contracts, rank] = await Promise.all([
           this.fleets.byEmperor(client.emperorId),
           this.discoveries.list(client.emperorId),
           this.colonies.list(client.emperorId),
@@ -171,6 +174,7 @@ export class Hub {
           this.lineage ? this.lineage.status(client.emperorId) : Promise.resolve(null),
           this.probes ? this.probes.list(client.emperorId) : Promise.resolve([]),
           this.contracts ? this.contracts.view(client.emperorId) : Promise.resolve(null),
+          this.rank ? this.rank.of(client.emperorId).then((xp) => ({ xp })) : Promise.resolve(null),
         ]);
         if (!this.clients.has(client) || !humans || !wallet) return;
         client.send({
@@ -178,7 +182,7 @@ export class Hub {
           topic,
           seq: this.meSeq.get(client.emperorId) ?? 0,
           serverTime: this.now(),
-          data: { fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes, contracts },
+          data: { fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes, contracts, rank },
         });
       }
       client.subscribed.add(topic);
@@ -261,6 +265,15 @@ export class Hub {
   publishFleetGone(emperorId: string, fleetId: string): Promise<void> {
     return this.enqueue(async () => {
       this.send("me", this.nextMeSeq(emperorId), [{ path: `fleets.${fleetId}`, v: null }], (c) => c.emperorId === emperorId);
+    });
+  }
+
+  /** Envía a su dueño su experiencia (rango). */
+  publishRank(emperorId: string): Promise<void> {
+    return this.enqueue(async () => {
+      if (!this.rank) return;
+      const xp = await this.rank.of(emperorId);
+      this.send("me", this.nextMeSeq(emperorId), [{ path: "rank", v: { xp } }], (c) => c.emperorId === emperorId);
     });
   }
 

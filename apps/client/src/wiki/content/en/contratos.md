@@ -9,7 +9,7 @@
 - Every **game day** you get new offers, just for you. The ones you don't accept disappear when the day changes.
 - You can only hold a limited number of contracts at a time.
 - Accepting one starts its **deadline**. The server counts progress from what you already do in the game, even with the tab closed: a fleet or a probe that discovers a system counts.
-- When you complete it you get the **credits** in your wallet and **reputation** with humanity (see [Goals](/wiki/metas#reputation)).
+- When you complete it you get the **credits** in your wallet, **reputation** with humanity (see [Goals](/wiki/metas#reputation)) and **experience** for your [rank](/wiki/rango), which in turn gives more slots, more offers and bigger rewards.
 - If the deadline runs out, it **expires** with no reward. You can **abandon** it whenever you like, also with no reward, to free the slot.
 
 ## Kinds
@@ -21,4 +21,4 @@
 - **Mining**: the ore you extract with the laser in deep space counts (see [Deep space and mining](/wiki/espacio-profundo)).
 
 > [!dev]
-> More kinds are coming (resource delivery and rescue), and contracts will give experience for the Emperor's rank.
+> More kinds are coming (resource delivery and rescue).

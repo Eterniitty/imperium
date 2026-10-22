@@ -193,6 +193,11 @@ export interface ContractsView {
   refreshAt: number;
 }
 
+/** Rango del Emperador (tema `me`, `rank`): su experiencia; el rango y las mejoras salen de `RANKS` (`@imperium/content`). */
+export interface RankView {
+  xp: number;
+}
+
 /** Táctica de una flota en las batallas por rondas (efectos en `FLEET_TACTICS` de `@imperium/content`). */
 export type FleetTactic = "balanced" | "aggressive" | "defensive" | "focus";
 

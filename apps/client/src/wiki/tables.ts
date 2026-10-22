@@ -12,6 +12,9 @@ import {
   AI_EMPERORS,
   CONTRACTS,
   type ContractKind,
+  RANKS,
+  RANK_XP,
+  type RankPerk,
   AI_PERSONALITIES,
   type AiPersonality,
   ALIEN_AI,
@@ -136,6 +139,15 @@ function cost(t: T, locale: Locale, c: Partial<StockAmounts>): string {
 }
 
 /** Tabla de dos columnas «concepto · valor». */
+/** Mejoras de un rango, en una línea. */
+function rankPerkText(t: T, p: RankPerk): string {
+  const out: string[] = [];
+  if (p.contractSlots) out.push(t("rank.perk.contractSlots", { n: p.contractSlots }));
+  if (p.contractOffers) out.push(t("rank.perk.contractOffers", { n: p.contractOffers }));
+  if (p.contractRewardPct) out.push(t("rank.perk.contractRewardPct", { n: p.contractRewardPct }));
+  return out.join(" · ");
+}
+
 function kv(t: T, rows: Array<[I18nKey, string]>): GenTable {
   return { head: [t("wiki.col.concept"), t("wiki.col.value")], rows: rows.map(([k, v]) => [t(k), v]) };
 }
@@ -278,6 +290,22 @@ export const GEN_TABLES: Record<string, Builder> = {
     head: [t("wiki.col.concept"), t("wiki.col.value")],
     rows: (Object.keys(PRESTIGE) as MetaStat[]).map((k) => [t(`ranking.stat.${k}`, { n: num(locale, PRESTIGE[k]) }), num(locale, PRESTIGE[k])]),
     numeric: [1],
+  }),
+
+  rangos: (t, locale) => ({
+    head: [t("wiki.col.rank"), t("wiki.col.xp"), t("wiki.col.perk")],
+    rows: RANKS.map((r) => [t(`rank.title.${r.id}` as I18nKey), num(locale, r.xp), r.perk ? rankPerkText(t, r.perk) : "—"]),
+    numeric: [1],
+  }),
+
+  "rango-experiencia": (t) => ({
+    head: [t("rank.how")],
+    rows: [
+      [t("rank.src.contract", { n: RANK_XP.contractPerTier })],
+      [t("rank.src.pirate", { n: RANK_XP.pirateKill })],
+      [t("rank.src.discovery", { n: RANK_XP.discovery })],
+      [t("rank.src.mine", { n: RANK_XP.minedPerXp })],
+    ],
   }),
 
   "contratos-reglas": (t, locale) =>

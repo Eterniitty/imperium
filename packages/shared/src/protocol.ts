@@ -3,7 +3,7 @@
  * docs/arquitectura.md §8. Los esquemas Zod de lo que envía el cliente están en
  * `schemas.ts`.
  */
-import type { Battle, Cargo, Colony, ContractsView, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, FleetTactic, Probe, HeirDoctrineId, LineageStatus, OrderSide, Siege, Stock, StockId, Wallet } from "./api";
+import type { Battle, Cargo, Colony, ContractsView, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, FleetTactic, Probe, HeirDoctrineId, RankView, LineageStatus, OrderSide, Siege, Stock, StockId, Wallet } from "./api";
 import type { DeepRegionView } from "./deepspace";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
@@ -39,7 +39,7 @@ export interface TopicData {
   /** `wallet`: la cartera de créditos (economía de la humanidad). */
   /** `sieges`: asedios propios y a colonias propias (Fase 9b), en curso y acabados hace poco. */
   /** `lineage`: muerte, gestación, Cunas y Herederos (Fase 10). */
-  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans; battles: Battle[]; wallet: Wallet; flagship: FlagshipStatus | null; sieges: Siege[]; lineage: LineageStatus | null; probes: Probe[]; contracts?: ContractsView | null };
+  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans; battles: Battle[]; wallet: Wallet; flagship: FlagshipStatus | null; sieges: Siege[]; lineage: LineageStatus | null; probes: Probe[]; contracts?: ContractsView | null; rank?: RankView | null };
 }
 
 /** Emperador visto por los demás jugadores: añade si está conectado. */
@@ -383,7 +383,8 @@ export type DeltaOp =
   /** Linaje del Emperador propio (Fase 10): muerte y gestación, Cunas, Herederos (el id es el suyo). */
   | { path: `lineage.${string}`; v: LineageStatus }
   | { path: `probes.${string}`; v: Probe | null }
-  | { path: "contracts.all"; v: ContractsView };
+  | { path: "contracts.all"; v: ContractsView }
+  | { path: "rank"; v: RankView };
 
 export type ServerMessage =
   /**

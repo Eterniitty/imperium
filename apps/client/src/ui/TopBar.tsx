@@ -11,6 +11,8 @@ import { EmpireButton } from "./EmpireWindow";
 import { ContractsButton } from "./ContractsWindow";
 import { HudIcon } from "./hudIcons";
 import { useWorld } from "../net/world";
+import { rankOf } from "@imperium/content";
+import type { I18nKey } from "@imperium/shared";
 import { fmtCredits, fmtInt, fmtRate, liveCredits, liveHumans } from "./colonies";
 
 function fmt(n: number): string {
@@ -27,6 +29,8 @@ export function TopBar() {
   const selected = useGame((s) => s.selected);
   const flight = useGame((s) => s.flight);
   const emperor = useAuth((s) => s.emperor);
+  const rankXp = useWorld((s) => s.rank?.xp ?? null);
+  const rankTitle = rankXp === null ? null : t(`rank.title.${rankOf(rankXp).rank.id}` as I18nKey);
   const humans = useWorld((s) => s.humans);
   const wallet = useWorld((s) => s.wallet);
   const keys = useKeyLabels();
@@ -60,7 +64,10 @@ export function TopBar() {
 
       {emperor && (
         <button className="stat stat-button" onClick={() => engineRef.current?.goToEmperor()} title={t("emperor.goTo")}>
-          <span className="stat-label">{t("emperor.label")}</span>
+          <span className="stat-label">
+            {t("emperor.label")}
+            {rankTitle && <> · {rankTitle}</>}
+          </span>
           <span className="stat-value">{emperor.name}</span>
           {travel && (
             <span className="stat-sub">

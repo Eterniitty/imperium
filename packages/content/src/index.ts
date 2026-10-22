@@ -20,3 +20,4 @@ export * from "./manufacturing";
 export * from "./metas";
 export * from "./tech";
 export * from "./contracts";
+export * from "./rank";

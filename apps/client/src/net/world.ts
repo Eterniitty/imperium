@@ -22,7 +22,10 @@ import {
   type Wallet,
   type WsTicketResponse,
   type ContractsView,
+  type RankView,
+  translate,
 } from "@imperium/shared";
+import { rankOf } from "@imperium/content";
 import { api, authStore } from "../state/auth";
 import { gameStore } from "../state/store";
 import { factionName } from "../ui/aliens";
@@ -59,6 +62,8 @@ export interface WorldState {
   probes: Record<string, Probe>;
   /** Tablero de contratos (ofertas, en curso e historial), o null si aún no llegó. */
   contracts: ContractsView | null;
+  /** Rango del Emperador: su experiencia (el rango sale de `RANKS`). */
+  rank: RankView | null;
   /** Linaje propio (Fase 10): muerte y gestación, Cunas, Herederos. */
   lineage: LineageStatus | null;
   /** Escala del tiempo de juego del servidor (para estimar duraciones de viaje). */
@@ -81,6 +86,7 @@ export const worldStore = createStore<WorldState>()(() => ({
   sieges: {},
   probes: {},
   contracts: null,
+  rank: null,
   lineage: null,
   timeScale: 1,
   myEmperorId: null,
@@ -127,7 +133,7 @@ class Connection {
     this.ws?.close(1000, "bye");
     this.ws = null;
     this.failPending();
-    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, battles: {}, wallet: null, flagship: null, sieges: {}, probes: {}, contracts: null, lineage: null, myEmperorId: null });
+    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, battles: {}, wallet: null, flagship: null, sieges: {}, probes: {}, contracts: null, rank: null, lineage: null, myEmperorId: null });
     resetSpace();
   }
 
@@ -227,7 +233,7 @@ class Connection {
           for (const x of msg.data.sieges) sieges[x.id] = x;
           const probes: Record<string, Probe> = {};
           for (const p of msg.data.probes ?? []) probes[p.id] = p;
-          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans, battles, wallet: msg.data.wallet, flagship: msg.data.flagship, sieges, lineage: msg.data.lineage, probes, contracts: msg.data.contracts ?? null });
+          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans, battles, wallet: msg.data.wallet, flagship: msg.data.flagship, sieges, lineage: msg.data.lineage, probes, contracts: msg.data.contracts ?? null, rank: msg.data.rank ?? null });
         }
         return;
       }
@@ -251,7 +257,13 @@ class Connection {
         let lineage = state.lineage;
         let probes = state.probes;
         let contracts = state.contracts;
+        let rank = state.rank;
         for (const op of msg.ops) {
+          if (op.path === "rank") {
+            noticeRank(rank, op.v as RankView);
+            rank = op.v as RankView;
+            continue;
+          }
           const dot = op.path.indexOf(".");
           const kind = op.path.slice(0, dot) as "emperors" | "fleets" | "discovered" | "colonies" | "humans" | "battles" | "wallet" | "flagship" | "sieges" | "lineage" | "probes" | "contracts";
           const id = op.path.slice(dot + 1);
@@ -295,7 +307,7 @@ class Connection {
             else delete fleets[id];
           }
         }
-        worldStore.setState({ emperors, fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes, contracts });
+        worldStore.setState({ emperors, fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes, contracts, rank });
         this.syncOwn();
         return;
       }
@@ -431,6 +443,15 @@ export const connection = new Connection();
  * toma el planeta o se rompe el asedio.
  */
 /** Aviso al cumplirse un contrato (llega con su recompensa ya pagada). */
+/** Al subir de rango: aviso con el título nuevo. */
+function noticeRank(prev: RankView | null, next: RankView): void {
+  if (!prev) return;
+  const after = rankOf(next.xp);
+  if (after.index <= rankOf(prev.xp).index) return;
+  const st = gameStore.getState();
+  st.notify("rank.up", { title: translate(st.locale, `rank.title.${after.rank.id}` as I18nKey) });
+}
+
 function noticeContracts(prev: ContractsView | null, next: ContractsView): void {
   if (!prev) return;
   const before = new Map(prev.list.map((c) => [c.id, c.status]));
