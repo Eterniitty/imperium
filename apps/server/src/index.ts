@@ -18,6 +18,8 @@ await app.aliens.ensure();
 // Fase 11: Emperadores humanos de la IA (los que falten) para que el universo no esté vacío.
 const aiCreated = await app.aiEmperors.ensure(config.AI_EMPERORS);
 if (aiCreated > 0) app.log.info({ aiEmperors: aiCreated }, "Emperadores de la IA creados");
+// Crisis galácticas: la activa y el siguiente `crisis.tick`.
+await app.crisis.init();
 app.addHook("onClose", () => database.close());
 
 // Cierre ordenado: systemd envía SIGTERM al reiniciar o parar el servicio.

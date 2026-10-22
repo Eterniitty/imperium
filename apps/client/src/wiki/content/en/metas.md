@@ -24,5 +24,11 @@ Your **reputation with humanity** goes from −100 to 100 and shows in the Ranki
 
 The ranking shows the **name** of public Emperors, AI ones, your mutual companions and yourself. The rest appear as **Hidden Emperor**, with their prestige but no name (see [Companions](/wiki/companeros)). The table updates at most once a minute.
 
+## Galactic crises
+
+From time to time the whole galaxy goes through a **crisis** lasting a few hours, announced in the top bar (⚠). Between one and the next there are hours of calm.
+
+{{tabla:crisis}}
+
 > [!dev]
-> **In development**: galactic crises, victory and defeat with legacy.
+> **In development**: victory and defeat with legacy.

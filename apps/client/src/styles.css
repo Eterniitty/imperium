@@ -968,3 +968,6 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .tech-pips { display: flex; gap: 4px; }
 .tech-pips span { width: 18px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); }
 .tech-pips span.on { background: linear-gradient(90deg, #e8b64c, #ffd27a); }
+.crisis-chip { font-size: 12px; color: #ffb36b; border: 1px solid rgba(255, 179, 107, 0.45); background: rgba(255, 140, 60, 0.08); padding: 3px 8px; border-radius: 999px; white-space: nowrap; animation: crisis-pulse 3s ease-in-out infinite; }
+@keyframes crisis-pulse { 50% { border-color: rgba(255, 179, 107, 0.85); } }
+@media (prefers-reduced-motion: reduce) { .crisis-chip { animation: none; } }

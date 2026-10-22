@@ -24,5 +24,11 @@ Tu **reputación ante la humanidad** va de −100 a 100 y sale en la pestaña Cl
 
 En la clasificación se ve el **nombre** de los Emperadores públicos, de los de la IA, de tus compañeros mutuos y el tuyo. Los demás salen como **Emperador oculto**, con su prestigio pero sin nombre (ver [Compañeros](/wiki/companeros)). La tabla se actualiza como mucho una vez por minuto.
 
+## Crisis galácticas
+
+De vez en cuando la galaxia entera vive una **crisis** de unas horas, anunciada en la barra superior (⚠). Entre una y otra hay unas horas de calma.
+
+{{tabla:crisis}}
+
 > [!dev]
-> **En desarrollo**: crisis galácticas, victoria y derrota con legado.
+> **En desarrollo**: victoria y derrota con legado.

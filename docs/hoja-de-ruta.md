@@ -103,7 +103,7 @@ Informe completo en Claude Docs («Aeonarch — Plan de juego»). Cinco fases, c
 2. [x] **La galaxia contraataca** (21-10-2026, sin probar jugando): nivel de amenaza por facción («Te persigue» en Batallas), flotas de castigo (`ALIEN_AI.punish`), emboscadas en las salidas de salto (`PIRATE_AMBUSH`), incursiones a las rutas (`ROUTE_RAID`, evento `ai.raidEnd`), guaridas de Carroñeros (`SCAVENGER_LAIR`) y jefes Carroñeros (líderes de las flotas profundas).
 3. [x] **Aliados de verdad**: ✔ petición de ayuda (`HELP_CALL`), ✔ pactos con la IA (comerciantes y expansionistas aceptan ser compañeros: nunca hostiles), ✔ refuerzos de la milicia, ✔ mercenarios, ✔ reputación ante la humanidad (`REPUTATION`, `emperors.reputation`; decide los pactos con la IA).
 4. [ ] **Guerra que evoluciona**: ✔ tecnología por niveles (`TECH`, `ResearchService`, `/api/research`, pestaña «Investigación»; desbloquea piezas del Astillero), módulos de nave, armas nuevas, formaciones, comandantes, batallas de flotas en 3D.
-5. [ ] **Metas**: ✔ prestigio y clasificación (`PRESTIGE`, `GET /api/ranking`, pestaña «Clasificación»), ✔ objetivos de era (`ERA_GOALS`; llegar a Ónfalo); faltan crisis galácticas, victoria y derrota con legado.
+5. [ ] **Metas**: ✔ prestigio y clasificación (`PRESTIGE`, `GET /api/ranking`, pestaña «Clasificación»), ✔ objetivos de era (`ERA_GOALS`; llegar a Ónfalo); ✔ crisis galácticas (`CRISES`, `CrisisService`, evento `crisis.tick`, `/api/crisis`, aviso en la barra superior); falta victoria y derrota con legado.
 
 ## Rediseño de la interfaz y editor de naves (petición del 21-10-2026)
 

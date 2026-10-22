@@ -1,3 +1,4 @@
+import { CrisisBanner } from "./CrisisBanner";
 import { useState, type FormEvent } from "react";
 import { engineRef } from "../engineRef";
 import { useAuth } from "../state/auth";
@@ -153,7 +154,8 @@ export function TopBar() {
             </button>
           </div>
         )}
-        <ServerStatus />
+        <CrisisBanner />
+      <ServerStatus />
         {/* La Wiki es una página aparte: en otra pestaña, para no perder la partida. */}
         <a className="btn btn-link" href="/wiki/" target="_blank" rel="noopener" title={t("wiki.openTitle")}>
           {t("wiki.open")}

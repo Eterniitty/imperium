@@ -167,6 +167,9 @@ export class ColonyService {
     this.bonuses = get;
   }
 
+  /** Crisis galácticas: el auge industrial acorta lo que se encarga. */
+  crisis: { factor(effect: "buildTime"): number } | null = null;
+
   /** Cartera de créditos (`HumanityService`): los diseños del Astillero cuestan créditos además de recursos. */
   private wallet: Wallet | null = null;
   setWallet(wallet: Wallet): void {
@@ -651,7 +654,7 @@ export class ColonyService {
       const start = queue.length === 0;
       // Tecnología de industria: se construye antes (también lo que espera en la cola, al empezar).
       const [ind] = await tx.select({ tech: emperors.tech }).from(emperors).where(eq(emperors.id, emperorId)).limit(1);
-      const finishAt = now + realDurationMs(hours * industryFactor(ind?.tech as TechLevels | undefined), this.timeScale);
+      const finishAt = now + realDurationMs(hours * industryFactor(ind?.tech as TechLevels | undefined) * (this.crisis?.factor("buildTime") ?? 1), this.timeScale);
       const [build] = await tx
         .insert(colonyBuilds)
         .values({ colonyId: row.id, kind, itemId, design, startedAt: start ? new Date(now) : null, finishAt: start ? new Date(finishAt) : null })

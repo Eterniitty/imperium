@@ -273,6 +273,13 @@ export type ApiErrorCode =
 export const SHIP_DESIGNS_MAX = 30;
 export const SHIP_DESIGN_NAME_MAX = 40;
 
+// --- Crisis galácticas ---
+
+/** Respuesta de `GET /api/crisis`. */
+export interface CrisisStatus {
+  active: { id: string; endsAt: number } | null;
+}
+
 // --- Tecnología por niveles ---
 
 /** Respuesta de `GET /api/research`: niveles por rama y la investigación en marcha. */

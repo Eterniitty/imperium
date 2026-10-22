@@ -56,6 +56,8 @@ import {
   PRESTIGE,
   TECH,
   TECH_TREES,
+  CRISES,
+
   type MetaStat,
   type PartCost,
   type PartDef,
@@ -253,6 +255,11 @@ export const GEN_TABLES: Record<string, Builder> = {
         ])
         .filter((r) => r[2]),
     ),
+  }),
+
+  crisis: (t, locale) => ({
+    head: [t("wiki.col.concept"), t("wiki.col.effect"), t("wiki.col.time")],
+    rows: CRISES.map((c) => [t(`crisis.${c.id}` as I18nKey), t(`crisis.${c.id}.hint` as I18nKey).replace(/^[^:]*: /, ""), t("colony.costHours", { h: num(locale, c.hours) })]),
   }),
 
   prestigio: (t, locale) => ({

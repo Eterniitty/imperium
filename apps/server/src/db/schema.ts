@@ -319,6 +319,14 @@ export const scheduledEvents = pgTable(
   (t) => [index("scheduled_events_due_at_idx").on(t.dueAt)],
 );
 
+/** Crisis galácticas (`CRISES`): cada fila es una, con su principio y su fin. */
+export const crises = pgTable("crises", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  kind: text("kind").notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+  endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+});
+
 /**
  * Compañeros: cada fila dice que `emperorId` ha añadido a `allyId`. Son
  * compañeros cuando la relación existe en los dos sentidos.

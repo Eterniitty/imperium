@@ -60,6 +60,9 @@ const ARRIVAL_TOLERANCE_MS = 1_000;
 
 /** Flotas y naves de los Emperadores. */
 export class FleetService {
+  /** Crisis galácticas (la tormenta cuántica encarece los viajes). */
+  crisis: { factor(effect: "quantumFuel"): number } | null = null;
+
   private readonly seed: number;
 
   constructor(
@@ -317,7 +320,7 @@ export class FleetService {
       const tech = (owner?.tech ?? {}) as TechLevels;
       if (owner?.kind === "player") {
         // Tecnología del motor cuántico: el mismo combustible llega más lejos.
-        const ly = distance(current.location.position, dest.position) / techBonus(tech, "quantum");
+        const ly = (distance(current.location.position, dest.position) / techBonus(tech, "quantum")) * (this.crisis?.factor("quantumFuel") ?? 1);
         if (current.ships.some((s) => s.fuel + 1e-6 < ly)) return { ok: false, error: "no_fuel_fleet" };
         for (const s of current.ships) await tx.update(ships).set({ fuel: Math.max(0, s.fuel - ly) }).where(eq(ships.id, s.id));
       }

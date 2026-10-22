@@ -52,6 +52,9 @@ export type DropResult = { ok: true; emperor: Emperor; regionId: string; discove
  * de la base de datos está en `@imperium/sim`.
  */
 export class EmperorService {
+  /** Crisis galácticas (la tormenta cuántica encarece los saltos). */
+  crisis: { factor(effect: "quantumFuel"): number } | null = null;
+
   private readonly seed: number;
   /** Velocidad de la nave del Emperador, ya multiplicada por la escala de tiempo. */
   private readonly speed: number;
@@ -203,7 +206,8 @@ export class EmperorService {
       const fuel = regenFuel(row.fuel, (now - row.fuelAt.getTime()) / 1000);
       // Cuenta de pruebas: el salto no gasta combustible.
       // Acoplada en una nodriza, la lleva su flota: tampoco gasta.
-      const cost = row.infiniteFuel || opts.withFleet ? 0 : quantumFuelCost(distance(current.location.position, dest.position));
+      // Tormenta cuántica (crisis galáctica): los saltos gastan más.
+      const cost = row.infiniteFuel || opts.withFleet ? 0 : Math.ceil(quantumFuelCost(distance(current.location.position, dest.position)) * (this.crisis?.factor("quantumFuel") ?? 1));
       if (cost > fuel) return { ok: false, error: "insufficient_fuel" };
 
       const arriveAt = opts.withFleet ? Math.max(now + 1000, opts.withFleet.arriveAt) : now + travelDurationMs(current.location.position, dest.position, this.speed);

@@ -937,7 +937,8 @@ export class SpaceService {
       const take = Math.min(want, left);
       // Primero la bodega (con la fila bloqueada): lo que quepa es lo que se extrae.
       const stored = await this.flagships.updateHold(m.emperorId, (hold) => {
-        const { hold: next, added } = addToHold(hold, miningYield(a.kind, take));
+        // Lluvia de mineral (crisis galáctica): rinde más.
+        const { hold: next, added } = addToHold(hold, miningYield(a.kind, take * (this.crisis?.factor("miningYield") ?? 1)));
         return added > 1e-6 ? { hold: next, result: { hold: next, added } } : null;
       });
       if (!stored) return fail("full");
@@ -1383,6 +1384,9 @@ export class SpaceService {
     }
   }
 
+  /** Crisis galácticas (oleada carroñera, lluvia de mineral). */
+  crisis: { factor(effect: "pirateRespawn" | "miningYield"): number } | null = null;
+
   /** Cambios de reputación (los guarda `ReputationService`). */
   onReputation: ((emperorId: string, delta: number) => void) | null = null;
 
@@ -1435,7 +1439,8 @@ export class SpaceService {
         });
         return;
       }
-      this.deadPirates.set(v.emperorId, this.now() + PIRATE_AI.respawnSec * 1000);
+      // Oleada carroñera (crisis galáctica): vuelven antes.
+      this.deadPirates.set(v.emperorId, this.now() + PIRATE_AI.respawnSec * 1000 * (this.crisis?.factor("pirateRespawn") ?? 1));
       return;
     }
     const clients = [...v.clients];

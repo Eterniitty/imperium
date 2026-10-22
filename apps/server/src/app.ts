@@ -27,6 +27,7 @@ import { rankingRoutes } from "./ranking/routes";
 import { ResearchService } from "./research/service";
 import { researchRoutes } from "./research/routes";
 import { ReputationService } from "./reputation/service";
+import { CrisisService } from "./crisis/service";
 import { gateRoutes } from "./gate/routes";
 import { MarketService } from "./market/service";
 import { inHumanCore } from "./emperor/world";
@@ -131,6 +132,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   research.setWallet(humanity);
   const reputation = new ReputationService(deps.db, app.log);
   humanity.reputation = reputation;
+  const crisis = new CrisisService(deps.db);
+  colonies.crisis = crisis;
   wars.setShieldFactor((systemId) => (inHumanCore(systemId) ? humanity.bonuses().coreShield : 1));
   const market = new MarketService(deps.db, colonies, humanity);
   // Fase 11: facciones alienígenas (territorio, flotas, comercio y diplomacia básica) con la misma tubería de órdenes.
@@ -160,6 +163,9 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   emperors.layoutOf = (systemId) => flagships.layout(systemId);
   const space = new SpaceService(flagships, emperors, social, app.log);
   space.onReputation = (emperorId, delta) => reputation.addLater(emperorId, delta);
+  space.crisis = crisis;
+  emperors.crisis = crisis;
+  fleets.crisis = crisis;
   space.onFlagship = (emperorId) => void hub.publishFlagship(emperorId);
   // Espacio profundo: contenido secreto de las regiones y minería de sus asteroides.
   space.deep = new DeepSpaceService(deps.db, config);
@@ -268,6 +274,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   await app.register(socialRoutes, { config, db: deps.db, emperors, social, hub });
   await app.register(rankingRoutes, { config, db: deps.db, emperors });
   await app.register(researchRoutes, { config, db: deps.db, emperors, research });
+  // Crisis galácticas: cualquiera puede ver la activa (la barra superior la anuncia).
+  app.get("/api/crisis", async () => crisis.status());
   await app.register(discoveryRoutes, { config, db: deps.db, emperors, discoveries });
   // Wiki editable por los administradores (ADMIN_EMAILS).
   const wiki = new WikiService(deps.db);
@@ -324,6 +332,10 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     if (found) return () => void hub.publishDiscovered(found.emperorId, found.systemIds);
   });
   // Fin de una construcción: instalación nueva o flota nueva con la nave construida.
+  worker.on("crisis.tick", async (tx) => {
+    const started = await crisis.tick(tx);
+    if (started) app.log.info({ crisis: started }, "Empieza una crisis galáctica");
+  });
   worker.on("research.done", async (tx, { emperorId }) => {
     await research.complete(tx, emperorId);
   });
@@ -420,6 +432,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   }
   app.decorate("eventWorker", worker);
   app.decorate("colonies", colonies);
+  app.decorate("crisis", crisis);
   app.decorate("humanity", humanity);
   app.decorate("market", market);
   app.decorate("aliens", aliens);
@@ -436,6 +449,7 @@ declare module "fastify" {
   interface FastifyInstance {
     eventWorker: EventWorker;
     colonies: ColonyService;
+    crisis: CrisisService;
     space: SpaceService;
     humanity: HumanityService;
     market: MarketService;

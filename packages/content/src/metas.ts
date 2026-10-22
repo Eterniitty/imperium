@@ -51,3 +51,27 @@ export const REPUTATION = {
   /** Reputación mínima para que un Emperador de la IA acepte un pacto, por personalidad. */
   aiPact: { merchant: -20, expansionist: 0, militarist: 40 } as Record<string, number>,
 } as const;
+
+/**
+ * Crisis galácticas: sucesos que cambian la galaxia entera unas horas y se
+ * anuncian a todos. Entre una y otra pasan `quietHours` horas.
+ */
+export type CrisisId = "quantum_storm" | "scavenger_surge" | "industrial_boom" | "ore_rain";
+export const CRISES: ReadonlyArray<{ id: CrisisId; hours: number; weight: number }> = [
+  /** Los saltos (del Emperador y de las flotas) gastan ×1,5 de combustible. */
+  { id: "quantum_storm", hours: 3, weight: 3 },
+  /** Los Carroñeros reaparecen en un tercio del tiempo. */
+  { id: "scavenger_surge", hours: 4, weight: 3 },
+  /** Todo lo que se encarga en las colonias tarda un 25 % menos. */
+  { id: "industrial_boom", hours: 4, weight: 2 },
+  /** La minería de asteroides rinde el doble. */
+  { id: "ore_rain", hours: 3, weight: 2 },
+];
+export const CRISIS = {
+  quietHours: 8,
+  /** Efectos (multiplicadores) de cada crisis. */
+  quantumFuel: 1.5,
+  pirateRespawn: 1 / 3,
+  buildTime: 0.75,
+  miningYield: 2,
+} as const;
