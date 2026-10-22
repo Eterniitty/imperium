@@ -1138,3 +1138,4 @@ button.legend-title { background: none; border: none; padding: 0; width: 100%; t
 .empire-pill-glyph { color: var(--gold); }
 .empire-btn.on { color: var(--gold); border-color: var(--gold); }
 .empire-short { color: #ff8a6a; }
+.inline-icon { vertical-align: -2px; }

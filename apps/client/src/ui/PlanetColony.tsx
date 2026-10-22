@@ -177,7 +177,7 @@ export function PlanetColony({ detail, planet, tab = "planet" }: { detail: StarS
                   setRenaming(true);
                 }}
               >
-                ✎ {t("colony.rename")}
+                {t("colony.rename")}
               </button>
             </div>
           )

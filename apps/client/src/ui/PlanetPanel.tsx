@@ -50,7 +50,7 @@ export function PlanetPanel() {
       {piloting && (
         <div className="planet-cruise">
           <button className="btn btn-small" onClick={() => engineRef.current?.cruiseTo("star")}>
-            ☀ {t("cruise.toStar")}
+            {t("cruise.toStar")}
           </button>
         </div>
       )}

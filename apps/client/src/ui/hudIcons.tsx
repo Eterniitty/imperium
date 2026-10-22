@@ -13,6 +13,19 @@ const PATHS = {
   gearNormal: "M4 15a8 8 0 0 1 16 0M12 15V7",
   gearFast: "M4 15a8 8 0 0 1 16 0M12 15l5-4",
   cruise: "M4 18L12 4l8 14-8-4z",
+  gear: "M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1",
+  gift: "M4 10h16v10H4zM3 7h18v3H3zM12 7v13M12 7c-2-4-6-3-5 0M12 7c2-4 6-3 5 0",
+  edit: "M4 20h4l11-11-4-4L4 16zM14 6l4 4",
+  fleet: "M5 20V4M5 5h11l-2 4 2 4H5",
+  colony: "M4 20V10l8-6 8 6v10M9 20v-6h6v6",
+  star: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2",
+  orbit: "M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM21 12c0 3-4 6-9 6s-9-3-9-6 4-6 9-6c3 0 6 1 7.5 3M18 6l2 3-3 1",
+  crown: "M3 18h18M4 16l2-9 4 4 2-6 2 6 4-4 2 9z",
+  labels: "M4 18L9 6l5 12M6 14h6M15 10h5M15 14h5M15 18h5",
+  territory: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z",
+  galaxy: "M12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM12 4c5 0 8 3 8 6M12 20c-5 0-8-3-8-6M20 14c0 3-3 6-8 6M4 10c0-3 3-6 8-6",
+  zoomSector: "M4 4h6v6H4zM14 14h6v6h-6zM10 10l4 4",
+  zoomGalaxy: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18",
   mothership: "M2 13l3-5h14l3 5-3 4H5zM8 8V5h8v3M7 13h10",
   follow: "M5 17l4-10 4 10-4-2zM13 13l3-7 3 7-3-1.5z",
   dock: "M4 9h6v6H4zM14 12h6M17 9l3 3-3 3",
@@ -32,9 +45,9 @@ const PATHS = {
 
 export type HudIconName = keyof typeof PATHS;
 
-export function HudIcon({ name, size = 18 }: { name: HudIconName; size?: number }) {
+export function HudIcon({ name, size = 18, className }: { name: HudIconName; size?: number; className?: string }) {
   return (
-    <svg className="hud-icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg className={className ? `hud-icon ${className}` : "hud-icon"} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d={PATHS[name]} />
     </svg>
   );

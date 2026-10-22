@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { HudIcon } from "./hudIcons";
 import { fleetName } from "./fleetName";
 import { getShipClass, type ShipClassId } from "@imperium/content";
 import { PLANET_NAME_MAX, PLANET_NAME_MIN, type Colony, type Fleet, type I18nKey } from "@imperium/shared";
@@ -86,7 +87,7 @@ export function FleetsPanel() {
                   >
                     <input autoFocus maxLength={64} value={gifting.to} placeholder={t("fleet.giftTo")} onChange={(e) => setGifting({ id: f.id, to: e.target.value })} onKeyDown={(e) => e.key === "Escape" && (e.stopPropagation(), setGifting(null))} />
                     <button className="btn btn-small" type="submit" disabled={!gifting.to.trim()}>
-                      🎁 {t("fleet.gift")}
+                      {t("fleet.gift")}
                     </button>
                     {renameError && <span className="auth-error small">{t(renameError, { min: PLANET_NAME_MIN, max: PLANET_NAME_MAX })}</span>}
                   </form>
@@ -102,7 +103,7 @@ export function FleetsPanel() {
                       setGifting({ id: f.id, to: "" });
                     }}
                   >
-                    🎁
+                    <HudIcon name="gift" size={14} />
                   </button>
                   <button
                     type="button"
@@ -114,7 +115,7 @@ export function FleetsPanel() {
                       setRenaming({ id: f.id, name: f.name ?? "" });
                     }}
                   >
-                    ✎
+                    <HudIcon name="edit" size={14} />
                   </button>
                   </>
                 )}
@@ -147,7 +148,7 @@ export function FleetsPanel() {
                   {/* Combustible: el alcance de la flota es el de la nave con menos. */}
                   {f.ships.length > 0 && (
                     <span className={fuelLow(f) ? "small fuel-low" : "muted small"} title={t("fleet.fuel")}>
-                      ⛽ {t("fleet.fuelRange", { ly: Math.floor(Math.min(...f.ships.map((s) => s.fuel))) })}
+                      <HudIcon name="fuel" size={12} className="inline-icon" /> {t("fleet.fuelRange", { ly: Math.floor(Math.min(...f.ships.map((s) => s.fuel))) })}
                     </span>
                   )}
                   {f.route && <span className="small route-tag">{t("logistics.onRoute")}</span>}

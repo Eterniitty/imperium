@@ -29,7 +29,7 @@ export function CrisisBanner() {
   if (!c || c.endsAt <= now) return null;
   return (
     <span className="crisis-chip hide-sm" title={t(`crisis.${c.id}.hint` as I18nKey)} role="status">
-      ⚠ {t(`crisis.${c.id}` as I18nKey)} · {formatDuration(c.endsAt - now)}
+      {t(`crisis.${c.id}` as I18nKey)} · {formatDuration(c.endsAt - now)}
     </span>
   );
 }

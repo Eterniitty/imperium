@@ -6,9 +6,9 @@ Your ships (except yours, the Emperor's) are grouped into **fleets** ("Fleet 1",
 
 > [!nota] Fleets are **only visible to their owner**. Other Emperors can only detect them in transit with their sensors (see [War](/wiki/guerra#contacts-and-interception)).
 
-You can **rename** each fleet with the ✎ pencil on its row in the fleets panel (empty: back to "Fleet N").
+You can **rename** each fleet with the pencil on its row (on hover) in the fleets panel (empty: back to "Fleet N").
 
-And you can **gift** it to another player with 🎁 (type their Emperor's name): it must be stopped and out of battle; it becomes theirs where it is, without route or commander.
+And you can **gift** it to another player with the gift button on its row (type their Emperor's name): it must be stopped and out of battle; it becomes theirs where it is, without route or commander.
 
 ## Travelling
 

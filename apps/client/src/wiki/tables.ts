@@ -208,15 +208,15 @@ function partEffect(locale: Locale, p: PartDef): string {
   if (s.powerMW) out.push(`${num(locale, s.powerMW)} MW`);
   if (s.thrustKN) out.push(`${num(locale, s.thrustKN)} kN`);
   if (s.riftLyPerHour) out.push(`${num(locale, s.riftLyPerHour)} a.l./h · ${num(locale, s.chargeSec ?? 0)} s`);
-  if (s.fuel) out.push(`⛽ ${num(locale, s.fuel)}`);
-  if (s.shield) out.push(`🛡 ${num(locale, s.shield)} (+${num(locale, s.shieldRegen ?? 0)}/s)`);
+  if (s.fuel) out.push(`${translate(locale, "hud.fuel")} ${num(locale, s.fuel)}`);
+  if (s.shield) out.push(`${translate(locale, "combat.shield")} ${num(locale, s.shield)} (+${num(locale, s.shieldRegen ?? 0)}/s)`);
   if (s.dps) out.push(`${num(locale, s.dps)} dps · ${num(locale, s.rangeM ?? 0)} m`);
-  if (s.humans) out.push(`👤 ${num(locale, s.humans)}`);
-  if (s.cargo) out.push(`📦 ${num(locale, s.cargo)}`);
-  if (s.fighters) out.push(`✈ ${num(locale, s.fighters)}`);
+  if (s.humans) out.push(`${translate(locale, "wiki.part.humans")} ${num(locale, s.humans)}`);
+  if (s.cargo) out.push(`${translate(locale, "wiki.part.cargo")} ${num(locale, s.cargo)}`);
+  if (s.fighters) out.push(`${translate(locale, "wiki.part.fighters")} ${num(locale, s.fighters)}`);
   if (s.scanLy) out.push(`${num(locale, s.scanLy)} a.l.`);
   if (s.hull) out.push(`+${num(locale, s.hull)}`);
-  if (s.crew) out.push(`👤 ${num(locale, s.crew)}`);
+  if (s.crew) out.push(`${translate(locale, "wiki.part.crew")} ${num(locale, s.crew)}`);
   if (p.drawMW) out.push(`−${num(locale, p.drawMW)} MW`);
   return out.join(" · ");
 }

@@ -2,6 +2,7 @@ import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import type { Colony, Fleet, I18nKey } from "@imperium/shared";
 import { useWorld } from "../net/world";
+import { HudIcon } from "./hudIcons";
 import { useT } from "../state/store";
 import { BridgePanel } from "./BridgePanel";
 import { ColoniesPanel } from "./ColoniesPanel";
@@ -44,7 +45,7 @@ export function EmpireButton() {
   const short = colonies.some((c) => c.shortage);
   return (
     <button type="button" className={open ? "btn empire-btn on" : "btn empire-btn"} title={t("empire.open")} aria-pressed={open} onClick={() => empireStore.getState().set({ open: !open })}>
-      ⚑ <span className="mono">{fleets}</span> · ⌂ <span className={short ? "mono empire-short" : "mono"}>{colonies.length}</span>
+      <HudIcon name="fleet" size={14} className="inline-icon" /> <span className="mono">{fleets}</span> <HudIcon name="colony" size={14} className="inline-icon" /> <span className={short ? "mono empire-short" : "mono"}>{colonies.length}</span>
     </button>
   );
 }

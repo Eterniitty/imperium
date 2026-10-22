@@ -181,7 +181,7 @@ export function WikiApp() {
           <div className="wiki-admin-bar">
             {entry.hidden && <span className="wiki-badge">{t("wiki.edit.hidden")}</span>}
             <button className="wiki-btn" onClick={() => setMode("edit")} title={t("wiki.edit.editTitle")}>
-              ✎ {t("wiki.edit.edit")}
+              {t("wiki.edit.edit")}
             </button>
           </div>
         )}
@@ -268,7 +268,7 @@ export function WikiApp() {
               <section key={g}>
                 <h2>{t(`wiki.group.${g}`)}</h2>
                 <ul>
-                  <li>{navLink(LIBRARY_SLUG, <>📚 {t("wiki.library")}</>)}</li>
+                  <li>{navLink(LIBRARY_SLUG, <>{t("wiki.library")}</>)}</li>
                 </ul>
               </section>
             ) : (

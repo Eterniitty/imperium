@@ -23,6 +23,10 @@ Cerrar la pestaña no detiene nada. Lo que la nave estaba haciendo (crucero, sal
 
 En la sección de libros no se corrige ni se comenta nada del texto: ni redacción, ni ortografía, ni puntuación (los guiones de los diálogos se quedan como están), ni sangrías. Si se traducen al inglés, la traducción es literal y fiel, sin mejorarlo. Solo se cambia la maquetación (columna centrada, tipo de atribución, biblioteca y bloques de alineación), y nunca el texto.
 
+## Principio: nada de emojis en la interfaz (22-10-2026, petición del usuario)
+
+No se usan emojis como iconos de interfaz (📖, 🎁, 📚, ☀, ⚑, ⌂, ✎, ⟲, ⛽, ⚠…), porque parecen de móvil. Se usa texto o los iconos de línea propios del juego (SVG, como los de la barra de acciones: `apps/client/src/ui/hudIcons.tsx`). El botón de la Wiki es de texto. Preferencias de diseño: barra de acciones vertical a la izquierda (ese borde es solo para ella), botones contenidos, iconos con número, ventanas con pestañas minimizables y barra superior en una sola línea.
+
 ## 2. Bucle de juego
 
 1. **Explorar**: enviar exploradores, levantar la niebla de guerra, descubrir sistemas, recursos y anomalías.

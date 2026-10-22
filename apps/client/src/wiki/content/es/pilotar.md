@@ -74,9 +74,9 @@ El motor de pulso ([[P]], encender y apagar) es un **supercrucero** para cruzar 
 
 ## Piloto automático de crucero
 
-Destinos: planetas, lunas, cinturones, anomalía, asteroides, **la estrella** (se para fuera de la zona de calor o del horizonte; botón ☀ en la lista del sistema), **tus flotas paradas** y tus nodrizas (a tiro de acople), y cualquier **nave a la vista**: con «Seguir» (H) va en formación; con **«Crucero hasta el blanco»** en el recuadro del blanco fijado, la persigue y se para a su lado (si salta o desaparece, se cancela con aviso).
+Destinos: planetas, lunas, cinturones, anomalía, asteroides, **la estrella** (se para fuera de la zona de calor o del horizonte; botón «Crucero a la estrella» en la lista del sistema), **tus flotas paradas** y tus nodrizas (a tiro de acople), y cualquier **nave a la vista**: con «Seguir» (H) va en formación; con **«Crucero hasta el blanco»** en el recuadro del blanco fijado, la persigue y se para a su lado (si salta o desaparece, se cancela con aviso).
 
-El aviso del crucero se minimiza con **▁** en una pastilla («→ destino · llegada») y se despliega con un clic; se recuerda.
+El aviso del crucero se minimiza con su botón de minimizar en una pastilla («→ destino · llegada») y se despliega con un clic; se recuerda.
 
 El crucero **sigue con el mapa galáctico abierto** (M): la nave sigue volando hacia su destino y, al volver (M o «Pilotar»), la encuentras donde va, con el aviso del crucero. Ver otro sistema desde el mapa sí lo deja (la nave queda aparcada).
 

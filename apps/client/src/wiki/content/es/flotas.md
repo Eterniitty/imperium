@@ -6,9 +6,9 @@ Tus naves (salvo la tuya, la del Emperador) se agrupan en **flotas** («Flota 1�
 
 > [!nota] Las flotas **solo las ve su dueño**. Otros Emperadores solo pueden detectarlas en tránsito con sus sensores (ver [Guerra](/wiki/guerra#contactos-e-interceptacion)).
 
-Puedes **renombrar** cada flota con el lápiz ✎ de su fila en el panel de flotas (vacío: vuelve a «Flota N»).
+Puedes **renombrar** cada flota con el lápiz de su fila (al pasar el ratón) en el panel de flotas (vacío: vuelve a «Flota N»).
 
-Y puedes **regalarla** a otro jugador con 🎁 (escribe el nombre de su Emperador): tiene que estar parada y fuera de batalla; pasa a ser suya donde está, sin ruta ni comandante.
+Y puedes **regalarla** a otro jugador con el botón de regalo de su fila (escribe el nombre de su Emperador): tiene que estar parada y fuera de batalla; pasa a ser suya donde está, sin ruta ni comandante.
 
 ## Viajar
 

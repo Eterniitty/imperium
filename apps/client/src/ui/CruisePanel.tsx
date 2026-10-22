@@ -7,6 +7,7 @@ import { gameStore, useGame, useT } from "../state/store";
 import { formatDistance } from "./FlightHud";
 import { formatDuration } from "./useNow";
 import { useSettings } from "../state/settings";
+import { HudIcon } from "./hudIcons";
 
 type Option = ReturnType<NonNullable<typeof engineRef.current>["cruiseOptions"]>[number];
 
@@ -51,7 +52,7 @@ export function CruisePanel() {
       </button>
       {(o.kind === "planet" || o.kind === "moon") && (
         <button className="btn cruise-orbit" title={t("cruise.orbitHint", { name: o.name })} onClick={() => engineRef.current?.cruiseTo(o.id, true)}>
-          ⟲ {t("cruise.orbit")}
+          {t("cruise.orbit")}
         </button>
       )}
     </li>
@@ -107,7 +108,7 @@ export function CruiseHud() {
     // Minimizado: una pastilla con el destino y la llegada (clic: desplegar).
     return (
       <button type="button" className="cruise-pill panel" role="status" title={t("cruise.hud.expand")} onClick={toggle}>
-        <span className="cruise-pill-arrow">{c.phase === "orbit" ? "⟲" : "→"}</span>
+        <HudIcon name={c.phase === "orbit" ? "orbit" : "cruise"} size={14} className="cruise-pill-arrow" />
         <strong>{c.name}</strong>
         {c.phase !== "orbit" && c.seconds !== null && <span className="mono">{formatDuration(c.seconds * 1000)}</span>}
         <span className="mono muted">{fmtSpeedMs(tel.speed)}</span>

@@ -73,7 +73,7 @@ export function ShipEditor() {
   const problems = useMemo(() => validateDesign(draft), [draft]);
   const missingTech = designTech(draft).filter((r) => !meetsTech(levels, r));
   const buildable = problems.every((p) => p.level !== "error") && missingTech.length === 0;
-  const lock = (req: TechRequirement | undefined) => (req && !meetsTech(levels, req) ? ` · 🔒 ${t(`tech.${req.tree}` as I18nKey)} ${req.level}` : "");
+  const lock = (req: TechRequirement | undefined) => (req && !meetsTech(levels, req) ? ` · ${t("shipEditor.needsTech")}: ${t(`tech.${req.tree}` as I18nKey)} ${req.level}` : "");
   const num = (n: number) => fmtInt(n);
 
   if (!open) return null;

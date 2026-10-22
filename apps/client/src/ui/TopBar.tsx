@@ -8,6 +8,7 @@ import { formatDuration, useServerNow } from "./useNow";
 import { useGame, useT } from "../state/store";
 import { ServerStatus } from "./ServerStatus";
 import { EmpireButton } from "./EmpireWindow";
+import { HudIcon } from "./hudIcons";
 import { useWorld } from "../net/world";
 import { fmtCredits, fmtInt, fmtRate, liveCredits, liveHumans } from "./colonies";
 
@@ -147,8 +148,8 @@ export function TopBar() {
         <CrisisBanner />
         <ServerStatus compact />
         {/* La Wiki es una página aparte: en otra pestaña, para no perder la partida. */}
-        <a className="icon-btn" href="/wiki/" target="_blank" rel="noopener" title={t("wiki.openTitle")} aria-label={t("wiki.open")}>
-          📖
+        <a className="btn btn-link" href="/wiki/" target="_blank" rel="noopener" title={t("wiki.openTitle")}>
+          {t("wiki.open")}
         </a>
         {/* Lo menos usado: posición, sistemas cargados, ir a unas coordenadas y FPS (la barra cabe en una línea). */}
         <details className="topbar-more">
@@ -190,7 +191,7 @@ export function TopBar() {
           </div>
         </details>
         <button className="icon-btn" onClick={() => gameStore.getState().setSettingsOpen(true)} aria-label={t("settings.open")} title={t("settings.title")}>
-          ⚙
+          <HudIcon name="gear" size={16} />
         </button>
 
       </div>

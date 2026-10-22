@@ -93,7 +93,7 @@ export function PlanetWindow() {
                 </button>
                 {/* Orbitar el planeta: ir y quedarse dando vueltas por su ecuador. */}
                 <button className="btn btn-small" title={t("cruise.orbitHint", { name })} onClick={() => engineRef.current?.cruiseTo(`planet:${planet.index}`, true)}>
-                  ⟲ {t("cruise.orbit")}
+                  {t("cruise.orbit")}
                 </button>
               </div>
             )}
