@@ -197,6 +197,23 @@ export interface ContractsView {
   refreshAt: number;
 }
 
+/** Petición de una colonia propia (`COLONY_REQUESTS`). */
+export interface ColonyRequest {
+  id: string;
+  colonyId: string;
+  colonyName: string;
+  systemId: string;
+  planetIndex: number;
+  kind: "shortage" | "unrest";
+  /** Escasez: el recurso que falta. */
+  resource?: "metal" | "volatiles" | "crystal" | "alloys";
+  /** Escasez: unidades; malestar: créditos. */
+  amount: number;
+  progress: number;
+  status: "active" | "done" | "failed";
+  expiresAt: number;
+}
+
 /** Objetivo del día o de la semana (`GOALS` de `@imperium/content`). */
 export interface Goal {
   id: string;

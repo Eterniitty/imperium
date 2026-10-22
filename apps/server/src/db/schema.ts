@@ -1097,6 +1097,31 @@ export const asteroidDepletion = pgTable(
  * recompensa, estado y plazo. Las ofertas no se guardan (se generan cada día);
  * `offer_id` (día:índice) impide aceptar dos veces la misma.
  */
+/** Peticiones de las colonias (`COLONY_REQUESTS`): escasez de un recurso o malestar que se calma pagando. */
+export const colonyRequests = pgTable(
+  "colony_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    emperorId: uuid("emperor_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    colonyId: uuid("colony_id")
+      .notNull()
+      .references(() => colonies.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    /** Escasez: el recurso que falta y cuánto (`amount`); malestar: los créditos (`amount`). */
+    resource: text("resource"),
+    amount: integer("amount").notNull(),
+    progress: doublePrecision("progress").notNull().default(0),
+    /** active | done | failed */
+    status: text("status").notNull().default("active"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    doneAt: timestamp("done_at", { withTimezone: true }),
+  },
+  (t) => [index("colony_requests_emperor_id_idx").on(t.emperorId)],
+);
+
 /** Objetivos del día y de la semana (`GOALS`): los del periodo en curso de cada Emperador. */
 export const goals = pgTable(
   "goals",

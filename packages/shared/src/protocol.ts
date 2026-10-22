@@ -3,7 +3,7 @@
  * docs/arquitectura.md §8. Los esquemas Zod de lo que envía el cliente están en
  * `schemas.ts`.
  */
-import type { Battle, Cargo, Colony, ContractsView, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, FleetTactic, Probe, HeirDoctrineId, RankView, GoalsView, LineageStatus, OrderSide, Siege, Stock, StockId, Wallet } from "./api";
+import type { Battle, Cargo, Colony, ContractsView, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, FleetTactic, Probe, HeirDoctrineId, RankView, GoalsView, ColonyRequest, LineageStatus, OrderSide, Siege, Stock, StockId, Wallet } from "./api";
 import type { DeepRegionView } from "./deepspace";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
@@ -39,7 +39,7 @@ export interface TopicData {
   /** `wallet`: la cartera de créditos (economía de la humanidad). */
   /** `sieges`: asedios propios y a colonias propias (Fase 9b), en curso y acabados hace poco. */
   /** `lineage`: muerte, gestación, Cunas y Herederos (Fase 10). */
-  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans; battles: Battle[]; wallet: Wallet; flagship: FlagshipStatus | null; sieges: Siege[]; lineage: LineageStatus | null; probes: Probe[]; contracts?: ContractsView | null; rank?: RankView | null; goals?: GoalsView | null };
+  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans; battles: Battle[]; wallet: Wallet; flagship: FlagshipStatus | null; sieges: Siege[]; lineage: LineageStatus | null; probes: Probe[]; contracts?: ContractsView | null; rank?: RankView | null; goals?: GoalsView | null; requests?: ColonyRequest[] | null };
 }
 
 /** Emperador visto por los demás jugadores: añade si está conectado. */
@@ -83,6 +83,8 @@ export interface CommandArgs {
   "event.decide": { id: string; go: boolean };
   /** Empieza un reto de caza en el sistema donde se pilota (`HUNT_CHALLENGE`). */
   "challenge.start": Record<string, never>;
+  /** Calma el malestar de una colonia pagando los créditos que pide. */
+  "colonyRequest.pay": { id: string };
   /** Tira por la borda todo un recurso de la bodega (para hacer sitio). */
   "flagship.jettison": { resource: StockId };
   "fleet.move": { fleetId: string; systemId: string };
@@ -390,7 +392,8 @@ export type DeltaOp =
   | { path: `probes.${string}`; v: Probe | null }
   | { path: "contracts.all"; v: ContractsView }
   | { path: "rank"; v: RankView }
-  | { path: "goals"; v: GoalsView };
+  | { path: "goals"; v: GoalsView }
+  | { path: "requests"; v: ColonyRequest[] };
 
 export type ServerMessage =
   /**

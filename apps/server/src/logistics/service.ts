@@ -70,7 +70,7 @@ export class LogisticsService {
   }
 
   /** Contratos de reparto: recursos llevados a una colonia de otro sistema que el de carga (lo pone app.ts). */
-  onDelivered: ((emperorId: string, units: number) => void) | null = null;
+  onDelivered: ((emperorId: string, units: number, colonyId: string, moved: Cargo) => void) | null = null;
 
   /**
    * Mueve recursos y pasajeros entre una flota y una colonia propia del mismo
@@ -142,7 +142,7 @@ export class LogisticsService {
     if (resources(cargo) <= EPS) loadedIn = null;
     await this.saveCargo(tx, fleetId, cargo, loadedIn);
     await this.colonies.writeState(tx, colonyId, { population, stock }, now);
-    if (delivered > EPS) this.onDelivered?.(emperorId, delivered);
+    if (delivered > EPS) this.onDelivered?.(emperorId, delivered, colonyId, moved);
     const sign = direction === "load" ? -1 : 1;
     await tx.insert(resourceLedger).values({
       emperorId,

@@ -1,5 +1,5 @@
 import { CONTRACTS, HUNT_CHALLENGE, RANK_XP } from "@imperium/content";
-import { universeSeedFromString } from "@imperium/procgen";
+import { planetDesignation, universeSeedFromString } from "@imperium/procgen";
 import { eq } from "drizzle-orm";
 import { discoveries as discoveriesTable, emperors as emperorsTable } from "./db/schema";
 import cookie from "@fastify/cookie";
@@ -34,6 +34,7 @@ import { researchRoutes } from "./research/routes";
 import { ReputationService } from "./reputation/service";
 import { RankService } from "./rank/service";
 import { GoalService } from "./goal/service";
+import { ColonyRequestService } from "./colony/requests";
 import { CrisisService } from "./crisis/service";
 import { gateRoutes } from "./gate/routes";
 import { MarketService } from "./market/service";
@@ -253,7 +254,27 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   contracts.systemName = (id) => findSystem(universeSeed, id)?.name;
   contracts.onSpots = (emperorId, spots) => space.setRescueSpots(emperorId, spots);
   space.onRescue = (emperorId, contractId) => pushContract(emperorId, "rescue", 1, contractId);
-  logistics.onDelivered = (emperorId, units) => pushContract(emperorId, "deliver", units);
+  // Peticiones de las colonias: la escasez avanza con lo traído de otro sistema (y con la bodega de la nave, en las rutas del WebSocket).
+  const requests = new ColonyRequestService(deps.db, colonies, humanity, reputation, rank);
+  hub.requests = requests;
+  requests.planetName = (systemId, planetIndex) => {
+    const s = findSystem(universeSeed, systemId);
+    return s ? planetDesignation(s.name, planetIndex) : "";
+  };
+  const onRequests = (emperorId: string, colonyId: string | null, paid: boolean) =>
+    void (async () => {
+      await hub.publishRequests(emperorId);
+      await hub.publishRank(emperorId);
+      if (paid) await hub.publishWallet(emperorId);
+      if (colonyId) await hub.publishColony(emperorId, colonyId);
+    })().catch((err: unknown) => app.log.error(err, "Error al avisar de una petición de colonia"));
+  logistics.onDelivered = (emperorId, units, colonyId, moved) => {
+    pushContract(emperorId, "deliver", units);
+    void requests
+      .delivered(emperorId, colonyId, moved)
+      .then((r) => r.changed && onRequests(emperorId, colonyId, false))
+      .catch((err: unknown) => app.log.error(err, "Error en una petición de colonia"));
+  };
   // Reto de caza: paga por derribo y guarda el récord.
   space.onChallengeEnd = async (emperorId, kills) => {
     if (kills > 0) space.onEventReward?.(emperorId, { credits: kills * HUNT_CHALLENGE.creditsPerKill, xp: kills * HUNT_CHALLENGE.xpPerKill });
@@ -419,7 +440,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     for (const s of fx.sieges) hub.publishSiegeFx(s);
   };
   aliens.onSiege = (fx) => hub.publishSiegeFx(fx);
-  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage: announceLineage, probes, mercenaries, contracts });
+  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage: announceLineage, probes, mercenaries, contracts, requests, onRequests });
   await app.register(humanityRoutes, { config, db: deps.db, emperors, humanity, market });
   await app.register(warRoutes, { config, db: deps.db, emperors, wars, aliens });
   await app.register(alienRoutes, { config, db: deps.db, emperors, discoveries, wars, aliens });
@@ -505,9 +526,12 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   // Economía de la humanidad: recálculo periódico de cada cartera (renta según la población).
   worker.on("economy.settle", async (tx, { emperorId }) => {
     const res = await humanity.onSettle(tx, emperorId);
+    // De paso, las peticiones de sus colonias: vencen o aparece una nueva.
+    const asked = res ? await requests.tick(tx, emperorId) : false;
     if (res) return () => {
       if (res.leveled) void humanity.reload();
       if (res.changed) void hub.publishWallet(emperorId);
+      if (asked) void hub.publishRequests(emperorId);
     };
   });
   // Llega un envío del Núcleo: una compra a su colonia o un aporte a un proyecto común.
@@ -594,6 +618,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   app.decorate("rank", rank);
   app.decorate("goals", goals);
   app.decorate("logistics", logistics);
+  app.decorate("requests", requests);
   app.decorate("lineage", lineage);
   app.decorate("mercenaries", mercenaries);
   app.decorate("wars", wars);
@@ -620,5 +645,6 @@ declare module "fastify" {
     rank: RankService;
     goals: GoalService;
     logistics: LogisticsService;
+    requests: ColonyRequestService;
   }
 }

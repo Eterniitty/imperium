@@ -24,6 +24,7 @@ import {
   type ContractsView,
   type RankView,
   type GoalsView,
+  type ColonyRequest,
   translate,
 } from "@imperium/shared";
 import { rankOf } from "@imperium/content";
@@ -67,6 +68,8 @@ export interface WorldState {
   rank: RankView | null;
   /** Objetivos del día y de la semana. */
   goals: GoalsView | null;
+  /** Peticiones de las colonias propias. */
+  requests: ColonyRequest[] | null;
   /** Linaje propio (Fase 10): muerte y gestación, Cunas, Herederos. */
   lineage: LineageStatus | null;
   /** Escala del tiempo de juego del servidor (para estimar duraciones de viaje). */
@@ -91,6 +94,7 @@ export const worldStore = createStore<WorldState>()(() => ({
   contracts: null,
   rank: null,
   goals: null,
+  requests: null,
   lineage: null,
   timeScale: 1,
   myEmperorId: null,
@@ -137,7 +141,7 @@ class Connection {
     this.ws?.close(1000, "bye");
     this.ws = null;
     this.failPending();
-    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, battles: {}, wallet: null, flagship: null, sieges: {}, probes: {}, contracts: null, rank: null, goals: null, lineage: null, myEmperorId: null });
+    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, battles: {}, wallet: null, flagship: null, sieges: {}, probes: {}, contracts: null, rank: null, goals: null, requests: null, lineage: null, myEmperorId: null });
     resetSpace();
   }
 
@@ -237,7 +241,7 @@ class Connection {
           for (const x of msg.data.sieges) sieges[x.id] = x;
           const probes: Record<string, Probe> = {};
           for (const p of msg.data.probes ?? []) probes[p.id] = p;
-          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans, battles, wallet: msg.data.wallet, flagship: msg.data.flagship, sieges, lineage: msg.data.lineage, probes, contracts: msg.data.contracts ?? null, rank: msg.data.rank ?? null, goals: msg.data.goals ?? null });
+          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans, battles, wallet: msg.data.wallet, flagship: msg.data.flagship, sieges, lineage: msg.data.lineage, probes, contracts: msg.data.contracts ?? null, rank: msg.data.rank ?? null, goals: msg.data.goals ?? null, requests: msg.data.requests ?? null });
         }
         return;
       }
@@ -263,7 +267,13 @@ class Connection {
         let contracts = state.contracts;
         let rank = state.rank;
         let goals = state.goals;
+        let requests = state.requests;
         for (const op of msg.ops) {
+          if (op.path === "requests") {
+            noticeRequests(requests, op.v as ColonyRequest[]);
+            requests = op.v as ColonyRequest[];
+            continue;
+          }
           if (op.path === "goals") {
             noticeGoals(goals, op.v as GoalsView);
             goals = op.v as GoalsView;
@@ -317,7 +327,7 @@ class Connection {
             else delete fleets[id];
           }
         }
-        worldStore.setState({ emperors, fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes, contracts, rank, goals });
+        worldStore.setState({ emperors, fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes, contracts, rank, goals, requests });
         this.syncOwn();
         return;
       }
@@ -478,6 +488,20 @@ export const connection = new Connection();
  * toma el planeta o se rompe el asedio.
  */
 /** Aviso al cumplirse un contrato (llega con su recompensa ya pagada). */
+/** Peticiones de colonia nuevas, cumplidas o vencidas: un aviso. */
+function noticeRequests(prev: ColonyRequest[] | null, next: ColonyRequest[]): void {
+  if (!prev) return;
+  const before = new Map(prev.map((r) => [r.id, r.status]));
+  const notify = gameStore.getState().notify;
+  for (const r of next) {
+    const was = before.get(r.id);
+    const name = r.colonyName || "—";
+    if (was === undefined && r.status === "active") notify(r.kind === "unrest" ? "request.new.unrest" : "request.new.shortage", { name });
+    else if (was === "active" && r.status === "done") notify("request.done", { name });
+    else if (was === "active" && r.status === "failed") notify("request.failed", { name });
+  }
+}
+
 /** Objetivos recién cumplidos: aviso con su recompensa. */
 function noticeGoals(prev: GoalsView | null, next: GoalsView): void {
   if (!prev) return;

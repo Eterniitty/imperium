@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
-import { GOALS, HUNT_CHALLENGE, RANK_XP, RANKS, rankOf, rankPerks, SPACE_EVENTS, type RankPerk } from "@imperium/content";
+import { COLONY_REQUESTS, GOALS, HUNT_CHALLENGE, RANK_XP, RANKS, rankOf, rankPerks, SPACE_EVENTS, type RankPerk } from "@imperium/content";
 import type { Contract, ContractOffer, Goal as GoalItem, I18nKey } from "@imperium/shared";
 import { spaceStore } from "../net/space";
 import { connection, useWorld } from "../net/world";
-import { useT } from "../state/store";
+import { gameStore, useT } from "../state/store";
 import { engineRef } from "../engineRef";
 import { HudIcon } from "./hudIcons";
 import { formatDuration, useServerNow } from "./useNow";
@@ -87,8 +87,83 @@ function GoalsTab() {
         </>
       )}
       <p className="muted small">{t("goal.hint")}</p>
+      <RequestsBox />
       <ChallengeBox />
     </div>
+  );
+}
+
+/** Peticiones de las colonias propias: escasez (ver la colonia) o malestar (pagar). */
+function RequestsBox() {
+  const t = useT();
+  const list = useWorld((s) => s.requests);
+  const now = useServerNow(1000);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<I18nKey | null>(null);
+  if (!list) return null;
+  const pay = async (id: string) => {
+    setBusy(true);
+    setError(await connection.command("colonyRequest.pay", { id }));
+    setBusy(false);
+  };
+  const show = (systemId: string, planetIndex: number) => {
+    engineRef.current?.showSystem(systemId);
+    gameStore.getState().selectPlanet(planetIndex);
+  };
+  const shown = list.filter((r) => r.status === "active" || now - r.expiresAt < 24 * 3_600_000).slice(0, 6);
+  return (
+    <>
+      <h3>{t("request.title")}</h3>
+      {shown.length === 0 ? (
+        <p className="muted small">{t("request.none")}</p>
+      ) : (
+        <ul className="contract-list">
+          {shown.map((r) => (
+            <li key={r.id} className={`contract-row ${r.status}`}>
+              <div className="contract-main">
+                <strong>
+                  {r.kind === "shortage"
+                    ? t("request.shortage", { name: r.colonyName, resource: t(`resource.${r.resource}` as I18nKey), n: r.amount })
+                    : t("request.unrest", { name: r.colonyName, n: r.amount })}
+                </strong>
+                {r.kind === "shortage" && (
+                  <div className="contract-progress" aria-label={`${r.progress} / ${r.amount}`}>
+                    <span style={{ width: `${Math.min(100, (r.progress / Math.max(1, r.amount)) * 100)}%` }} />
+                  </div>
+                )}
+                <span className="muted small">
+                  {r.kind === "shortage" && (
+                    <span className="mono">
+                      {r.progress} / {r.amount} ·{" "}
+                    </span>
+                  )}
+                  {r.status === "active" ? t("request.left", { time: formatDuration(Math.max(0, r.expiresAt - now)) }) : t(`request.status.${r.status}` as I18nKey)}
+                </span>
+              </div>
+              {r.status === "active" && (
+                <div className="contract-actions">
+                  {r.kind === "unrest" ? (
+                    <button type="button" className="btn btn-small" disabled={busy} onClick={() => void pay(r.id)}>
+                      {t("request.pay")}
+                    </button>
+                  ) : (
+                    <button type="button" className="btn btn-small" onClick={() => show(r.systemId, r.planetIndex)}>
+                      {t("request.show")}
+                    </button>
+                  )}
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="muted small">{t("request.hint")}</p>
+      {error && (
+        <p className="auth-error small" role="alert">
+          {t(error)}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -177,6 +252,7 @@ function RankTab() {
         <li>{t("rank.src.event", { a: SPACE_EVENTS.salvage.xp, b: SPACE_EVENTS.distress.xp })}</li>
         <li>{t("rank.src.goal", { a: GOALS.daily.xp, b: GOALS.weekly.xp })}</li>
         <li>{t("rank.src.challenge", { n: HUNT_CHALLENGE.xpPerKill })}</li>
+        <li>{t("rank.src.request", { n: COLONY_REQUESTS.reward.xp })}</li>
       </ul>
       <p className="muted small">{t("rank.keep")}</p>
     </div>

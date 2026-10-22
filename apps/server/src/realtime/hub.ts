@@ -1,6 +1,7 @@
 import type { FastifyBaseLogger } from "fastify";
 import type { RankService } from "../rank/service";
 import type { GoalService } from "../goal/service";
+import type { ColonyRequestService } from "../colony/requests";
 import type { ContractService } from "../contract/service";
 import { distance, PROTOCOL_VERSION, type CommandError, type DeltaOp, type Emperor, type EmperorView, type Probe, type ServerMessage, type ShipDesignSnapshot, type Topic } from "@imperium/shared";
 import { INTEREST } from "@imperium/content";
@@ -83,6 +84,8 @@ export class Hub {
   rank: RankService | null = null;
   /** Objetivos del día y de la semana (tema `me`, `goals`). */
   goals: GoalService | null = null;
+  /** Peticiones de las colonias (tema `me`, `requests`). */
+  requests: ColonyRequestService | null = null;
   /** Nuevos descubrimientos de un Emperador (contratos de exploración). */
   onDiscovered: ((emperorId: string, count: number) => void) | null = null;
   /**
@@ -165,7 +168,7 @@ export class Hub {
       if (topic === "emperors") {
         await this.emperorsSnapshot(client);
       } else {
-        const [fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes, contracts, rank, goals] = await Promise.all([
+        const [fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes, contracts, rank, goals, requests] = await Promise.all([
           this.fleets.byEmperor(client.emperorId),
           this.discoveries.list(client.emperorId),
           this.colonies.list(client.emperorId),
@@ -179,6 +182,7 @@ export class Hub {
           this.contracts ? this.contracts.view(client.emperorId) : Promise.resolve(null),
           this.rank ? this.rank.view(client.emperorId) : Promise.resolve(null),
           this.goals ? this.goals.view(client.emperorId) : Promise.resolve(null),
+          this.requests ? this.requests.view(client.emperorId) : Promise.resolve(null),
         ]);
         if (!this.clients.has(client) || !humans || !wallet) return;
         client.send({
@@ -186,7 +190,7 @@ export class Hub {
           topic,
           seq: this.meSeq.get(client.emperorId) ?? 0,
           serverTime: this.now(),
-          data: { fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes, contracts, rank, goals },
+          data: { fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes, contracts, rank, goals, requests },
         });
       }
       client.subscribed.add(topic);
@@ -275,6 +279,15 @@ export class Hub {
   /** Emperadores con alguna conexión abierta ahora. */
   onlineEmperors(): string[] {
     return [...new Set([...this.clients].map((c) => c.emperorId).filter((id): id is string => !!id))];
+  }
+
+  /** Envía a su dueño las peticiones de sus colonias. */
+  publishRequests(emperorId: string): Promise<void> {
+    return this.enqueue(async () => {
+      if (!this.requests) return;
+      const v = await this.requests.view(emperorId);
+      this.send("me", this.nextMeSeq(emperorId), [{ path: "requests", v }], (c) => c.emperorId === emperorId);
+    });
   }
 
   /** Envía a su dueño sus objetivos del día y de la semana. */

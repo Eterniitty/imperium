@@ -48,3 +48,14 @@ Tu **capital** es tu colonia **más antigua**. Además de su propio mantenimient
 Si un jugador **borra su cuenta**, sus planetas no desaparecen: quedan como **colonias independientes**, con el nombre que les dio. Lo producido hasta ese momento se queda en ellas, sus encargos se cancelan (con el reembolso habitual) y desde entonces quedan **congeladas**: ni producen ni gastan. En el panel aparecen con el dueño **«Independiente»**, y no se pueden reclamar.
 
 Las colonias independientes **se pueden conquistar** como cualquier otra: ver [Conquista](/wiki/conquista). Al tomarlas vuelven a producir desde ese momento (no cobran el tiempo que pasaron congeladas).
+
+## Peticiones de las colonias
+
+De vez en cuando una de tus colonias **pide algo**, también mientras no juegas. Lo ves en la pestaña **Objetivos** de la ventana de contratos, con su plazo:
+
+- **Escasez**: necesita un recurso. Cuenta lo que descargas en ella desde la bodega de tu nave y lo que le llevan tus flotas **desde otro sistema** (cargar y descargar en el mismo no cuenta). El botón **Ver** lleva a su planeta.
+- **Malestar**: se calma pagando los créditos que pide (botón **Pagar**).
+
+Si la cumples, la colonia crece y ganas reputación y experiencia para tu [rango](/wiki/rango); si vence el plazo, pierde población.
+
+{{tabla:peticiones}}

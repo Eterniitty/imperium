@@ -358,6 +358,13 @@
       "when": 1792710516639,
       "tag": "0051_reto_caza",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1792711622559,
+      "tag": "0052_peticiones_colonia",
+      "breakpoints": true
     }
   ]
 }

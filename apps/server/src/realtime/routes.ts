@@ -26,6 +26,7 @@ import type { WarService } from "../war/service";
 import type { HumanityService } from "../humanity/service";
 import type { ProbeService } from "../probe/service";
 import type { MercenaryService } from "../fleet/mercenaries";
+import type { ColonyRequestService } from "../colony/requests";
 import type { ContractService } from "../contract/service";
 import { FLAGSHIP_DOCK, REPUTATION } from "@imperium/content";
 import { fleetRallyPoint, fleetSlotPosition, parkedPosition } from "@imperium/sim";
@@ -61,6 +62,10 @@ export interface RealtimeDeps {
   probes?: ProbeService;
   mercenaries?: MercenaryService;
   contracts?: ContractService;
+  /** Peticiones de las colonias: pagar el malestar, y la escasez avanza al descargar la nave. */
+  requests?: ColonyRequestService;
+  /** Tras cumplirse o pagarse una petición: avisar al jugador (peticiones, cartera, rango, colonia). */
+  onRequests?: (emperorId: string, colonyId: string | null, paid: boolean) => void;
 }
 
 const MINUTE = 60_000;
@@ -69,7 +74,7 @@ const HEARTBEAT_MS = 30_000;
 const MAX_CONNECTIONS_PER_ACCOUNT = 5;
 const MAX_CONNECTIONS = 1_000;
 
-export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage, probes, mercenaries, contracts }: RealtimeDeps) {
+export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage, probes, mercenaries, contracts, requests, onRequests }: RealtimeDeps) {
   /** Reputación ante la humanidad (la milicia no acude a quien la tiene muy mala). */
   const reputationOf = async (emperorId: string): Promise<number> =>
     (await db.select({ r: emperorsTable.reputation }).from(emperorsTable).where(eq(emperorsTable.id, emperorId)).limit(1))[0]?.r ?? 0;
@@ -264,6 +269,11 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                       space.holdChanged(owner.emperorId);
                       await hub.publishFlagship(owner.emperorId);
                       await hub.publishColony(owner.emperorId, msg.args.colonyId);
+                      // Lo minado cuenta para la escasez de esa colonia.
+                      if (requests) {
+                        const r = await requests.delivered(owner.emperorId, msg.args.colonyId, res.moved);
+                        if (r.changed) onRequests?.(owner.emperorId, msg.args.colonyId, false);
+                      }
                     }
                     return res.ok ? ({ ok: true } as const) : res;
                   }
@@ -480,6 +490,12 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     if (!res.ok) return res;
                     space.startRemote(client, res.pilot);
                     return { ok: true } as const;
+                  }
+                  case "colonyRequest.pay": {
+                    if (!requests) return { ok: false, error: "invalid_command" } as const;
+                    const res = await requests.pay(owner.emperorId, msg.args.id);
+                    if (res.ok) onRequests?.(owner.emperorId, null, true);
+                    return res;
                   }
                   case "contract.accept": {
                     if (!contracts) return { ok: false, error: "invalid_command" } as const;

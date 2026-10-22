@@ -18,6 +18,7 @@ import {
   type GoalKind,
   SPACE_EVENTS,
   HUNT_CHALLENGE,
+  COLONY_REQUESTS,
   type RankPerk,
   AI_PERSONALITIES,
   type AiPersonality,
@@ -303,6 +304,18 @@ export const GEN_TABLES: Record<string, Builder> = {
     numeric: [1],
   }),
 
+  peticiones: (t, locale) =>
+    kv(t, [
+      ["wiki.k.requestChance", t("wiki.v.requestChance", { pct: num(locale, COLONY_REQUESTS.chancePerHour * 100) })],
+      ["wiki.k.requestMax", num(locale, COLONY_REQUESTS.maxActive)],
+      ["wiki.k.requestMinPop", num(locale, COLONY_REQUESTS.minPopulation)],
+      ["wiki.k.requestHours", t("colony.costHours", { h: num(locale, COLONY_REQUESTS.hours) })],
+      ["wiki.k.requestShortage", t("wiki.v.requestShortage", { per: num(locale, COLONY_REQUESTS.shortage.perPop), min: num(locale, COLONY_REQUESTS.shortage.min), max: num(locale, COLONY_REQUESTS.shortage.max), res: COLONY_REQUESTS.shortage.resources.map((r) => t(`resource.${r}` as I18nKey)).join(", ") })],
+      ["wiki.k.requestUnrest", t("wiki.v.requestUnrest", { per: num(locale, COLONY_REQUESTS.unrest.creditsPerPop), min: num(locale, COLONY_REQUESTS.unrest.min), max: num(locale, COLONY_REQUESTS.unrest.max) })],
+      ["wiki.k.requestReward", t("wiki.v.requestReward", { pop: COLONY_REQUESTS.reward.popPct, rep: COLONY_REQUESTS.reward.reputation, xp: COLONY_REQUESTS.reward.xp })],
+      ["wiki.k.requestPenalty", t("wiki.v.requestPenalty", { pop: COLONY_REQUESTS.penalty.popPct })],
+    ]),
+
   "reto-caza": (t, locale) =>
     kv(t, [
       ["wiki.k.challengeDuration", t("wiki.v.minutes", { n: Math.round(HUNT_CHALLENGE.durationSec / 60) })],
@@ -348,6 +361,7 @@ export const GEN_TABLES: Record<string, Builder> = {
       [t("rank.src.event", { a: SPACE_EVENTS.salvage.xp, b: SPACE_EVENTS.distress.xp })],
       [t("rank.src.goal", { a: GOALS.daily.xp, b: GOALS.weekly.xp })],
       [t("rank.src.challenge", { n: HUNT_CHALLENGE.xpPerKill })],
+      [t("rank.src.request", { n: COLONY_REQUESTS.reward.xp })],
     ],
   }),
 

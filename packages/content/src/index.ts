@@ -23,3 +23,4 @@ export * from "./contracts";
 export * from "./rank";
 export * from "./goals";
 export * from "./spaceEvents";
+export * from "./colonyRequests";

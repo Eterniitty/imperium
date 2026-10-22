@@ -154,7 +154,8 @@ Plan en `docs/juego-solitario.md` y `docs/tutorial.md`. Orden:
 - [x] Tutorial: capítulos 5–8 (combate, minería, colonias y flotas; 22-10-2026).
 - [x] Tutorial: capítulos 9–12 (nodriza, economía, linaje y contratos; 22-10-2026). Pendiente: capítulo del Astillero con el editor nuevo (E13).
 - [x] Reto de caza (22-10-2026): oleadas de Carroñeros durante 5 minutos fuera del Núcleo, pago por derribo y récord personal (`HUNT_CHALLENGE`, migración 0051).
-- [ ] Crisis de colonias y lore como recompensa.
+- [x] Peticiones de colonia (22-10-2026): escasez de un recurso o malestar que se paga, con plazo, premio y castigo (`COLONY_REQUESTS`, `ColonyRequestService`, migración 0052).
+- [ ] Lore como recompensa (descubrimientos que desbloquean libros de la Wiki).
 
 ## Editor 3D de construcción de naves (petición del 22-10-2026, noche)
 

@@ -6,13 +6,13 @@
  */
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { CONTRACTS, FLAGSHIP_HOLD, GOALS, goalXp, holdCapacityFor, RANK_XP, RANKS, rankOf, rankPerks } from "@imperium/content";
+import { COLONY_REQUESTS, CONTRACTS, FLAGSHIP_HOLD, GOALS, goalXp, holdCapacityFor, RANK_XP, RANKS, rankOf, rankPerks } from "@imperium/content";
 import { LOGIN_TOKEN_PARAM, type Emperor } from "@imperium/shared";
 import { buildApp } from "../src/app";
 import { sessionCookieName } from "../src/auth/routes";
 import { loadConfig } from "../src/config";
 import { createDb } from "../src/db/client";
-import { contracts, emperors, goals, resourceLedger } from "../src/db/schema";
+import { colonies, colonyRequests, contracts, emperors, goals, resourceLedger } from "../src/db/schema";
 import type { Mailer } from "../src/mail";
 import { resetTestDatabase } from "./resetDb";
 
@@ -164,6 +164,41 @@ describe.skipIf(!TEST_DATABASE_URL)("contratos y rango", () => {
     expect((await app.goals.view(e.id)).streak).toBe(0);
     // Solo se guardan los del periodo en curso.
     expect((await db.select().from(goals).where(eq(goals.emperorId, e.id))).length).toBe(GOALS.dailyCount + 1);
+  });
+
+  it("peticiones de colonia: aparecen solas, se cumplen (entrega o pago) y si vencen la colonia pierde población", async () => {
+    const e = await emperor("Gobernante");
+    await app.humanity.wallet(e.id);
+    const [col] = await db
+      .insert(colonies)
+      .values({ emperorId: e.id, systemId: e.location.systemId, planetIndex: 0, population: 300, metal: 0, volatiles: 0, crystal: 0, alloys: 0, resolvedAt: new Date() })
+      .returning();
+    // Con el recálculo de cada hora, tarde o temprano la colonia pide algo (y solo una a la vez).
+    for (let i = 0; i < 300 && (await app.requests.view(e.id)).length === 0; i++) await db.transaction((tx) => app.requests.tick(tx, e.id));
+    const [req] = await app.requests.view(e.id);
+    expect(req).toMatchObject({ colonyId: col!.id, status: "active", planetIndex: 0 });
+    expect(req!.colonyName).toBeTruthy();
+    const xp0 = (await db.select().from(emperors).where(eq(emperors.id, e.id)))[0]!.xp;
+    if (req!.kind === "shortage") {
+      expect(COLONY_REQUESTS.shortage.resources).toContain(req!.resource);
+      expect((await app.requests.delivered(e.id, col!.id, { [req!.resource!]: req!.amount / 2 })).done).toBe(0);
+      expect((await app.requests.delivered(e.id, col!.id, { [req!.resource!]: req!.amount })).done).toBe(1);
+    } else {
+      expect(await app.requests.pay(e.id, req!.id)).toEqual({ ok: true });
+    }
+    expect((await app.requests.view(e.id))[0]!.status).toBe("done");
+    expect((await db.select().from(emperors).where(eq(emperors.id, e.id)))[0]!.xp - xp0).toBe(COLONY_REQUESTS.reward.xp);
+    // Una que vence: la colonia pierde población.
+    const before = (await db.select().from(colonies).where(eq(colonies.id, col!.id)))[0]!.population;
+    const [late] = await db
+      .insert(colonyRequests)
+      .values({ emperorId: e.id, colonyId: col!.id, kind: "unrest", amount: 100, expiresAt: new Date(Date.now() - 1000) })
+      .returning();
+    await db.transaction((tx) => app.requests.tick(tx, e.id));
+    expect((await db.select().from(colonyRequests).where(eq(colonyRequests.id, late!.id)))[0]!.status).toBe("failed");
+    const after = (await db.select().from(colonies).where(eq(colonies.id, col!.id)))[0]!.population;
+    if (before > 0) expect(after).toBeLessThan(before);
+    expect(await app.requests.pay(e.id, late!.id)).toMatchObject({ ok: false });
   });
 
   it("las mejoras del rango: más huecos, más ofertas (las primeras no cambian) y más recompensa", async () => {

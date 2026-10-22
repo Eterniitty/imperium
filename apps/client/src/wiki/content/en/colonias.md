@@ -48,3 +48,14 @@ Your **capital** is your **oldest** colony. Besides its own upkeep, **it pays fo
 If a player **deletes their account**, their planets do not vanish: they remain as **independent colonies**, with the names they were given. Whatever had been produced up to then stays, their orders are cancelled (with the usual refund) and from then on they are **frozen**: they neither produce nor consume. The panel shows their owner as **"Independent"**, and they cannot be claimed.
 
 Independent colonies **can be conquered** like any other: see [Conquest](/wiki/conquista). Once taken they produce again from that moment (they do not collect the time they spent frozen).
+
+## Colony requests
+
+From time to time one of your colonies **asks for something**, even while you are not playing. You see it in the **Goals** tab of the contracts window, with its deadline:
+
+- **Shortage**: it needs a resource. What you unload there from your ship's hold counts, and so does what your fleets bring **from another system** (loading and unloading in the same one does not count). The **Show** button takes you to its planet.
+- **Unrest**: it calms down if you pay the credits it asks for (**Pay** button).
+
+If you fulfil it, the colony grows and you gain reputation and experience for your [rank](/wiki/rango); if the deadline passes, it loses population.
+
+{{tabla:peticiones}}
