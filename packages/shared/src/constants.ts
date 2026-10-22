@@ -12,7 +12,7 @@ export const SECTOR_SIZE = 100;
  * fue tocado por primera vez, para que una mejora del algoritmo no altere
  * sistemas donde ya hay colonias.
  */
-export const GENERATOR_VERSION = 3;
+export const GENERATOR_VERSION = 2;
 
 /** Número mínimo y máximo de sistemas estelares por sector. */
 export const MIN_SYSTEMS_PER_SECTOR = 4;
