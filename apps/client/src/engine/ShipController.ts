@@ -47,7 +47,8 @@ export interface Maneuver {
 
 /** Vuelo arcade: fracción de la velocidad máxima sin tocar W/S (crucero) y segundos hasta la máxima. */
 const ARCADE_CRUISE = 0.3;
-const ARCADE_SECONDS_TO_MAX = 5;
+/** Segundos de parada a la máxima con la nave del Emperador (320 m): pesa; las naves ágiles (`performance.accel`) tardan menos. */
+const ARCADE_SECONDS_TO_MAX = 8;
 
 export class ShipController {
   /** Prestaciones propias (naves del Astillero): multiplican la aceleración y el giro de `FLIGHT_MODEL`. */
@@ -393,9 +394,9 @@ export class ShipController {
           // Más rápido que la máxima (al salir del pulso o del crucero): se pierde enseguida, como al apagar el pulso.
           this.arcadeSpeed = Math.max(want, top + (this.arcadeSpeed - top) * Math.exp(-M.pulseDumpRate * h));
         } else {
-          const rate = (M.maxSpeed * prefs.maxSpeed * (want > this.arcadeSpeed && boost ? M.boostFactor : 1) * prefs.accel) / ARCADE_SECONDS_TO_MAX;
+          const rate = (M.maxSpeed * prefs.maxSpeed * (want > this.arcadeSpeed && boost ? M.boostFactor : 1) * accelK) / ARCADE_SECONDS_TO_MAX;
           const diff = want - this.arcadeSpeed;
-          this.arcadeSpeed += Math.sign(diff) * Math.min(Math.abs(diff), rate * h * (diff < 0 ? 1.4 : 1));
+          this.arcadeSpeed += Math.sign(diff) * Math.min(Math.abs(diff), rate * h * (diff < 0 ? 1.15 : 1));
         }
         this.velocity.set(0, 0, -1).applyQuaternion(this.ship.quaternion).multiplyScalar(this.arcadeSpeed);
       } else {

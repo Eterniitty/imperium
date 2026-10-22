@@ -28,7 +28,8 @@ Por defecto se vuela en modo **arcade**, como en No Man's Sky (Ajustes → Pilot
 - Al tomar los mandos está parada. Tras pulsar W, si sueltas las teclas mantiene la velocidad de crucero (30 % de la máxima); tras S se queda parada hasta que vuelvas a pulsar W.
 - **A/D** giran a izquierda y derecha y la nave se inclina sola en los giros; al soltar vuelve a nivelarse.
 - El **ratón** apunta la nave (vuelo con ratón activado por defecto); **Mayús**, impulso.
-- Tarda unos 5 s en pasar de parada a la velocidad máxima.
+- Pesa: la nave del Emperador tarda unos 8 s en pasar de parada a la velocidad máxima. Las naves de tus flotas que pilotes a distancia van según su tamaño: los cazas aceleran y giran mucho más rápido; las capitales, más despacio.
+- Con las armas listas, la cámara se acerca y baja un poco (cámara de combate).
 - Con el vuelo con ratón, un clic sobre la vista **atrapa el ratón**: el cursor (un círculo dorado) no sale del círculo de mando ni de la ventana. **Esc** o **Alt** lo sueltan para usar la interfaz; se suelta solo al abrir una ventana o un panel (planeta, crucero, ajustes…), al apagar los motores o el vuelo con ratón.
 
 El modo **newtoniano** es el de siempre: inercia real, propulsores laterales, subir y bajar y marcha atrás.
@@ -61,11 +62,11 @@ La nave se mueve con propulsores: el principal empuja hacia delante, otros más 
 
 ## Motor de pulso
 
-El motor de pulso ([[P]], encender y apagar) es un **supercrucero** para cruzar el sistema de un planeta a otro (uno o dos minutos).
+El motor de pulso ([[P]], encender y apagar) es un **supercrucero** para cruzar el sistema de un planeta a otro (unos minutos).
 
 - Empuja **solo hacia delante**; mientras está encendido **no puedes disparar**.
 - Se puede encender **siempre**, también junto a un planeta. Su velocidad máxima depende de la distancia al **cuerpo más cercano**: de frente hacia un planeta va despacio (cientos de m/s) y frena solo al acercarse; al **alejarte**, el límite es varias veces mayor; en el espacio abierto llega a la velocidad máxima de la tabla.
-- Al pulsarlo, el motor **se carga 5 segundos** (el HUD cuenta atrás; pulsar otra vez lo cancela) y después **acelera casi de golpe** hasta su máximo; frena de forma suave. El panel de abajo muestra el límite actual y el **tiempo estimado** hasta el planeta seleccionado, la nave fijada o el cuerpo que tienes de frente.
+- Al pulsarlo, el motor **se carga 5 segundos** (el HUD cuenta atrás; pulsar otra vez lo cancela) y después **coge velocidad poco a poco** (unos 5 s hasta su máximo); frena de forma suave. El panel de abajo muestra el límite actual y el **tiempo estimado** hasta el planeta seleccionado, la nave fijada o el cuerpo que tienes de frente.
 - Gasta **combustible** y algo de **energía**: sin combustible no funciona.
 
 ## Piloto automático de crucero

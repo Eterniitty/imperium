@@ -251,6 +251,9 @@ export class Effects {
    * (si se esperase al servidor, saldría de donde estaba la nave hace un instante).
    */
   fireLocal(from: THREE.Vector3, dir: THREE.Vector3, speed: number, range: number, now: number): void {
+    // Fogonazo en la boca: un cañón de una nave capital, no un láser de juguete.
+    this.flash(from, 34, 0.1, 0xfff0c8);
+    this.flash(from.clone().addScaledVector(dir, 12), 22, 0.16, 0xffb060);
     this.launchBolt(from.clone(), dir.clone().normalize(), speed, now, now + (range / speed) * 1000, true, true, false);
   }
 

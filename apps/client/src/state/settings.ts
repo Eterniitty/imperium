@@ -1,5 +1,6 @@
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
+import { PULSE_MAX_SPEED } from "@imperium/sim";
 
 /**
  * Acciones con tecla, agrupadas por contexto. Dos acciones pueden compartir
@@ -190,7 +191,7 @@ export interface FlightPrefs {
 /** Tope del multiplicador de la velocidad de maniobra: 400 km/s con impulso. */
 export const MAX_SPEED_MULT = 400;
 /** Tope del dial del crucero (m/s): la velocidad máxima del pulso. */
-export const CRUISE_LIMIT_MAX = 5_000_000;
+export const CRUISE_LIMIT_MAX = PULSE_MAX_SPEED;
 
 /** Empuje extra de los propulsores con una velocidad máxima alta: llegar a ella no lleva minutos. */
 export function thrustScale(maxSpeed: number): number {

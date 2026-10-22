@@ -220,10 +220,17 @@ describe.skipIf(!TEST_DATABASE_URL)("economía de la humanidad y mercado", () =>
       .update(colonies)
       .set({ metal: ECONOMY.storage.metal, volatiles: ECONOMY.storage.volatiles, crystal: ECONOMY.storage.crystal, alloys: ECONOMY.storage.alloys, rare_metals: 0, exotic: 0, resolvedAt: new Date() })
       .where(eq(colonies.id, p.colony.id));
+    // En dos partes, rellenando el almacén antes de cada una: con el reloj acelerado de las pruebas la colonia gasta
+    // algo de volátiles entre una orden y otra, y el proyecto pide justo un almacén entero.
+    const half = Math.floor(Math.min(cost.volatiles, 1500) / 2);
     const chunks = [
-      { metal: Math.min(cost.metal, 3000), volatiles: Math.min(cost.volatiles, 1500), crystal: cost.crystal, alloys: cost.alloys },
+      { metal: Math.min(cost.metal, 3000), volatiles: half, crystal: cost.crystal, alloys: cost.alloys },
+      { volatiles: Math.min(cost.volatiles, 1500) - half },
     ];
-    for (const amounts of chunks) expect(await p.cmd("humanity.contribute", { projectId: def.id, colonyId: p.colony.id, amounts })).toMatchObject({ ok: true });
+    for (const amounts of chunks) {
+      await db.update(colonies).set({ volatiles: ECONOMY.storage.volatiles, resolvedAt: new Date() }).where(eq(colonies.id, p.colony.id));
+      expect(await p.cmd("humanity.contribute", { projectId: def.id, colonyId: p.colony.id, amounts })).toMatchObject({ ok: true });
+    }
     const [ship] = await db.select().from(shipments);
     expect(ship).toMatchObject({ kind: "contribution", projectId: def.id });
     // El tesoro tiene créditos de sobra para este nivel.

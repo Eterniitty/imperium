@@ -69,6 +69,8 @@ export class ChaseCamera {
    * Ctrl + rueda cambia de arma). Lo pone la vista.
    */
   armed = false;
+  /** Mezcla (0–1) hacia la cámara de combate, más cercana y baja. */
+  private combat = 0;
 
   private onDown = (e: PointerEvent) => {
     const mouseFlight = settingsStore.getState().prefs.flight.mouseFlight;
@@ -160,7 +162,10 @@ export class ChaseCamera {
     this.frame.slerp(ship.quaternion, Math.min(1, k)).normalize();
     const orient = this.frame.clone().multiply(look);
     // Detrás y algo por encima de la nave según la órbita, mirando en la dirección de la órbita.
-    const back = new THREE.Vector3(0, ChaseCamera.HEIGHT, 1).multiplyScalar(this.dist).applyQuaternion(orient);
+    // Con las armas listas (combate), la cámara se acerca y baja poco a poco: las naves de alrededor se ven enormes.
+    this.combat += ((this.armed ? 1 : 0) - this.combat) * Math.min(1, k * 0.5);
+    const height = ChaseCamera.HEIGHT - 0.08 * this.combat;
+    const back = new THREE.Vector3(0, height, 1).multiplyScalar(this.dist * (1 - 0.22 * this.combat)).applyQuaternion(orient);
     this.camera.position.copy(ship.position).add(back);
     this.camera.quaternion.copy(orient);
     this.applyBlend();

@@ -200,6 +200,8 @@ export class SystemView implements View {
   private lastShield = -1;
   /** Sacudida por un choque (0–1); se apaga en medio segundo. */
   private impactShake = 0;
+  /** Retroceso de los disparos propios (0–1): sacude y empuja la cámara un instante. */
+  private fireKick = 0;
   /**
    * Motores de la nave propia: al tomar los mandos están apagados y hay que
    * arrancarlos (tecla «engines»); `t` es el tiempo en el estado actual.
@@ -675,6 +677,10 @@ export class SystemView implements View {
     if (remote?.design) {
       const st = designStats(remote.design);
       flight.performance = { accel: THREE.MathUtils.clamp(st.accel / DESIGN_REF_ACCEL, 0.4, 1.8), turn: THREE.MathUtils.clamp(st.turnDegPerSec / DESIGN_REF_TURN, 0.4, 1.8) };
+    } else if (remote) {
+      // Nave de una clase: la masa se nota. Los cazas aceleran y giran mucho más que la insignia de 320 m; las capitales, menos.
+      const k = Math.sqrt(FLAGSHIP_LENGTH_M / Math.max(10, this.ownLength));
+      flight.performance = { accel: THREE.MathUtils.clamp(k, 0.6, 2.5), turn: THREE.MathUtils.clamp(k, 0.5, 3) };
     }
     // Gravedad de los cuerpos cercanos (esferas de influencia), en cada subpaso de la física.
     flight.gravity = (pos, out) => {
@@ -1238,6 +1244,7 @@ export class SystemView implements View {
     const muzzle = this.ownMuzzle("cannon", this.cannonIndex++);
     const speed = cannon.speedU + Math.max(0, this.flight!.velocity.dot(f));
     if (muzzle) this.effects.fireLocal(muzzle, f, speed, cannon.rangeU, serverNow());
+    this.fireKick = Math.min(1, this.fireKick + 0.22);
     playCannon(1, true);
   }
 
@@ -1269,6 +1276,7 @@ export class SystemView implements View {
     if (!target) return this.events.notify("combat.noMissileTarget", "lockTarget");
     const f = this.forward();
     connection.send({ t: "fire", weapon: "missile", dir: [f.x, f.y, f.z], target });
+    this.fireKick = Math.min(1, this.fireKick + 0.6);
   }
 
   /** Disparos, explosiones y recuadro del objetivo. */
@@ -1281,7 +1289,12 @@ export class SystemView implements View {
       }
       for (const e of state.explosions) {
         this.effects.explode(e);
-        if (this.ship) playExplosion(distanceGain(this.ship.position.distanceTo(new THREE.Vector3(...e))));
+        if (this.ship) {
+          const g = distanceGain(this.ship.position.distanceTo(new THREE.Vector3(...e)));
+          playExplosion(g);
+          // Una explosión cerca se siente: la onda sacude la cámara.
+          this.impactShake = Math.max(this.impactShake, g * 0.9);
+        }
       }
       spaceStore.setState({ shots: [], explosions: [] });
     }
@@ -1453,6 +1466,12 @@ export class SystemView implements View {
     if (this.impactShake > 0) {
       shake = Math.max(shake, this.impactShake * 1.6);
       this.impactShake = Math.max(0, this.impactShake - dt * 2);
+    }
+    if (this.fireKick > 0) {
+      // Retroceso: un temblor corto y el campo de visión se cierra un poco (el golpe del disparo).
+      shake = Math.max(shake, this.fireKick * 0.9);
+      kick -= this.fireKick * 0.8;
+      this.fireKick = Math.max(0, this.fireKick - dt * 5);
     }
     if (reduce) {
       kick *= 0.5;

@@ -21,7 +21,7 @@ describe("motor de pulso (supercrucero)", () => {
     expect(pulseSpeedLimit(1e9, 1)).toBe(PULSE_MAX_SPEED);
   });
 
-  it("tras la carga acelera casi de inmediato, sin saltos de un fotograma a otro, y frena suave", () => {
+  it("tras la carga coge velocidad en unos segundos, sin saltos de un fotograma a otro, y frena suave", () => {
     let v = 0;
     let t = 0;
     while (v < PULSE_MAX_SPEED * 0.99 && t < 60) {
@@ -31,8 +31,9 @@ describe("motor de pulso (supercrucero)", () => {
       v = next;
       t += 1 / 60;
     }
-    // Casi inmediato (petición del usuario, 21-10-2026): a la velocidad máxima en pocos segundos.
-    expect(t).toBeLessThan(5);
+    // Se nota cómo coge velocidad (22-10-2026), pero sin hacerse eterno.
+    expect(t).toBeGreaterThan(3);
+    expect(t).toBeLessThan(10);
     const braked = stepPulseSpeed(v, 1000, 1 / 60);
     expect(braked).toBeLessThan(v);
     expect(v - braked).toBeLessThan(v * 0.05);

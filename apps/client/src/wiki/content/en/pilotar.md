@@ -28,7 +28,8 @@ By default you fly in **arcade** mode, like in No Man's Sky (Settings → Piloti
 - When you take the controls it is stopped. After pressing W, releasing the keys keeps cruise speed (30 % of the maximum); after S it stays stopped until you press W again.
 - **A/D** turn left and right and the ship banks by itself in turns; release and it levels out.
 - The **mouse** aims the ship (mouse flight is on by default); **Shift**, boost.
-- It takes about 5 s to go from standstill to top speed.
+- It is heavy: the Emperor's ship takes about 8 s to go from standstill to top speed. Fleet ships you pilot remotely handle according to their size: fighters accelerate and turn much faster; capitals, more slowly.
+- With weapons ready, the camera moves a little closer and lower (combat camera).
 - With mouse flight, a click on the view **captures the mouse**: the cursor (a golden circle) cannot leave the steering circle or the window. **Esc** or **Alt** release it to use the interface; it is also released when a window or panel opens (planet, cruise, settings…), and when you switch off the engines or mouse flight.
 
 The **Newtonian** mode is the classic one: real inertia, strafe thrusters, up/down and reverse.
@@ -61,11 +62,11 @@ The ship moves with thrusters: the main one pushes forward, weaker ones brake an
 
 ## Pulse drive
 
-The pulse drive ([[P]], on and off) is a **supercruise** to cross the system from one planet to another (one or two minutes).
+The pulse drive ([[P]], on and off) is a **supercruise** to cross the system from one planet to another (a few minutes).
 
 - It pushes **forward only**; while it is on you **cannot fire**.
 - It can **always** be engaged, even next to a planet. Its top speed depends on the distance to the **nearest body**: heading straight at a planet it goes slowly (hundreds of m/s) and brakes by itself as you approach; **moving away**, the limit is several times higher; in open space it reaches the maximum speed in the table.
-- When you press it, the engine **charges for 5 seconds** (the HUD counts down; pressing again cancels) and then **accelerates almost at once** to its maximum; it slows down smoothly. The bottom panel shows the current limit and the **estimated time** to the selected planet, the locked ship or the body ahead.
+- When you press it, the engine **charges for 5 seconds** (the HUD counts down; pressing again cancels) and then **builds up speed gradually** (about 5 s to its maximum); it slows down smoothly. The bottom panel shows the current limit and the **estimated time** to the selected planet, the locked ship or the body ahead.
 - It uses **fuel** and some **energy**: without fuel it does not work.
 
 ## Cruise autopilot

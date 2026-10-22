@@ -18,7 +18,8 @@ export const PILOT_BOOST = FLIGHT_MODEL.boostFactor;
  * aleja. Tras una carga de unos segundos acelera casi de golpe; frena suave.
  */
 export const PULSE_MIN_SPEED = 300;
-export const PULSE_MAX_SPEED = 5_000_000;
+/** Velocidad máxima del pulso (m/s): 1000 km/s desde el 22-10-2026 (con 5000 se recorría el sistema demasiado rápido). */
+export const PULSE_MAX_SPEED = 1_000_000;
 /**
  * Segundos "hasta la superficie" que deja el límite al ir de frente hacia un
  * cuerpo: la velocidad máxima es la distancia entre este tiempo. Así la nave
@@ -28,13 +29,13 @@ export const PULSE_APPROACH_SEC = 3;
 /** Al alejarse de un cuerpo (de espaldas a él), el límite se multiplica hasta por este valor. */
 export const PULSE_RECEDE_FACTOR = 7;
 /**
- * Crecimiento máximo de la velocidad del pulso por segundo (proporcional: 5 =
- * ×e⁵ por segundo). Tras la carga (`PULSE_CHARGE_SEC`) el pulso llega a su
- * límite en un par de segundos: casi de inmediato.
+ * Crecimiento máximo de la velocidad del pulso por segundo (proporcional:
+ * 1,2 = ×e^1,2 por segundo). Tras la carga (`PULSE_CHARGE_SEC`) el pulso tarda
+ * unos 5 s en llegar a su máximo: se nota cómo coge velocidad.
  */
-export const PULSE_ACCEL_RATE = 5;
+export const PULSE_ACCEL_RATE = 1.2;
 /** Aceleración mínima (m/s²) del pulso, para arrancar desde poca velocidad. */
-export const PULSE_ACCEL_MIN = 20_000;
+export const PULSE_ACCEL_MIN = 5_000;
 /** Segundos que se carga el motor de pulso antes de arrancar (se puede cancelar mientras). */
 export const PULSE_CHARGE_SEC = 5;
 /** Rapidez con la que el pulso frena hasta su límite (1/s): suave pero firme. */

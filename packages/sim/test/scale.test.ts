@@ -89,7 +89,7 @@ describe("escala astronómica", () => {
     let v = 0;
     let t = 0;
     const dt = 1 / 10;
-    while (s < len - stopAt && t < 3600) {
+    while (s < len - stopAt && t < 6000) {
       v = stepPulseSpeed(v, pulseLimitAt([from[0]! + u[0]! * s, from[1]! + u[1]! * s, from[2]! + u[2]! * s], u, bodies), dt);
       s += v * dt;
       t += dt;
@@ -97,7 +97,7 @@ describe("escala astronómica", () => {
     return t;
   }
 
-  it("con el pulso (5000 km/s) se va de un planeta al vecino en menos de dos minutos y del borde al centro, de mediana, en menos de dos", () => {
+  it("con el pulso (1000 km/s, desde el 22-10-2026) se va de un planeta al vecino y del borde al centro, de mediana, en unos minutos (de 2 a 10)", () => {
     const hops: number[] = [];
     const crossings: number[] = [];
     for (const d of systems) {
@@ -123,10 +123,11 @@ describe("escala astronómica", () => {
     }
     const median = (xs: number[]) => [...xs].sort((x, y) => x - y)[Math.floor(xs.length / 2)]!;
     const worst = (xs: number[]) => Math.max(...xs);
-    expect(median(hops)).toBeGreaterThan(15);
-    expect(median(hops)).toBeLessThan(120);
-    expect(median(crossings)).toBeGreaterThan(25);
-    expect(median(crossings)).toBeLessThan(120);
-    expect(worst(crossings)).toBeLessThan(1800);
+    // El usuario pidió que el pulso no recorra el sistema tan rápido (se nota cada viaje).
+    expect(median(hops)).toBeGreaterThan(120);
+    expect(median(hops)).toBeLessThan(600);
+    expect(median(crossings)).toBeGreaterThan(120);
+    expect(median(crossings)).toBeLessThan(600);
+    expect(worst(crossings)).toBeLessThan(5400);
   });
 });
