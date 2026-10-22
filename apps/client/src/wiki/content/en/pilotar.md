@@ -29,6 +29,7 @@ By default you fly in **arcade** mode, like in No Man's Sky (Settings → Piloti
 - **A/D** turn left and right and the ship banks by itself in turns; release and it levels out.
 - The **mouse** aims the ship (mouse flight is on by default); **Shift**, boost.
 - It takes about 5 s to go from standstill to top speed.
+- With mouse flight, a click on the view **captures the mouse**: the cursor (a golden circle) cannot leave the steering circle or the window. **Esc** releases it to use the panels; it is also released when you switch off the engines or mouse flight.
 
 The **Newtonian** mode is the classic one: real inertia, strafe thrusters, up/down and reverse.
 

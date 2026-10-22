@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { pointerXY } from "./pointerLock";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { distance, isDeepId, translate, type I18nKey, type SectorCoord, type StarSystemSummary, type WorldPosition } from "@imperium/shared";
 import { killerLabel, naturalCause } from "../ui/deathCause";
@@ -640,11 +641,13 @@ export class Engine {
 
   private toNdc(e: PointerEvent | MouseEvent): [number, number] {
     const r = this.renderer.domElement.getBoundingClientRect();
-    return [((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1];
+    const p = pointerXY(e);
+    return [((p.x - r.left) / r.width) * 2 - 1, -((p.y - r.top) / r.height) * 2 + 1];
   }
 
   private handlePointerDown = (e: PointerEvent) => {
-    this.pointerDown = { x: e.clientX, y: e.clientY, t: performance.now() };
+    const p = pointerXY(e);
+    this.pointerDown = { x: p.x, y: p.y, t: performance.now() };
     this.renderer.domElement.focus();
   };
 
@@ -653,7 +656,8 @@ export class Engine {
     this.pointerDown = null;
     if (!d || e.button !== 0) return;
     // Un clic es un clic solo si no hubo arrastre (arrastrar gira la cámara).
-    const moved = Math.hypot(e.clientX - d.x, e.clientY - d.y);
+    const p = pointerXY(e);
+    const moved = Math.hypot(p.x - d.x, p.y - d.y);
     if (moved < 5 && performance.now() - d.t < 450) {
       const [x, y] = this.toNdc(e);
       this.active.onClick(x, y);

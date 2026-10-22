@@ -29,6 +29,7 @@ Por defecto se vuela en modo **arcade**, como en No Man's Sky (Ajustes → Pilot
 - **A/D** giran a izquierda y derecha y la nave se inclina sola en los giros; al soltar vuelve a nivelarse.
 - El **ratón** apunta la nave (vuelo con ratón activado por defecto); **Mayús**, impulso.
 - Tarda unos 5 s en pasar de parada a la velocidad máxima.
+- Con el vuelo con ratón, un clic sobre la vista **atrapa el ratón**: el cursor (un círculo dorado) no sale del círculo de mando ni de la ventana. **Esc** lo suelta para usar los paneles; se suelta solo al apagar los motores o el vuelo con ratón.
 
 El modo **newtoniano** es el de siempre: inercia real, propulsores laterales, subir y bajar y marcha atrás.
 

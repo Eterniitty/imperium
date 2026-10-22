@@ -78,8 +78,10 @@ export class ChaseCamera {
 
   private onMove = (e: PointerEvent) => {
     if (!this.drag) return;
-    const dx = e.clientX - this.drag.x;
-    const dy = e.clientY - this.drag.y;
+    // Con el ratón atrapado (vuelo con ratón) la posición no cambia: se usa cuánto se movió.
+    const locked = document.pointerLockElement !== null;
+    const dx = locked ? e.movementX : e.clientX - this.drag.x;
+    const dy = locked ? e.movementY : e.clientY - this.drag.y;
     this.drag = { x: e.clientX, y: e.clientY };
     const k = 0.005;
     const invert = settingsStore.getState().prefs.flight.invertCameraY ? -1 : 1;

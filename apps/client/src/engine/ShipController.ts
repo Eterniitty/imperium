@@ -3,6 +3,7 @@ import { PULSE_CHARGE_SEC, stepPulseSpeed } from "@imperium/sim";
 import { FLIGHT_MODEL } from "@imperium/content";
 import { settingsStore, thrustScale } from "../state/settings";
 import type { Keyboard } from "./input";
+import { lockedPointer } from "./pointerLock";
 import type { CruiseCommand } from "./Autopilot";
 
 /**
@@ -95,6 +96,40 @@ export class ShipController {
     dom.addEventListener("pointerleave", this.onLeave);
     window.addEventListener("pointerdown", this.onButtons);
     window.addEventListener("pointerup", this.onButtons);
+    document.addEventListener("pointerlockchange", this.onLockChange);
+  }
+
+  /** Se quiere el ratón atrapado (vuelo con ratón, motores en marcha, a mano): lo decide `update`. */
+  private lockWanted = false;
+  /** Cursor virtual que se dibuja mientras el puntero está bloqueado. */
+  private ghost: HTMLDivElement | null = null;
+
+  private onLockChange = () => {
+    const locked = document.pointerLockElement === this.dom;
+    lockedPointer.active = locked;
+    if (locked) {
+      this.cursor ??= { x: 0, y: 0 };
+      this.ghost ??= Object.assign(document.createElement("div"), { className: "virtual-cursor" });
+      document.body.appendChild(this.ghost);
+      this.placeGhost();
+    } else {
+      this.ghost?.remove();
+    }
+  };
+
+  /** Coloca el cursor virtual (y la posición que leen clics y selección). */
+  private placeGhost(): void {
+    if (!this.cursor) return;
+    const r = this.dom.getBoundingClientRect();
+    const half = Math.max(1, r.height / 2);
+    lockedPointer.x = r.left + r.width / 2 + this.cursor.x * half;
+    lockedPointer.y = r.top + r.height / 2 + this.cursor.y * half;
+    if (this.ghost) this.ghost.style.transform = `translate(${lockedPointer.x}px, ${lockedPointer.y}px)`;
+  }
+
+  /** Atrapa o suelta el ratón según `lockWanted` (atraparlo pide un clic: lo hace `onButtons`). */
+  private syncLock(): void {
+    if (!this.lockWanted && document.pointerLockElement === this.dom) document.exitPointerLock();
   }
 
   get speed(): number {
@@ -144,6 +179,20 @@ export class ShipController {
   private onMove = (e: PointerEvent) => {
     const r = this.dom.getBoundingClientRect();
     const half = Math.max(1, r.height / 2);
+    if (lockedPointer.active) {
+      // Ratón atrapado: el cursor virtual se mueve con el ratón y no sale del círculo de mando.
+      const c = (this.cursor ??= { x: 0, y: 0 });
+      c.x += e.movementX / half;
+      c.y += e.movementY / half;
+      const R = FLIGHT_MODEL.mouseReticleRadius;
+      const len = Math.hypot(c.x, c.y);
+      if (len > R) {
+        c.x *= R / len;
+        c.y *= R / len;
+      }
+      this.placeGhost();
+      return;
+    }
     this.cursor = { x: (e.clientX - r.left - r.width / 2) / half, y: (e.clientY - r.top - r.height / 2) / half };
   };
 
@@ -155,7 +204,7 @@ export class ShipController {
   }
 
   private onLeave = () => {
-    this.cursor = null;
+    if (!lockedPointer.active) this.cursor = null;
   };
 
   /** Giro que pide el cursor (zona muerta, sensibilidad y eje invertido de los ajustes). */
@@ -177,6 +226,16 @@ export class ShipController {
   private buttons = 0;
   private onButtons = (e: PointerEvent) => {
     this.buttons = e.buttons;
+    // Un clic sobre la vista con el vuelo con ratón atrapa el ratón (el navegador lo pide con un gesto). Sale donde estaba el cursor.
+    if (e.type === "pointerdown" && e.target === this.dom && this.lockWanted && !lockedPointer.active) {
+      const r = this.dom.getBoundingClientRect();
+      const half = Math.max(1, r.height / 2);
+      this.cursor = { x: (e.clientX - r.left - r.width / 2) / half, y: (e.clientY - r.top - r.height / 2) / half };
+      const R = FLIGHT_MODEL.mouseReticleRadius;
+      const len = Math.hypot(this.cursor.x, this.cursor.y);
+      if (len > R) this.cursor = { x: (this.cursor.x * R) / len, y: (this.cursor.y * R) / len };
+      void Promise.resolve(this.dom.requestPointerLock()).catch(() => undefined);
+    }
   };
 
   /** Detiene la nave en seco (al cambiar de modo o teletransportar). */
@@ -210,6 +269,8 @@ export class ShipController {
     }
     const live = this.enabled && this.powered;
     const auto = live ? this.autopilot : null;
+    this.lockWanted = live && prefs.mouseFlight && !auto;
+    this.syncLock();
     // Vuelo arcade (tipo No Man's Sky) a mano; el piloto automático vuela siempre con el modelo newtoniano.
     const arcade = prefs.flightModel === "arcade" && !auto;
     // Al pasar a arcade (tras el pulso, el piloto automático o al cambiar de modelo), se sigue a la velocidad que se lleve.
@@ -356,5 +417,10 @@ export class ShipController {
     this.dom.removeEventListener("pointerleave", this.onLeave);
     window.removeEventListener("pointerdown", this.onButtons);
     window.removeEventListener("pointerup", this.onButtons);
+    document.removeEventListener("pointerlockchange", this.onLockChange);
+    this.lockWanted = false;
+    this.syncLock();
+    this.ghost?.remove();
+    lockedPointer.active = false;
   }
 }

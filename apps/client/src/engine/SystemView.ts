@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { pointerXY } from "./pointerLock";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
 import type { Fleet, I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, ShipDesignSnapshot, WeaponKind, WorldPosition } from "@imperium/shared";
@@ -1310,7 +1311,8 @@ export class SystemView implements View {
     if (e.button === 1) {
       e.preventDefault();
       const r = this.dom.getBoundingClientRect();
-      const id = this.assist.pickAt(e.clientX - r.left, e.clientY - r.top);
+      const at = pointerXY(e);
+      const id = this.assist.pickAt(at.x - r.left, at.y - r.top);
       if (id) this.onLocked(id);
       return;
     }
