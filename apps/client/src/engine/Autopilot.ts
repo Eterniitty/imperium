@@ -20,7 +20,7 @@ import type { Maneuver } from "./ShipController";
  *   igualando su velocidad (con pulso si ella lo lleva o si se queda lejos).
  */
 
-export type CruiseKind = "planet" | "moon" | "belt" | "anomaly" | "asteroid" | "ship" | "point";
+export type CruiseKind = "planet" | "moon" | "belt" | "anomaly" | "asteroid" | "ship" | "mothership" | "point";
 
 /** Un sitio al que se puede ir (o una nave a la que seguir) en este momento. */
 export interface CruiseSpot {

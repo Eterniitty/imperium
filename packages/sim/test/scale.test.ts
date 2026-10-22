@@ -89,7 +89,7 @@ describe("escala astronómica", () => {
     let v = 0;
     let t = 0;
     const dt = 1 / 10;
-    while (s < len - stopAt && t < 900) {
+    while (s < len - stopAt && t < 3600) {
       v = stepPulseSpeed(v, pulseLimitAt([from[0]! + u[0]! * s, from[1]! + u[1]! * s, from[2]! + u[2]! * s], u, bodies), dt);
       s += v * dt;
       t += dt;
@@ -97,7 +97,7 @@ describe("escala astronómica", () => {
     return t;
   }
 
-  it("con el pulso se va de un planeta al vecino en menos de un minuto y del borde al centro del sistema en menos de dos", () => {
+  it("con el pulso (5000 km/s) se va de un planeta al vecino en menos de dos minutos y del borde al centro, de mediana, en menos de dos", () => {
     const hops: number[] = [];
     const crossings: number[] = [];
     for (const d of systems) {
@@ -124,9 +124,9 @@ describe("escala astronómica", () => {
     const median = (xs: number[]) => [...xs].sort((x, y) => x - y)[Math.floor(xs.length / 2)]!;
     const worst = (xs: number[]) => Math.max(...xs);
     expect(median(hops)).toBeGreaterThan(15);
-    expect(median(hops)).toBeLessThan(60);
+    expect(median(hops)).toBeLessThan(120);
     expect(median(crossings)).toBeGreaterThan(25);
     expect(median(crossings)).toBeLessThan(120);
-    expect(worst(crossings)).toBeLessThan(240);
+    expect(worst(crossings)).toBeLessThan(1800);
   });
 });

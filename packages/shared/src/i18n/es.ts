@@ -1479,6 +1479,8 @@ export const es = {
   "cruise.kind.anomaly": "Anomalía",
   "cruise.kind.asteroid": "Asteroide",
   "cruise.kind.ship": "Nave",
+  "cruise.kind.mothership": "Nodriza",
+  "cruise.mothership": "Nave nodriza · flota {n}",
   "cruise.kind.point": "Punto",
   "cruise.tag.ally": "Compañero",
   "cruise.tag.pirate": "Pirata",

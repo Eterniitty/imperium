@@ -396,11 +396,11 @@ export const PIRATE_AMBUSH = {
  */
 export const ESCORT = {
   maxShips: 6,
-  engageRangeU: 7000,
+  engageRangeU: 5000,
   speedU: 320,
   preferredRangeU: 1500,
-  spacingM: 900,
-  catchUpM: 25000,
+  spacingM: 400,
+  catchUpM: 6000,
   aimJitter: 0.03,
 } as const;
 

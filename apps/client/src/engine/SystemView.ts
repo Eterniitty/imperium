@@ -1640,6 +1640,13 @@ export class SystemView implements View {
       ships,
       point: target?.id === "point" ? (target.point ?? null) : null,
     });
+    // Las nodrizas propias paradas aquí: se llega a su lado, a tiro de acoplarse (Enter).
+    for (const f of Object.values(worldStore.getState().fleets) as Fleet[]) {
+      const m = this.fleetScene.mothership(f.id);
+      if (!m) continue;
+      const radius = m.lengthM / 2;
+      spots.push({ id: `mothership:${f.id}`, kind: "mothership", name: translate(locale, "cruise.mothership", { n: f.number }), center: m.at, radius, stopRadius: radius + FLAGSHIP_DOCK.rangeM * 0.5, own: true });
+    }
     const obstacles: CruiseObstacle[] = bodies.map((b) => ({ id: b.id, center: b.center, radius: b.radius, star: false }));
     if (this.layout.starRadius > 0) obstacles.push({ id: "star", center: new THREE.Vector3(), radius: this.layout.starRadius, star: true });
     return { spots, obstacles };

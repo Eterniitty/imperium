@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { serverNow } from "../net/world";
 import { shipName, spaceStore, type PoseSample } from "../net/space";
 import { gameStore } from "../state/store";
+import { authStore } from "../state/auth";
 import type { WeaponKind } from "@imperium/shared";
 import { FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, getAnyShipClass, SHIP_COLLISION } from "@imperium/content";
 import { createFlagship, disposeShip, SHIP_SCALE, shipRig } from "./shipModel";
@@ -67,6 +68,7 @@ export class RemoteShips {
     const reduce = settingsStore.getState().prefs.reduceEffects;
     const { ships } = spaceStore.getState();
     const locale = gameStore.getState().locale;
+    const myName = authStore.getState().emperor?.name;
     const t = serverNow() - INTERP_DELAY_MS;
     for (const [id, remote] of Object.entries(ships)) {
       const name = shipName(remote.state, locale);
@@ -80,6 +82,8 @@ export class RemoteShips {
       if (sampleAt(remote.samples, t, v.ship.position, v.ship.quaternion)) {
         v.label.position.copy(v.ship.position);
       }
+      // Las naves de la escolta propia (y los cazas de su nodriza) van sin rótulo: solo estorbaría.
+      v.label.visible = !(remote.state.kind === "fleet" && remote.state.name === myName);
       if (dt > 0) {
         if (!Number.isFinite(v.prev.x)) v.prev.copy(v.ship.position);
         v.speed += (v.ship.position.distanceTo(v.prev) / dt - v.speed) * Math.min(1, dt * 3);

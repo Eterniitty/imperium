@@ -1477,6 +1477,8 @@ export const en: Record<I18nKey, string> = {
   "cruise.kind.anomaly": "Anomaly",
   "cruise.kind.asteroid": "Asteroid",
   "cruise.kind.ship": "Ship",
+  "cruise.kind.mothership": "Mothership",
+  "cruise.mothership": "Mothership · fleet {n}",
   "cruise.kind.point": "Point",
   "cruise.tag.ally": "Companion",
   "cruise.tag.pirate": "Pirate",
