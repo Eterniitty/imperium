@@ -291,10 +291,10 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     // Incursión: a un convoy con ruta fuera del Núcleo le puede caer una partida de Carroñeros.
     const raider = owner && !alien && !war?.inBattle ? await aliens.raidRoute(tx, fleetId) : null;
     const raid = raider ? await wars.onArrive(tx, raider) : null;
+    // Combustible: en un sistema con colonia propia, reposta sola (antes de que la ruta la vuelva a sacar).
+    const refuel = owner && !alien && !war?.inBattle ? await fleets.refuel(tx, owner, fleetId, colonies, true) : null;
     // Ruta automática: descarga, carga y sale hacia la otra colonia.
     const step = owner && !war?.inBattle && !raid?.fx.fleets.has(fleetId) ? await logistics.onArrive(tx, fleetId) : null;
-    // Combustible: en un sistema con colonia propia, reposta sola (si la ruta no la ha vuelto a sacar).
-    const refuel = owner && !alien && !war?.inBattle ? await fleets.refuel(tx, owner, fleetId, colonies, true) : null;
     return () => {
       if (refuel?.ok && refuel.colonyId && owner) void hub.publishColony(owner, refuel.colonyId);
       if (owner && !alien) void hub.publishFleet(owner, fleetId);
