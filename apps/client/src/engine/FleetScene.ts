@@ -146,8 +146,9 @@ export class FleetScene {
   /** Nave que se pilota a distancia: no se dibuja con su flota (la dibuja el piloto). */
   private hidden: { fleetId: string; classId: string } | null = null;
 
-  hide(fleetId: string | null, classId: string | null): void {
-    this.hidden = fleetId && classId ? { fleetId, classId } : null;
+  hide(fleetId: string | null, classId: string | null, design?: Pick<ShipDesignSnapshot, "hullId" | "parts">): void {
+    // Las del Astillero se agrupan por su diseño (ver `designKey`).
+    this.hidden = fleetId && classId ? { fleetId, classId: design ? designKey(design) : classId } : null;
   }
 
   /** Dónde se dibuja una flota parada, o null si no está. */

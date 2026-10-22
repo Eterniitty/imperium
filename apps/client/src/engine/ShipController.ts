@@ -38,6 +38,9 @@ export interface Maneuver {
 }
 
 export class ShipController {
+  /** Prestaciones propias (naves del Astillero): multiplican la aceleración y el giro de `FLIGHT_MODEL`. */
+  performance = { accel: 1, turn: 1 };
+
   enabled = true;
   readonly velocity = new THREE.Vector3();
   /** Velocidad angular en ejes de la nave (rad/s): x cabeceo, y guiñada, z alabeo. */
@@ -236,14 +239,14 @@ export class ShipController {
     const boost = auto ? auto.boost : live && kb.action("boost");
     Object.assign(this.maneuver, { x: input.x, y: input.y, z: input.z, pitch: turn.x, yaw: turn.y, roll: turn.z });
 
-    const accelK = prefs.accel;
+    const accelK = prefs.accel * this.performance.accel;
     const maxSpeed = M.maxSpeed * prefs.maxSpeed * (boost ? M.boostFactor : 1);
     const steps = Math.max(1, Math.min(16, Math.ceil(dt / M.substep)));
     const h = dt / steps;
     const start = this.ship.position.clone();
     for (let i = 0; i < steps; i++) {
       // Rotación: velocidad angular hacia la pedida, con aceleración angular limitada.
-      const rates = [M.pitchRate, M.yawRate, M.rollRate];
+      const rates = [M.pitchRate, M.yawRate, M.rollRate].map((r) => r * this.performance.turn);
       for (let a = 0; a < 3; a++) {
         const want = turn.getComponent(a) * rates[a]!;
         const cur = this.angular.getComponent(a);

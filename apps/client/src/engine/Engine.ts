@@ -191,7 +191,7 @@ export class Engine {
     this.buildSystem(summary);
     this.switchTo(this.system);
     gameStore.getState().setView("system");
-    this.system.pilot(null, { classId: ship.classId, fleetId });
+    this.system.pilot(null, { classId: ship.classId, fleetId, design: ship.design });
     this.notify("remote.started", { key: keyLabel(settingsStore.getState().bindings.toggleMap[0] ?? "", gameStore.getState().locale) });
   }
 

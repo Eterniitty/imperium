@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
-import type { Fleet, I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, WeaponKind, WorldPosition } from "@imperium/shared";
-import { ARRIVAL_EDGE, deepLayout, starHeatDps, defaultPark, moonOffset, parkedPosition, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
+import type { Fleet, I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, ShipDesignSnapshot, WeaponKind, WorldPosition } from "@imperium/shared";
+import { ARRIVAL_EDGE, deepLayout, designStats, starHeatDps, defaultPark, moonOffset, parkedPosition, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
 import { resetSpace, shipName, spaceStore, type SelectedWeapon } from "../net/space";
 import { TargetAssist, relationOf, type CannonAim } from "./TargetAssist";
 import { telemetry, type FlightTelemetry } from "./telemetry";
@@ -10,7 +10,7 @@ import { authStore } from "../state/auth";
 import { connection, serverNow } from "../net/world";
 import { RemoteShips } from "./RemoteShips";
 import { FleetScene } from "./FleetScene";
-import { createShipModel, shipLength } from "./shipFactory";
+import { createDesignModel, createShipModel, designLook, shipLength } from "./shipFactory";
 import { ShieldDome } from "./fx/shieldDome";
 import { Effects } from "./Effects";
 import { worldStore } from "../net/world";
@@ -72,6 +72,9 @@ export interface SystemViewEvents {
 const POSE_INTERVAL = 0.125;
 /** Apertura de la cámara del sistema sin efectos (grados). */
 const BASE_FOV = 50;
+/** Aceleración (m/s²) y giro (°/s) de un diseño del Astillero que equivalen al vuelo normal (`FLIGHT_MODEL`). */
+const DESIGN_REF_ACCEL = 6;
+const DESIGN_REF_TURN = 45;
 
 function smoothstep(a: number, b: number, x: number): number {
   const k = Math.max(0, Math.min(1, (x - a) / (b - a)));
@@ -622,17 +625,17 @@ export class SystemView implements View {
    * está aparcada (orbitando la estrella; tras un salto, en el borde del sistema),
    * mirando a la estrella.
    */
-  pilot(_from?: THREE.Vector3 | null, remote?: { classId: string; fleetId: string }): void {
+  pilot(_from?: THREE.Vector3 | null, remote?: { classId: string; fleetId: string; design?: ShipDesignSnapshot }): void {
     this.stopPiloting();
     if (!this.layout) return;
     let ship: THREE.Group;
     if (remote) {
       // Nave de una flota pilotada a distancia: sale de donde se dibuja su flota.
-      ship = createShipModel(remote.classId) ?? createFlagship(0xc792ff);
-      const length = shipLength(remote.classId) ?? FLAGSHIP_LENGTH_M;
+      ship = (remote.design ? createDesignModel(remote.design) : createShipModel(remote.classId)) ?? createFlagship(0xc792ff);
+      const length = (remote.design ? designLook(remote.design)?.model.lengthM : shipLength(remote.classId)) ?? FLAGSHIP_LENGTH_M;
       this.ownLength = length;
       this.ownRadius = Math.max(30, length * 0.45);
-      this.fleetScene.hide(remote.fleetId, remote.classId);
+      this.fleetScene.hide(remote.fleetId, remote.classId, remote.design);
       ship.position.copy(this.fleetScene.fleetPosition(remote.fleetId) ?? this.fleetScene.anchor(new THREE.Vector3())).add(new THREE.Vector3(0, length * 2, length * 4));
     } else {
       ship = createFlagship(0xc792ff);
@@ -657,6 +660,11 @@ export class SystemView implements View {
     this.ship = ship;
     const flight = new ShipController(ship, this.dom, this.keyboard);
     flight.enabled = true;
+    // Nave del Astillero pilotada a distancia: aceleración y giro de sus piezas (fase E4).
+    if (remote?.design) {
+      const st = designStats(remote.design);
+      flight.performance = { accel: THREE.MathUtils.clamp(st.accel / DESIGN_REF_ACCEL, 0.4, 1.8), turn: THREE.MathUtils.clamp(st.turnDegPerSec / DESIGN_REF_TURN, 0.4, 1.8) };
+    }
     // Gravedad de los cuerpos cercanos (esferas de influencia), en cada subpaso de la física.
     flight.gravity = (pos, out) => {
       const g = gravityAt([pos.x, pos.y, pos.z], this.gravitySources);
