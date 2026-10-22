@@ -11,4 +11,4 @@ Mientras pilotas tu nave, la galaxia te sale al paso: al llegar a un sistema o d
 
 {{tabla:sucesos}}
 
-Los sucesos dan experiencia para tu [rango](/wiki/rango). Solo pasan mientras pilotas: con la pestaña cerrada o la nave aparcada no aparecen, y si te vas del sistema la señal se pierde.
+Los sucesos dan experiencia para tu [rango](/wiki/rango). En el espacio profundo solo aparecen restos. Solo pasan mientras pilotas: con la pestaña cerrada o la nave aparcada no aparecen, y si te vas del sistema la señal se pierde.

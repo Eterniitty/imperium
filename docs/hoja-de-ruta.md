@@ -149,7 +149,7 @@ Plan en `docs/juego-solitario.md` y `docs/tutorial.md`. Orden:
 - [x] Contratos: reparto de recursos (22-10-2026): solo cuenta lo que una flota descarga en una colonia propia de otro sistema que el de carga (`fleet_cargo.loaded_in`, migración 0050).
 - [x] Rango del Emperador (22-10-2026): experiencia, diez títulos y mejoras de los contratos (`RANKS`, `RankService`, migración 0047, Wiki «Rango»). Pendiente: mejoras de la nave (bodega, combustible, misiles).
 - [x] Tutorial: motor, menú (Ajustes → Tutorial) y capítulos 1–4 (22-10-2026).
-- [x] Sucesos en el espacio (22-10-2026): restos a la deriva y señales de socorro con decisión y trampa (`SPACE_EVENTS`, Wiki «Sucesos en el espacio»). Pendiente: más tipos (anomalías, emboscadas anunciadas) y que pasen también en el espacio profundo.
+- [x] Sucesos en el espacio (22-10-2026): restos a la deriva y señales de socorro con decisión y trampa (`SPACE_EVENTS`, Wiki «Sucesos en el espacio»). En el espacio profundo, solo restos. Pendiente: más tipos (anomalías, emboscadas anunciadas).
 - [x] Objetivos diarios y semanales con racha (22-10-2026; `GOALS`, `GoalService`, migración 0049).
 - [x] Tutorial: capítulos 5–8 (combate, minería, colonias y flotas; 22-10-2026).
 - [x] Tutorial: capítulos 9–12 (nodriza, economía, linaje y contratos; 22-10-2026). Pendiente: capítulo del Astillero con el editor nuevo (E13).

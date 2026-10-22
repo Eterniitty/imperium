@@ -1673,7 +1673,7 @@ export class SpaceService {
       }
     }
     for (const m of this.members.values()) {
-      if (m.kind !== "emperor" || m.clients.size === 0 || m.park || isDeepId(m.systemId) || this.events.has(m.emperorId)) continue;
+      if (m.kind !== "emperor" || m.clients.size === 0 || m.park || this.events.has(m.emperorId)) continue;
       if ((this.eventRest.get(m.emperorId) ?? 0) > now) continue;
       const arrival = this.eventArrival.get(m.emperorId);
       if (arrival !== undefined && now >= arrival) {
@@ -1694,7 +1694,8 @@ export class SpaceService {
 
   private spawnEvent(m: Member, now: number): void {
     const E = SPACE_EVENTS;
-    const kinds = Object.keys(E.weights) as SpaceEventKind[];
+    // En el espacio profundo solo hay restos (no hay naves que pidan ayuda).
+    const kinds = isDeepId(m.systemId) ? (["salvage"] as SpaceEventKind[]) : (Object.keys(E.weights) as SpaceEventKind[]);
     let roll = Math.random() * kinds.reduce((n, k) => n + E.weights[k], 0);
     const kind = kinds.find((k) => (roll -= E.weights[k]) <= 0) ?? kinds[0]!;
     // Una señal a cierta distancia, cerca del plano del sistema y sin salirse de él.

@@ -11,4 +11,4 @@ While you fly your ship, the galaxy comes to meet you: on arrival in a system or
 
 {{tabla:sucesos}}
 
-Events give experience for your [rank](/wiki/rango). They only happen while you fly: with the tab closed or the ship parked they don't appear, and if you leave the system the signal is lost.
+Events give experience for your [rank](/wiki/rango). In deep space only wreckage appears. They only happen while you fly: with the tab closed or the ship parked they don't appear, and if you leave the system the signal is lost.
