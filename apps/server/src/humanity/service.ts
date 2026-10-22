@@ -2,6 +2,7 @@ import {
   CREDITS,
   HUMANITY,
   HUMANITY_PROJECTS,
+  REPUTATION,
   STOCK_IDS,
   getHumanityProject,
   type HumanityProjectId,
@@ -93,6 +94,9 @@ const stockOf = (r: { metal: number; volatiles: number; crystal: number; alloys:
  * las colonias.
  */
 export class HumanityService {
+  /** Reputación ante la humanidad: aportar a los proyectos comunes la sube. */
+  reputation: { add(emperorId: string, delta: number, tx?: Tx): Promise<void> } | null = null;
+
   private readonly seed: number;
   private readonly timeScale: number;
   private levels: ProjectLevels = {};
@@ -386,6 +390,7 @@ export class HumanityService {
         await this.settleTreasury(tx, now);
         await this.creditTreasury(tx, credits, "humanity_donation", `project:${def.id}`);
         await tx.insert(humanityContributions).values({ emperorId, projectId: def.id, credits });
+        await this.reputation?.add(emperorId, (credits / 1000) * REPUTATION.perThousandCredits, tx);
         await this.fundReady(tx, now);
       }
       return { ok: true, emperorId, colonyId: units > 0 ? args.colonyId! : null };

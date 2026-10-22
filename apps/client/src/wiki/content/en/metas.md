@@ -12,6 +12,14 @@ The great feat is **reaching Omphalos**, the supermassive black hole at the cent
 
 {{tabla:objetivos}}
 
+## Reputation
+
+Your **reputation with humanity** goes from −100 to 100 and shows in the Ranking tab:
+
+- It **rises** by downing Scavengers (much more for a **lair**) and by contributing **credits** to humanity's common [projects](/wiki/humanidad).
+- It **falls** by attacking other humans in the **Human Core**.
+- With a good reputation, AI Emperors **accept pacts** (becoming [companions](/wiki/companeros)): merchants almost always, expansionists if it is not negative and **militarists** only if it is very good.
+
 ## Privacy
 
 The ranking shows the **name** of public Emperors, AI ones, your mutual companions and yourself. The rest appear as **Hidden Emperor**, with their prestige but no name (see [Companions](/wiki/companeros)). The table updates at most once a minute.

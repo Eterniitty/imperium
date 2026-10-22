@@ -2,7 +2,8 @@ import type { FastifyInstance } from "fastify";
 import { prestigeOf, type MetaStat } from "@imperium/content";
 import { GALAXY_CENTER_SECTOR } from "@imperium/procgen";
 import { systemId, type ApiError, type RankingEntry, type RankingResponse } from "@imperium/shared";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+import { emperors as emperorsTable } from "../db/schema";
 import { accountFromRequest, sessionCookieName } from "../auth/routes";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
@@ -80,9 +81,10 @@ export async function rankingRoutes(app: FastifyInstance, { config, db, emperors
       core: r.stats.core > 0,
     });
     const myIndex = me ? rows.findIndex((r) => r.id === me.id) : -1;
+    const [mine] = me ? await db.select({ r: emperorsTable.reputation }).from(emperorsTable).where(eq(emperorsTable.id, me.id)).limit(1) : [];
     return {
       top: rows.slice(0, 50).map(entry),
-      me: myIndex >= 0 ? { ...entry(rows[myIndex]!, myIndex), stats: rows[myIndex]!.stats } : null,
+      me: myIndex >= 0 ? { ...entry(rows[myIndex]!, myIndex), stats: rows[myIndex]!.stats, reputation: Math.round(mine?.r ?? 0) } : null,
       total: rows.length,
     } satisfies RankingResponse;
   });

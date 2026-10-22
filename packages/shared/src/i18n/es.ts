@@ -1641,6 +1641,8 @@ export const es = {
   "error.tech_locked": "Te falta tecnología para alguna pieza o el casco de ese diseño (mírala en Investigación).",
   "shipEditor.locked": "Necesita {tree} {level}",
   "wiki.col.level": "Nivel",
+  "ranking.reputation": "Reputación ante la humanidad: {n}",
+  "ranking.reputationHint": "Sube derribando Carroñeros y aportando a los proyectos de la humanidad; baja atacando a otros humanos en el Núcleo. Con buena reputación, la IA acepta pactos.",
   "shipEditor.open": "Astillero",
   "shipEditor.openTitle": "Diseña tus naves pieza a pieza",
   "shipEditor.title": "Astillero · diseño de naves",

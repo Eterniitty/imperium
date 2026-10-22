@@ -36,6 +36,9 @@ export function RankingTab() {
           <p className="ranking-me">
             {t("ranking.you", { rank: me.rank, total: data.total, prestige: fmtInt(me.prestige) })}
           </p>
+          <p className="small" title={t("ranking.reputationHint")}>
+            {t("ranking.reputation", { n: me.reputation > 0 ? `+${me.reputation}` : String(me.reputation) })}
+          </p>
           <h3>{t("ranking.goals")}</h3>
           <ul className="goals">
             {ERA_GOALS.map((g) => {

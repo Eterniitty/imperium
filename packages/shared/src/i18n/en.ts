@@ -1639,6 +1639,8 @@ export const en: Record<I18nKey, string> = {
   "error.tech_locked": "You lack the technology for some part or the hull of that design (check it in Research).",
   "shipEditor.locked": "Needs {tree} {level}",
   "wiki.col.level": "Level",
+  "ranking.reputation": "Reputation with humanity: {n}",
+  "ranking.reputationHint": "It rises by downing Scavengers and contributing to humanity's projects; it falls by attacking other humans in the Core. With a good reputation, the AI accepts pacts.",
   "shipEditor.open": "Shipyard",
   "shipEditor.openTitle": "Design your ships part by part",
   "shipEditor.title": "Shipyard · ship design",

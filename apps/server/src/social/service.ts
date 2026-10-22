@@ -1,5 +1,5 @@
 import { isDeepId, type AllyEntry, type CompanionTrailResponse, type SocialResponse, type Visibility } from "@imperium/shared";
-import { AI_COMPANIONS, AI_EMPERORS } from "@imperium/content";
+import { AI_COMPANIONS, AI_EMPERORS, REPUTATION } from "@imperium/content";
 import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import type { Database } from "../db/client";
 import { emperorAllies, emperors, sieges, systemParks } from "../db/schema";
@@ -56,7 +56,11 @@ export class SocialService {
   /** Un Emperador de la IA contesta a una petición de compañero según su personalidad (`AI_COMPANIONS`). */
   private async aiAccepts(fromId: string, aiId: string, aiName: string): Promise<boolean> {
     const personality = AI_EMPERORS.find((e) => e.name === aiName)?.personality ?? "expansionist";
-    if (!AI_COMPANIONS.acceptCompanions.includes(personality)) return false;
+    // Reputación ante la humanidad: con buena fama acepta incluso la IA militarista (`REPUTATION.aiPact`).
+    const [from] = await this.db.select({ r: emperors.reputation }).from(emperors).where(eq(emperors.id, fromId)).limit(1);
+    const minRep = REPUTATION.aiPact[personality] ?? 0;
+    if ((from?.r ?? 0) < minRep) return false;
+    if (!AI_COMPANIONS.acceptCompanions.includes(personality) && (from?.r ?? 0) < (REPUTATION.aiPact.militarist ?? 40)) return false;
     const [war] = await this.db
       .select({ id: sieges.id })
       .from(sieges)

@@ -32,3 +32,22 @@ export const ERA_GOALS: ReadonlyArray<{ id: string; stat: MetaStat; target: numb
 export function prestigeOf(stats: Record<MetaStat, number>): number {
   return Math.round((Object.keys(PRESTIGE) as MetaStat[]).reduce((a, k) => a + stats[k] * PRESTIGE[k], 0));
 }
+
+/**
+ * Reputación ante la humanidad (de `min` a `max`): sube derribando Carroñeros
+ * y aportando a los proyectos comunes; baja atacando a otros humanos en el
+ * Núcleo. Con buena reputación la IA acepta pactos (ser compañeros), incluso
+ * la militarista.
+ */
+export const REPUTATION = {
+  min: -100,
+  max: 100,
+  pirateKill: 1,
+  lairKill: 10,
+  /** Por cada 1000 créditos aportados a la humanidad. */
+  perThousandCredits: 4,
+  /** Atacar a otro humano en el Núcleo (una vez por incidente). */
+  attackHuman: -8,
+  /** Reputación mínima para que un Emperador de la IA acepte un pacto, por personalidad. */
+  aiPact: { merchant: -20, expansionist: 0, militarist: 40 } as Record<string, number>,
+} as const;

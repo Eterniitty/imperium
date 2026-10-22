@@ -26,6 +26,7 @@ import { designRoutes } from "./design/routes";
 import { rankingRoutes } from "./ranking/routes";
 import { ResearchService } from "./research/service";
 import { researchRoutes } from "./research/routes";
+import { ReputationService } from "./reputation/service";
 import { gateRoutes } from "./gate/routes";
 import { MarketService } from "./market/service";
 import { inHumanCore } from "./emperor/world";
@@ -128,6 +129,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   colonies.setWallet(humanity);
   const research = new ResearchService(deps.db, config);
   research.setWallet(humanity);
+  const reputation = new ReputationService(deps.db, app.log);
+  humanity.reputation = reputation;
   wars.setShieldFactor((systemId) => (inHumanCore(systemId) ? humanity.bonuses().coreShield : 1));
   const market = new MarketService(deps.db, colonies, humanity);
   // Fase 11: facciones alienígenas (territorio, flotas, comercio y diplomacia básica) con la misma tubería de órdenes.
@@ -156,6 +159,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   hub.flagships = flagships;
   emperors.layoutOf = (systemId) => flagships.layout(systemId);
   const space = new SpaceService(flagships, emperors, social, app.log);
+  space.onReputation = (emperorId, delta) => reputation.addLater(emperorId, delta);
   space.onFlagship = (emperorId) => void hub.publishFlagship(emperorId);
   // Espacio profundo: contenido secreto de las regiones y minería de sus asteroides.
   space.deep = new DeepSpaceService(deps.db, config);

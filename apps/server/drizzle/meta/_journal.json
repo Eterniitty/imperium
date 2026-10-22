@@ -239,6 +239,13 @@
       "when": 1792651534242,
       "tag": "0034_tecnologia",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1792652290629,
+      "tag": "0035_reputacion",
+      "breakpoints": true
     }
   ]
 }

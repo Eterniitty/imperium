@@ -1,4 +1,4 @@
-import { AIM_ASSIST, ALIEN_LOCAL, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, SUPERMASSIVE, getAlienShipClass, getShipClass, HELP_CALL, MINING, PIRATE_AI, PIRATE_AMBUSH, SCAVENGER_LAIR, type ShipClassId } from "@imperium/content";
+import { AIM_ASSIST, ALIEN_LOCAL, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, SUPERMASSIVE, REPUTATION, getAlienShipClass, getShipClass, HELP_CALL, MINING, PIRATE_AI, PIRATE_AMBUSH, SCAVENGER_LAIR, type ShipClassId } from "@imperium/content";
 import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, MOTHERSHIP_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
 import { addToHold, arriveVelocity, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
@@ -1362,6 +1362,8 @@ export class SpaceService {
     // Atacar a otro humano en el Núcleo: la milicia va a por el agresor.
     if (attackerOwner && !v.alien && !v.militia && v.kind !== "pirate" && (v.owner ?? v.emperorId) !== attackerOwner && !attackerOwner.startsWith("pirate:") && !attackerOwner.startsWith("militia:") && inHumanCore(v.systemId)) {
       const list = this.aggressors.get(v.systemId) ?? new Map<string, number>();
+      // Reputación: atacar a otro humano en el Núcleo (una vez por incidente).
+      if (!list.has(attackerOwner) || list.get(attackerOwner)! < this.now()) this.onReputation?.(attackerOwner, REPUTATION.attackHuman);
       list.set(attackerOwner, this.now() + CORE_MILITIA.aggressorSec * 1000);
       this.aggressors.set(v.systemId, list);
     }
@@ -1372,8 +1374,17 @@ export class SpaceService {
     }
     const destroyed = v.combat.damage(damage, this.now());
     this.broadcastState(v);
-    if (destroyed) void this.destroy(v, attackerName);
+    if (destroyed) {
+      // Reputación: derribar a un Carroñero (mucho más si es una guarida).
+      if (v.kind === "pirate" && attackerOwner && !attackerOwner.startsWith("pirate:") && !attackerOwner.startsWith("militia:")) {
+        this.onReputation?.(attackerOwner, v.ai?.anchored ? REPUTATION.lairKill : REPUTATION.pirateKill);
+      }
+      void this.destroy(v, attackerName);
+    }
   }
+
+  /** Cambios de reputación (los guarda `ReputationService`). */
+  onReputation: ((emperorId: string, delta: number) => void) | null = null;
 
   /**
    * Nave destruida. Un pirata reaparece al rato. La de un Emperador sale del

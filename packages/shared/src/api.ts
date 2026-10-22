@@ -296,7 +296,7 @@ export interface RankingEntry {
 /** Respuesta de `GET /api/ranking`. */
 export interface RankingResponse {
   top: RankingEntry[];
-  me: (RankingEntry & { stats: Record<"colonies" | "population" | "discoveries" | "ships" | "core", number> }) | null;
+  me: (RankingEntry & { stats: Record<"colonies" | "population" | "discoveries" | "ships" | "core", number>; reputation: number }) | null;
   total: number;
 }
 
