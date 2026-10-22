@@ -157,7 +157,7 @@ export const ALIEN_SHIP_CLASSES: readonly AlienShipClassDefinition[] = withHardp
     id: "nomad_ark", speciesId: "void_nomads", nameKey: "ship.nomad_ark.name", descriptionKey: "ship.nomad_ark.description",
     role: "trader", hull: 420, attack: 10, battleShield: 20, speedLyPerHour: 120, scannerRangeLy: 15, cargo: 2000,
     combat: { shield: 150, shieldRegenPerSec: 10, shieldDelaySec: 5, weapons: [cannon(6, 0.4)] },
-    model: { lengthM: 180, hullShape: "pod", engines: 4 },
+    model: { lengthM: 180, hullShape: "pod", engines: 4, pods: 6, dish: true },
   },
   {
     id: "nomad_corsair", speciesId: "void_nomads", nameKey: "ship.nomad_corsair.name", descriptionKey: "ship.nomad_corsair.description",
