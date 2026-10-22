@@ -49,7 +49,7 @@ The hull **does not heal by leaving the system**: the crew repairs it slowly and
 
 ### Core Militia
 
-In the **Human Core** systems the **Core Militia** patrols (AI human ships with good aim). It leaves everyone alone except whoever **attacks another human** there: for a while that Emperor (and their escorts) counts as an aggressor and the militia goes after them as a pack. If you destroy it, it comes back after a while. It also hunts any Scavenger that slips in.
+In the **Human Core** systems the **Core Militia** patrols (AI human ships with good aim). It leaves everyone alone except whoever **attacks another human** there: for a while that Emperor (and their escorts) counts as an aggressor and the militia goes after them as a pack. **Shooting the militia itself** also makes you an aggressor: the whole patrol fights back and reinforcements (the help-call ships) arrive where the attack happened; your reputation drops too. If you destroy it, it comes back after a while. It also hunts any Scavenger that slips in.
 
 {{tabla:milicia}}
 

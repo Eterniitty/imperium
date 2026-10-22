@@ -1397,6 +1397,18 @@ export class SpaceService {
       list.set(attackerOwner, this.now() + CORE_MILITIA.aggressorSec * 1000);
       this.aggressors.set(v.systemId, list);
     }
+    // Atacar a la milicia: toda la patrulla del sistema va a por el agresor y llegan refuerzos (una vez por ataque).
+    if (v.militia && attackerOwner && !attackerOwner.startsWith("pirate:") && !attackerOwner.startsWith("militia:")) {
+      const now = this.now();
+      const list = this.aggressors.get(v.systemId) ?? new Map<string, number>();
+      if (!list.has(attackerOwner) || list.get(attackerOwner)! < now) {
+        this.onReputation?.(attackerOwner, REPUTATION.attackHuman);
+        const room = this.rooms.get(v.systemId);
+        if (room) this.sendMilitiaHelp(v.systemId, room, v.pose.p, `vs:${attackerOwner}`, now);
+      }
+      list.set(attackerOwner, now + CORE_MILITIA.aggressorSec * 1000);
+      this.aggressors.set(v.systemId, list);
+    }
     // Disparar a una nave alienígena: esa nave te ataca desde ya y su facción te guarda rencor.
     if (v.alien && attackerOwner && !attackerOwner.startsWith("pirate:") && !v.alien.provoked.has(attackerOwner)) {
       v.alien.provoked.add(attackerOwner);
@@ -1624,41 +1636,51 @@ export class SpaceService {
     const layout = this.layout(m.systemId);
     // Con muy mala reputación ante la humanidad (`REPUTATION.militiaMin`), la milicia no acude.
     if (militiaWilling && room && layout && systemRing(m.systemId) <= HELP_CALL.militiaMaxRing) {
-      HELP_CALL.militiaShips.forEach((classId, i) => {
-        const id = `militia:${m.systemId}:help:${m.emperorId}:${i}`;
-        const cls = getShipClass(classId as ShipClassId);
-        if (this.members.has(id) || !cls) return;
-        const a = (i / HELP_CALL.militiaShips.length) * Math.PI * 2;
-        const p: Vec3 = [m.pose.p[0] + Math.cos(a) * HELP_CALL.militiaArriveM, m.pose.p[1] + 300, m.pose.p[2] + Math.sin(a) * HELP_CALL.militiaArriveM];
-        const combat = new Combatant(cls.hull, cls.combat, now);
-        this.combatants.set(id, combat);
-        const helper: Member = {
-          emperorId: id,
-          kind: "fleet",
-          classId: cls.id,
-          militia: { index: 100 + i, help: { caller: m.emperorId, until: now + HELP_CALL.militiaStaySec * 1000 } },
-          // Su «casa» es la nave que pidió ayuda: sin enemigos, se quedan a su lado.
-          ai: { home: m.pose.p, phase: (i * 0.53) % 1, classId: cls.id, aimJitter: CORE_MILITIA.aimJitter, mode: "hunt" },
-          radius: Math.max(HIT_RADIUS, cls.model.lengthM * 0.45),
-          name: "#militia",
-          systemId: m.systemId,
-          clients: new Set(),
-          pose: { p, q: [0, 0, 0, 1], v: [0, 0, 0] },
-          poseAt: now,
-          history: [{ t: now, p }],
-          dirty: true,
-          allies: new Set(),
-          combat,
-          sentShield: -1,
-          park: null,
-        };
-        for (const o of room) this.sendTo(o, { t: "ship", ship: this.stateFor(helper, o) });
-        room.add(helper);
-        this.members.set(id, helper);
-        militia++;
-      });
+      militia = this.sendMilitiaHelp(m.systemId, room, m.pose.p, m.emperorId, now);
     }
     return { ok: true, systemId: m.systemId, name: m.name, allies: m.allies, militia };
+  }
+
+  /**
+   * Refuerzos de la milicia junto a `at`, a petición de `caller` (un Emperador
+   * que pidió ayuda o una nave de la milicia atacada). Devuelve cuántos salen.
+   */
+  private sendMilitiaHelp(systemId: string, room: Set<Member>, at: Vec3, caller: string, now: number): number {
+    let sent = 0;
+    HELP_CALL.militiaShips.forEach((classId, i) => {
+      const id = `militia:${systemId}:help:${caller}:${i}`;
+      const cls = getShipClass(classId as ShipClassId);
+      if (this.members.has(id) || !cls) return;
+      const a = (i / HELP_CALL.militiaShips.length) * Math.PI * 2;
+      const p: Vec3 = [at[0] + Math.cos(a) * HELP_CALL.militiaArriveM, at[1] + 300, at[2] + Math.sin(a) * HELP_CALL.militiaArriveM];
+      const combat = new Combatant(cls.hull, cls.combat, now);
+      this.combatants.set(id, combat);
+      const helper: Member = {
+        emperorId: id,
+        kind: "fleet",
+        classId: cls.id,
+        militia: { index: 100 + i, help: { caller, until: now + HELP_CALL.militiaStaySec * 1000 } },
+        // Su «casa» es donde se pidió ayuda: sin enemigos, se quedan allí.
+        ai: { home: at, phase: (i * 0.53) % 1, classId: cls.id, aimJitter: CORE_MILITIA.aimJitter, mode: "hunt" },
+        radius: Math.max(HIT_RADIUS, cls.model.lengthM * 0.45),
+        name: "#militia",
+        systemId,
+        clients: new Set(),
+        pose: { p, q: [0, 0, 0, 1], v: [0, 0, 0] },
+        poseAt: now,
+        history: [{ t: now, p }],
+        dirty: true,
+        allies: new Set(),
+        combat,
+        sentShield: -1,
+        park: null,
+      };
+      for (const o of room) this.sendTo(o, { t: "ship", ship: this.stateFor(helper, o) });
+      room.add(helper);
+      this.members.set(id, helper);
+      sent++;
+    });
+    return sent;
   }
 
   /** La milicia patrulla y persigue a los agresores del sistema (y a los piratas que se colasen). */

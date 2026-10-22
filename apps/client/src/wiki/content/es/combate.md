@@ -49,7 +49,7 @@ El **PvP es libre** en todo el universo, sin protección para los desconectados:
 
 ### Milicia del Núcleo
 
-En los sistemas del **Núcleo Humano** patrulla la **Milicia del Núcleo** (naves humanas de la IA, con buena puntería). No se mete con nadie salvo con quien **ataque a otro humano** allí: durante un rato, ese Emperador (y sus escoltas) es un agresor y la milicia va a por él en manada. Si la destruyes, reaparece al cabo de un tiempo. También caza a cualquier Carroñero que se colase.
+En los sistemas del **Núcleo Humano** patrulla la **Milicia del Núcleo** (naves humanas de la IA, con buena puntería). No se mete con nadie salvo con quien **ataque a otro humano** allí: durante un rato, ese Emperador (y sus escoltas) es un agresor y la milicia va a por él en manada. **Disparar a la propia milicia** también te convierte en agresor: toda la patrulla se defiende y acuden refuerzos (las naves de la petición de ayuda) donde fue el ataque; además baja tu reputación. Si la destruyes, reaparece al cabo de un tiempo. También caza a cualquier Carroñero que se colase.
 
 {{tabla:milicia}}
 
