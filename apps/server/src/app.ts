@@ -23,6 +23,7 @@ import { HumanityService } from "./humanity/service";
 import { ProbeService } from "./probe/service";
 import { MercenaryService } from "./fleet/mercenaries";
 import { designRoutes } from "./design/routes";
+import { rankingRoutes } from "./ranking/routes";
 import { gateRoutes } from "./gate/routes";
 import { MarketService } from "./market/service";
 import { inHumanCore } from "./emperor/world";
@@ -257,6 +258,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   await app.register(warRoutes, { config, db: deps.db, emperors, wars, aliens });
   await app.register(alienRoutes, { config, db: deps.db, emperors, discoveries, wars, aliens });
   await app.register(socialRoutes, { config, db: deps.db, emperors, social, hub });
+  await app.register(rankingRoutes, { config, db: deps.db, emperors });
   await app.register(discoveryRoutes, { config, db: deps.db, emperors, discoveries });
   // Wiki editable por los administradores (ADMIN_EMAILS).
   const wiki = new WikiService(deps.db);

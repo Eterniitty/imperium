@@ -52,6 +52,9 @@ import {
   fleetFuelMax,
   RECIPES,
   type ComponentAmounts,
+  ERA_GOALS,
+  PRESTIGE,
+  type MetaStat,
   type PartCost,
   type PartDef,
   TRAVEL_SPEED_SCALE,
@@ -222,6 +225,17 @@ export const GEN_TABLES: Record<string, Builder> = {
       `${num(locale, Math.ceil(fleetFuelMax(s.id) * FLEET_FUEL.volatilesPerLy * (s.hull / 100)))} ${t("resource.volatiles").toLowerCase()}`,
     ]),
     numeric: [1, 2],
+  }),
+
+  prestigio: (t, locale) => ({
+    head: [t("wiki.col.concept"), t("wiki.col.value")],
+    rows: (Object.keys(PRESTIGE) as MetaStat[]).map((k) => [t(`ranking.stat.${k}`, { n: num(locale, PRESTIGE[k]) }), num(locale, PRESTIGE[k])]),
+    numeric: [1],
+  }),
+
+  objetivos: (t) => ({
+    head: [t("ranking.goals")],
+    rows: ERA_GOALS.map((g) => [t(`goal.${g.id}` as I18nKey)]),
   }),
 
   recetas: (t, locale) => ({

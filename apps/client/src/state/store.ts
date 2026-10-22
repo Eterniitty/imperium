@@ -17,7 +17,7 @@ import {
 import { UNIVERSE_SEED } from "../config";
 
 export type ViewMode = "galaxy" | "system" | "tunnel";
-export type EconomyTab = "humanity" | "market";
+export type EconomyTab = "humanity" | "market" | "ranking";
 
 /**
  * Detalle del sistema seleccionado (niebla de guerra; ver `details.ts`):

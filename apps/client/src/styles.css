@@ -944,3 +944,16 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .ship-bad { color: var(--danger); }
 @media (max-width: 1000px) { .ship-editor-body { grid-template-columns: 1fr; } }
 .fuel-low { color: #ff9f5a; }
+
+/* Metas: clasificación y objetivos de la era. */
+.ranking-me { font-size: 14px; color: var(--gold); margin: 8px 0; }
+.goals { list-style: none; padding: 0; margin: 6px 0 8px; display: grid; gap: 6px; font-size: 13px; }
+.goals li { display: grid; grid-template-columns: 1fr 140px 90px; gap: 10px; align-items: center; }
+.goals li.done { color: #7ef0b0; }
+.goal-bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.goal-bar span { display: block; height: 100%; background: linear-gradient(90deg, #e8b64c, #ffd27a); }
+.goals li.done .goal-bar span { background: #7ef0b0; }
+.ranking-table td:first-child { width: 40px; }
+.ranking-table td:last-child { text-align: right; width: 110px; }
+.ranking-table tr.me th, .ranking-table tr.me td { color: var(--gold); }
+.ranking-table .tag { margin-left: 8px; }

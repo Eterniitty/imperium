@@ -271,6 +271,25 @@ export type ApiErrorCode =
 export const SHIP_DESIGNS_MAX = 30;
 export const SHIP_DESIGN_NAME_MAX = 40;
 
+// --- Metas: prestigio, clasificación y objetivos de la era ---
+
+export interface RankingEntry {
+  rank: number;
+  /** Null si el Emperador no es visible para quien pregunta (oculto, o solo para sus compañeros). */
+  name: string | null;
+  ai: boolean;
+  prestige: number;
+  /** Ha llegado a Ónfalo. */
+  core: boolean;
+}
+
+/** Respuesta de `GET /api/ranking`. */
+export interface RankingResponse {
+  top: RankingEntry[];
+  me: (RankingEntry & { stats: Record<"colonies" | "population" | "discoveries" | "ships" | "core", number> }) | null;
+  total: number;
+}
+
 /** Foto de un diseño (lo que se construye y lo que lleva la nave). */
 export interface ShipDesignSnapshot {
   name: string;
