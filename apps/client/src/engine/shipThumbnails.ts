@@ -59,7 +59,7 @@ function thumbnail(key: string, L: number | null, make: () => THREE.Group | null
   scene.add(ship);
   const camera = new THREE.PerspectiveCamera(30, WIDTH / HEIGHT, L * 0.05, L * 20);
   // De tres cuartos, desde delante, arriba y a un lado; el morro apunta a la izquierda.
-  camera.position.set(-L * 2.0, L * 0.95, -L * 1.25);
+  camera.position.set(-L * 1.45, L * 0.7, -L * 0.9);
   camera.lookAt(0, 0, 0);
   const rig = ship.userData.rig as { setThrust(k: number): void; tick(t: number, dt: number, idle: number): void };
   rig.setThrust(0.6);

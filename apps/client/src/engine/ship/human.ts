@@ -740,7 +740,57 @@ function capital(b: Builder): void {
   b.navLights(v(-(W * 0.56 + W * 0.55 * Math.cos(0.12)), H * 0.22 + W * 0.55 * Math.sin(0.12), 0.34), 0.38);
   b.band(-0.28, b.m(1.2));
   b.band(-0.25, b.m(0.6));
-  b.greebles(-0.3, 0.38, 40);
+  if (b.look.model.lengthM >= 1000) mothershipExtras(b);
+  b.greebles(-0.3, 0.38, b.look.model.lengthM >= 1000 ? 90 : 40);
+}
+
+/**
+ * Lo que distingue a la nave nodriza (más de 1000 m) de un portanaves: dos
+ * cascos laterales con sus motores unidos por pilones, una gran boca de hangar
+ * iluminada en la proa y una segunda torre en el lomo.
+ */
+function mothershipExtras(b: Builder): void {
+  const { parts, W, H } = b;
+  const OX = W * 0.86;
+  b.sym((side) => {
+    b.section(
+      [
+        { z: -0.34, w: W * 0.08, h: H * 0.12, y: -H * 0.02, c: 0.2, t: 0.8 },
+        { z: -0.26, w: W * 0.22, h: H * 0.34, y: 0, c: 0.2, t: 0.85 },
+        { z: 0.3, w: W * 0.22, h: H * 0.34, y: 0, c: 0.2, t: 0.85 },
+        { z: 0.4, w: W * 0.18, h: H * 0.28, y: 0, c: 0.2 },
+      ],
+      "hull",
+      side * OX,
+    );
+    // Franja de blindaje y cubiertas iluminadas a lo largo del casco lateral.
+    b.section([{ z: -0.2, w: W * 0.235, h: H * 0.06, y: H * 0.12 }, { z: 0.26, w: W * 0.235, h: H * 0.06, y: H * 0.12 }], "plate", side * OX);
+    for (let i = 0; i < 9; i++) windows(parts, v(side * (OX + W * 0.111), -H * 0.02, -0.2 + i * 0.05), b.m(0.1), H * 0.035, 0.03);
+    // Pilones que los unen al casco central.
+    for (const z of [-0.12, 0.08, 0.26]) parts.add("dark", block(OX - W * 0.5, H * 0.12, 0.05, 0.3), { p: [side * (W * 0.5 + (OX - W * 0.5) / 2), -H * 0.02, z] }, true);
+    // Sus motores, y una luz de posición en la proa de cada uno.
+    mainEngine(parts, side * OX, H * 0.06, 0.4, W * 0.06, 0.06);
+    mainEngine(parts, side * OX, -H * 0.08, 0.4, W * 0.06, 0.06);
+    parts.light(v(side * OX, H * 0.08, -0.33), side > 0 ? GREEN : RED, "steady");
+  });
+  // Boca del hangar principal en la proa: un portón enorme con luz.
+  parts.add("dark", new THREE.BoxGeometry(W * 0.5, H * 0.34, b.m(1)), { p: [0, -H * 0.02, -0.37] }, true);
+  parts.add("glow", new THREE.BoxGeometry(W * 0.44, H * 0.04, b.m(1.2)), { p: [0, -H * 0.16, -0.37] });
+  parts.add("glow", new THREE.BoxGeometry(W * 0.44, H * 0.02, b.m(1.2)), { p: [0, H * 0.12, -0.37] });
+  for (const x of [-0.18, -0.06, 0.06, 0.18]) parts.light(v(W * x, -H * 0.19, -0.372), AMBER, "steady");
+  // Segunda torre en el lomo, hacia proa.
+  const y0 = H * 0.54;
+  b.section(
+    [
+      { z: -0.16, w: W * 0.16, h: H * 0.1, y: y0 + H * 0.05, t: 0.75 },
+      { z: -0.13, w: W * 0.22, h: H * 0.18, y: y0 + H * 0.09, t: 0.75 },
+      { z: -0.04, w: W * 0.22, h: H * 0.18, y: y0 + H * 0.09, t: 0.8 },
+      { z: -0.02, w: W * 0.16, h: H * 0.1, y: y0 + H * 0.05 },
+    ],
+    "plate",
+  );
+  windows(parts, v(0, y0 + H * 0.12, -0.132), W * 0.18, H * 0.03, b.m(0.3), [-0.9, 0, 0]);
+  antenna(parts, v(0, y0 + H * 0.18, -0.08), H * 0.5);
 }
 
 /** Transportes: carga en contenedores, tropas o colonos. */
