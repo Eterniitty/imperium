@@ -82,6 +82,12 @@ export function TopBar() {
           {t("lineage.open")}
         </button>
       )}
+      {/* Astillero: diseño de naves por piezas. */}
+      {emperor && (
+        <button className="btn hide-sm" onClick={() => gameStore.getState().setShipEditorOpen(true)} title={t("shipEditor.openTitle")}>
+          {t("shipEditor.open")}
+        </button>
+      )}
 
       {emperor && (
         <button className="btn" onClick={() => engineRef.current?.toggleMap()} title={t("action.toggleMap")}>

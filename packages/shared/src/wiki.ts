@@ -33,6 +33,7 @@ export const WIKI_ARTICLES = [
   { slug: "mercado", group: "empire" },
   { slug: "flotas", group: "empire" },
   { slug: "naves", group: "empire" },
+  { slug: "astillero", group: "empire" },
   { slug: "guerra", group: "war" },
   { slug: "conquista", group: "war" },
   { slug: "carroneros", group: "war" },

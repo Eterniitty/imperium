@@ -32,6 +32,7 @@ import { SystemPanel } from "./SystemPanel";
 import { TopBar } from "./TopBar";
 import { DeathScreen } from "./DeathScreen";
 import { LineagePanel } from "./LineagePanel";
+import { ShipEditor } from "./ShipEditor";
 import { PhotosensitivityNotice } from "./PhotosensitivityNotice";
 import { CompanionInbox } from "./CompanionInbox";
 
@@ -148,6 +149,7 @@ export function App() {
         <EconomyPanel />
         <ColonyManager />
         <LineagePanel />
+        <ShipEditor />
         <PhotosensitivityNotice />
       </div>
     </div>

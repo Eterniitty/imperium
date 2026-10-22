@@ -46,6 +46,10 @@ import {
   INTEREST,
   MOTHERSHIP_WORKSHOP,
   MOTHERSHIP_HANGAR,
+  HULLS,
+  PARTS,
+  type PartCost,
+  type PartDef,
   TRAVEL_SPEED_SCALE,
   FLEET_TACTIC_IDS,
   STAR_HEAT_LETHAL_DPS,
@@ -171,7 +175,62 @@ export const EXAMPLE_INSTALLATIONS: InstallationCounts = { mine: 2, refinery: 1,
 
 type Builder = (t: T, locale: Locale) => GenTable;
 
+/** Coste de una pieza o casco del astillero en una línea. */
+function partCost(t: T, locale: Locale, c: PartCost): string {
+  return (Object.entries(c) as Array<[keyof PartCost, number]>)
+    .filter(([, n]) => n > 0)
+    .map(([k, n]) => (k === "credits" ? `₢ ${num(locale, n)}` : `${t(`resource.${k}`)} ${num(locale, n)}`))
+    .join(" · ");
+}
+
+/** Lo que aporta una pieza, según su tipo. */
+function partEffect(locale: Locale, p: PartDef): string {
+  const s = p.stats;
+  const out: string[] = [];
+  if (s.powerMW) out.push(`${num(locale, s.powerMW)} MW`);
+  if (s.thrustKN) out.push(`${num(locale, s.thrustKN)} kN`);
+  if (s.riftLyPerHour) out.push(`${num(locale, s.riftLyPerHour)} a.l./h · ${num(locale, s.chargeSec ?? 0)} s`);
+  if (s.fuel) out.push(`⛽ ${num(locale, s.fuel)}`);
+  if (s.shield) out.push(`🛡 ${num(locale, s.shield)} (+${num(locale, s.shieldRegen ?? 0)}/s)`);
+  if (s.dps) out.push(`${num(locale, s.dps)} dps · ${num(locale, s.rangeM ?? 0)} m`);
+  if (s.humans) out.push(`👤 ${num(locale, s.humans)}`);
+  if (s.cargo) out.push(`📦 ${num(locale, s.cargo)}`);
+  if (s.fighters) out.push(`✈ ${num(locale, s.fighters)}`);
+  if (s.scanLy) out.push(`${num(locale, s.scanLy)} a.l.`);
+  if (s.hull) out.push(`+${num(locale, s.hull)}`);
+  if (s.crew) out.push(`👤 ${num(locale, s.crew)}`);
+  if (p.drawMW) out.push(`−${num(locale, p.drawMW)} MW`);
+  return out.join(" · ");
+}
+
 export const GEN_TABLES: Record<string, Builder> = {
+  cascos: (t, locale) => ({
+    head: [t("shipEditor.hull"), t("shipEditor.col.size"), t("shipEditor.stat.mass"), t("shipEditor.stat.hull"), t("shipEditor.slots"), t("shipEditor.cost"), t("shipEditor.col.builtAt")],
+    rows: HULLS.map((h) => [
+      t(h.nameKey as I18nKey),
+      h.class,
+      `${num(locale, h.massT)} t`,
+      num(locale, h.hull),
+      num(locale, h.slots.length),
+      partCost(t, locale, h.cost),
+      t(`installation.${h.builtAt}`),
+    ]),
+    numeric: [2, 3, 4],
+  }),
+
+  piezas: (t, locale) => ({
+    head: [t("shipEditor.col.part"), t("shipEditor.col.kind"), t("shipEditor.col.size"), t("shipEditor.stat.mass"), t("shipEditor.col.effect"), t("shipEditor.cost")],
+    rows: PARTS.map((p) => [
+      t(p.nameKey as I18nKey) + (p.minHull ? ` (≥ ${p.minHull})` : ""),
+      t(`partKind.${p.kind}`),
+      p.size,
+      `${num(locale, p.massT)} t`,
+      partEffect(locale, p),
+      partCost(t, locale, p.cost),
+    ]),
+    numeric: [3],
+  }),
+
   recursos: (t, locale) => ({
     head: [t("wiki.col.resource"), t("wiki.col.storage"), t("wiki.col.founding"), t("wiki.col.transport")],
     rows: [
