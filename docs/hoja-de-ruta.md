@@ -137,6 +137,14 @@ Informe completo en Claude Docs («Aeonarch — Plan de juego»). Cinco fases, c
   - sesión corta y límite de intentos;
   - noindex y fuera de robots.txt; 404 para quien no sea administrador.
   Funciones: buscar jugadores; ajustar recursos, combustible, munición, naves y flotas; mover Emperadores; cola de reportes y sus acciones (renombrado forzado, aviso, suspensión temporal o permanente, quitarla); historial de sanciones. Sin datos personales (ni correo completo, ni IP, ni tokens, ni sesiones) y **sin exportar ni descargar datos de jugadores**. Auditoría de todo (quién, qué, cuándo, antes y después) que no se puede borrar desde el panel. Los cambios masivos llevan confirmación y copia previa, y pasan por la API del servidor (respetando su estado en memoria).
+- [ ] **Recuperación de cuenta** (aprobada, en el panel de cuenta):
+  - Códigos de recuperación: 8 a 10, de un solo uso, mostrados una vez y guardados solo con hash (argon2/bcrypt). Con uno, el jugador cambia él mismo su correo. Regenerarlos invalida los anteriores.
+  - Passkey como segunda llave y correo de recuperación opcional.
+  - Sin intervención del administrador ni reasignación a mano. Sin DNI, fotos ni preguntas sobre el juego.
+  - Si se pierden correo, códigos y passkey, no hay recuperación: avisarlo claramente al registrarse y en el panel.
+  - Límite de intentos, aviso al correo actual cuando se usa un código o se cambia el correo, y plazo de gracia antes de que el correo antiguo deje de valer.
+  - Privacidad: códigos con hash; correo de recuperación opcional.
+- [ ] **Colisión de flotas en el servidor**: escoltas y posiciones aparcadas que eviten las naves grandes paradas (en el cliente ya está).
 - [ ] **Panel de cuenta del jugador** (otra ruta, otro código, otros permisos), solo sobre su propia cuenta: recuperar acceso, exportar sus datos (art. 15 y 20; se le entregan solo a él, sin pasar por el administrador), borrar la cuenta (art. 17) con confirmación y plazo de gracia, passkeys, cerrar otras sesiones, cambiar el correo y la configuración. Al hacerlo, actualizar los textos legales: qué ve el administrador, la auditoría y los plazos de borrado.
 - [ ] **Passkeys (opcional)** para entrar al juego: cada jugador decide si registra una (Windows Hello, Touch ID, gestor del navegador o llave FIDO2) en Ajustes → Cuenta, varias por cuenta y borrables; el enlace por correo sigue siendo la entrada por defecto. WebAuthn con rpId `aeonarch.de`. **Al desplegarlo**, actualizar la política de privacidad (es/en; y términos si hace falta, subiendo `LEGAL_VERSION`): se guardan la clave pública, el ID de la credencial, el contador de firmas, la etiqueta y las fechas de alta y último uso; la biometría y la clave privada nunca salen del dispositivo; base legal: ejecución del contrato y seguridad de la cuenta; se borran al eliminar la passkey o la cuenta (y entran en la exportación de datos).
   Requisitos aprobados por el usuario (técnica y RGPD):
