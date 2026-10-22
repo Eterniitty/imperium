@@ -234,6 +234,7 @@ export function ContractsWindow() {
           {c.status === "active" ? <> · {t("contract.left", { time: formatDuration(c.expiresAt - now) })}</> : <> · {t(`contract.status.${c.status}` as I18nKey)}</>}
         </span>
       </div>
+      <div className="contract-actions">
       {c.kind === "rescue" && c.status === "active" && c.systemId && (
         <button className="btn btn-small" onClick={() => engineRef.current?.showSystem(c.systemId!)}>
           {t("contract.showMap")}
@@ -244,6 +245,7 @@ export function ContractsWindow() {
           {t("contract.abandon")}
         </button>
       )}
+      </div>
     </li>
   );
   return (

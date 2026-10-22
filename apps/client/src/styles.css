@@ -1191,3 +1191,7 @@ button.legend-title { background: none; border: none; padding: 0; width: 100%; t
 .contracts-win .empire-tabs .planet-win-tab { padding: 8px 7px; font-size: 11px; letter-spacing: 0.06em; }
 .contract-row { flex-wrap: wrap; }
 .contract-main { flex: 1 1 240px; }
+.contract-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.contract-actions:empty { display: none; }
+/* Opaco: puede quedar encima de otro panel (el lateral del sistema) y no debe mezclarse con él. */
+.tutorial-panel, .tutorial-pill { background: rgba(9, 14, 26, 0.97); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55); }
