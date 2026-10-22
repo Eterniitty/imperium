@@ -18,7 +18,7 @@ export const PILOT_BOOST = FLIGHT_MODEL.boostFactor;
  * aleja. Tras una carga de unos segundos acelera casi de golpe; frena suave.
  */
 export const PULSE_MIN_SPEED = 300;
-export const PULSE_MAX_SPEED = 30_000_000;
+export const PULSE_MAX_SPEED = 5_000_000;
 /**
  * Segundos "hasta la superficie" que deja el límite al ir de frente hacia un
  * cuerpo: la velocidad máxima es la distancia entre este tiempo. Así la nave
