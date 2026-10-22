@@ -74,6 +74,8 @@ The pulse drive ([[P]], on and off) is a **supercruise** to cross the system fro
 
 ## Cruise autopilot
 
+Destinations: planets, moons, belts, anomaly, asteroids, **the star** (it stops outside the heat zone or the horizon; ☀ button in the system list), **your stopped fleets** and your motherships (within docking range), and any **visible ship**: with "Follow" (H) it flies in formation; with **"Cruise to the target"** in the locked-target box, it chases it and stops beside it (if it jumps or vanishes, cruise is cancelled with a notice).
+
 The cruise notice minimises with **▁** into a pill ("→ destination · arrival") and expands with a click; it is remembered.
 
 Cruise **keeps going with the galaxy map open** (M): the ship keeps flying to its destination and, when you come back (M or "Pilot"), you find it where it is, with the cruise notice. Viewing another system from the map does stop it (the ship stays parked).

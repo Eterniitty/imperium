@@ -1,10 +1,11 @@
 import * as THREE from "three";
 import { escapeJustUnlocked, pointerXY } from "./pointerLock";
+import { fleetName } from "../ui/fleetName";
 import { flightSound, playCruiseArrive } from "../audio/flightSfx";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
 import type { FlagshipStatus, Fleet, I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, ShipDesignSnapshot, WeaponKind, WorldPosition } from "@imperium/shared";
-import { ARRIVAL_EDGE, deepLayout, designStats, starHeatDps, defaultPark, moonOffset, parkedPosition, parkAt, anchorCenter, PULSE_MAX_SPEED, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
+import { ARRIVAL_EDGE, deepLayout, designStats, starHeatDps, insideEventHorizon, defaultPark, moonOffset, parkedPosition, parkAt, anchorCenter, PULSE_MAX_SPEED, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
 import { resetSpace, shipName, spaceStore, type SelectedWeapon } from "../net/space";
 import { TargetAssist, relationOf, type CannonAim } from "./TargetAssist";
 import { telemetry, type FlightTelemetry } from "./telemetry";
@@ -1876,7 +1877,7 @@ export class SystemView implements View {
       if (model) ships.push({ id: s.state.id, name: shipName(s.state, locale), ally: s.state.ally, pirate: s.state.kind === "pirate", at: model.position.clone(), q: model.quaternion.clone() });
     }
     const target = this.autopilot.target;
-    const spots = cruiseCatalog({
+    const spotsRaw = cruiseCatalog({
       locale,
       shipPos: this.ship.position,
       bodies,
@@ -1886,6 +1887,26 @@ export class SystemView implements View {
       ships,
       point: target?.id === "point" ? (target.point ?? null) : null,
     });
+    // Ir hasta una nave (no seguirla): se para a su lado, fuera de su casco.
+    const spots = spotsRaw.map((s) => (s.kind === "ship" ? { ...s, stopRadius: Math.max(s.stopRadius, (this.remote.lengthOf(s.id.slice(5)) ?? 100) * 1.2 + this.ownLength + 300) } : s));
+    // La estrella: se para fuera de la zona de calor (y del horizonte de un agujero negro).
+    if (this.layout.starRadius > 0 && !this.deepId) {
+      const R = this.layout.starRadius;
+      let safe = R * 1.5;
+      while (safe < this.layout.boundary && (starHeatDps(this.layout, safe) > 0 || insideEventHorizon(this.layout, safe))) safe *= 1.15;
+      spots.push({ id: "star", kind: "star", name: this.layout.starClass === "BH" ? translate(locale, "cruise.blackHole") : translate(locale, "cruise.star"), center: new THREE.Vector3(), radius: R, stopRadius: safe * 1.1 });
+    }
+    // Cualquier flota propia parada aquí: se llega junto a su nave más grande, fuera de su casco.
+    const byFleet = new Map<string, { center: THREE.Vector3; lengthM: number }>();
+    for (const c of this.fleetScene.colliders()) {
+      const prev = byFleet.get(c.fleetId);
+      if (!prev || c.lengthM > prev.lengthM) byFleet.set(c.fleetId, { center: c.a.clone().add(c.b).multiplyScalar(0.5), lengthM: c.lengthM });
+    }
+    for (const f of Object.values(worldStore.getState().fleets) as Fleet[]) {
+      const big = byFleet.get(f.id);
+      if (!big || this.fleetScene.mothership(f.id)) continue;
+      spots.push({ id: `fleet:${f.id}`, kind: "fleet", name: fleetName(f, (k, p) => translate(locale, k, p)), center: big.center, radius: big.lengthM / 2, stopRadius: big.lengthM * 0.8 + 600, own: true });
+    }
     // Las nodrizas propias paradas aquí: se llega a su lado, a tiro de acoplarse (Enter).
     for (const f of Object.values(worldStore.getState().fleets) as Fleet[]) {
       const m = this.fleetScene.mothership(f.id);
@@ -1919,14 +1940,15 @@ export class SystemView implements View {
   }
 
   /** Activa el piloto automático hacia un destino del catálogo (`ship:<id>` = seguir esa nave) o un punto del espacio. */
-  cruiseTo(id: string, point?: THREE.Vector3, orbit = false): void {
+  cruiseTo(id: string, point?: THREE.Vector3, orbit = false, approach = false): void {
     const ship = this.ship;
     if (!ship || !this.flight || this.quantum || this.arrival) return;
     const spot = id === "point" ? null : this.cruiseWorld().spots.find((s) => s.id === id);
     if (id !== "point" && !spot) return;
     const name = spot?.name ?? translate(gameStore.getState().locale, "cruise.point");
     // Orbitar solo planetas y lunas.
-    const mode = spot?.kind === "ship" ? "follow" : orbit && (spot?.kind === "planet" || spot?.kind === "moon") ? "orbit" : "goto";
+    // Una nave: seguirla en formación o, con `approach`, ir hasta ella y pararse a su lado (la persigue si se mueve).
+    const mode = spot?.kind === "ship" && !approach ? "follow" : orbit && (spot?.kind === "planet" || spot?.kind === "moon") ? "orbit" : "goto";
     this.autopilot.engage(id, mode, name, point);
     this.cruiseCursor = this.flight.cursorAt;
     gameStore.getState().setCruisePanel(false);

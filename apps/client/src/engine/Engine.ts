@@ -379,8 +379,8 @@ export class Engine {
     return this.isPiloting ? this.system.cruiseTarget : null;
   }
 
-  cruiseTo(id: string, orbit = false): void {
-    if (this.isPiloting) this.system.cruiseTo(id, undefined, orbit);
+  cruiseTo(id: string, orbit = false, approach = false): void {
+    if (this.isPiloting) this.system.cruiseTo(id, undefined, orbit, approach);
   }
 
   cancelCruise(): void {

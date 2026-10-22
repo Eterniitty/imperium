@@ -10,6 +10,7 @@ import { useSettings } from "../state/settings";
 import { useServerNow } from "./useNow";
 import { useTelemetry } from "../engine/telemetry";
 import { useWorld } from "../net/world";
+import { engineRef } from "../engineRef";
 
 /** Un valor de la nave: icono del color de su recurso y el número (sin barra). */
 function Stat({ icon, value, label, kind, warn, max }: { icon: HudIconName; value: number | string; label: string; kind: string; warn?: boolean; max?: number }) {
@@ -115,6 +116,12 @@ export function CombatHud() {
             <strong className={target.ally ? "ally" : "enemy"}>{shipName(target, locale)}</strong>
             <span className="mono small"> · {formatDistance(dist)}</span>
             {target.ally && <div className="combat-assist"><span className="hud-tag warn">{t("combat.ally")}</span></div>}
+            {/* Crucero hasta la nave fijada: la persigue y se para a su lado. */}
+            <div className="combat-assist">
+              <button type="button" className="btn btn-small" onClick={() => engineRef.current?.cruiseTo(`ship:${target.id}`, false, true)}>
+                {t("cruise.toTarget")}
+              </button>
+            </div>
           </>
         ) : (
           <span className="muted small">{targetId ? "" : t("combat.noTarget", { key: keys.lockTarget })}</span>

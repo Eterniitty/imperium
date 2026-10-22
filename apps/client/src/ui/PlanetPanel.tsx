@@ -3,6 +3,7 @@ import { useClaims } from "../state/claims";
 import { gameStore, useGame, useT } from "../state/store";
 import { ownColonyAt, planetLabel } from "./colonies";
 import { DepositChips } from "./common";
+import { engineRef } from "../engineRef";
 
 export function PlanetPanel() {
   const t = useT();
@@ -12,6 +13,8 @@ export function PlanetPanel() {
   const selectedPlanet = useGame((s) => s.selectedPlanet);
   const colonies = useWorld((s) => s.colonies);
   const claims = useClaims();
+  // Pilotando en este sistema: la estrella se puede usar como destino del crucero.
+  const piloting = useGame((s) => s.flight && s.view === "system");
   if (!detail) {
     // Sin explorar (o el detalle aún no ha llegado): solo se sabe la estrella.
     if (!selected) return null;
@@ -44,6 +47,13 @@ export function PlanetPanel() {
         </div>
       </div>
 
+      {piloting && (
+        <div className="planet-cruise">
+          <button className="btn btn-small" onClick={() => engineRef.current?.cruiseTo("star")}>
+            ☀ {t("cruise.toStar")}
+          </button>
+        </div>
+      )}
       <ul className="planet-list selectable">
         {detail.planets.map((pl) => (
           <li
