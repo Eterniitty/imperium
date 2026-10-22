@@ -38,7 +38,9 @@ export function EmpireButton() {
   const t = useT();
   const open = useStore(empireStore, (s) => s.open);
   const fleets = useWorld((s) => Object.keys(s.fleets).length);
-  const colonies = useWorld((s) => Object.values(s.colonies) as Colony[]);
+  // (Selectores que devuelven lo mismo mientras no cambie: una lista nueva en cada render es un bucle infinito.)
+  const colonyMap = useWorld((s) => s.colonies);
+  const colonies = Object.values(colonyMap) as Colony[];
   const short = colonies.some((c) => c.shortage);
   return (
     <button type="button" className={open ? "btn empire-btn on" : "btn empire-btn"} title={t("empire.open")} aria-pressed={open} onClick={() => empireStore.getState().set({ open: !open })}>
@@ -55,9 +57,13 @@ export function EmpireButton() {
  */
 export function EmpireWindow({ bridge = false }: { bridge?: boolean }) {
   const t = useT();
-  const fleets = useWorld((s) => Object.values(s.fleets) as Fleet[]);
-  const colonies = useWorld((s) => Object.values(s.colonies) as Colony[]);
-  const state = useStore(empireStore, (s) => s);
+  const fleetMap = useWorld((s) => s.fleets);
+  const colonyMap = useWorld((s) => s.colonies);
+  const fleets = Object.values(fleetMap) as Fleet[];
+  const colonies = Object.values(colonyMap) as Colony[];
+  const open = useStore(empireStore, (s) => s.open);
+  const savedTab = useStore(empireStore, (s) => s.tab);
+  const state = { open, tab: savedTab, set: empireStore.getState().set };
   const save = (next: { open: boolean; tab: EmpireTab }) => state.set(next);
   const tabs: Array<{ id: EmpireTab; label: I18nKey; n?: number }> = [
     ...(bridge ? [{ id: "bridge" as const, label: "empire.tab.bridge" as const }] : []),
