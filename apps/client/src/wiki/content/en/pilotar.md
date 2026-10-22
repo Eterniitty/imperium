@@ -104,7 +104,7 @@ The **mothership** is the biggest ship you can build (1600 m, in an orbital dryd
 
 **Designing it with its modules:** the [Shipyard](/wiki/astillero) has a **mothership hull** (it needs Industry 5 and is built in an orbital drydock): you choose its reactors, drives, shields, weapons and bays (holds, hangar, armour…) and it keeps the docking, the fighter wing and the workshop.
 
-**Where it is:** next to your colony in that system, between the planet and the star (without a colony there, in the parking orbit next to the first planet). To get there without searching, open cruise ([[N]]): it is listed as “Mothership · fleet N” and the autopilot leaves you beside it, within docking range.
+**Where it is:** next to your colony in that system, between the planet and the star (without a colony there, in the parking orbit next to the first planet). To get there without searching, open cruise (the **Cruise** button in the action bar): it is listed as “Mothership · fleet N” and the autopilot leaves you beside it, within docking range.
 
 - While docked your ship does not move on its own; press [[Enter]] again to leave.
 - You undock automatically if the fleet sets off or your ship moves away.

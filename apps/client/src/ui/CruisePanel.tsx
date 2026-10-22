@@ -49,8 +49,8 @@ export function CruisePanel() {
         </span>
       </button>
       {(o.kind === "planet" || o.kind === "moon") && (
-        <button className="link-btn small" onClick={() => engineRef.current?.cruiseTo(o.id, true)}>
-          {t("cruise.orbit")}
+        <button className="btn cruise-orbit" title={t("cruise.orbitHint", { name: o.name })} onClick={() => engineRef.current?.cruiseTo(o.id, true)}>
+          ⟲ {t("cruise.orbit")}
         </button>
       )}
     </li>

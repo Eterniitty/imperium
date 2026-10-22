@@ -973,3 +973,4 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 @media (prefers-reduced-motion: reduce) { .crisis-chip { animation: none; } }
 .logistics-items li { display: flex; gap: 10px; align-items: center; }
 .goals.legends li { grid-template-columns: 1fr auto; }
+.quantum-list li:has(.cruise-orbit) { display: flex; gap: 6px; align-items: stretch; } .quantum-list li:has(.cruise-orbit) > .quantum-dest { flex: 1; } .cruise-orbit { white-space: nowrap; padding: 4px 10px; font-size: 12px; }

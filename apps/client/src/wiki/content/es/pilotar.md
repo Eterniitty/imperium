@@ -104,7 +104,7 @@ La **nave nodriza** es la nave más grande que puedes construir (1600 m, en un d
 
 **Diseñarla con sus módulos:** en el [Astillero](/wiki/astillero) hay un **casco de nave nodriza** (pide Industria 5 y se construye en un dique orbital): eliges sus reactores, motores, escudos, armas y bahías (bodegas, hangar, blindaje…) y conserva el acople, el ala de cazas y el taller.
 
-**Dónde está:** junto a tu colonia de ese sistema, entre el planeta y la estrella (si no tienes colonia allí, en la órbita de aparcamiento, junto al primer planeta). Para ir sin buscarla, abre el crucero ([[N]]): sale en la lista como «Nave nodriza · flota N» y el piloto automático te deja a su lado, a tiro de acoplarte.
+**Dónde está:** junto a tu colonia de ese sistema, entre el planeta y la estrella (si no tienes colonia allí, en la órbita de aparcamiento, junto al primer planeta). Para ir sin buscarla, abre el crucero (botón **Crucero** de la barra de acciones): sale en la lista como «Nave nodriza · flota N» y el piloto automático te deja a su lado, a tiro de acoplarte.
 
 - Mientras estás acoplada la nave no se mueve por su cuenta; vuelve a pulsar [[Enter]] para salir. Si dejas de pilotar (por ejemplo, para abrir el mapa), tu nave sigue en el hangar.
 - Te desacoplas sola si la flota se pone en marcha o si tu nave se aleja.
