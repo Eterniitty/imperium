@@ -211,6 +211,8 @@ export class SystemView implements View {
   private fireKick = 0;
   /** Casco en el fotograma anterior (para ver los golpes que le llegan). */
   private lastHull = -1;
+  /** Recién desacoplada: unos segundos sin chocar con esa nodriza (para salir de su hangar). */
+  private undockedFrom: { fleetId: string; until: number } | null = null;
   /** Fase del piloto automático en el fotograma anterior (para avisar al entrar en órbita). */
   private lastCruisePhase = "";
   /** Naves cuya grieta de llegada anunciada ya se usó (para no cerrarla a destiempo). */
@@ -1037,6 +1039,8 @@ export class SystemView implements View {
   /** Suelta la nave de la nave nodriza (a mano, o porque el servidor la desacopló) y la empuja hacia delante. */
   private undock(tellServer: boolean): void {
     if (tellServer) void connection.command("flagship.undock", {});
+    const was = spaceStore.getState().docked;
+    if (was) this.undockedFrom = { fleetId: was.fleetId, until: this.time + 8 };
     spaceStore.setState({ docked: null, undocked: false });
     if (this.flight) {
       this.flight.enabled = true;
@@ -1828,6 +1832,27 @@ export class SystemView implements View {
     if (this.deepId) hit = Math.max(hit, this.deep.collide(ship.position, this.flight!.velocity, this.ownRadius) - BODY_COLLISION.minImpactMps);
     // Otras naves.
     hit = Math.max(hit, this.remote.collide(ship.position, this.flight!.velocity, this.ownRadius) - SHIP_COLLISION.minClosingMps);
+    // Naves de las flotas paradas (las nodrizas, sobre todo): cápsula a lo largo del casco. Tras desacoplarse,
+    // unos segundos sin chocar con la propia nodriza para poder salir de ella.
+    const near = new THREE.Vector3();
+    const seg = new THREE.Vector3();
+    for (const c of this.fleetScene.colliders()) {
+      if (c.fleetId === this.undockedFrom?.fleetId && this.time < this.undockedFrom.until) continue;
+      seg.subVectors(c.b, c.a);
+      const k = THREE.MathUtils.clamp(near.subVectors(ship.position, c.a).dot(seg) / Math.max(1e-6, seg.lengthSq()), 0, 1);
+      near.copy(c.a).addScaledVector(seg, k);
+      const reach = c.radius + this.ownRadius * 0.6;
+      const d = ship.position.distanceTo(near);
+      if (d >= reach) continue;
+      normal.copy(ship.position).sub(near);
+      if (d < 1e-3) normal.set(0, 1, 0);
+      else normal.divideScalar(d);
+      ship.position.copy(near).addScaledVector(normal, reach);
+      const v = this.flight!.velocity;
+      const inward = v.dot(normal);
+      if (inward < 0) v.addScaledVector(normal, -inward);
+      hit = Math.max(hit, -inward - SHIP_COLLISION.minClosingMps);
+    }
     // Sacudida según la fuerza del golpe (llena a partir de unos 200 m/s).
     if (hit > 0) this.impactShake = Math.max(this.impactShake, Math.min(1, 0.25 + hit / 200));
   }
@@ -1870,6 +1895,11 @@ export class SystemView implements View {
     }
     const obstacles: CruiseObstacle[] = bodies.map((b) => ({ id: b.id, center: b.center, radius: b.radius, star: false }));
     if (this.layout.starRadius > 0) obstacles.push({ id: "star", center: new THREE.Vector3(), radius: this.layout.starRadius, star: true });
+    // Las naves grandes de las flotas paradas (nodrizas, capitales) también se rodean.
+    for (const c of this.fleetScene.colliders()) {
+      if (c.lengthM < 300) continue;
+      obstacles.push({ id: `fleetship:${c.fleetId}:${obstacles.length}`, center: c.a.clone().add(c.b).multiplyScalar(0.5), radius: c.lengthM * 0.5, star: false });
+    }
     return { spots, obstacles };
   }
 

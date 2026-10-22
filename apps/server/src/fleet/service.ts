@@ -301,7 +301,8 @@ export class FleetService {
       const [{ n } = { n: 0 }] = await tx.select({ n: sql<number>`coalesce(max(${fleets.number}), 0)::int` }).from(fleets).where(eq(fleets.emperorId, to.id));
       await tx.delete(fleetRoutes).where(eq(fleetRoutes.fleetId, fleetId));
       await tx.update(heirs).set({ fleetId: null }).where(eq(heirs.fleetId, fleetId));
-      await tx.update(fleets).set({ emperorId: to.id, number: n + 1, name: f.name }).where(eq(fleets.id, fleetId));
+      // El nombre lo pone el nuevo dueño (el del que la regala, p. ej. «… (regalo)», no sigue).
+      await tx.update(fleets).set({ emperorId: to.id, number: n + 1, name: null }).where(eq(fleets.id, fleetId));
       return { ok: true as const, to: to.id };
     });
   }

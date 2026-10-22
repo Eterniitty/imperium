@@ -192,6 +192,26 @@ export class FleetScene {
     return { at: s.obj.getWorldPosition(new THREE.Vector3()), lengthM: shipLength(s.classId) ?? 1000, q: s.obj.getWorldQuaternion(new THREE.Quaternion()) };
   }
 
+  /**
+   * Volúmenes de choque de las naves de las flotas paradas: una cápsula a lo
+   * largo de cada casco (eje del morro a la popa), no una esfera gigante.
+   */
+  colliders(): Array<{ fleetId: string; a: THREE.Vector3; b: THREE.Vector3; radius: number; lengthM: number }> {
+    const out: Array<{ fleetId: string; a: THREE.Vector3; b: THREE.Vector3; radius: number; lengthM: number }> = [];
+    const q = new THREE.Quaternion();
+    for (const [fleetId, g] of this.fleets) {
+      g.root.updateMatrixWorld();
+      for (const s of g.ships) {
+        const design = parseDesignKey(s.classId);
+        const L = (design ? designLook(design)?.model.lengthM : shipLength(s.classId)) ?? 100;
+        const c = s.obj.getWorldPosition(new THREE.Vector3());
+        const axis = new THREE.Vector3(0, 0, 1).applyQuaternion(s.obj.getWorldQuaternion(q));
+        out.push({ fleetId, a: c.clone().addScaledVector(axis, -L * 0.36), b: c.clone().addScaledVector(axis, L * 0.36), radius: Math.max(8, L * 0.15), lengthM: L });
+      }
+    }
+    return out;
+  }
+
   /** Dónde se dibuja una batalla (para llevar la cámara allí), o null si no está. */
   battlePosition(battleId: string): THREE.Vector3 | null {
     const b = this.battles.get(battleId);

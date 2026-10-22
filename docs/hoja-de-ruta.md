@@ -128,6 +128,7 @@ Informe completo en Claude Docs («Aeonarch — Plan de juego»). Cinco fases, c
 - [x] Velocidades: marchas cercanía/normal/rápida y pulso a 1800 km/s; alcances de combate ×4.
 - [ ] **Elegir Emperador o Emperatriz** al crear el personaje (cambiable en Ajustes); concordancia en todos los textos.
 - [ ] **«Seguir» opcional con la pestaña cerrada**: casilla «Seguir aunque cierre la pestaña»; el servidor mueve la nave tras el objetivo (velocidad y combustible suyos) y para si salta, se pierde o se acaba el combustible.
+- [ ] **Nombre de cada nave** (además del de la flota, que ya se puede cambiar con ✎): botón en el panel de flotas y en la ficha de la nave, con los mismos límites y filtro que el nombre del Emperador; reportable con los motivos fijos y con renombrado forzado por el administrador.
 - [ ] **Perfil público** del jugador o Emperador: nombre, título, linaje, fecha de alta, estadísticas públicas, lo que quiera mostrar. Sin texto libre.
 - [ ] **Reportes con motivos fijos** (ver docs/diseno.md): perfil, flota o planeta renombrado; límite de frecuencia; cola del administrador. Textos legales: normas de conducta y sanciones (términos), y qué se guarda y cuánto (privacidad).
 - [ ] **Textos legales en alemán** (Impressum § 5 DDG, Datenschutzerklärung, Nutzungsbedingungen) al nivel de ES/EN, con selector, sincronizados (subir `LEGAL_VERSION`) y diciendo qué versión prevalece (la alemana para usuarios de Alemania). Opcional: portada y entrada en alemán.
