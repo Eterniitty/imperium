@@ -2,6 +2,12 @@ import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { PULSE_MAX_SPEED } from "@imperium/sim";
 
+/** Marchas de velocidad del pilotaje (tecla Z): velocidad máxima de cada una, sin impulso (m/s). */
+export type SpeedMode = "near" | "normal" | "fast";
+export const SPEED_MODES: readonly SpeedMode[] = ["near", "normal", "fast"];
+/** Cercanía y normal son fijas; la rápida es la de siempre con impulso, por el multiplicador de Ajustes. */
+export const SPEED_MODE_TOP = { near: 100, normal: 250 } as const;
+
 /**
  * Acciones con tecla, agrupadas por contexto. Dos acciones pueden compartir
  * tecla si están en contextos distintos (p. ej. E sube la cámara en el mapa y
@@ -9,7 +15,7 @@ import { PULSE_MAX_SPEED } from "@imperium/sim";
  */
 export const ACTIONS = {
   // Pilotar la nave (y el vuelo libre de cámara en el mapa).
-  flight: ["forward", "back", "strafeLeft", "strafeRight", "up", "down", "rollLeft", "rollRight", "turnLeft", "turnRight", "pitchUp", "pitchDown", "boost", "cameraView", "fireCannon", "fireMissile", "lockTarget", "targetNext", "targetPrev", "targetNearest", "autoFire", "weaponCannon", "weaponMissile", "weaponLaser", "pulse", "flightAssist", "mouseFlight", "cameraReset", "engines", "mine", "cruise", "follow", "dock"],
+  flight: ["forward", "back", "strafeLeft", "strafeRight", "up", "down", "rollLeft", "rollRight", "turnLeft", "turnRight", "pitchUp", "pitchDown", "boost", "cameraView", "fireCannon", "fireMissile", "lockTarget", "targetNext", "targetPrev", "targetNearest", "autoFire", "weaponCannon", "weaponMissile", "weaponLaser", "pulse", "flightAssist", "mouseFlight", "cameraReset", "engines", "mine", "cruise", "follow", "dock", "speedMode"],
   // Mover la cámara por el mapa galáctico.
   map: ["mapForward", "mapBack", "mapLeft", "mapRight", "mapUp", "mapDown", "mapBoost", "flightMode", "focus", "enter", "deselect"],
   // En cualquier momento.
@@ -64,6 +70,7 @@ export const DEFAULT_BINDINGS: Bindings = {
   cruise: [],
   follow: [],
   dock: [],
+  speedMode: ["KeyZ"],
   mapForward: ["KeyW", "ArrowUp"],
   mapBack: ["KeyS", "ArrowDown"],
   mapLeft: ["KeyA", "ArrowLeft"],
@@ -182,6 +189,11 @@ export interface FlightPrefs {
    */
   flightModel: "arcade" | "newtonian";
   /**
+   * Marcha de velocidad: cercanía (para maniobrar junto a planetas y naves),
+   * normal o rápida. La rápida usa la velocidad máxima de arriba (`maxSpeed`).
+   */
+  speedMode: SpeedMode;
+  /**
    * Seguro de armas (petición del usuario): no se dispara de ninguna forma y el
    * clic izquierdo vuelve a seleccionar y mover la cámara. Por defecto, puesto.
    */
@@ -213,6 +225,7 @@ export const DEFAULT_FLIGHT_PREFS: FlightPrefs = {
   autoFire: false,
   weaponsSafe: true,
   flightModel: "arcade",
+  speedMode: "normal",
 };
 
 function loadFlightPrefs(saved: unknown): FlightPrefs {
@@ -236,6 +249,7 @@ function loadFlightPrefs(saved: unknown): FlightPrefs {
     autoFire: bool(f.autoFire, d.autoFire),
     weaponsSafe: bool(f.weaponsSafe, d.weaponsSafe),
     flightModel: f.flightModel === "newtonian" ? "newtonian" : "arcade",
+    speedMode: f.speedMode === "near" || f.speedMode === "fast" ? f.speedMode : "normal",
   };
 }
 
@@ -246,12 +260,14 @@ export interface Preferences {
   musicVolume: number;
   /** Volumen de los efectos de sonido (combate, motor cuántico), 0 a 1. */
   sfxVolume: number;
+  /** Volumen de los motores y del pulso (dentro de los efectos), 0 a 1. */
+  engineVolume: number;
   /** Accesibilidad: efectos visuales suaves, sin destellos fuertes ni sacudidas. */
   reduceEffects: boolean;
   flight: FlightPrefs;
 }
 
-const DEFAULT_PREFERENCES: Preferences = { quality: "auto", uiScale: "auto", musicVolume: 0.5, sfxVolume: 0.6, reduceEffects: false, flight: DEFAULT_FLIGHT_PREFS };
+const DEFAULT_PREFERENCES: Preferences = { quality: "auto", uiScale: "auto", musicVolume: 0.5, sfxVolume: 0.6, engineVolume: 0.7, reduceEffects: false, flight: DEFAULT_FLIGHT_PREFS };
 const PREFS_KEY = "imperium.prefs";
 
 function loadPrefs(): Preferences {
@@ -260,11 +276,13 @@ function loadPrefs(): Preferences {
     const quality = saved?.quality;
     const volume = saved?.musicVolume;
     const sfx = saved?.sfxVolume;
+    const engine = saved?.engineVolume;
     return {
       quality: quality === "auto" || quality === "high" || quality === "medium" || quality === "low" ? quality : DEFAULT_PREFERENCES.quality,
       uiScale: UI_SCALES.includes(saved?.uiScale as UiScale) ? (saved!.uiScale as UiScale) : DEFAULT_PREFERENCES.uiScale,
       musicVolume: typeof volume === "number" && volume >= 0 && volume <= 1 ? volume : DEFAULT_PREFERENCES.musicVolume,
       sfxVolume: typeof sfx === "number" && sfx >= 0 && sfx <= 1 ? sfx : DEFAULT_PREFERENCES.sfxVolume,
+      engineVolume: typeof engine === "number" && engine >= 0 && engine <= 1 ? engine : DEFAULT_PREFERENCES.engineVolume,
       reduceEffects: saved?.reduceEffects === true,
       flight: loadFlightPrefs(saved?.flight),
     };

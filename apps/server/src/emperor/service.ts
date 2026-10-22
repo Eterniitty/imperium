@@ -1,4 +1,4 @@
-import { COMPANION_ARRIVAL_OFFSET_M, EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, getShipClass, HUMANS, STARTING_FLEET } from "@imperium/content";
+import { COMPANION_ARRIVAL_OFFSET_M, EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, getShipClass, HUMANS, QUANTUM_RIFT, STARTING_FLEET } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import { deepRegionIdAt, distance, isDeepId, type CommandError, type Emperor, type StarSystemSummary, type Vec3, type WorldPosition } from "@imperium/shared";
 import { arrivalPark, arrivalParkAt, besidePoint, defaultPark, isTravelling, parkedPosition, positionAt, quantumFuelCost, regenFuel, sanitizePark, travelDurationMs, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
@@ -319,6 +319,8 @@ export class EmperorService {
       const current = this.toEmperor(row);
       const travel = current.travel;
       if (!travel || !isTravelling(current, now)) return { ok: false, error: "not_travelling" };
+      // Los últimos segundos la grieta de llegada ya se ve en el destino: no se puede salir del túnel.
+      if (travel.arriveAt - now < QUANTUM_RIFT.incomingSec * 1000) return { ok: false, error: "arriving" };
       const k = Math.max(0, Math.min(1, (now - travel.departAt) / Math.max(1, travel.arriveAt - travel.departAt)));
       const at: WorldPosition = positionAt(current, now);
       const regionId = deepRegionIdAt(at);

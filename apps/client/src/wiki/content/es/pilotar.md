@@ -28,6 +28,7 @@ Por defecto se vuela en modo **arcade** (Ajustes → Vuelo → Modelo de vuelo):
 - Al tomar los mandos está parada. Tras pulsar W, si sueltas las teclas mantiene la velocidad de crucero (30 % de la máxima); tras S se queda parada hasta que vuelvas a pulsar W.
 - **A/D** giran a izquierda y derecha y la nave se inclina sola en los giros; al soltar vuelve a nivelarse.
 - El **ratón** apunta la nave (vuelo con ratón activado por defecto); **Mayús**, impulso.
+- **Marchas** (tecla **Z** o el botón del velocímetro en la barra de acciones): **cercanía** (100 m/s, para maniobrar junto a planetas, naves y nodrizas), **normal** (250 m/s) y **rápida** (1 km/s, o lo que pongas en Ajustes → Vuelo). Con **Mayús** (impulso), el doble en cercanía y normal. La aceleración va con la marcha: siempre unos 8 s hasta su máxima.
 - Pesa: la nave del Emperador tarda unos 8 s en pasar de parada a la velocidad máxima. Las naves de tus flotas que pilotes a distancia van según su tamaño: los cazas aceleran y giran mucho más rápido; las capitales, más despacio.
 - Con las armas listas, la cámara se acerca y baja un poco (cámara de combate).
 - Con el vuelo con ratón, un clic sobre la vista **atrapa el ratón**: el cursor (un círculo dorado) no sale del círculo de mando ni de la ventana. La nave solo se dirige con el ratón mientras está atrapado: **Esc** o **Alt** lo sueltan (la nave mantiene el rumbo) para usar la interfaz; se suelta solo al abrir una ventana o un panel (planeta, crucero, ajustes…), al apagar los motores o el vuelo con ratón.
@@ -152,7 +153,7 @@ Al desconectarte o dejar los mandos, tu nave **no desaparece**: se queda en el e
 
 ## Sonido
 
-Con los motores en marcha se oye su zumbido, que sube de tono con el empuje, y un rumor de fondo. El pulso suena como un viento que crece con la velocidad, con un tono que sube mientras se carga. El piloto automático avisa con dos notas al llegar o al entrar en órbita. Todo va por el volumen de efectos de Ajustes.
+En Ajustes → Sonido, **Motores** baja o sube solo el zumbido de los motores y el viento del pulso. Con los motores en marcha se oye su zumbido, que sube de tono con el empuje, y un rumor de fondo. El pulso suena como un viento que crece con la velocidad, con un tono que sube mientras se carga. El piloto automático avisa con dos notas al llegar o al entrar en órbita. Todo va por el volumen de efectos de Ajustes.
 
 ## Cámaras
 
@@ -174,6 +175,8 @@ Vuela hasta el **borde del sistema** (unos miles de kilómetros más allá del �
 - **El salto no necesita que mires la pantalla.** Puedes elegir el destino y cambiar de pestaña o de ventana: el salto se da igual (sin la animación) y el viaje y la llegada los lleva el servidor. Al volver, ves el túnel si aún viajas o tu nave ya en el destino.
 - **Memoria de posición:** el juego recuerda dónde estaba tu nave en cada sistema (al saltar fuera, al aparcarla y cada minuto mientras vuelas). Al volver a un sistema, llegas ahí y allí se abre la grieta.
 - **Junto a un compañero:** si un [compañero](/wiki/companeros) está o estuvo en un sistema, en el selector de salto ([[J]]) y en el panel del sistema en el mapa aparece **«Junto a …»**: llegas a su lado, donde está ahora o donde estuvo la última vez.
+
+La grieta de llegada **se abre en el sistema de destino unos 3 s antes** de que salga la nave: los que estén allí ven cómo se abre. En esos últimos 3 s ya no se puede salir del túnel.
 
 ### Salir del túnel a mitad de viaje
 

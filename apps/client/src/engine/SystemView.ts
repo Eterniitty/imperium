@@ -23,7 +23,7 @@ import { RiftField } from "./fx/riftPortal";
 import { playMiningPulse } from "../audio/miningSfx";
 import { DeepField } from "./DeepField";
 import { distanceGain, playCannon, playExplosion, playHit, playMissile } from "../audio/combatSfx";
-import { isBound, settingsStore, type Action } from "../state/settings";
+import { isBound, settingsStore, SPEED_MODES, type Action } from "../state/settings";
 import { gameStore } from "../state/store";
 import { Backdrop } from "./Backdrop";
 import { ShipController, type Maneuver } from "./ShipController";
@@ -102,6 +102,7 @@ export const PILOT_ACTIONS = [
   "weaponMissile",
   "weaponLaser",
   "fireMissile",
+  "speedMode",
 ] as const satisfies readonly Action[];
 export type PilotAction = (typeof PILOT_ACTIONS)[number];
 
@@ -110,6 +111,9 @@ function localPark(layout: SystemLayout | null, p: [number, number, number], q: 
   const k = parkAt(layout, p, serverNow(), { q, engines });
   return { p: [k.p[0], k.p[1], k.p[2]], at: k.at, ...(k.anchor ? { anchor: k.anchor } : {}), q, engines };
 }
+
+/** Margen de alineación antes de la carga al adelantar un salto en segundo plano (s). */
+const QUANTUM_ALIGN_MAX_SEC = 9;
 
 /**
  * Vista de un sistema estelar, con la disposición de `@imperium/sim` (distancias
@@ -177,6 +181,8 @@ export class SystemView implements View {
     t: number;
     riftSent: boolean;
     onDeparted?: () => void;
+    /** Hora real (performance.now) en que se pidió el salto: en segundo plano, la preparación se cumple por reloj. */
+    startedAt: number;
   } | null = null;
   /**
    * Llegada de un salto: la nave sale de una grieta abierta en `spawn` (donde
@@ -205,6 +211,8 @@ export class SystemView implements View {
   private fireKick = 0;
   /** Fase del piloto automático en el fotograma anterior (para avisar al entrar en órbita). */
   private lastCruisePhase = "";
+  /** Naves cuya grieta de llegada anunciada ya se usó (para no cerrarla a destiempo). */
+  private arrivedRifts = new Set<string>();
   /**
    * Motores de la nave propia: al tomar los mandos están apagados y hay que
    * arrancarlos (tecla «engines»); `t` es el tiempo en el estado actual.
@@ -767,7 +775,7 @@ export class SystemView implements View {
     this.cancelCruise();
     const dir = new THREE.Vector3(target.position.x - from.x, target.position.y - from.y, target.position.z - from.z).normalize();
     this.flight.pulse = false;
-    this.quantum = { target, near, dir, phase: "align", t: 0, riftSent: false };
+    this.quantum = { target, near, dir, phase: "align", t: 0, riftSent: false, startedAt: performance.now() };
     gameStore.getState().setQuantumTarget(target);
   }
 
@@ -861,6 +869,9 @@ export class SystemView implements View {
     const ship = this.ship;
     if (!q) return;
     if (q.phase === "align" || q.phase === "charge") {
+      // Nunca antes de tiempo: un tirón de más de un segundo (sin fotogramas) no debe saltarse la preparación.
+      // Solo cuando, por reloj, ya habría acabado la carga (con un margen para la alineación).
+      if (performance.now() - q.startedAt < (QUANTUM_CHARGE_SEC + QUANTUM_ALIGN_MAX_SEC) * 1000) return;
       if (!q.riftSent && ship) {
         const at = RiftField.ahead(ship.position, ship.quaternion);
         const r = ship.quaternion;
@@ -1419,8 +1430,20 @@ export class SystemView implements View {
     for (const e of events) {
       const gain = me ? distanceGain(me.distanceTo(new THREE.Vector3(...e.at))) : 0.3;
       if (e.phase === "charge") this.rifts.open(e.id, e.at, e.q, reduce);
+      else if (e.phase === "incoming") {
+        // Llega una nave dentro de unos segundos: su grieta se abre ya donde aparecerá.
+        const key = `${e.id}:arrive`;
+        this.rifts.open(key, e.at, e.q, reduce);
+        playQuantumTear(0.35 * gain);
+        // Si al final no llega (salió del túnel antes, cayó), la grieta se cierra sola.
+        window.setTimeout(() => {
+          if (!this.pendingEmerge.has(e.id) && !this.arrivedRifts.has(e.id) && this.rifts.get(key)) this.rifts.close(key);
+          this.arrivedRifts.delete(e.id);
+        }, (QUANTUM_RIFT.incomingSec + 6) * 1000);
+      }
       else if (e.phase === "cancel") this.rifts.close(e.id);
       else if (e.phase === "arrive") {
+        this.arrivedRifts.add(e.id);
         this.rifts.open(`${e.id}:arrive`, e.at, e.q, reduce).arrive();
         playQuantumTear(0.5 * gain);
         // Su nave saldrá de la grieta como un rayo en cuanto se dibuje.
@@ -2094,6 +2117,13 @@ export class SystemView implements View {
         return this.chase.reset();
       case "flightAssist":
         return this.toggleFlightPref("assist", "pilot.assistOn", "pilot.assistOff");
+      case "speedMode": {
+        // Cercanía → normal → rápida → cercanía.
+        const f = settingsStore.getState().prefs.flight;
+        const next = SPEED_MODES[(SPEED_MODES.indexOf(f.speedMode) + 1) % SPEED_MODES.length]!;
+        settingsStore.getState().setPrefs({ flight: { ...f, speedMode: next } });
+        return this.events.notify(`pilot.speedMode.${next}`);
+      }
       case "mouseFlight":
         return this.toggleFlightPref("mouseFlight", "pilot.mouseFlightOn", "pilot.mouseFlightOff");
       case "lockTarget":

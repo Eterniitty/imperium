@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { PULSE_CHARGE_SEC, stepPulseSpeed } from "@imperium/sim";
 import { FLIGHT_MODEL } from "@imperium/content";
-import { settingsStore, thrustScale } from "../state/settings";
+import { settingsStore, SPEED_MODE_TOP, thrustScale } from "../state/settings";
 import type { Keyboard } from "./input";
 import { lockedPointer } from "./pointerLock";
 import { gameStore } from "../state/store";
@@ -366,7 +366,11 @@ export class ShipController {
     Object.assign(this.maneuver, { x: input.x, y: input.y, z: input.z, pitch: turn.x, yaw: turn.y, roll: turn.z });
 
     const accelK = prefs.accel * this.performance.accel;
-    const maxSpeed = Math.min(this.maneuverCap, M.maxSpeed * prefs.maxSpeed * (boost ? M.boostFactor : 1));
+    // Marcha: cercanía (100 m/s) y normal (250 m/s), con impulso el doble; rápida, la máxima de Ajustes (con impulso, ×4).
+    const gear = prefs.speedMode;
+    const fastTop = M.maxSpeed * prefs.maxSpeed * (boost ? M.boostFactor : 1);
+    // (El piloto automático vuela siempre con la marcha rápida: la marcha es para pilotar a mano.)
+    const maxSpeed = Math.min(this.maneuverCap, gear === "fast" || auto ? fastTop : SPEED_MODE_TOP[gear] * (boost ? 2 : 1));
     const steps = Math.max(1, Math.min(16, Math.ceil(dt / M.substep)));
     const h = dt / steps;
     const start = this.ship.position.clone();
@@ -404,7 +408,9 @@ export class ShipController {
           // Más rápido que la máxima (al salir del pulso o del crucero): se pierde enseguida, como al apagar el pulso.
           this.arcadeSpeed = Math.max(want, top + (this.arcadeSpeed - top) * Math.exp(-M.pulseDumpRate * h));
         } else {
-          const rate = (M.maxSpeed * prefs.maxSpeed * (want > this.arcadeSpeed && boost ? M.boostFactor : 1) * accelK) / ARCADE_SECONDS_TO_MAX;
+          // La aceleración va con la marcha: en cercanía, suave; siempre unos 8 s hasta su máxima.
+          const gearTop = gear === "fast" ? M.maxSpeed * prefs.maxSpeed * (want > this.arcadeSpeed && boost ? M.boostFactor : 1) : SPEED_MODE_TOP[gear] * (want > this.arcadeSpeed && boost ? 2 : 1);
+          const rate = (gearTop * accelK) / ARCADE_SECONDS_TO_MAX;
           const diff = want - this.arcadeSpeed;
           this.arcadeSpeed += Math.sign(diff) * Math.min(Math.abs(diff), rate * h * (diff < 0 ? 1.15 : 1));
         }

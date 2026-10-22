@@ -10,6 +10,7 @@
  * contexto de audio está suspendido y no se oye nada (ni falla).
  */
 import { music } from "./music";
+import { settingsStore } from "../state/settings";
 
 export interface FlightSoundState {
   /** Potencia de los motores (0 apagados – 1 en marcha; sube durante el arranque). */
@@ -117,23 +118,25 @@ class FlightSound {
     }
     const { ctx, hum, humFilter, oscs, rumble, wind, windFilter, chargeOsc, chargeGain } = this.n;
     const t = ctx.currentTime;
+    // Volumen propio de los motores (Ajustes → Sonido), dentro del de efectos.
+    const vol = settingsStore.getState().prefs.engineVolume;
     const ease = 0.12;
     const thrust = Math.max(0, Math.min(1, s.thrust));
     const p = Math.max(0, Math.min(1, s.power));
     // Motores: más alto, más agudo y más abierto con el empuje; con el pulso, un poco más tenso.
-    hum.gain.setTargetAtTime(p * (0.035 + 0.075 * thrust), t, ease);
+    hum.gain.setTargetAtTime(vol * p * (0.035 + 0.075 * thrust), t, ease);
     humFilter.frequency.setTargetAtTime(140 + 900 * thrust * p + (s.pulse ? 300 : 0), t, ease);
     const pitch = 0.85 + 0.35 * thrust + (s.pulse ? 0.25 : 0);
     oscs.forEach((o, i) => o.frequency.setTargetAtTime([42, 42.4, 84][i]! * pitch * (0.6 + 0.4 * p), t, 0.25));
-    rumble.gain.setTargetAtTime(p * 0.06, t, 0.3);
+    rumble.gain.setTargetAtTime(vol * p * 0.06, t, 0.3);
     // Pulso: viento que crece y sube con la velocidad (escala logarítmica, como el velocímetro).
     const v = s.pulse ? Math.log(1 + s.speed) / Math.log(1 + s.pulseMax) : 0;
-    wind.gain.setTargetAtTime(s.pulse ? 0.05 + 0.12 * v : 0, t, s.pulse ? 0.4 : 0.25);
+    wind.gain.setTargetAtTime(s.pulse ? vol * (0.05 + 0.12 * v) : 0, t, s.pulse ? 0.4 : 0.25);
     windFilter.frequency.setTargetAtTime(300 + 1600 * v, t, 0.3);
     // Carga: tono de 110 a 660 Hz, algo más fuerte al final.
     if (s.charge !== null) {
       chargeOsc.frequency.setTargetAtTime(110 * 6 ** s.charge, t, 0.05);
-      chargeGain.gain.setTargetAtTime(0.02 + 0.05 * s.charge, t, 0.05);
+      chargeGain.gain.setTargetAtTime(vol * (0.02 + 0.05 * s.charge), t, 0.05);
     } else chargeGain.gain.setTargetAtTime(0, t, 0.08);
   }
 

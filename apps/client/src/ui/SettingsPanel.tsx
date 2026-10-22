@@ -153,6 +153,9 @@ function AudioSection() {
       <Row label={t("settings.sfx")} htmlFor="pref-sfx" hint={t("settings.sfxHint")}>
         <Slider id="pref-sfx" value={Math.round(prefs.sfxVolume * 100)} min={0} max={100} step={1} onChange={(v) => set({ sfxVolume: v / 100 })} format={vol} />
       </Row>
+      <Row label={t("settings.engineVolume")} htmlFor="pref-engine" hint={t("settings.engineVolumeHint")}>
+        <Slider id="pref-engine" value={Math.round(prefs.engineVolume * 100)} min={0} max={100} step={1} onChange={(v) => set({ engineVolume: v / 100 })} format={vol} />
+      </Row>
     </>
   );
 }

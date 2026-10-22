@@ -1,4 +1,4 @@
-import { AIM_ASSIST, ALIEN_LOCAL, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, SUPERMASSIVE, REPUTATION, getAlienShipClass, getShipClass, HELP_CALL, MINING, PIRATE_AI, PIRATE_AMBUSH, SCAVENGER_LAIR, type ShipClassId, type ShipCombat } from "@imperium/content";
+import { AIM_ASSIST, ALIEN_LOCAL, QUANTUM_RIFT, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, SUPERMASSIVE, REPUTATION, getAlienShipClass, getShipClass, HELP_CALL, MINING, PIRATE_AI, PIRATE_AMBUSH, SCAVENGER_LAIR, type ShipClassId, type ShipCombat } from "@imperium/content";
 import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, MOTHERSHIP_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipDesignSnapshot, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
 import { addToHold, arriveVelocity, designStats, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, parkAt, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
@@ -1052,6 +1052,37 @@ export class SpaceService {
     if (!m || !piloting) return;
     if (notice.phase === "arrive" && (m.riftArrived || now - (m.boardedAt ?? 0) > RIFT_ARRIVE_WINDOW_MS)) return;
     this.relayRift(m, notice);
+  }
+
+  /** Grietas de llegada anunciadas antes de tiempo (una por Emperador en viaje). */
+  private readonly incoming = new Map<string, ReturnType<typeof setTimeout>>();
+
+  /**
+   * Una nave llegará a `systemId` a la hora `arriveAt`: unos segundos antes
+   * (`QUANTUM_RIFT.incomingSec`) se abre su grieta en el punto de llegada y la
+   * ven los que estén allí. Al llegar, su propio aviso `arrive` la hace salir.
+   */
+  scheduleIncoming(emperorId: string, systemId: string, at: Vec3, arriveAt: number): void {
+    this.cancelIncoming(emperorId);
+    const fire = () => {
+      this.incoming.delete(emperorId);
+      const room = this.rooms.get(systemId);
+      if (!room || room.size === 0) return;
+      // Mirando hacia la estrella (como sale la nave): giro sobre el eje vertical.
+      const yaw = Math.atan2(at[0], at[2]);
+      const msg: ServerMessage = { t: "rift", id: emperorId, phase: "incoming", at, q: [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)], serverTime: this.now() };
+      for (const o of room) if (o.emperorId !== emperorId) this.sendTo(o, msg);
+    };
+    const ms = arriveAt - QUANTUM_RIFT.incomingSec * 1000 - this.now();
+    if (ms <= 0) return fire();
+    this.incoming.set(emperorId, setTimeout(fire, ms));
+  }
+
+  /** El viaje se cortó (salió del túnel, murió): no se anuncia su llegada. */
+  cancelIncoming(emperorId: string): void {
+    const t = this.incoming.get(emperorId);
+    if (t) clearTimeout(t);
+    this.incoming.delete(emperorId);
   }
 
   private relayRift(m: Member, notice: RiftNotice): void {

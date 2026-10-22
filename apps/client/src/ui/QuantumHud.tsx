@@ -1,3 +1,4 @@
+import { QUANTUM_RIFT } from "@imperium/content";
 import { KeyHint } from "./common";
 import { useTelemetry } from "../engine/telemetry";
 import { engineRef } from "../engineRef";
@@ -33,7 +34,13 @@ export function QuantumHud() {
         </div>
         <div className="muted small">{t("quantum.tunnelHint", { map: keys.toggleMap })}</div>
         {/* Espacio profundo: salir del túnel aquí (se gasta solo el combustible recorrido). */}
-        <button className="btn quantum-drop" type="button" onClick={() => void engineRef.current?.dropOut()} title={t("quantum.dropTitle")}>
+        <button
+          className="btn quantum-drop"
+          type="button"
+          disabled={travel.arriveAt - now < QUANTUM_RIFT.incomingSec * 1000}
+          onClick={() => void engineRef.current?.dropOut()}
+          title={t(travel.arriveAt - now < QUANTUM_RIFT.incomingSec * 1000 ? "error.arriving" : "quantum.dropTitle")}
+        >
           {t("quantum.drop")} <KeyHint action="dropOut" />
         </button>
       </div>

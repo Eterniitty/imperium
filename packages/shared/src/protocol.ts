@@ -240,7 +240,8 @@ export type ClientMessage =
   | { t: "rift"; phase: RiftPhase; at: Vec3; q: Quat };
 
 /** Fases de la grieta del salto que anuncia el piloto. */
-export type RiftPhase = "charge" | "cancel" | "arrive";
+/** `incoming`: solo del servidor, unos segundos antes de que llegue una nave (la grieta se abre en el destino). */
+export type RiftPhase = "charge" | "cancel" | "arrive" | "incoming";
 
 /** Tipos de arma (los mismos que en `@imperium/content`). */
 export type WeaponKind = "cannon" | "missile";
@@ -274,6 +275,7 @@ export type CommandError =
   | "not_present"
   /** No está de viaje (salir del túnel). */
   | "not_travelling"
+  | "arriving"
   /** La bodega de la nave está vacía (nada que descargar). */
   | "hold_empty"
   /** En el espacio profundo no hay colonias (descargar, reponer). */

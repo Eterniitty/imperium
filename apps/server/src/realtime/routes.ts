@@ -27,7 +27,7 @@ import type { HumanityService } from "../humanity/service";
 import type { ProbeService } from "../probe/service";
 import type { MercenaryService } from "../fleet/mercenaries";
 import { FLAGSHIP_DOCK, REPUTATION } from "@imperium/content";
-import { fleetRallyPoint, fleetSlotPosition } from "@imperium/sim";
+import { fleetRallyPoint, fleetSlotPosition, parkedPosition } from "@imperium/sim";
 import type { MarketService } from "../market/service";
 import type { AlienService } from "../ai/service";
 import type { SiegeService } from "../war/siege";
@@ -218,6 +218,13 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                       await hub.publish(res.emperor.id);
                       // Dónde aparecerá al llegar (borde del destino).
                       await hub.publishFlagship(res.emperor.id);
+                      // Los del sistema de destino ven abrirse su grieta unos segundos antes de que llegue.
+                      const travel = res.emperor.travel;
+                      const status = travel ? await flagships.status(res.emperor.id) : null;
+                      if (travel && status && status.systemId === travel.to.systemId) {
+                        const at = parkedPosition(status.park, travel.arriveAt, flagships.layout(travel.to.systemId));
+                        space.scheduleIncoming(res.emperor.id, travel.to.systemId, at, travel.arriveAt);
+                      }
                     }
                     return res;
                   }
@@ -225,6 +232,7 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                   case "emperor.drop": {
                     const res = await emperors.drop(owner.accountId);
                     if (res.ok) {
+                      space.cancelIncoming(res.emperor.id);
                       space.suppliesChanged(res.emperor.id);
                       await hub.publish(res.emperor.id);
                       await hub.publishFlagship(res.emperor.id);

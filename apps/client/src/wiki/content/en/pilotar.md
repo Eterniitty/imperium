@@ -28,6 +28,7 @@ By default you fly in **arcade** mode (Settings → Flight → Flight model):
 - When you take the controls it is stopped. After pressing W, releasing the keys keeps cruise speed (30 % of the maximum); after S it stays stopped until you press W again.
 - **A/D** turn left and right and the ship banks by itself in turns; release and it levels out.
 - The **mouse** aims the ship (mouse flight is on by default); **Shift**, boost.
+- **Gears** (**Z** key or the speedometer button in the action bar): **close** (100 m/s, for manoeuvring next to planets, ships and motherships), **normal** (250 m/s) and **fast** (1 km/s, or whatever you set in Settings → Flight). With **Shift** (boost), double in close and normal. Acceleration follows the gear: always about 8 s to its top.
 - It is heavy: the Emperor's ship takes about 8 s to go from standstill to top speed. Fleet ships you pilot remotely handle according to their size: fighters accelerate and turn much faster; capitals, more slowly.
 - With weapons ready, the camera moves a little closer and lower (combat camera).
 - With mouse flight, a click on the view **captures the mouse**: the cursor (a golden circle) cannot leave the steering circle or the window. The ship only steers with the mouse while it is captured: **Esc** or **Alt** release it (the ship holds its heading) to use the interface; it is also released when a window or panel opens (planet, cruise, settings…), and when you switch off the engines or mouse flight.
@@ -152,7 +153,7 @@ When you disconnect or leave the controls, your ship **does not vanish**: it sta
 
 ## Sound
 
-With the engines running you hear their hum, which rises in pitch with thrust, and a background rumble. The pulse drive sounds like a wind that grows with speed, with a tone that rises while it charges. The autopilot chimes twice when it arrives or enters orbit. Everything follows the effects volume in Settings.
+In Settings → Sound, **Engines** turns only the engine hum and the pulse wind up or down. With the engines running you hear their hum, which rises in pitch with thrust, and a background rumble. The pulse drive sounds like a wind that grows with speed, with a tone that rises while it charges. The autopilot chimes twice when it arrives or enters orbit. Everything follows the effects volume in Settings.
 
 ## Cameras
 
@@ -174,6 +175,8 @@ Fly to the **edge of the system** (a few thousand kilometres beyond the outermos
 - **Jumping does not need you to watch the screen.** You can pick the destination and switch to another tab or window: the jump still happens (without the animation), and the server handles the trip and the arrival. When you come back, you see the tunnel if you are still travelling, or your ship already at the destination.
 - **Position memory:** the game remembers where your ship was in each system (when you jump away, when you park it and every minute while you fly). When you return to a system, you arrive there and the rift opens there.
 - **Next to a companion:** if a [companion](/wiki/companeros) is or was in a system, the jump selector ([[J]]) and the system panel on the map show **"Next to …"**: you arrive beside them, where they are now or where they last were.
+
+The arrival rift **opens in the destination system about 3 s before** the ship comes out: those there see it open. In those last 3 s you can no longer leave the tunnel.
 
 ### Dropping out halfway
 
