@@ -8,7 +8,7 @@ import WebSocket from "ws";
 import { LOGIN_TOKEN_PARAM, PROTOCOL_VERSION, WS_CLOSE, type Emperor, type EmperorView, type Fleet, type ServerMessage, type Topic, type Visibility } from "@imperium/shared";
 import { generateSector, universeSeedFromString } from "@imperium/procgen";
 import { defaultPark, parkedPosition, planetPosition, quantumFuelCost } from "@imperium/sim";
-import { EMPEROR_FLAGSHIP, SPACE_EVENTS } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, CONTRACTS, SPACE_EVENTS } from "@imperium/content";
 import { buildApp } from "../src/app";
 import { colonies, emperors, fleets, resourceLedger } from "../src/db/schema";
 import { sessionCookieName } from "../src/auth/routes";
@@ -490,6 +490,25 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       sa.send({ t: "cmd", cmdId: "ayuda-0002", op: "help.call", args: {} });
       expect(await sa.next(ack("ayuda-0002"))).toMatchObject({ ok: false, error: "rate_limited" });
     });
+
+    it("rescate: quedarse junto a los restos de un contrato el tiempo pedido lo da por cumplido (y solo ese)", async () => {
+      const { a, sa, systemId } = await twoInOneSystem("hidden");
+      const at = near(systemId, [100, 0, 0]);
+      await parkAt(a.emperor.id, at);
+      sa.send({ t: "pose", systemId, ...pose(at) });
+      await sa.next(is("space"));
+      const done: string[] = [];
+      app.space.onRescue = (id, contractId) => {
+        if (id === a.emperor.id) done.push(contractId);
+      };
+      const far: [number, number, number] = [at[0] + CONTRACTS.rescue.radiusM * 4, at[1], at[2]];
+      app.space.setRescueSpots(a.emperor.id, [
+        { contractId: "cerca", systemId, p: at },
+        { contractId: "lejos", systemId, p: far },
+      ]);
+      for (let i = 0; i < 60 && done.length === 0; i++) await settle(250);
+      expect(done).toEqual(["cerca"]);
+    }, 25_000);
 
     it("sucesos en el espacio: la señal de socorro pide decidir; al acudir y quedarse junto a ella, paga", async () => {
       const { a, sa, systemId } = await twoInOneSystem("hidden");
