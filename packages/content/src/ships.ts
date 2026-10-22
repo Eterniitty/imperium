@@ -378,8 +378,13 @@ export const FLAGSHIP_SUPPLIES = {
   /** Energía por punto de escudo recargado. */
   shieldEnergyPerPoint: 0.25,
   fuelMax: 1000,
-  /** Combustible por segundo de pulso. */
-  pulseFuelPerSec: 0.4,
+  /**
+   * Combustible por segundo de pulso. Era 0,4 con el pulso a 5000 km/s; al bajarlo
+   * a 1000 km/s (22-10-2026) los viajes duran unas 5 veces más, así que se divide
+   * entre 5 para que cada trayecto cueste lo mismo que antes (unos 30 de mediana
+   * entre planetas vecinos).
+   */
+  pulseFuelPerSec: 0.08,
   /** Combustible por año luz de salto cuántico: con el depósito lleno, unos 133 a.l. (unos 40 min de viaje). */
   quantumFuelPerLy: 7.5,
   /** Reserva de emergencia: el combustible se regenera solo hasta aquí… */

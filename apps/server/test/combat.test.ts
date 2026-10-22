@@ -62,7 +62,8 @@ describe("reglas del combate", () => {
     // El pulso gasta combustible; sin combustible no hay pulso.
     expect(c.spendPulse(20, 20_000)).toBe(true);
     expect(c.fuelNow(20_000)).toBeCloseTo(10 - 20 * S.pulseFuelPerSec, 0);
-    expect(c.spendPulse(5, 20_000)).toBe(true);
+    // Lo que queda, justo: después ya no hay pulso.
+    expect(c.spendPulse(c.fuelNow(20_000) / S.pulseFuelPerSec - 1e-6, 20_000)).toBe(true);
     expect(c.spendPulse(1, 20_000)).toBe(false);
     // La reserva de emergencia se regenera despacio (unas 30 unidades por hora), solo hasta su tope.
     expect(c.fuelNow(20_000 + 3_600_000)).toBeCloseTo(S.emergencyFuelPerHour, 0);
