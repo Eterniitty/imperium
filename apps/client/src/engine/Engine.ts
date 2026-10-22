@@ -104,7 +104,7 @@ export class Engine {
     // Los planetas y las estrellas tienen sus propios shaders y no lo usan.
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     this.system.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    this.system.scene.environmentIntensity = 0.3;
+    this.system.scene.environmentIntensity = 0.15;
     pmrem.dispose();
     this.active = this.galaxy;
     this.active.activate();

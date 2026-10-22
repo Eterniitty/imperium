@@ -194,7 +194,6 @@ export class Backdrop {
         color: new THREE.Color().setHSL(rng.pick([0.08, 0.1, 0.58, 0.62, 0.95]), rng.range(0.15, 0.45), big ? 0.75 : 0.65),
         transparent: true,
         depthWrite: false,
-        depthTest: false,
         blending: THREE.AdditiveBlending,
         opacity: big ? 0.75 : rng.range(0.45, 0.8),
         rotation: rng.range(0, Math.PI * 2),

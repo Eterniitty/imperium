@@ -117,7 +117,8 @@ export class SystemView implements View {
   readonly controls: OrbitControls;
 
   private content = new THREE.Group();
-  private backdrop = new Backdrop(9000, 4242);
+  // Más lejos que cualquier planeta o estrella del sistema (km): si no, las estrellas del fondo tapan los planetas.
+  private backdrop = new Backdrop(5e10, 4242);
   private planets: PlanetVisual[] = [];
   /** Uniformes comunes de planetas, lunas y estrella (tiempo, detalle, luz de la estrella). */
   private bodyUniforms = createBodyUniforms();
@@ -268,7 +269,7 @@ export class SystemView implements View {
     this.camera.add(this.cockpit);
     // Luz de relleno desde la cámara (algo por encima y a un lado): deja ver la cara de las naves que no da al
     // sol, sin borrar la sombra. Los planetas y lunas tienen su propia luz en el shader y no la reciben.
-    const fill = new THREE.DirectionalLight(0xb8c6e6, 0.85);
+    const fill = new THREE.DirectionalLight(0xd0d4dc, 0.6);
     fill.position.set(-0.4, 0.5, 0);
     fill.target.position.set(0, 0, -1);
     this.camera.add(fill, fill.target);

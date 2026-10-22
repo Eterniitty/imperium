@@ -48,7 +48,8 @@ export class GalaxyView implements View {
   readonly sectors = new SectorManager();
 
   private origin: WorldPosition;
-  private backdrop = new Backdrop();
+  // Más lejos que la galaxia entera (a.l.), dentro del plano lejano de la cámara.
+  private backdrop = new Backdrop(150_000);
   private cloud = new GalaxyCloud();
   private sectorBox: THREE.LineSegments;
   private selectRing: THREE.Sprite;
