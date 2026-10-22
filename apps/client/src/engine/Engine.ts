@@ -42,6 +42,14 @@ export class Engine {
   private lastFrameAt = performance.now();
   /** Vigilante que hace avanzar el salto sin fotogramas (pestaña oculta o ventana tapada). */
   private readonly watchdog: ReturnType<typeof setInterval>;
+  /**
+   * Reloj en un Web Worker (20 por segundo): sus mensajes no los frena el
+   * navegador con la pestaña oculta, como sí hace con los temporizadores de la
+   * página. Sin fotogramas, mueve la simulación (piloto automático, órbita,
+   * posiciones que se mandan al servidor) sin dibujar.
+   */
+  private clock: Worker | null = null;
+  private lastBackgroundStep = 0;
   private resizeObserver: ResizeObserver;
   private fpsAccum = 0;
   private fpsFrames = 0;
@@ -107,6 +115,14 @@ export class Engine {
     // El salto no depende de que la pestaña esté a la vista (ver `inBackground`).
     this.watchdog = setInterval(this.backgroundTick, 1000);
     document.addEventListener("visibilitychange", this.backgroundTick);
+    try {
+      const url = URL.createObjectURL(new Blob(["setInterval(() => postMessage(0), 50);"], { type: "text/javascript" }));
+      this.clock = new Worker(url);
+      URL.revokeObjectURL(url);
+      this.clock.onmessage = this.backgroundStep;
+    } catch {
+      // Sin workers, el juego sigue; solo se para al ocultar la pestaña.
+    }
     // Como en No Man's Sky: se empieza a los mandos de la nave, en el sistema del Emperador
     // (o en el túnel cuántico, si está de viaje).
     if (!this.pilot(null) && this.emperor()?.travel) this.enterTunnel();
@@ -386,6 +402,23 @@ export class Engine {
    */
   private backgroundTick = (): void => {
     if (this.inBackground()) this.system.skipQuantumAhead();
+  };
+
+  /** Un paso de simulación sin dibujar, solo cuando no hay fotogramas (ver `clock`). */
+  private backgroundStep = (): void => {
+    const now = performance.now();
+    if (!this.inBackground()) {
+      this.lastBackgroundStep = 0;
+      return;
+    }
+    const dt = this.lastBackgroundStep ? Math.min((now - this.lastBackgroundStep) / 1000, 0.1) : 0.05;
+    this.lastBackgroundStep = now;
+    this.system.realDt = dt;
+    this.checkArrival();
+    this.checkDestroyed();
+    this.checkRemote();
+    this.checkCarried();
+    this.active.update(dt);
   };
 
   /** Viaje en curso: la nave deja el sistema y se ve el túnel cuántico hasta llegar. */
@@ -684,6 +717,7 @@ export class Engine {
   dispose(): void {
     cancelAnimationFrame(this.frameId);
     clearInterval(this.watchdog);
+    this.clock?.terminate();
     document.removeEventListener("visibilitychange", this.backgroundTick);
     this.unsubscribeSettings();
     this.unsubscribeDetail();
