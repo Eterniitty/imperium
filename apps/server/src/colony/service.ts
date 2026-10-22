@@ -83,7 +83,6 @@ const FINISH_TOLERANCE_MS = 1_000;
 /** Detalles de sistema guardados en memoria (se generan con la semilla secreta y no cambian). */
 const DETAIL_CACHE = 2_000;
 
-/** Reembolso al cancelar un encargo: todo si no había empezado, una parte si sí. */
 /** Coste de un diseño del Astillero: recursos de la colonia y créditos de la cartera. */
 function designCost(design: ShipDesignSnapshot): { stock: StockAmounts; credits: number } {
   const c = designStats(design).cost;
@@ -115,6 +114,7 @@ function buildHours(build: { kind: string; itemId: string; design?: ShipDesignSn
   return def?.buildTimeHours ?? 1;
 }
 
+/** Reembolso al cancelar un encargo: todo si no había empezado, una parte si sí. */
 function refundOf(build: { kind: string; itemId: string; startedAt: Date | null; design?: ShipDesignSnapshot | null }): StockAmounts {
   if (build.kind === "design") return scaled(build.design ? designCost(build.design).stock : scaled(ZERO_STOCK, 0), build.startedAt ? ECONOMY.cancelRefundStarted : 1);
   if (build.kind === "craft") return scaled(recipeStock(build.itemId), build.startedAt ? ECONOMY.cancelRefundStarted : 1);
@@ -979,16 +979,16 @@ export class ColonyService {
     });
   }
 
-  /**
-   * Colonia propia bloqueada y resuelta a la hora `at` (con su mantenimiento),
-   * para quien vaya a cambiar sus existencias o población (logística). Null si
-   * no existe o no es de `emperorId`.
-   */
   /** Existencias de una colonia propia resueltas a `at` (bloquea la fila hasta el final de la transacción). */
   async stockAt(tx: Tx, emperorId: string, colonyId: string, at: number): Promise<StockAmounts | null> {
     return (await this.lockResolved(tx, emperorId, colonyId, at))?.state.stock ?? null;
   }
 
+  /**
+   * Colonia propia bloqueada y resuelta a la hora `at` (con su mantenimiento),
+   * para quien vaya a cambiar sus existencias o población (logística). Null si
+   * no existe o no es de `emperorId`.
+   */
   async lockResolved(tx: Tx, emperorId: string, colonyId: string, at: number): Promise<{ row: ColonyRow; state: ColonyState; cap: number } | null> {
     const [row] = await tx
       .select()

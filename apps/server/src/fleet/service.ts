@@ -377,15 +377,18 @@ export class FleetService {
     if (!stock) return auto ? { ok: true, colonyId: null } : { ok: false, error: "no_colony_here" };
     let budget = stock.volatiles;
     let paid = 0;
+    const filled: string[] = [];
     for (const { s, cost } of needs) {
       if (cost > budget) continue;
       budget -= cost;
       paid += cost;
-      await tx.update(ships).set({ fuel: null }).where(eq(ships.id, s.id));
+      filled.push(s.id);
     }
     if (paid === 0) return auto ? { ok: true, colonyId: null } : { ok: false, error: "insufficient_resources" };
+    // Primero se paga; solo si se pudo, se llenan los depósitos.
     const res = await colonyService.adjustStock(tx, emperorId, colony.id, { volatiles: -paid }, "refuel", `fleet:${fleetId}`, now);
     if (!res.ok) return auto ? { ok: true, colonyId: null } : res;
+    await tx.update(ships).set({ fuel: null }).where(inArray(ships.id, filled));
     return { ok: true, colonyId: colony.id };
   }
 }
