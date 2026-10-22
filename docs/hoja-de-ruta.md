@@ -108,7 +108,11 @@ Informe completo en Claude Docs («Aeonarch — Plan de juego»). Cinco fases, c
 ## Rediseño de la interfaz y editor de naves (petición del 21-10-2026)
 
 - [ ] **Interfaz profesional** (`docs/rediseno-interfaz.md`): ✔ U1 teclas solo para lo constante y barra de acciones; ✔ U2 sistema de diseño; ✔ U3 menú de ajustes nuevo; ✔ U4 (fundidos del HUD; falta reordenar el HUD por zonas); U5 mapa y paneles.
-- [ ] **Editor de naves por piezas** (`docs/editor-naves.md`): ✔ E1 piezas y reglas (`packages/content` shipParts.ts, `packages/sim` shipDesign.ts, con pruebas); E2 servidor; E3 editor; E4 las estadísticas mandan; E5 modelos 3D de las piezas.
+- [ ] **Editor de naves por piezas** (`docs/editor-naves.md`): ✔ E1 piezas y reglas (`packages/content` shipParts.ts, `packages/sim` shipDesign.ts, con pruebas); E2 servidor (✔ guardar, listar y borrar diseños; falta comprar piezas y construir); E3 editor; E4 las estadísticas mandan; E5 modelos 3D de las piezas.
+- [x] ✔ **La galaxia** (22-10-2026, `GENERATOR_VERSION` 2, mundo reiniciado): disco espiral de 30 000 a.l. con cuatro brazos y Ónfalo, el agujero negro supermasivo, en el centro (`GALAXY`, `packages/procgen` galaxy.ts); el Núcleo Humano en un brazo a ~9000 a.l. del centro. Pendiente: que Ónfalo sea un sistema especial (tamaño, peligro, objetivo final).
+- [ ] **Escolta en crucero** (petición del usuario, 22-10-2026): opción de que las naves propias viajen en crucero (y con el pulso) junto al Emperador, en formación, en vez de reunirse de un salto.
+- [ ] **Cada nave reposta** (petición del usuario): combustible (y munición) por nave de flota, no solo la del Emperador; hay que vigilarlo y reponerlo en colonias, nodrizas o con cargueros.
+- [ ] **Materiales y fabricación** (petición del usuario): más materiales y recetas (refinar, componentes, piezas del editor), con cadenas de producción en las colonias.
 - [x] **Libros en la Wiki** (grupo «Libros», firma del autor; solo administradores).
 
 ## Antes de abrir al público (obligatorio, en paralelo)
