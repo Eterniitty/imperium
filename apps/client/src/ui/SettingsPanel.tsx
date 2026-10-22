@@ -333,7 +333,7 @@ export function SettingsPanel() {
 
   return (
     <div className="modal-backdrop settings-backdrop" onClick={close}>
-      <div className="settings panel" role="dialog" aria-modal="true" aria-labelledby="settings-title" onClick={(e) => e.stopPropagation()} {...(capturing ? { "data-capturing-key": "" } : {})}>
+      <div className="settings settings-menu panel" role="dialog" aria-modal="true" aria-labelledby="settings-title" onClick={(e) => e.stopPropagation()} {...(capturing ? { "data-capturing-key": "" } : {})}>
         <aside className="settings-nav">
           <h2 id="settings-title">{t("settings.title")}</h2>
           <div role="tablist" aria-orientation="vertical" aria-labelledby="settings-title">
