@@ -9,6 +9,7 @@ import { useKeyLabels } from "./keys";
 import { useSettings } from "../state/settings";
 import { useServerNow } from "./useNow";
 import { useTelemetry } from "../engine/telemetry";
+import { useWorld } from "../net/world";
 
 /** Un valor de la nave: icono del color de su recurso y el número (sin barra). */
 function Stat({ icon, value, label, kind, warn, max }: { icon: HudIconName; value: number | string; label: string; kind: string; warn?: boolean; max?: number }) {
@@ -48,6 +49,10 @@ export function CombatHud() {
   const now = useServerNow(250);
   const { heat } = useTelemetry(250);
   const docked = useStore(spaceStore, (s) => s.docked);
+  const dockFleet = useWorld((s) => (docked ? s.fleets[docked.fleetId] : undefined));
+  const dockCargo = dockFleet
+    ? { empty: dockFleet.cargo.metal + dockFleet.cargo.volatiles + dockFleet.cargo.crystal + dockFleet.cargo.alloys < 1, noVolatiles: dockFleet.cargo.volatiles < 1 }
+    : null;
   if (view !== "system" || !flight || !self) return null;
 
   const cannon = weapons.find((w) => w.kind === "cannon");
@@ -94,6 +99,9 @@ export function CombatHud() {
               </span>
             )}
             {docked && <span className="hud-tag ok">{t("hud.docked", { n: docked.number })}</span>}
+            {/* Acoplada: se repone de la bodega de su flota; si no hay de qué, se dice (si no, «combustible bajo» no se entiende). */}
+            {docked && dockCargo && dockCargo.empty && <span className="hud-tag warn">{t("hud.dockHoldEmpty")}</span>}
+            {docked && dockCargo && !dockCargo.empty && dockCargo.noVolatiles && lowFuel && <span className="hud-tag warn">{t("hud.dockNoVolatiles")}</span>}
             {supplies?.resupplying && <span className="hud-tag ok">{t("hud.resupplying")}</span>}
             {lowFuel && !supplies?.resupplying && <span className="hud-tag warn">{t("hud.lowFuel")}</span>}
             {noEnergy && <span className="hud-tag warn">{t("hud.noEnergy")}</span>}

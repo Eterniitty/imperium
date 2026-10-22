@@ -1723,6 +1723,8 @@ export const es = {
   "alert.hullDamaged": "CASCO DAÑADO",
   "alert.shields": "ESCUDOS AL {pct} %",
   "alert.missileIncoming": "⚠ MISIL ENTRANTE",
+  "hud.dockHoldEmpty": "Bodega de la flota vacía: no se repone nada · llénala en una colonia",
+  "hud.dockNoVolatiles": "Sin volátiles en la bodega: no se repone el combustible · cárgalos en una colonia",
   "shipEditor.open": "Astillero",
   "shipEditor.openTitle": "Diseña tus naves pieza a pieza",
   "shipEditor.title": "Astillero · diseño de naves",

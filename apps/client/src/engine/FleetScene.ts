@@ -252,6 +252,8 @@ export class FleetScene {
         this.fleets.set(f.id, g);
       }
       this.setLabel(g, fleetName(f, (k, p) => translate(locale, k, p)), "#5fd3e6");
+      // Acoplada en ella, su rótulo quedaría justo encima de la nave propia (y parecería su nombre): se oculta.
+      g.label.visible = f.id !== spaceStore.getState().docked?.fleetId;
       // Cada flota, a un lado del punto de reunión, mirando hacia la estrella.
       g.root.position.set(...fleetSlotPosition([base.x, base.y, base.z], i));
       g.root.lookAt(0, g.root.position.y, 0);

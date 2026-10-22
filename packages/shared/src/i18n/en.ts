@@ -1721,6 +1721,8 @@ export const en: Record<I18nKey, string> = {
   "alert.hullDamaged": "HULL DAMAGED",
   "alert.shields": "SHIELDS AT {pct} %",
   "alert.missileIncoming": "⚠ INCOMING MISSILE",
+  "hud.dockHoldEmpty": "Fleet hold empty: nothing is resupplied · fill it at a colony",
+  "hud.dockNoVolatiles": "No volatiles in the hold: fuel is not resupplied · load some at a colony",
   "shipEditor.open": "Shipyard",
   "shipEditor.openTitle": "Design your ships part by part",
   "shipEditor.title": "Shipyard · ship design",
