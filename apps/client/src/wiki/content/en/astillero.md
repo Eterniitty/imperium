@@ -9,6 +9,14 @@ In the **Shipyard** (top bar button) you design your own ships **part by part, l
 3. On the right you see the **statistics** live (mass, power, acceleration, cruise, pulse, turn rate, jump, hull, shield, damage, cargo…), the **problems** and the **cost**.
 4. **Save the design** with a name. You can **duplicate** it to try variants and **delete** it. You can keep up to 30 designs, even unfinished ones.
 
+## Building a design
+
+Save the design and, below, choose the **colony** and press **Build here**. The colony needs a **shipyard**; cruiser and capital hulls also need an **orbital drydock**. You pay when you order it: **resources** come from the colony and **credits** from your wallet. The order goes into the colony's **queue** under the design's name and, when finished, the ship appears as a **new fleet** in the colony's system.
+
+- The design is built **as it was when ordered**: if you change or delete it later, the ordered ship does not change.
+- If you **cancel** the order, you get everything back if it had not started and part of it if it had (resources and credits).
+- For now the ship uses the **3D model, scanner and combat profile** of the stock class closest to its hull (corvette, frigate, cruiser or carrier), but with the **hull points** and **berths** of its parts.
+
 ## The rules
 
 - **Required**: bridge, reactor and propulsion drive. Without them the ship **cannot be built**.
@@ -26,4 +34,4 @@ In the **Shipyard** (top bar button) you design your own ships **part by part, l
 {{tabla:piezas}}
 
 > [!dev]
-> **In development**: buying parts and **building** designs in a colony's shipyard or orbital drydock, their statistics ruling flight, jumps and combat, and the ship's 3D model built from its parts.
+> **In development**: all of the design's statistics ruling flight, jumps and combat, and the ship's 3D model built from its parts.

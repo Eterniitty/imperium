@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { fitsSlot, getHull, hullAtLeast, HULLS, PARTS, type HullSlot, type PartCost } from "@imperium/content";
-import { SHIP_DESIGNS_MAX, type I18nKey, type ShipDesignRecord, type ShipDesignsResponse } from "@imperium/shared";
+import { SHIP_DESIGNS_MAX, type Colony, type I18nKey, type ShipDesignRecord, type ShipDesignsResponse } from "@imperium/shared";
 import { designStats, validateDesign, type DesignProblem } from "@imperium/sim";
+import { connection, useWorld } from "../net/world";
 import { api } from "../state/auth";
 import { gameStore, useGame, useT } from "../state/store";
 import { fmtInt } from "./colonies";
@@ -44,6 +45,8 @@ export function ShipEditor() {
   const [draft, setDraft] = useState<Draft>(blank);
   const [message, setMessage] = useState<{ ok: boolean; key: I18nKey } | null>(null);
   const [busy, setBusy] = useState(false);
+  const colonies = useWorld((s) => s.colonies);
+  const [colonyId, setColonyId] = useState<string>("");
   const close = () => gameStore.getState().setShipEditorOpen(false);
 
   useEffect(() => {
@@ -121,6 +124,19 @@ export function ShipEditor() {
     setDesigns(r.data.designs);
     setDraft(blank());
     setMessage(null);
+  };
+
+  // Construir: solo un diseño guardado y sin cambios, en una colonia con astillero (y dique para los cascos grandes).
+  const saved = designs.find((d) => d.id === draft.id);
+  const unchanged = !!saved && saved.name === draft.name && saved.hullId === draft.hullId && JSON.stringify(saved.parts) === JSON.stringify(draft.parts);
+  const yards = (Object.values(colonies) as Colony[]).filter((c) => (c.installations.shipyard ?? 0) > 0 && (hull.builtAt !== "drydock" || (c.installations.drydock ?? 0) > 0));
+  const yard = yards.find((c) => c.id === colonyId) ?? yards[0];
+  const build = async () => {
+    if (!yard || !draft.id) return;
+    setBusy(true);
+    const error = await connection.command("colony.build", { colonyId: yard.id, kind: "design", itemId: draft.id });
+    setBusy(false);
+    setMessage(error ? { ok: false, key: error } : { ok: true, key: "shipEditor.ordered" });
   };
 
   const cost = stats.cost;
@@ -230,6 +246,24 @@ export function ShipEditor() {
               </button>
             </div>
             {message && <p className={message.ok ? "small ship-ok" : "small ship-bad"}>{t(message.key)}</p>}
+            <h3>{t("shipEditor.build")}</h3>
+            {yards.length === 0 ? (
+              <p className="muted small">{t(hull.builtAt === "drydock" ? "shipEditor.noDrydock" : "shipEditor.noShipyard")}</p>
+            ) : (
+              <div className="ship-editor-row">
+                <select className="auth-input" value={yard?.id ?? ""} onChange={(e) => setColonyId(e.target.value)}>
+                  {yards.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {(c.name ?? c.planetName) + " · " + c.systemName}
+                    </option>
+                  ))}
+                </select>
+                <button className="btn btn-primary" disabled={busy || !buildable || !unchanged} title={unchanged ? "" : t("shipEditor.saveFirst")} onClick={() => void build()}>
+                  {t("shipEditor.buildHere", { hours: hull.buildTimeHours })}
+                </button>
+              </div>
+            )}
+            {!unchanged && <p className="muted small">{t("shipEditor.saveFirst")}</p>}
           </section>
 
           <aside className="ship-editor-stats">

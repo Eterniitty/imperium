@@ -377,7 +377,7 @@ export function ColonyDetail({
       <ul className="emperor-list build-queue">
         {colony.builds.map((b) => (
           <li key={b.id}>
-            <strong>{itemName(b.kind, b.itemId)}</strong>
+            <strong>{b.design ? b.design.name : itemName(b.kind, b.itemId)}</strong>
             <span className="muted small mono">{b.finishAt ? formatDuration(b.finishAt - now) : t("colony.waiting")}</span>
             <button
               className="link-btn small"

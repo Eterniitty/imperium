@@ -9,6 +9,14 @@ En el **Astillero** (botón de la barra superior) diseñas tus propias naves **p
 3. A la derecha ves en vivo las **estadísticas** (masa, energía, aceleración, crucero, pulso, giro, salto, casco, escudo, daño, bodega…), los **problemas** y el **coste**.
 4. **Guarda el diseño** con un nombre. Puedes **duplicarlo** para probar variantes y **borrarlo**. Puedes guardar hasta 30 diseños, aunque estén a medias.
 
+## Construir un diseño
+
+Guarda el diseño y, abajo, elige la **colonia** y pulsa **Construir aquí**. Hace falta un **astillero** en la colonia; los cascos de crucero y capital, además, un **dique orbital**. Se paga al encargarlo: los **recursos** salen de la colonia y los **créditos** de tu cartera. El encargo va a la **cola** de la colonia con el nombre del diseño y, al terminar, la nave sale como una **flota nueva** en el sistema de la colonia.
+
+- Se construye el diseño **tal como estaba al encargarlo**: si luego lo cambias o lo borras, la nave encargada no cambia.
+- Si **cancelas** el encargo, recuperas todo si aún no había empezado y una parte si ya estaba en marcha (recursos y créditos).
+- Por ahora la nave usa el **modelo 3D, el escáner y el perfil de combate** de la clase de serie más parecida a su casco (corbeta, fragata, crucero o portanaves), pero con el **casco** y las **plazas** de sus piezas.
+
 ## Las reglas
 
 - **Obligatorio**: puente, reactor y motor de propulsión. Sin ellos la nave **no se puede construir**.
@@ -26,4 +34,4 @@ En el **Astillero** (botón de la barra superior) diseñas tus propias naves **p
 {{tabla:piezas}}
 
 > [!dev]
-> **En desarrollo**: comprar las piezas y **construir** los diseños en el astillero o el dique orbital de una colonia, que sus estadísticas manden en el vuelo, el salto y el combate, y el modelo 3D de la nave según sus piezas.
+> **En desarrollo**: que todas las estadísticas del diseño manden en el vuelo, el salto y el combate, y el modelo 3D de la nave según sus piezas.

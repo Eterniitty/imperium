@@ -7,8 +7,14 @@ export function contentText(locale: Locale, key: string): string {
 }
 
 /** Naves de una flota agrupadas por clase: [["explorer", 2], ["frigate", 1]]. */
-export function shipCounts(fleet: Fleet): Array<[string, number]> {
-  const counts = new Map<string, number>();
-  for (const s of fleet.ships) counts.set(s.classId, (counts.get(s.classId) ?? 0) + 1);
-  return [...counts];
+export function shipCounts(fleet: Fleet): Array<{ key: string; classId: string; design?: string; n: number }> {
+  // Las naves del Astillero se cuentan por diseño (con su nombre), las de serie por clase.
+  const counts = new Map<string, { key: string; classId: string; design?: string; n: number }>();
+  for (const s of fleet.ships) {
+    const key = s.design ? `design:${s.design.name}` : s.classId;
+    const c = counts.get(key) ?? { key, classId: s.classId, ...(s.design ? { design: s.design.name } : {}), n: 0 };
+    c.n++;
+    counts.set(key, c);
+  }
+  return [...counts.values()];
 }

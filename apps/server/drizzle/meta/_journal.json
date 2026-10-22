@@ -211,6 +211,13 @@
       "when": 1792631349783,
       "tag": "0030_disenos_de_nave",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792649349499,
+      "tag": "0031_disenos_en_construccion",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,6 @@
 import {
   ECONOMY,
+  getHull,
   getInstallation,
   getShipClass,
   HUMANS,
@@ -10,11 +11,13 @@ import {
   type StockId,
 } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
-import { distance, type Colony, type ColonyBuild, type CommandError, type EmperorHumans, type Planet, type PlanetClaim, type StarSystemDetail, type StarSystemSummary } from "@imperium/shared";
+import { distance, type Colony, type ColonyBuild, type CommandError, type EmperorHumans, type Planet, type PlanetClaim, type ShipDesignSnapshot, type StarSystemDetail, type StarSystemSummary } from "@imperium/shared";
 import { PlanetNameSchema } from "@imperium/shared/schemas";
 import {
   canAfford,
   captureLosses,
+  designStats,
+  isBuildable,
   colonyEnergy,
   doctrineExtraction,
   colonyFlows,
@@ -40,7 +43,7 @@ import {
 import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { colonies, colonyBuilds, discoveries, emperors, fleetRoutes, fleets, heirs, installations, mercenaryContracts, resourceLedger, ships } from "../db/schema";
+import { colonies, colonyBuilds, discoveries, emperors, fleetRoutes, fleets, heirs, installations, mercenaryContracts, resourceLedger, shipDesigns, ships } from "../db/schema";
 import { discoverAround, type Discovered } from "../discovery/service";
 import { findSystem, placeFromRow } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
@@ -74,7 +77,21 @@ const FINISH_TOLERANCE_MS = 1_000;
 const DETAIL_CACHE = 2_000;
 
 /** Reembolso al cancelar un encargo: todo si no había empezado, una parte si sí. */
-function refundOf(build: { kind: string; itemId: string; startedAt: Date | null }): StockAmounts {
+/** Coste de un diseño del Astillero: recursos de la colonia y créditos de la cartera. */
+function designCost(design: ShipDesignSnapshot): { stock: StockAmounts; credits: number } {
+  const c = designStats(design).cost;
+  return { stock: { metal: c.metal, volatiles: 0, crystal: c.crystal, alloys: c.alloys, rare_metals: c.rare_metals, exotic: c.exotic }, credits: c.credits };
+}
+
+/** Horas de construcción de un encargo (instalación, nave de serie o diseño). */
+function buildHours(build: { kind: string; itemId: string; design?: ShipDesignSnapshot | null }): number {
+  if (build.kind === "design") return (build.design && getHull(build.design.hullId)?.buildTimeHours) || 8;
+  const def = build.kind === "installation" ? getInstallation(build.itemId) : getShipClass(build.itemId as ShipClassId);
+  return def?.buildTimeHours ?? 1;
+}
+
+function refundOf(build: { kind: string; itemId: string; startedAt: Date | null; design?: ShipDesignSnapshot | null }): StockAmounts {
+  if (build.kind === "design") return scaled(build.design ? designCost(build.design).stock : scaled(ZERO_STOCK, 0), build.startedAt ? ECONOMY.cancelRefundStarted : 1);
   const def = build.kind === "installation" ? getInstallation(build.itemId) : getShipClass(build.itemId as ShipClassId);
   const cost: StockAmounts = def ? { ...{ metal: 0, volatiles: 0, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 }, ...def.cost } : { metal: 0, volatiles: 0, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 };
   return scaled(cost, build.startedAt ? ECONOMY.cancelRefundStarted : 1);
@@ -85,9 +102,16 @@ function foundingStock(multiplier: number): StockAmounts {
   for (const k of Object.keys(out) as Array<keyof StockAmounts>) out[k] = Math.min(ECONOMY.storage[k], Math.round(out[k] * multiplier));
   return out;
 }
+const ZERO_STOCK: StockAmounts = { metal: 0, volatiles: 0, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 };
 const stockOf = (r: Pick<ColonyRow, StockId>): StockAmounts => ({ metal: r.metal, volatiles: r.volatiles, crystal: r.crystal, alloys: r.alloys, rare_metals: r.rare_metals, exotic: r.exotic });
 const negate = (s: StockAmounts): StockAmounts => ({ metal: -s.metal, volatiles: -s.volatiles, crystal: -s.crystal, alloys: -s.alloys, rare_metals: -s.rare_metals, exotic: -s.exotic });
 const scaled = (s: StockAmounts, k: number): StockAmounts => ({ metal: s.metal * k, volatiles: s.volatiles * k, crystal: s.crystal * k, alloys: s.alloys * k, rare_metals: s.rare_metals * k, exotic: s.exotic * k });
+
+/** Lo que necesita el Astillero de la cartera de créditos. */
+export interface Wallet {
+  spend(tx: Tx, emperorId: string, amount: number, reason: string, ref: string | null, at: number): Promise<boolean>;
+  credit(tx: Tx, emperorId: string, amount: number, reason: string, ref: string | null): Promise<void>;
+}
 
 /**
  * Humanos, colonias y economía (Fase 7). Las reglas están en `@imperium/sim`
@@ -115,6 +139,12 @@ export class ColonyService {
   /** Enlaza las bonificaciones globales de la humanidad (extracción, fundación). */
   setBonuses(get: () => HumanityBonuses): void {
     this.bonuses = get;
+  }
+
+  /** Cartera de créditos (`HumanityService`): los diseños del Astillero cuestan créditos además de recursos. */
+  private wallet: Wallet | null = null;
+  setWallet(wallet: Wallet): void {
+    this.wallet = wallet;
   }
 
   private detail(systemId: string): StarSystemDetail | null {
@@ -322,6 +352,7 @@ export class ColonyService {
           id: b.id,
           kind: b.kind as ColonyBuild["kind"],
           itemId: b.itemId,
+          ...(b.design ? { design: b.design } : {}),
           startedAt: b.startedAt?.getTime() ?? null,
           finishAt: b.finishAt?.getTime() ?? null,
         }),
@@ -517,11 +548,25 @@ export class ColonyService {
    * existencias resueltas a esta hora) y va a la cola; si la cola estaba
    * vacía, empieza ya y se programa su fin.
    */
-  async build(emperorId: string, colonyId: string, kind: "installation" | "ship", itemId: string): Promise<ColonyResult> {
+  async build(emperorId: string, colonyId: string, kind: "installation" | "ship" | "design", itemId: string): Promise<ColonyResult> {
     let cost: StockAmounts;
     let hours: number;
     let requires: Partial<Record<InstallationId, number>> | undefined;
-    if (kind === "installation") {
+    let credits = 0;
+    let design: ShipDesignSnapshot | null = null;
+    if (kind === "design") {
+      // Diseño del Astillero: se construye la foto de ahora; tiene que poder construirse.
+      const [d] = await this.db.select().from(shipDesigns).where(and(eq(shipDesigns.id, itemId), eq(shipDesigns.emperorId, emperorId))).limit(1);
+      if (!d) return { ok: false, error: "unknown_design" };
+      design = { name: d.name, hullId: d.hullId, parts: d.parts };
+      const hull = getHull(design.hullId);
+      if (!hull || !isBuildable(design)) return { ok: false, error: "design_not_buildable" };
+      const c = designCost(design);
+      cost = c.stock;
+      credits = c.credits;
+      hours = hull.buildTimeHours;
+      requires = hull.builtAt === "drydock" ? { drydock: 1 } : undefined;
+    } else if (kind === "installation") {
       const def = getInstallation(itemId);
       if (!def) return { ok: false, error: "unknown_item" };
       cost = def.cost;
@@ -559,6 +604,7 @@ export class ColonyService {
       const now = this.now();
       const state = this.resolve(row, site, now);
       if (!canAfford(state.stock, cost)) return { ok: false, error: "insufficient_resources" };
+      if (credits > 0 && !(await this.wallet?.spend(tx, emperorId, credits, "build", `design:${itemId}`, now))) return { ok: false, error: "insufficient_credits" };
 
       await tx
         .update(colonies)
@@ -568,7 +614,7 @@ export class ColonyService {
       const finishAt = now + realDurationMs(hours, this.timeScale);
       const [build] = await tx
         .insert(colonyBuilds)
-        .values({ colonyId: row.id, kind, itemId, startedAt: start ? new Date(now) : null, finishAt: start ? new Date(finishAt) : null })
+        .values({ colonyId: row.id, kind, itemId, design, startedAt: start ? new Date(now) : null, finishAt: start ? new Date(finishAt) : null })
         .returning({ id: colonyBuilds.id });
       if (start) await schedule(tx, "colony.build", new Date(finishAt), { buildId: build!.id });
       await tx.insert(resourceLedger).values({ emperorId, colonyId: row.id, reason: "build", ref: `${kind}:${itemId}`, ...negate(cost) });
@@ -608,12 +654,15 @@ export class ColonyService {
     if (build.kind === "installation") {
       await tx.insert(installations).values({ colonyId: row.id, kind: build.itemId, builtAt: new Date(at) });
     } else {
-      const cls = getShipClass(build.itemId as ShipClassId);
-      if (cls) {
+      // Nave de serie, o diseño del Astillero (clase base de su casco, con el casco y las plazas de sus piezas).
+      const hullDef = build.kind === "design" && build.design ? getHull(build.design.hullId) : undefined;
+      const cls = getShipClass((hullDef ? hullDef.baseClass : build.itemId) as ShipClassId);
+      const stats = hullDef && build.design ? designStats(build.design) : null;
+      if (cls && (build.kind !== "design" || stats)) {
         // La nave nueva cuesta mantenimiento desde ya: la capital (si es otra colonia) se cobra hasta aquí.
         capitalId = await this.settleCapital(tx, emperorId, at, row.id);
         // Los colonos embarcan de la colonia, dejando siempre a algunos.
-        const capacity = SHIP_HUMAN_CAPACITY[cls.id] ?? 0;
+        const capacity = stats ? stats.humans : (SHIP_HUMAN_CAPACITY[cls.id] ?? 0);
         const boarding = Math.max(0, Math.min(capacity, Math.floor(population - HUMANS.colonyKeep)));
         population -= boarding;
         const [last] = await tx.select({ n: sql<number>`coalesce(max(${fleets.number}), 0)::int` }).from(fleets).where(eq(fleets.emperorId, emperorId));
@@ -621,7 +670,7 @@ export class ColonyService {
           .insert(fleets)
           .values({ emperorId: emperorId, number: (last?.n ?? 0) + 1, systemId: row.systemId })
           .returning({ id: fleets.id });
-        await tx.insert(ships).values({ fleetId: fleet!.id, classId: cls.id, hull: cls.hull, humans: boarding });
+        await tx.insert(ships).values({ fleetId: fleet!.id, classId: cls.id, hull: stats ? stats.hull : cls.hull, humans: boarding, design: build.design ?? null });
         if (boarding > 0) {
           await tx.insert(resourceLedger).values({ emperorId: emperorId, colonyId: row.id, reason: "colonizer_boarding", ref: `fleet:${fleet!.id}`, humans: -boarding });
         }
@@ -642,8 +691,7 @@ export class ColonyService {
     // La siguiente de la cola empieza cuando terminó esta (no cuando se procesa el evento).
     const [next] = await tx.select().from(colonyBuilds).where(eq(colonyBuilds.colonyId, row.id)).orderBy(asc(colonyBuilds.seq)).limit(1);
     if (next) {
-      const def = next.kind === "installation" ? getInstallation(next.itemId) : getShipClass(next.itemId as ShipClassId);
-      const nextFinish = finishAt + realDurationMs(def?.buildTimeHours ?? 1, this.timeScale);
+      const nextFinish = finishAt + realDurationMs(buildHours(next), this.timeScale);
       await tx
         .update(colonyBuilds)
         .set({ startedAt: new Date(finishAt), finishAt: new Date(nextFinish) })
@@ -685,14 +733,18 @@ export class ColonyService {
       await tx.update(colonies).set({ population: state.population, ...stock, resolvedAt: new Date(now) }).where(eq(colonies.id, row.id));
       await tx.delete(colonyBuilds).where(eq(colonyBuilds.id, build.id));
       await tx.insert(resourceLedger).values({ emperorId, colonyId: row.id, reason: "cancel", ref: `${build.kind}:${build.itemId}`, ...refund });
+      // Los diseños devuelven también sus créditos (una parte si ya estaba en marcha).
+      if (build.kind === "design" && build.design) {
+        const credits = designCost(build.design).credits * (build.startedAt ? ECONOMY.cancelRefundStarted : 1);
+        await this.wallet?.credit(tx, emperorId, credits, "cancel", `design:${build.itemId}`);
+      }
 
       // Si se canceló la que estaba en marcha, empieza la siguiente (su evento programado
       // de fin, si ya lo hubiera, no encontrará la cancelada y no hará nada).
       if (build.startedAt) {
         const [next] = await tx.select().from(colonyBuilds).where(eq(colonyBuilds.colonyId, row.id)).orderBy(asc(colonyBuilds.seq)).limit(1);
         if (next) {
-          const nextDef = next.kind === "installation" ? getInstallation(next.itemId) : getShipClass(next.itemId as ShipClassId);
-          const finishAt = now + realDurationMs(nextDef?.buildTimeHours ?? 1, this.timeScale);
+          const finishAt = now + realDurationMs(buildHours(next), this.timeScale);
           await tx.update(colonyBuilds).set({ startedAt: new Date(now), finishAt: new Date(finishAt) }).where(eq(colonyBuilds.id, next.id));
           await schedule(tx, "colony.build", new Date(finishAt), { buildId: next.id });
         }

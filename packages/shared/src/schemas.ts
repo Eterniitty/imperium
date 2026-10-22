@@ -165,7 +165,11 @@ export const ClientMessageSchema = z.union([
     t: z.literal("cmd"),
     cmdId: CmdIdSchema,
     op: z.literal("colony.build"),
-    args: z.object({ colonyId: z.uuid(), kind: z.enum(["installation", "ship"]), itemId: z.string().regex(/^[a-z_]{1,32}$/) }),
+    // Diseños del Astillero: `itemId` es el uuid del diseño.
+    args: z.union([
+      z.object({ colonyId: z.uuid(), kind: z.enum(["installation", "ship"]), itemId: z.string().regex(/^[a-z_]{1,32}$/) }),
+      z.object({ colonyId: z.uuid(), kind: z.literal("design"), itemId: z.uuid() }),
+    ]),
   }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("colony.cancel"), args: z.object({ colonyId: z.uuid(), buildId: z.uuid() }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("colony.demolish"), args: z.object({ colonyId: z.uuid(), installationId: z.string().regex(/^[a-z_]{1,32}$/) }) }),

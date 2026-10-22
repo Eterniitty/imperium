@@ -122,6 +122,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   const mercenaries = new MercenaryService(deps.db, config.TIME_SCALE, emperors, humanity);
   // Niveles de los proyectos comunes: al arrancar (index.ts) o, si no, la primera vez que hagan falta.
   colonies.setBonuses(() => humanity.bonuses());
+  colonies.setWallet(humanity);
   wars.setShieldFactor((systemId) => (inHumanCore(systemId) ? humanity.bonuses().coreShield : 1));
   const market = new MarketService(deps.db, colonies, humanity);
   // Fase 11: facciones alienígenas (territorio, flotas, comercio y diplomacia básica) con la misma tubería de órdenes.

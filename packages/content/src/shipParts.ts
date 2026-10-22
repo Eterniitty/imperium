@@ -1,3 +1,5 @@
+import type { ShipClassId } from "./types";
+
 /**
  * Editor de naves (fase E1, `docs/editor-naves.md`): cascos con anclajes y
  * piezas que se encajan en ellos, como un Lego. Son **datos**: las reglas
@@ -46,6 +48,14 @@ export interface HullDef {
   cost: PartCost;
   /** Instalación de la colonia donde se construye. */
   builtAt: "shipyard" | "drydock";
+  /**
+   * Clase de serie más parecida: da el modelo 3D, el perfil de combate por
+   * rondas y el escáner de las naves construidas con este casco (hasta que las
+   * estadísticas del diseño manden en todo, fase E4).
+   */
+  baseClass: ShipClassId;
+  /** Horas de construcción (de juego). */
+  buildTimeHours: number;
 }
 
 /** Efectos de una pieza según su tipo (solo los que tiene). */
@@ -114,6 +124,8 @@ export const HULLS: readonly HullDef[] = [
     slots: [slot("bridge", "S", "bridge"), slot("core", "S", ...CORE), slot("drive", "S", ...DRIVE), slot("sys1", "S", ...SYSTEMS), slot("sys2", "S", ...SYSTEMS), slot("gun1", "S", ...HARDPOINT)],
     cost: { credits: 300, metal: 150 },
     builtAt: "shipyard",
+    baseClass: "corvette",
+    buildTimeHours: 3,
   },
   {
     id: "hull_frigate",
@@ -136,6 +148,8 @@ export const HULLS: readonly HullDef[] = [
     ],
     cost: { credits: 900, metal: 420, crystal: 20 },
     builtAt: "shipyard",
+    baseClass: "frigate",
+    buildTimeHours: 8,
   },
   {
     id: "hull_cruiser",
@@ -163,6 +177,8 @@ export const HULLS: readonly HullDef[] = [
     ],
     cost: { credits: 2600, metal: 1100, crystal: 60, alloys: 120 },
     builtAt: "drydock",
+    baseClass: "cruiser",
+    buildTimeHours: 20,
   },
   {
     id: "hull_capital",
@@ -193,6 +209,8 @@ export const HULLS: readonly HullDef[] = [
     ],
     cost: { credits: 7000, metal: 2800, crystal: 160, alloys: 400, rare_metals: 80 },
     builtAt: "drydock",
+    baseClass: "carrier",
+    buildTimeHours: 40,
   },
 ];
 

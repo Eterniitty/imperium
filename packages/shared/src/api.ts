@@ -107,6 +107,8 @@ export interface FleetShip {
   hull: number;
   /** Humanos a bordo (colonos del colonizador). */
   humans: number;
+  /** Nave construida con un diseño del Astillero: su foto (nombre, casco y piezas). `classId` es la clase base de su casco. */
+  design?: ShipDesignSnapshot;
 }
 
 /**
@@ -266,6 +268,13 @@ export type ApiErrorCode =
 export const SHIP_DESIGNS_MAX = 30;
 export const SHIP_DESIGN_NAME_MAX = 40;
 
+/** Foto de un diseño (lo que se construye y lo que lleva la nave). */
+export interface ShipDesignSnapshot {
+  name: string;
+  hullId: string;
+  parts: Record<string, string>;
+}
+
 /** Un diseño de nave guardado: casco y pieza de cada anclaje (`slotId → partId`). */
 export interface ShipDesignRecord {
   id: string;
@@ -334,9 +343,11 @@ export interface FlagshipStatus {
 /** Construcción en la cola de una colonia: una instalación o una nave (del astillero). */
 export interface ColonyBuild {
   id: string;
-  kind: "installation" | "ship";
-  /** Id de la instalación (`INSTALLATIONS`) o de la clase de nave (`SHIP_CLASSES`). */
+  kind: "installation" | "ship" | "design";
+  /** Id de la instalación (`INSTALLATIONS`), de la clase de nave (`SHIP_CLASSES`) o del diseño del Astillero. */
   itemId: string;
+  /** Diseño del Astillero: su foto al encargarlo (si luego se cambia o se borra, se construye este). */
+  design?: ShipDesignSnapshot;
   /** Solo la primera de la cola está en marcha: horas del servidor de inicio y fin. */
   startedAt: number | null;
   finishAt: number | null;

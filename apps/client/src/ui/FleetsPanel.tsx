@@ -53,10 +53,10 @@ export function FleetsPanel() {
                       : t("fleet.at", { system: at.systemName })}
                   </span>
                   <span className="small fleet-ships">
-                    {shipCounts(f).map(([id, n]) => (
-                      <span key={id}>
-                        <ShipThumb classId={id} size={34} />
-                        {t("ship.count", { count: n, name: contentText(locale, `ship.${id}.name`) })}
+                    {shipCounts(f).map(({ key, classId, design, n }) => (
+                      <span key={key}>
+                        <ShipThumb classId={classId} size={34} />
+                        {t("ship.count", { count: n, name: design ?? contentText(locale, `ship.${classId}.name`) })}
                       </span>
                     ))}
                   </span>

@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES } from "@imperium/content";
+import type { ShipDesignSnapshot } from "@imperium/shared";
 import { bigint, bigserial, boolean, check, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 /**
@@ -286,6 +287,8 @@ export const ships = pgTable(
     hull: integer("hull").notNull(),
     /** Humanos a bordo (los colonos de un colonizador). */
     humans: integer("humans").notNull().default(0),
+    /** Nave del Astillero: foto de su diseño (nombre, casco, piezas); `class_id` es la clase base del casco. */
+    design: jsonb("design").$type<ShipDesignSnapshot>(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("ships_fleet_id_idx").on(t.fleetId), check("ships_humans_nonnegative", sql`${t.humans} >= 0`)],
@@ -454,6 +457,8 @@ export const colonyBuilds = pgTable(
       .references(() => colonies.id, { onDelete: "cascade" }),
     kind: text("kind").notNull(),
     itemId: text("item_id").notNull(),
+    /** Encargo de un diseño del Astillero: su foto al encargarlo. */
+    design: jsonb("design").$type<ShipDesignSnapshot>(),
     startedAt: timestamp("started_at", { withTimezone: true }),
     finishAt: timestamp("finish_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
