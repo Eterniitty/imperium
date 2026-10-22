@@ -18,7 +18,8 @@ Guarda el diseño y, abajo, elige la **colonia** y pulsa **Construir aquí**. Ha
 - En las **batallas de flotas por rondas** mandan sus piezas: ataque = 0,4 × el daño por segundo de sus armas, escudo por ronda = la mitad de la recarga más el 1 % de la capacidad, un disparo por arma y un tamaño como blanco según el casco. Lleva el **casco** y las **plazas** de sus piezas.
 - Como **escolta** o **pilotada a distancia** lucha con el casco, el escudo y las armas de sus piezas, y al pilotarla su **aceleración** y su **giro** salen de su masa y sus motores.
 - Entre estrellas viaja a la **velocidad de su motor cuántico** y con el **alcance de sus depósitos** (ver [Flotas](/wiki/flotas#combustible)).
-- Su **modelo 3D** sale de sus piezas (motores, torretas, bodegas, hangar…) sobre la forma de la clase de serie más parecida a su casco; por ahora usa el **escáner** de esa clase.
+- Su **escáner** es el de sus **sensores** (sin sensores, el de la clase de serie más parecida a su casco).
+- Su **modelo 3D** sale de sus piezas (motores, torretas, bodegas, hangar…) sobre la forma de la clase de serie más parecida a su casco.
 
 ## Las reglas
 
@@ -37,4 +38,4 @@ Guarda el diseño y, abajo, elige la **colonia** y pulsa **Construir aquí**. Ha
 {{tabla:piezas}}
 
 > [!dev]
-> **En desarrollo**: el escáner según sus sensores y su propio dibujo de piezas (ahora se dibuja sobre la forma de su clase base).
+> **En desarrollo**: un dibujo propio de cada pieza (ahora se dibuja sobre la forma de su clase base).

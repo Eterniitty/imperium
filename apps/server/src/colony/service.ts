@@ -725,7 +725,7 @@ export class ColonyService {
         fleetId = fleet!.id;
         const system = findSystem(this.seed, row.systemId);
         if (system) {
-          const systemIds = await discoverAround(tx, this.seed, emperorId, system, cls.scannerRangeLy);
+          const systemIds = await discoverAround(tx, this.seed, emperorId, system, stats && stats.scanLy > 0 ? stats.scanLy : cls.scannerRangeLy);
           discovered = { emperorId: emperorId, systemIds };
         }
       }

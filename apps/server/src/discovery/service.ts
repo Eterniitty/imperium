@@ -1,8 +1,8 @@
 import { createHmac } from "node:crypto";
 import { EMPEROR_FLAGSHIP, getAnyShipClass } from "@imperium/content";
 import { generateSystemDetail, universeSeedFromString } from "@imperium/procgen";
-import type { StarSystemDetail, StarSystemSummary, WorldPosition } from "@imperium/shared";
-import { isTravelling } from "@imperium/sim";
+import type { ShipDesignSnapshot, StarSystemDetail, StarSystemSummary, WorldPosition } from "@imperium/shared";
+import { designStats, isTravelling } from "@imperium/sim";
 import { and, asc, eq, sql } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
@@ -27,6 +27,19 @@ export function systemDetailSeed(secret: string, systemId: string): number {
 export function fleetScannerRangeLy(classIds: readonly string[]): number {
   let range = 0;
   for (const id of classIds) range = Math.max(range, getAnyShipClass(id)?.scannerRangeLy ?? 0);
+  return range;
+}
+
+/**
+ * Alcance del escáner de unas naves de flota: el mejor. Las del Astillero, el
+ * de sus sensores (sin sensores, el de la clase base de su casco).
+ */
+export function shipsScannerRangeLy(rows: ReadonlyArray<{ classId: string; design: ShipDesignSnapshot | null }>): number {
+  let range = 0;
+  for (const r of rows) {
+    const own = r.design ? designStats(r.design).scanLy : 0;
+    range = Math.max(range, own > 0 ? own : (getAnyShipClass(r.classId)?.scannerRangeLy ?? 0));
+  }
   return range;
 }
 
@@ -122,8 +135,8 @@ export class DiscoveryService {
     if (!fleet) return null;
     const system = findSystem(this.seed, fleet.systemId);
     if (!system) return null;
-    const classIds = (await tx.select({ classId: ships.classId }).from(ships).where(eq(ships.fleetId, fleetId))).map((s) => s.classId);
-    const systemIds = await discoverAround(tx, this.seed, fleet.emperorId, system, fleetScannerRangeLy(classIds));
+    const rows = await tx.select({ classId: ships.classId, design: ships.design }).from(ships).where(eq(ships.fleetId, fleetId));
+    const systemIds = await discoverAround(tx, this.seed, fleet.emperorId, system, shipsScannerRangeLy(rows));
     return { emperorId: fleet.emperorId, systemIds };
   }
 
@@ -182,8 +195,8 @@ export class DiscoveryService {
           const fp = placeFromRow(this.seed, f, now);
           if (isTravelling(fp, now)) continue;
           const at = findSystem(this.seed, fp.location.systemId)!;
-          const classIds = (await tx.select({ classId: ships.classId }).from(ships).where(eq(ships.fleetId, f.id))).map((s) => s.classId);
-          await discoverAround(tx, this.seed, row.id, at, fleetScannerRangeLy(classIds));
+          const rows = await tx.select({ classId: ships.classId, design: ships.design }).from(ships).where(eq(ships.fleetId, f.id));
+          await discoverAround(tx, this.seed, row.id, at, shipsScannerRangeLy(rows));
         }
       });
     }
