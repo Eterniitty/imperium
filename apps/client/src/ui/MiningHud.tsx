@@ -56,7 +56,7 @@ export function MiningHud() {
   };
 
   return (
-    <div className="mining-hud panel" aria-label={t("hold.label")}>
+    <div className="mining-hud panel" aria-label={t("hold.label")} data-tutorial="hold">
       {field && (
         <>
           <div className="stat-label">{t("deep.title")}</div>

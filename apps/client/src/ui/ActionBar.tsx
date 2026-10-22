@@ -69,6 +69,7 @@ export function ActionBar() {
       {/* Seguro de armas: con él puesto no se dispara y el clic selecciona. */}
       <button
         type="button"
+        data-tutorial="weapons"
         className={prefs.weaponsSafe ? "action-btn" : "action-btn on warn"}
         aria-pressed={!prefs.weaponsSafe}
         aria-label={t(prefs.weaponsSafe ? "actions.weaponsOff" : "actions.weaponsOn")}

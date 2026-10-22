@@ -36,7 +36,7 @@ export function HelpButton() {
   };
   return (
     <>
-      <button type="button" className="action-btn help-btn" disabled={busy || wait > 0} aria-label={t("help.call")} title={`${wait > 0 ? t("help.wait", { s: wait }) : t("help.call")} — ${t("help.hint")}`} onClick={() => void call()}>
+      <button type="button" data-tutorial="help" className="action-btn help-btn" disabled={busy || wait > 0} aria-label={t("help.call")} title={`${wait > 0 ? t("help.wait", { s: wait }) : t("help.call")} — ${t("help.hint")}`} onClick={() => void call()}>
         <HudIcon name="help" />
         {wait > 0 && <small className="action-wait">{wait}</small>}
       </button>

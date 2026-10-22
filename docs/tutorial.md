@@ -35,4 +35,4 @@ Petición del usuario (22-10-2026): un tutorial guiado de **todas** las mecánic
 
 ## Estado (22-10-2026, noche)
 
-Hecho: motor (`apps/client/src/tutorial/`: `chapters.ts` con los pasos como datos, `store.ts` con el progreso y `TutorialPanel.tsx` con el panel, el anillo de resaltado y el menú de Ajustes → Tutorial) y capítulos 1–4 (Primeros pasos, Pilotar, Crucero y órbita, Pulso y salto). Los elementos resaltados llevan `data-tutorial` (los botones de la barra de acciones, con el nombre de su acción). Pendiente: capítulos 5–12.
+Hecho: motor (`apps/client/src/tutorial/`: `chapters.ts` con los pasos como datos, `store.ts` con el progreso y `TutorialPanel.tsx` con el panel, el anillo de resaltado y el menú de Ajustes → Tutorial) y capítulos 1–8 (Primeros pasos, Pilotar, Crucero y órbita, Pulso y salto, Combate, Minería, Planetas y colonias, Flotas), probados en vivo con una cuenta de prueba. Los elementos resaltados llevan `data-tutorial` (los botones de la barra de acciones, con el nombre de su acción). Pendiente: capítulos 9–12 (nodriza, economía, linaje y contratos).

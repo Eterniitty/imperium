@@ -9,6 +9,8 @@ import type { Action } from "../state/settings";
 import { settingsStore } from "../state/settings";
 import { gameStore } from "../state/store";
 import { telemetry, type FlightTelemetry } from "../engine/telemetry";
+import { spaceStore } from "../net/space";
+import { empireStore } from "../ui/EmpireWindow";
 
 /** Lo que mira una comprobación: el estado al empezar el paso y el de ahora. */
 export interface StepContext {
@@ -26,6 +28,10 @@ export interface Snapshot {
   quantumPanel: boolean;
   cameraView: "first" | "third";
   speedMode: string;
+  weaponsSafe: boolean;
+  targetId: string | null;
+  selectedPlanet: number | null;
+  empireOpen: boolean;
 }
 
 export function snapshot(): Snapshot {
@@ -39,6 +45,10 @@ export function snapshot(): Snapshot {
     quantumPanel: g.quantumPanel,
     cameraView: g.cameraView,
     speedMode: settingsStore.getState().prefs.flight.speedMode,
+    weaponsSafe: settingsStore.getState().prefs.flight.weaponsSafe,
+    targetId: spaceStore.getState().targetId,
+    selectedPlanet: g.selectedPlanet,
+    empireOpen: empireStore.getState().open,
   };
 }
 
@@ -120,6 +130,46 @@ export const CHAPTERS: TutorialChapter[] = [
       { id: "jumpOpen", keys: ["jump"], done: (c) => c.now.quantumPanel || c.now.view === "tunnel" },
       { id: "jumpGo", target: "quantum-list", optional: true, done: (c) => c.now.view === "tunnel" || c.now.tel.quantumAlign !== null || c.now.tel.quantumCharge !== null },
       { id: "tunnel" },
+    ],
+  },
+  {
+    id: "combat",
+    needsFlight: true,
+    steps: [
+      { id: "safety", target: "weapons", done: (c) => !c.now.weaponsSafe },
+      { id: "lock", target: "targetNearest", keys: ["targetNearest", "lockTarget"], done: (c) => c.now.targetId !== null },
+      { id: "fire", keys: ["fireCannon", "fireMissile"] },
+      { id: "shield", target: "supplies" },
+      { id: "flee", keys: ["pulse"] },
+      { id: "help", target: "help" },
+      { id: "safe", target: "weapons", done: (c) => c.now.weaponsSafe },
+    ],
+  },
+  {
+    id: "mining",
+    needsFlight: true,
+    steps: [{ id: "deep" }, { id: "laser", keys: ["mine"] }, { id: "hold", target: "hold" }, { id: "refine", target: "hold" }, { id: "unload" }],
+  },
+  {
+    id: "colonies",
+    steps: [
+      { id: "map", target: "pilot", keys: ["toggleMap"], done: (c) => c.now.view === "galaxy" || (c.now.view === "system" && !c.now.flight) },
+      { id: "planet", done: (c) => c.now.selectedPlanet !== null },
+      { id: "claim" },
+      { id: "window" },
+      { id: "build" },
+      { id: "people", target: "credits" },
+    ],
+  },
+  {
+    id: "fleets",
+    steps: [
+      { id: "open", target: "empire", done: (c) => c.now.empireOpen },
+      { id: "list" },
+      { id: "send" },
+      { id: "fuel" },
+      { id: "routes" },
+      { id: "name" },
     ],
   },
 ];
