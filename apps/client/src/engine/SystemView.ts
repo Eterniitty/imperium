@@ -643,7 +643,7 @@ export class SystemView implements View {
       ship.scale.setScalar(SHIP_SCALE);
       this.ownLength = FLAGSHIP_LENGTH_M;
       this.ownRadius = FLAGSHIP_HIT_RADIUS_M;
-      ship.position.set(...parkedPosition(this.parkHere(), serverNow()));
+      ship.position.set(...parkedPosition(this.parkHere(), serverNow(), this.layout));
     }
     this.remotePiloting = !!remote;
     this.dome?.dispose();
@@ -657,6 +657,9 @@ export class SystemView implements View {
     ship.lookAt(0, 0, 0);
     // lookAt orienta +Z hacia el objetivo; la nave mira hacia -Z.
     ship.rotateY(Math.PI);
+    // Aparcada con su orientación guardada: sale mirando hacia donde se dejó.
+    const parkQ = remote ? undefined : this.parkHere().q;
+    if (parkQ) ship.quaternion.set(parkQ[0], parkQ[1], parkQ[2], parkQ[3]).normalize();
     this.content.add(ship);
     this.ship = ship;
     const flight = new ShipController(ship, this.dom, this.keyboard);
@@ -672,9 +675,10 @@ export class SystemView implements View {
       out.set(g.acc[0], g.acc[1], g.acc[2]);
     };
     this.flight = flight;
-    // Al tomar los mandos, los motores están apagados (salvo al llegar de un salto: ver `arriveFromJump`).
-    this.engines = { state: "off", t: 0, from: 0 };
-    flight.powered = false;
+    // Al tomar los mandos, los motores están como se dejaron al aparcar (al llegar de un salto, encendidos: ver `arriveFromJump`).
+    const enginesOn = !remote && this.parkHere().engines === true;
+    this.engines = enginesOn ? { state: "on", t: 0, from: 1 } : { state: "off", t: 0, from: 0 };
+    flight.powered = enginesOn;
     this.leaving = false;
     this.controls.enabled = false;
     this.chase.reset();
@@ -1592,11 +1596,17 @@ export class SystemView implements View {
     if (!this.ship || this.remotePiloting || spaceStore.getState().systemId === this.systemId) return;
     const flagship = worldStore.getState().flagship;
     if (!flagship || flagship.systemId !== this.systemId) return;
-    const at = new THREE.Vector3(...parkedPosition(flagship.park, serverNow()));
+    const at = new THREE.Vector3(...parkedPosition(flagship.park, serverNow(), this.layout));
     if (at.distanceTo(this.ship.position) < 2000) return;
     this.ship.position.copy(at);
     this.ship.lookAt(0, 0, 0);
     this.ship.rotateY(Math.PI);
+    const q = flagship.park.q;
+    if (q) this.ship.quaternion.set(q[0], q[1], q[2], q[3]).normalize();
+    if (flagship.park.engines && this.engines.state === "off") {
+      this.engines = { state: "on", t: 0, from: 1 };
+      if (this.flight) this.flight.powered = true;
+    }
     this.flight?.stop();
     this.boundary = Math.max(this.layout?.boundary ?? 0, at.length() / ARRIVAL_EDGE + 1000);
     this.placeChaseCamera(1);
@@ -1610,7 +1620,7 @@ export class SystemView implements View {
     const { position: p, quaternion: q } = this.ship;
     const v = this.flight.velocity;
     const r = (n: number) => Math.round(n * 1000) / 1000;
-    connection.send({ t: "pose", systemId: this.systemId, p: [r(p.x), r(p.y), r(p.z)], q: [r(q.x), r(q.y), r(q.z), r(q.w)], v: [r(v.x), r(v.y), r(v.z)] });
+    connection.send({ t: "pose", systemId: this.systemId, p: [r(p.x), r(p.y), r(p.z)], q: [r(q.x), r(q.y), r(q.z), r(q.w)], v: [r(v.x), r(v.y), r(v.z)], e: this.engines.state === "on" || this.engines.state === "starting" });
   }
 
   /**

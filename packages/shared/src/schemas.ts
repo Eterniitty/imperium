@@ -248,7 +248,7 @@ export const ClientMessageSchema = z.union([
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("colony.disembark"), args: z.object({ colonyId: z.uuid(), humans: z.number().int().min(1).max(100_000) }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("colony.embark"), args: z.object({ colonyId: z.uuid(), humans: z.number().int().min(1).max(100_000) }) }),
   z.object({ t: z.literal("sub"), topic: z.enum(["emperors", "me"]) }),
-  z.object({ t: z.literal("pose"), systemId: PlaceIdSchema, p: Vec3Schema, q: QuatSchema, v: Vec3Schema }),
+  z.object({ t: z.literal("pose"), systemId: PlaceIdSchema, p: Vec3Schema, q: QuatSchema, v: Vec3Schema, e: z.boolean().optional() }),
   z.object({ t: z.literal("leave") }),
   z.object({ t: z.literal("fire"), weapon: z.enum(["cannon", "missile"]), dir: Vec3Schema, target: z.string().max(64).optional() }),
   z.object({ t: z.literal("rift"), phase: z.enum(["charge", "cancel", "arrive"]), at: Vec3Schema, q: QuatSchema }),

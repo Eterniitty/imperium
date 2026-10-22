@@ -1,6 +1,6 @@
 import { AIM_ASSIST, ALIEN_LOCAL, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, SUPERMASSIVE, REPUTATION, getAlienShipClass, getShipClass, HELP_CALL, MINING, PIRATE_AI, PIRATE_AMBUSH, SCAVENGER_LAIR, type ShipClassId, type ShipCombat } from "@imperium/content";
 import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, MOTHERSHIP_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipDesignSnapshot, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
-import { addToHold, arriveVelocity, designStats, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
+import { addToHold, arriveVelocity, designStats, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, parkAt, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { EmperorService } from "../emperor/service";
 import { inHumanCore } from "../emperor/world";
@@ -55,6 +55,8 @@ interface Member {
    * puede disparar). Null mientras alguien la pilota.
    */
   park: ParkedOrbit | null;
+  /** Solo Emperadores pilotados: si el piloto lleva los motores encendidos (se guarda al aparcar). */
+  engines?: boolean;
   /** Solo Emperadores: colonias propias en el sistema (para reponer) y cuándo se consultaron. */
   colonies?: { list: Array<{ colonyId: string; planetIndex: number }>; at: number; loading: boolean };
   /** Reposición en curso (una a la vez) y hasta cuándo se muestra "reponiendo". */
@@ -335,7 +337,7 @@ export class SpaceService {
   }
 
   /** Posición recibida de un cliente que pilota en `systemId`. */
-  async pose(client: Client, systemId: string, pose: ShipPose): Promise<void> {
+  async pose(client: Client, systemId: string, pose: ShipPose & { e?: boolean }): Promise<void> {
     let m: Member | null | undefined = this.members.get(this.keyOf(client));
     if (!m || m.systemId !== systemId) {
       m = client.piloting ? await this.joinFleetShip(client, systemId, pose) : await this.join(client, systemId, pose);
@@ -361,7 +363,8 @@ export class SpaceService {
     }
     this.collideBodies(m, pose, t);
     if (this.members.get(m.emperorId) !== m) return;
-    m.pose = pose;
+    m.pose = { p: pose.p, q: pose.q, v: pose.v };
+    if (pose.e !== undefined) m.engines = pose.e;
     m.poseAt = t;
     m.history.push({ t, p: pose.p });
     if (m.history.length > HISTORY_SIZE) m.history.shift();
@@ -830,14 +833,15 @@ export class SpaceService {
   /** Añade a la sala una nave de Emperador aparcada (sin piloto) y avisa a los presentes. */
   private addParked(systemId: string, room: Set<Member>, emperorId: string, name: string, park: ParkedOrbit, supplies: StoredSupplies | null): Member {
     const now = this.now();
-    const p = parkedPosition(park, now);
+    const layout = this.layout(systemId);
+    const p = parkedPosition(park, now, layout);
     const m: Member = {
       emperorId,
       kind: "emperor",
       name,
       systemId,
       clients: new Set(),
-      pose: { p, q: [0, 0, 0, 1], v: parkedVelocity(park, now) },
+      pose: { p, q: park.q ? [park.q[0], park.q[1], park.q[2], park.q[3]] : [0, 0, 0, 1], v: parkedVelocity(park, now, layout) },
       poseAt: now,
       history: [{ t: now, p }],
       dirty: false,
@@ -860,7 +864,7 @@ export class SpaceService {
    */
   private board(m: Member, client: Client, pose: ShipPose): void {
     const now = this.now();
-    const at = parkedPosition(m.park!, now);
+    const at = parkedPosition(m.park!, now, this.layout(m.systemId));
     if (distance(at, pose.p) > BOARD_TOLERANCE) {
       client.send({ t: "poseRejected", p: at, q: pose.q, v: [0, 0, 0] });
       return;
@@ -1085,10 +1089,12 @@ export class SpaceService {
     const now = this.now();
     const ahead = Math.min(0.5, Math.max(0, (now - m.poseAt) / 1000));
     const p: Vec3 = [m.pose.p[0] + m.pose.v[0] * ahead, m.pose.p[1] + m.pose.v[1] * ahead, m.pose.p[2] + m.pose.v[2] * ahead];
-    m.park = { p, at: now };
+    // Se queda donde se dejó: junto al planeta o luna en cuya esfera está (y lo acompaña), con su orientación y sus motores.
+    const layout = isDeepId(m.systemId) ? null : this.layout(m.systemId);
+    m.park = parkAt(layout, p, now, { q: m.pose.q, engines: m.engines ?? false });
     // Acoplada en una nodriza, sigue acoplada aunque se deje de pilotar (para viajar con su flota).
     this.dismissEscorts(m.emperorId);
-    m.pose = { p, q: m.pose.q, v: parkedVelocity(m.park, now) };
+    m.pose = { p, q: m.pose.q, v: parkedVelocity(m.park, now, layout) };
     m.poseAt = now;
     m.dirty = true;
     const id = m.emperorId;
@@ -1106,7 +1112,7 @@ export class SpaceService {
     await Promise.all(
       [...this.members.values()]
         .filter((m) => m.kind === "emperor" && !m.park)
-        .map((m) => this.flagships.savePark(m.emperorId, { p: m.pose.p, at: now }).catch((err: unknown) => this.log.error(err, "Error al guardar la nave aparcada"))),
+        .map((m) => this.flagships.savePark(m.emperorId, parkAt(isDeepId(m.systemId) ? null : this.layout(m.systemId), m.pose.p, now, { q: m.pose.q, engines: m.engines ?? false })).catch((err: unknown) => this.log.error(err, "Error al guardar la nave aparcada"))),
     );
     await this.rememberPiloted();
     await Promise.all([...this.combatants].filter(([id]) => !id.startsWith("pirate:")).map(([id, c]) => this.saveSupplies(id, c)));
@@ -1137,7 +1143,7 @@ export class SpaceService {
   positionOf(emperorId: string): { systemId: string; p: Vec3 } | null {
     const m = this.members.get(emperorId);
     if (!m || m.kind !== "emperor") return null;
-    return { systemId: m.systemId, p: m.park ? parkedPosition(m.park, this.now()) : m.pose.p };
+    return { systemId: m.systemId, p: m.park ? parkedPosition(m.park, this.now(), this.layout(m.systemId)) : m.pose.p };
   }
 
   /** Memoria de posición: recuerda dónde están las naves pilotadas, por si el proceso se reinicia o el Emperador renace en otro sitio. */
@@ -1939,8 +1945,9 @@ export class SpaceService {
     for (const [systemId, room] of this.rooms) {
       for (const m of room) {
         if (!m.park || now - m.poseAt < PARKED_POSE_MS) continue;
-        const p = parkedPosition(m.park, now);
-        m.pose = { p, q: m.pose.q, v: parkedVelocity(m.park, now) };
+        const layout = this.layout(systemId);
+        const p = parkedPosition(m.park, now, layout);
+        m.pose = { p, q: m.pose.q, v: parkedVelocity(m.park, now, layout) };
         m.poseAt = now;
         m.history.push({ t: now, p });
         if (m.history.length > HISTORY_SIZE) m.history.shift();

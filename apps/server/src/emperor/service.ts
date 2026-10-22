@@ -8,7 +8,7 @@ import type { Database } from "../db/client";
 import { companionRequests, emperorAllies, emperors, fleets, ships } from "../db/schema";
 import { discoverAround, discoverNear, fleetScannerRangeLy } from "../discovery/service";
 import { schedule, type Tx } from "../events/queue";
-import { parkColumns, parkFromRow } from "../space/flagship";
+import { parkColumns, parkFromRow, type ParkRow } from "../space/flagship";
 import { recallPosition, rememberPosition } from "../space/memory";
 import { findSystem, nameKey, pickSpawnNear, pickSpawnSystem, placeFromRow, type PlaceRow } from "./world";
 
@@ -25,7 +25,7 @@ const columns = {
   friendlyFire: emperors.friendlyFire,
   infiniteFuel: emperors.infiniteFuel,
 };
-const PARK_SELECT = { parkX: emperors.parkX, parkY: emperors.parkY, parkZ: emperors.parkZ, parkAt: emperors.parkAt };
+const PARK_SELECT = { parkX: emperors.parkX, parkY: emperors.parkY, parkZ: emperors.parkZ, parkAt: emperors.parkAt, parkExtra: emperors.parkExtra };
 type Row = PlaceRow & { name: string; kind: string; deadAt: Date | null; autoGovern: boolean; friendlyFire: boolean; infiniteFuel: boolean };
 
 /** `companionId`: el compañero cerca del que apareció (alta con compañero aceptada). */
@@ -249,11 +249,11 @@ export class EmperorService {
   }
 
   /** Posición ahora de la nave aparcada según la fila (null si no hay órbita guardada). */
-  private parkedNow(systemId: string, row: { parkX: number | null; parkY: number | null; parkZ: number | null; parkAt: Date | null }, now: number): Vec3 | null {
+  private parkedNow(systemId: string, row: ParkRow, now: number): Vec3 | null {
     const stored = parkFromRow(row);
     if (!stored || isDeepId(systemId)) return null;
     const layout = this.layoutOf?.(systemId) ?? null;
-    return parkedPosition(layout ? sanitizePark(layout, stored) : stored, now);
+    return parkedPosition(layout ? sanitizePark(layout, stored) : stored, now, layout);
   }
 
   /**
@@ -290,7 +290,7 @@ export class EmperorService {
       // Está allí (o va de camino): su nave aparcada, a la hora en que llegamos.
       if ((place.travel?.to ?? place.location).systemId === systemId) {
         const stored = parkFromRow(ally);
-        return parkedPosition(stored ? sanitizePark(layout, stored) : defaultPark(layout), arriveAt);
+        return parkedPosition(stored ? sanitizePark(layout, stored) : defaultPark(layout), arriveAt, layout);
       }
     }
     return recallPosition(tx, allyId, systemId);

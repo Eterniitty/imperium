@@ -372,12 +372,14 @@ export interface EmperorHumans {
 
 /**
  * La nave del Emperador vista por su dueño (tema `me`): dónde está aparcada en
- * su sistema. Desde `park.p` (metros) a la hora `park.at` orbita la estrella
- * (`parkedPosition` de `@imperium/sim`); al pilotar se sale de ahí.
+ * su sistema. Desde `park.p` (metros) a la hora `park.at` orbita la estrella o,
+ * con `anchor`, acompaña al planeta o luna junto al que se dejó (`parkedPosition`
+ * de `@imperium/sim`); al pilotar se sale de ahí, con la orientación `q` y los
+ * motores como se dejaron.
  */
 export interface FlagshipStatus {
   systemId: string;
-  park: { p: [number, number, number]; at: number };
+  park: { p: [number, number, number]; at: number; anchor?: { planet: number; moon?: number }; q?: [number, number, number, number]; engines?: boolean };
   /**
    * Combustible y munición guardados (lo que se gasta al pilotar llega aparte, en
    * tiempo real). El combustible es el de la hora `fuelAt`: por debajo de la

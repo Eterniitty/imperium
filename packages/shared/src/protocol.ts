@@ -213,7 +213,7 @@ export type ClientMessage =
   | { [Op in CommandOp]: { t: "cmd"; cmdId: string; op: Op; args: CommandArgs[Op] } }[CommandOp]
   | { t: "sub"; topic: Topic }
   /** Pilotando dentro de `systemId`: posición actual (unas 8 veces por segundo). */
-  | ({ t: "pose"; systemId: string } & ShipPose)
+  | ({ t: "pose"; systemId: string; /** Motores encendidos (se guarda al aparcar la nave). */ e?: boolean } & ShipPose)
   /** Deja de pilotar en el sistema (vuelve al mapa o sale al espacio interestelar). */
   | { t: "leave" }
   /**

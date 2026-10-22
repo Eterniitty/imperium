@@ -20,6 +20,7 @@ export interface ParkRow {
   parkY: number | null;
   parkZ: number | null;
   parkAt: Date | null;
+  parkExtra?: { anchor?: { planet: number; moon?: number }; q?: [number, number, number, number]; engines?: boolean } | null;
 }
 
 /** Columnas de los recursos de la nave. */
@@ -35,14 +36,15 @@ interface SuppliesRow {
 /** Órbita de aparcamiento guardada en una fila, o null si no la hay (aparca en el sitio por defecto). */
 export function parkFromRow(row: ParkRow): ParkedOrbit | null {
   if (row.parkX === null || row.parkY === null || row.parkZ === null || row.parkAt === null) return null;
-  return { p: [row.parkX, row.parkY, row.parkZ], at: row.parkAt.getTime() };
+  const x = row.parkExtra ?? {};
+  return { p: [row.parkX, row.parkY, row.parkZ], at: row.parkAt.getTime(), ...(x.anchor ? { anchor: x.anchor } : {}), ...(x.q ? { q: x.q } : {}), ...(x.engines !== undefined ? { engines: x.engines } : {}) };
 }
 
 /** Columnas para guardar una órbita de aparcamiento (null: la de por defecto). */
 export function parkColumns(park: ParkedOrbit | null): ParkRow {
   return park
-    ? { parkX: park.p[0], parkY: park.p[1], parkZ: park.p[2], parkAt: new Date(park.at) }
-    : { parkX: null, parkY: null, parkZ: null, parkAt: null };
+    ? { parkX: park.p[0], parkY: park.p[1], parkZ: park.p[2], parkAt: new Date(park.at), parkExtra: park.anchor || park.q || park.engines !== undefined ? { anchor: park.anchor, q: park.q ? [park.q[0], park.q[1], park.q[2], park.q[3]] : undefined, engines: park.engines } : null }
+    : { parkX: null, parkY: null, parkZ: null, parkAt: null, parkExtra: null };
 }
 
 function suppliesFromRow(r: SuppliesRow): StoredSupplies {
@@ -55,7 +57,7 @@ function ammoMax(kind: "cannon" | "missile"): number {
 }
 
 const SUPPLY_COLUMNS = { fuel: emperors.fuel, fuelAt: emperors.fuelAt, cannonAmmo: emperors.cannonAmmo, missiles: emperors.missiles, ammoAt: emperors.ammoAt, flagshipHull: emperors.flagshipHull };
-const PARK_COLUMNS = { parkX: emperors.parkX, parkY: emperors.parkY, parkZ: emperors.parkZ, parkAt: emperors.parkAt };
+const PARK_COLUMNS = { parkX: emperors.parkX, parkY: emperors.parkY, parkZ: emperors.parkZ, parkAt: emperors.parkAt, parkExtra: emperors.parkExtra };
 
 /** Emperador presente (no de viaje) en un sistema, con su nave aparcada y sus recursos. */
 export interface ParkedShip {
@@ -131,7 +133,7 @@ export class FlagshipService {
     const park = this.resolvePark(systemId, row);
     return {
       systemId,
-      park: { p: [park.p[0], park.p[1], park.p[2]], at: park.at },
+      park: { p: [park.p[0], park.p[1], park.p[2]], at: park.at, anchor: park.anchor, q: park.q ? [park.q[0], park.q[1], park.q[2], park.q[3]] : undefined, engines: park.engines },
       supplies: {
         fuel: regenFuel(row.fuel, (now - row.fuelAt.getTime()) / 1000),
         fuelMax: FLAGSHIP_SUPPLIES.fuelMax,

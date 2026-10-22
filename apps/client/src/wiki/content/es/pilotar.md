@@ -142,7 +142,7 @@ En el panel de **Flotas** (también en el puente de mando, durante un viaje cuá
 
 ## Nave aparcada
 
-Al dejar los mandos, tu nave se queda donde estaba y **orbita la estrella** como los planetas. Los demás la ven y pueden atacarla; los piratas solo persiguen naves pilotadas. Al volver, sales desde donde está.
+Al desconectarte o dejar los mandos, tu nave **no desaparece**: se queda en el espacio, donde la dejaste. Si estaba junto a un planeta o una luna (dentro de su esfera de influencia), lo acompaña en su órbita y al volver la encuentras en el mismo sitio respecto a él; en el espacio abierto orbita la estrella como los planetas. Conserva su orientación y los **motores como los dejaste**: si los dejas encendidos, al volver siguen encendidos; si los apagas, apagados. Los demás la ven y pueden atacarla; los piratas solo persiguen naves pilotadas.
 
 ## Cámaras
 

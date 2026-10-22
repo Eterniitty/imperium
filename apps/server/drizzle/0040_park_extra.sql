@@ -1,0 +1,1 @@
+ALTER TABLE "emperors" ADD COLUMN "park_extra" jsonb;

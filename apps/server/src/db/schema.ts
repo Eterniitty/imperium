@@ -124,6 +124,12 @@ export const emperors = pgTable("emperors", {
   parkZ: doublePrecision("park_z"),
   parkAt: timestamp("park_at", { withTimezone: true }),
   /**
+   * Resto de la nave aparcada: cuerpo al que va anclada (`park_x/y/z` es entonces
+   * el desplazamiento desde su centro), orientación y si se dejó con los motores
+   * encendidos (`ParkedOrbit` de `@imperium/sim`). Null: orbita la estrella.
+   */
+  parkExtra: jsonb("park_extra").$type<{ anchor?: { planet: number; moon?: number }; q?: [number, number, number, number]; engines?: boolean }>(),
+  /**
    * Recursos de la nave (ver FLAGSHIP_SUPPLIES en content): combustible a la hora
    * `fuelAt` (la reserva de emergencia se regenera sola desde ahí) y munición a la
    * hora `ammoAt`. La energía no se guarda: el reactor la recarga en segundos.
