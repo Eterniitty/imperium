@@ -5,7 +5,7 @@
 Al elegir un planeta (en la lista del sistema o haciendo clic en él) se abre su **ventana**, con pestañas:
 
 - **Planeta**: tipo, órbita, tamaño, habitabilidad, lunas, yacimientos, dueño; reclamarlo, renombrarlo o asediarlo, y, pilotando, ir en crucero u orbitarlo.
-- Si la colonia es tuya, además: **Población** (habitantes, energía, mantenimiento, desembarcar y embarcar humanos, descargar la bodega), **Recursos** (existencias, producción por hora y componentes), **Instalaciones** (las que hay y construir), **Producción** (cola de obras y fabricación) y **Naves** (astillero).
+- Si la colonia es tuya, además: **Población** (habitantes, energía, mantenimiento, desembarcar y embarcar humanos), **Recursos** (existencias, producción por hora, componentes y descargar la bodega de tu nave), **Instalaciones** (las que hay y construir), **Producción** (cola de obras y fabricación) y **Naves** (astillero).
 
 El botón **▁** la minimiza en una pestaña bajo la barra superior (clic para desplegarla) y **×** la cierra.
 

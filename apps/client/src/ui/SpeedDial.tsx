@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useId, useRef } from "react";
 import { CRUISE_LIMIT_MAX, settingsStore, useSettings } from "../state/settings";
 import { useT } from "../state/store";
 import { fmtSpeedMs } from "./SettingsPanel";
@@ -32,6 +32,7 @@ export function SpeedDial({ size = 150, speed }: { size?: number; /** Velocidad 
   const t = useT();
   const limit = useSettings((s) => s.prefs.flight.cruiseLimit);
   const ref = useRef<SVGSVGElement>(null);
+  const gradId = `dial-grad-${useId().replace(/:/g, "")}`;
   const set = (cruiseLimit: number) => {
     const f = settingsStore.getState().prefs.flight;
     settingsStore.getState().setPrefs({ flight: { ...f, cruiseLimit } });
@@ -77,18 +78,20 @@ export function SpeedDial({ size = 150, speed }: { size?: number; /** Velocidad 
         }}
         onWheel={(e) => {
           e.stopPropagation();
-          set(fromPos(Math.max(0, Math.min(1, p + (e.deltaY < 0 ? 0.03 : -0.03)))));
+          // Desde «máx.» (fuera de la escala), un paso abajo vuelve a lo más alto de la escala.
+          const next = p >= FREE_FROM && e.deltaY > 0 ? FREE_FROM - 0.03 : p + (e.deltaY < 0 ? 0.03 : -0.03);
+          set(fromPos(Math.max(0, Math.min(1, next))));
         }}
       >
         <defs>
-          <linearGradient id="dial-grad" x1="0" y1="1" x2="1" y2="0">
+          <linearGradient id={gradId} x1="0" y1="1" x2="1" y2="0">
             <stop offset="0" stopColor="#5fd3e6" />
             <stop offset="1" stopColor="#e8b64c" />
           </linearGradient>
         </defs>
         <circle cx="50" cy="50" r="47" className="dial-face" />
         <path d={arc(1)} className="dial-track" />
-        <path d={arc(Math.max(0.001, p))} className="dial-fill" />
+        <path d={arc(Math.max(0.001, p))} className="dial-fill" stroke={`url(#${gradId})`} />
         {/* Escala: marcas mayores con rótulo (km/s) y menores entre ellas. */}
         {Array.from({ length: 31 }, (_, i) => {
           const q = (i / 30) * FREE_FROM;

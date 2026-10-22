@@ -65,8 +65,8 @@ export class ChaseCamera {
 
   /**
    * Armas a punto (motores encendidos y ratón para combatir): el botón
-   * izquierdo dispara en vez de mover la cámara y la rueda cambia de arma
-   * (la distancia de la cámara pasa a Mayús + rueda). Lo pone la vista.
+   * izquierdo dispara en vez de mover la cámara (la rueda sigue siendo el zoom;
+   * Ctrl + rueda cambia de arma). Lo pone la vista.
    */
   armed = false;
 
@@ -104,8 +104,8 @@ export class ChaseCamera {
   };
 
   private onWheel = (e: WheelEvent) => {
-    // La rueda siempre acerca o aleja (petición del usuario); Mayús + rueda cambia de arma.
-    if (this.first || e.shiftKey) return;
+    // La rueda siempre acerca o aleja (petición del usuario), también con Mayús (impulso); Ctrl + rueda cambia de arma.
+    if (this.first || e.ctrlKey) return;
     // Con Mayús, algunos navegadores convierten la rueda en desplazamiento horizontal (deltaX).
     const delta = e.deltaY || e.deltaX;
     this.wantDist = Math.max(ChaseCamera.MIN_DIST, Math.min(ChaseCamera.MAX_DIST, this.wantDist * Math.exp(delta * 0.001)));

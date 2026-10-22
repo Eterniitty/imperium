@@ -44,7 +44,8 @@ export function ActionBar() {
     <nav className={docked ? "action-bar panel docked" : "action-bar panel"} aria-label={t("actions.title")}>
       <ActionButton action="engines" icon="engines" on={engines === "on" || engines === "starting"} label={t(engines === "off" || engines === "stopping" ? "actions.enginesStart" : "actions.enginesStop")} />
       <ActionButton action="pulse" icon="pulse" on={tel.pulse || tel.pulseCharge !== null} label={t("actions.pulse")} />
-      <ActionButton action="flightAssist" icon="assist" on={prefs.assist} label={t("actions.assist")} title={t("actions.assistTitle")} />
+      {/* La asistencia solo cuenta en el vuelo newtoniano (el arcade no deriva). */}
+      {prefs.flightModel === "newtonian" && <ActionButton action="flightAssist" icon="assist" on={prefs.assist} label={t("actions.assist")} title={t("actions.assistTitle")} />}
       <ActionButton action="mouseFlight" icon="mouse" on={prefs.mouseFlight} label={t(prefs.mouseFlight ? "actions.mouseFlight" : "actions.mouseCamera")} title={t("actions.mouseTitle")} />
       <button type="button" className={camera === "first" ? "action-btn on" : "action-btn"} aria-label={t(camera === "first" ? "actions.cameraOutside" : "actions.cameraCockpit")} title={t(camera === "first" ? "actions.cameraOutside" : "actions.cameraCockpit")} onClick={() => gameStore.getState().toggleCameraView()}>
         <HudIcon name="cockpit" />

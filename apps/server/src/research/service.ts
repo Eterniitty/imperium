@@ -48,8 +48,10 @@ export class ResearchService {
   async start(emperorId: string, tree: string): Promise<{ ok: true; status: ResearchStatus } | { ok: false; error: CommandError }> {
     if (!isTechTree(tree)) return { ok: false, error: "invalid_command" };
     return this.db.transaction(async (tx) => {
-      const [row] = await tx.select({ tech: emperors.tech, research: emperors.research }).from(emperors).where(eq(emperors.id, emperorId)).for("update").limit(1);
+      const [row] = await tx.select({ tech: emperors.tech, research: emperors.research, deadAt: emperors.deadAt }).from(emperors).where(eq(emperors.id, emperorId)).for("update").limit(1);
       if (!row) return { ok: false as const, error: "no_emperor" as const };
+      // Muerto (gestándose), como con las demás órdenes, no se manda nada.
+      if (row.deadAt) return { ok: false as const, error: "dead" as const };
       if (row.research) return { ok: false as const, error: "research_busy" as const };
       const level = techLevel(row.tech as TechLevels, tree as TechTree) + 1;
       if (level > TECH.maxLevel) return { ok: false as const, error: "max_level" as const };

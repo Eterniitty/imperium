@@ -89,8 +89,12 @@ const PlaceIdSchema = z.union([SystemIdSchema, DeepIdSchema]);
 const CmdIdSchema = z.string().regex(/^[A-Za-z0-9_-]{8,64}$/);
 /** Cantidad a transportar: positiva y acotada. */
 const Amount = z.number().finite().min(0).max(1e7);
-/** Números finitos y acotados: nada de NaN, Infinity ni coordenadas absurdas. */
-const Coord = z.number().finite().min(-1e9).max(1e9);
+/**
+ * Números finitos y acotados: nada de NaN, Infinity ni coordenadas absurdas.
+ * Las órbitas miden 270 000 km·√UA (planetas exteriores y bordes de sistema a
+ * varios miles de millones de metros): el tope deja margen de sobra.
+ */
+const Coord = z.number().finite().min(-1e11).max(1e11);
 const Vec3Schema = z.tuple([Coord, Coord, Coord]);
 const QuatSchema = z.tuple([z.number().min(-1.01).max(1.01), z.number().min(-1.01).max(1.01), z.number().min(-1.01).max(1.01), z.number().min(-1.01).max(1.01)]);
 

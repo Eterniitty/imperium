@@ -168,12 +168,12 @@ export class RemoteShips {
     return v ? shipRig(v.ship).muzzle(weapon, index, new THREE.Vector3()) : null;
   }
 
-  /** El modelo de una nave ajena, si se dibuja. */
   /** Eslora (m) con que se dibuja una nave remota, o null si no se dibuja. */
   lengthOf(id: string): number | null {
     return this.visuals.get(id)?.lengthM ?? null;
   }
 
+  /** El modelo de una nave ajena, si se dibuja. */
   shipOf(id: string): THREE.Group | null {
     return this.visuals.get(id)?.ship ?? null;
   }

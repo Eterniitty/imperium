@@ -242,6 +242,7 @@ function ControlsSection({ capturing, setCapturing }: { capturing: { action: Act
   const keys = useKeyLabels();
   const locale = useGame((s) => s.locale);
   const bindings = useSettings((s) => s.bindings);
+  const flightModel = useSettings((s) => s.prefs.flight.flightModel);
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
   return (
@@ -250,8 +251,8 @@ function ControlsSection({ capturing, setCapturing }: { capturing: { action: Act
         <summary>{t("settings.howToPlay")}</summary>
         <ul className="howto">
           <li>{t("help.pilotMouse", keys)}</li>
-          <li>{t("help.keysArcade", keys)}</li>
-          <li>{t("help.keysPilot", keys)}</li>
+          {/* Solo las teclas del modelo de vuelo elegido (en arcade no hay lateral, subir/bajar ni marcha atrás). */}
+          <li>{t(flightModel === "arcade" ? "help.keysArcade" : "help.keysPilot", keys)}</li>
           <li>{t("help.combat", keys)}</li>
           <li>{t("help.rotate")} · {t("help.pan")} · {t("help.zoom")}</li>
           <li>{t("help.select")}</li>

@@ -73,9 +73,9 @@ export function CombatHud() {
             </div>
           )}
           {missile && (
-            <div className={`hud-weapon${missile.ammo && now >= missile.readyAt ? " ready" : ""}${selected === "missile" ? " selected" : ""}`} aria-current={selected === "missile" || undefined} title={`${t("combat.missiles")} (${keys.fireMissile})`}>
+            <div className={`hud-weapon${missile.ammo !== 0 && now >= missile.readyAt ? " ready" : ""}${selected === "missile" ? " selected" : ""}`} aria-current={selected === "missile" || undefined} title={`${t("combat.missiles")} (${keys.fireMissile})`}>
               <HudIcon name="missile" size={16} />
-              <span className={missile.ammo === 0 ? "hud-stat-value low" : "hud-stat-value"}>{missile.ammo}</span>
+              <span className={missile.ammo === 0 ? "hud-stat-value low" : "hud-stat-value"}>{missile.ammo ?? "∞"}</span>
               <span className="sr-only">{t("combat.missiles")}</span>
             </div>
           )}

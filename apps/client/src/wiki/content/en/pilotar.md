@@ -14,7 +14,7 @@ Only the actions used constantly with your hands on the controls have a default 
 
 **The camera and the ship are separate.** The mouse has two modes, switched with the **Mouse** button in the action bar (it shows which one is active):
 
-- **Free camera** (default): dragging with the mouse **moves the camera around the ship** (above, below, to the sides, in front) without turning it; the wheel zooms (with engines on, left click fires and Shift + wheel switches weapon: then drag with the right button; see [Combat](/wiki/combate#aim-assist)) and [[B]] puts the camera back behind the ship. You fly with the keyboard: arrow keys (pitch and yaw) and [[Q]]/[[E]] (roll).
+- **Free camera** (default): dragging with the mouse **moves the camera around the ship** (above, below, to the sides, in front) without turning it; the wheel zooms (with engines on, left click fires and Ctrl + wheel switches weapon: then drag with the right button; see [Combat](/wiki/combate#aim-assist)) and [[B]] puts the camera back behind the ship. You fly with the keyboard: arrow keys (pitch and yaw) and [[Q]]/[[E]] (roll).
 - **Mouse flight**: a **virtual reticle** in the centre of the screen. The ship turns towards where the cursor points relative to the centre, without dragging: the further from the centre, the faster (up to the outer circle); inside the small circle (dead zone) it does not turn. The camera follows behind the ship; hold the right button to look around for a moment. Arrow keys and [[Q]]/[[E]] still work.
 
 In **Settings → Controls** you can change the mouse flight sensitivity and dead zone and invert its vertical axis. In the cockpit, in free camera mode, the mouse looks around.
@@ -25,11 +25,11 @@ By default you fly in **arcade** mode, like in No Man's Sky (Settings → Piloti
 
 - The ship always flies where its nose points: no drifting.
 - **W** speeds up and **S** brakes to a stop; there is no reverse (the engines push forwards).
-- Without W or S, it keeps cruise speed (30 % of the maximum).
+- When you take the controls it is stopped. After pressing W, releasing the keys keeps cruise speed (30 % of the maximum); after S it stays stopped until you press W again.
 - **A/D** turn left and right and the ship banks by itself in turns; release and it levels out.
 - The **mouse** aims the ship (mouse flight is on by default); **Shift**, boost.
 - It takes about 5 s to go from standstill to top speed.
-- With mouse flight, a click on the view **captures the mouse**: the cursor (a golden circle) cannot leave the steering circle or the window. **Esc** releases it to use the panels; it is also released when you switch off the engines or mouse flight.
+- With mouse flight, a click on the view **captures the mouse**: the cursor (a golden circle) cannot leave the steering circle or the window. **Esc** or **Alt** release it to use the interface; it is also released when a window or panel opens (planet, cruise, settings…), and when you switch off the engines or mouse flight.
 
 The **Newtonian** mode is the classic one: real inertia, strafe thrusters, up/down and reverse.
 

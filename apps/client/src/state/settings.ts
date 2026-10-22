@@ -166,7 +166,7 @@ export interface FlightPrefs {
   invertCameraY: boolean;
   /**
    * Ratón para combatir (con los motores encendidos): clic izquierdo dispara
-   * el arma seleccionada y la rueda cambia de arma (Mayús + rueda: distancia
+   * el arma seleccionada y Ctrl + rueda cambia de arma (la rueda sola: distancia
    * de la cámara). Sin él, el ratón solo mueve la cámara, como antes.
    */
   mouseFire: boolean;

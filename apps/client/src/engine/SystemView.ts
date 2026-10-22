@@ -2,8 +2,8 @@ import * as THREE from "three";
 import { pointerXY } from "./pointerLock";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
-import type { Fleet, I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, ShipDesignSnapshot, WeaponKind, WorldPosition } from "@imperium/shared";
-import { ARRIVAL_EDGE, deepLayout, designStats, starHeatDps, defaultPark, moonOffset, parkedPosition, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
+import type { FlagshipStatus, Fleet, I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, ShipDesignSnapshot, WeaponKind, WorldPosition } from "@imperium/shared";
+import { ARRIVAL_EDGE, deepLayout, designStats, starHeatDps, defaultPark, moonOffset, parkedPosition, parkAt, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
 import { resetSpace, shipName, spaceStore, type SelectedWeapon } from "../net/space";
 import { TargetAssist, relationOf, type CannonAim } from "./TargetAssist";
 import { telemetry, type FlightTelemetry } from "./telemetry";
@@ -103,6 +103,12 @@ export const PILOT_ACTIONS = [
   "fireMissile",
 ] as const satisfies readonly Action[];
 export type PilotAction = (typeof PILOT_ACTIONS)[number];
+
+/** Aparcamiento local (hasta que llegue el del servidor): como `parkAt` del servidor, con ancla, orientación y motores. */
+function localPark(layout: SystemLayout | null, p: [number, number, number], q: [number, number, number, number], engines: boolean): FlagshipStatus["park"] {
+  const k = parkAt(layout, p, serverNow(), { q, engines });
+  return { p: [k.p[0], k.p[1], k.p[2]], at: k.at, ...(k.anchor ? { anchor: k.anchor } : {}), q, engines };
+}
 
 /**
  * Vista de un sistema estelar, con la disposición de `@imperium/sim` (distancias
@@ -262,7 +268,7 @@ export class SystemView implements View {
     this.assist = new TargetAssist(dom);
     dom.addEventListener("pointerdown", this.onCombatDown);
     window.addEventListener("pointerup", this.onCombatUp);
-    dom.addEventListener("wheel", this.onCombatWheel, { passive: true });
+    dom.addEventListener("wheel", this.onCombatWheel, { passive: false });
     this.scene.add(this.backdrop.object, this.content, this.selectRing, this.remote.group, this.effects.group, this.fleetScene.group, this.rifts.group, this.deep.group);
     this.scene.add(new THREE.AmbientLight(0x5a6688, 0.9));
     // Cabina en primera persona: cuelga de la cámara (por eso la cámara va en la escena).
@@ -903,7 +909,8 @@ export class SystemView implements View {
     // Solo si el servidor la tenía a los mandos (si no, su aparcamiento no ha cambiado).
     if (!this.remotePiloting && flagship && flagship.systemId === this.systemId && spaceStore.getState().systemId === this.systemId) {
       const p = this.ship.position;
-      worldStore.setState({ flagship: { ...flagship, park: { p: [p.x, p.y, p.z], at: serverNow() } } });
+      const q = this.ship.quaternion;
+      worldStore.setState({ flagship: { ...flagship, park: localPark(this.layout, [p.x, p.y, p.z], [q.x, q.y, q.z, q.w], this.engines.state === "on" || this.engines.state === "starting") } });
     }
     resetSpace();
     this.remote.clear();
@@ -1139,7 +1146,12 @@ export class SystemView implements View {
       flight.pulse = false;
       this.events.notify("pilot.heatPulseOff");
     }
-    flight.pulseLimit = pulseLimitAt([pos.x, pos.y, pos.z], heading, bodies.map((b) => ({ center: [b.center.x, b.center.y, b.center.z], radius: b.radius })));
+    const near = bodies.map((b) => ({ center: [b.center.x, b.center.y, b.center.z] as [number, number, number], radius: b.radius }));
+    flight.pulseLimit = pulseLimitAt([pos.x, pos.y, pos.z], heading, near);
+    // Maniobra rápida (Ajustes, hasta 400 km/s): cerca de los cuerpos, como mucho lo que deja el pulso (lo que valida el
+    // servidor) y, sin combustible (por encima del impulso el servidor la cobra como pulso), solo el impulso normal.
+    const normalTop = FLIGHT_MODEL.maxSpeed * FLIGHT_MODEL.boostFactor;
+    flight.maneuverCap = this.outOfFuel() ? normalTop : Math.max(normalTop, pulseLimitAt([pos.x, pos.y, pos.z], null, near));
 
     let nearest: FlightTelemetry["nearest"] = null;
     let ahead: { name: string; distance: number; at: THREE.Vector3 } | null = null;
@@ -1329,12 +1341,13 @@ export class SystemView implements View {
     if (e.button === 0) this.mouseFiring = false;
   };
 
-  /** Rueda: cambia de arma (con Mayús, la distancia de la cámara; lo hace ChaseCamera). */
+  /** Ctrl + rueda: cambia de arma (la rueda sola es el zoom de la cámara; Mayús es el impulso y no se toca). */
   private onCombatWheel = (e: WheelEvent) => {
-    // Mayús + rueda cambia de arma (la rueda sola es el zoom de la cámara).
-    // Con Mayús, algunos navegadores convierten la rueda en desplazamiento horizontal (deltaX).
     const delta = e.deltaY || e.deltaX;
-    if (!e.shiftKey || !this.weaponsArmed() || delta === 0) return;
+    if (!e.ctrlKey || delta === 0) return;
+    // Ctrl + rueda haría zoom de la página: aquí no.
+    e.preventDefault();
+    if (!this.weaponsArmed()) return;
     const list = this.weaponList();
     const i = Math.max(0, list.indexOf(spaceStore.getState().weapon));
     spaceStore.setState({ weapon: list[(i + (delta > 0 ? 1 : -1) + list.length) % list.length]! });
@@ -1584,7 +1597,7 @@ export class SystemView implements View {
     // Aún sin subir a bordo: el servidor dice dónde está aparcada la nave (manda sobre lo que se creía).
     const flagship = worldStore.getState().flagship;
     if (flagship && flagship.systemId === this.systemId && spaceStore.getState().systemId !== this.systemId) {
-      worldStore.setState({ flagship: { ...flagship, park: { p: [...c.p], at: serverNow() } } });
+      worldStore.setState({ flagship: { ...flagship, park: localPark(this.layout, [c.p[0], c.p[1], c.p[2]], [c.q[0], c.q[1], c.q[2], c.q[3]], flagship.park.engines ?? false) } });
     }
     // La cámara salta con la nave (si no, tardaría en alcanzarla y la nave se vería diminuta).
     this.placeChaseCamera(1);

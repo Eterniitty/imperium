@@ -1019,7 +1019,7 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .speed-dial svg:active { cursor: grabbing; }
 .speed-dial .dial-face { fill: rgba(4, 10, 20, 0.55); stroke: rgba(143, 220, 255, 0.14); stroke-width: 1; }
 .speed-dial .dial-track { fill: none; stroke: rgba(255, 255, 255, 0.08); stroke-width: 5; stroke-linecap: round; }
-.speed-dial .dial-fill { fill: none; stroke: url(#dial-grad); stroke-width: 5; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(232, 182, 76, 0.5)); transition: d 0.15s; }
+.speed-dial .dial-fill { fill: none; stroke-width: 5; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(232, 182, 76, 0.5)); transition: d 0.15s; }
 .speed-dial .dial-tick { stroke: rgba(255, 255, 255, 0.22); stroke-width: 0.6; }
 .speed-dial .dial-tick.major { stroke: rgba(255, 255, 255, 0.55); stroke-width: 1; }
 .speed-dial .dial-scale { fill: var(--muted); font: 5.5px var(--font-body); text-anchor: middle; dominant-baseline: middle; }
@@ -1060,3 +1060,6 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 /* Ventana del planeta: botones contenidos (no a lo ancho). */
 .planet-win .btn { flex: none; }
 .planet-win .planet-cruise { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+
+/* Avisos que no debe tapar la ventana del planeta (z-index 6). */
+.notice, .companion-inbox, .cruise-hud { z-index: 8; }

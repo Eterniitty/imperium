@@ -19,7 +19,7 @@ Enemy ships are a few metres long and look like a dot: your ship helps you aim.
 - **Automatic aiming**: with a locked target, the cannons aim at that point by themselves; you decide when to fire. Missiles already chase the target by themselves.
 - **Auto-fire** (the **Auto fire** button in the action bar or the weapons panel, also in Settings → Controls): the cannon fires by itself while the locked target is in range and in arc. It never fires by itself at a companion.
 - **Weapons safety**: the **Weapons: off / ready** button in the action bar. Off (the default at first), nothing fires and left click selects planets and ships or moves the camera.
-- **Mouse**: with weapons ready and engines on, **left click** fires the selected weapon and **Shift + wheel** switches weapon ([[1]] cannon, [[2]] missiles, [[3]] laser); the **wheel** still zooms the camera. Moving the camera to the **right button** (or Alt + drag), selecting a planet to **Alt + click** and autopilot by double click to **Alt + double click**. It can be turned off in Settings → Controls ("Mouse for combat"). All keys can be rebound.
+- **Mouse**: with weapons ready and engines on, **left click** fires the selected weapon and **Ctrl + wheel** switches weapon ([[1]] cannon, [[2]] missiles, [[3]] laser); the **wheel** still zooms the camera. Moving the camera to the **right button** (or Alt + drag), selecting a planet to **Alt + click** and autopilot by double click to **Alt + double click**. It can be turned off in Settings → Controls ("Mouse for combat"). All keys can be rebound.
 
 {{tabla:punteria}}
 

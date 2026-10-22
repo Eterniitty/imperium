@@ -4,6 +4,13 @@ import { FLIGHT_MODEL } from "@imperium/content";
 import { settingsStore, thrustScale } from "../state/settings";
 import type { Keyboard } from "./input";
 import { lockedPointer } from "./pointerLock";
+import { gameStore } from "../state/store";
+
+/** ¿Hay abierta una ventana o panel que se maneja con el ratón? Entonces no se atrapa (y se suelta). */
+function uiOpen(): boolean {
+  const g = gameStore.getState();
+  return g.settingsOpen || g.economyOpen !== null || g.colonyManager !== null || g.lineageOpen || g.shipEditorOpen || g.quantumPanel || g.cruisePanel || document.querySelector(".planet-win, .modal-backdrop") !== null;
+}
 import type { CruiseCommand } from "./Autopilot";
 
 /**
@@ -62,9 +69,17 @@ export class ShipController {
   /** Vuelo arcade: velocidad hacia el morro (m/s). */
   private arcadeSpeed = 0;
   private wasArcade = false;
+  /**
+   * Arcade: sin teclas, ¿sigue a la velocidad de crucero o se queda parada? Empieza
+   * parada (al tomar los mandos, tras el piloto automático o tras `stop`); W la pone
+   * en crucero y S la para hasta volver a pulsar W.
+   */
+  private arcadeCruising = false;
   /** Lo que piden los mandos ahora (para los propulsores de maniobra del modelo). */
   readonly maneuver: Maneuver = { x: 0, y: 0, z: 0, pitch: 0, yaw: 0, roll: 0 };
   pulseLimit = 0;
+  /** Tope de la velocidad de maniobra aquí (m/s): lo pone la vista según los cuerpos cercanos y el combustible. */
+  maneuverCap = Infinity;
   /**
    * Piloto automático de crucero: si lo hay, sus mandos sustituyen a los del
    * teclado y del ratón (misma física; la asistencia de vuelo va siempre puesta)
@@ -97,7 +112,13 @@ export class ShipController {
     window.addEventListener("pointerdown", this.onButtons);
     window.addEventListener("pointerup", this.onButtons);
     document.addEventListener("pointerlockchange", this.onLockChange);
+    window.addEventListener("keydown", this.onAlt);
   }
+
+  /** Alt suelta el ratón atrapado (para usar la interfaz); un clic en la vista lo vuelve a atrapar. */
+  private onAlt = (e: KeyboardEvent) => {
+    if ((e.code === "AltLeft" || e.code === "AltRight") && document.pointerLockElement === this.dom) document.exitPointerLock();
+  };
 
   /** Se quiere el ratón atrapado (vuelo con ratón, motores en marcha, a mano): lo decide `update`. */
   private lockWanted = false;
@@ -180,6 +201,8 @@ export class ShipController {
     const r = this.dom.getBoundingClientRect();
     const half = Math.max(1, r.height / 2);
     if (lockedPointer.active) {
+      // Mirando alrededor con el botón derecho, el ratón mueve la cámara, no el cursor de mando.
+      if ((e.buttons & 2) !== 0) return;
       // Ratón atrapado: el cursor virtual se mueve con el ratón y no sale del círculo de mando.
       const c = (this.cursor ??= { x: 0, y: 0 });
       c.x += e.movementX / half;
@@ -227,7 +250,7 @@ export class ShipController {
   private onButtons = (e: PointerEvent) => {
     this.buttons = e.buttons;
     // Un clic sobre la vista con el vuelo con ratón atrapa el ratón (el navegador lo pide con un gesto). Sale donde estaba el cursor.
-    if (e.type === "pointerdown" && e.target === this.dom && this.lockWanted && !lockedPointer.active) {
+    if (e.type === "pointerdown" && e.target === this.dom && this.lockWanted && !lockedPointer.active && !e.altKey) {
       const r = this.dom.getBoundingClientRect();
       const half = Math.max(1, r.height / 2);
       this.cursor = { x: (e.clientX - r.left - r.width / 2) / half, y: (e.clientY - r.top - r.height / 2) / half };
@@ -243,6 +266,8 @@ export class ShipController {
     this.velocity.set(0, 0, 0);
     this.angular.set(0, 0, 0);
     this.pulseSpeed = 0;
+    this.arcadeSpeed = 0;
+    this.arcadeCruising = false;
   }
 
   /** Mueve la nave `dt` segundos (con subpasos fijos); devuelve el desplazamiento. */
@@ -269,12 +294,19 @@ export class ShipController {
     }
     const live = this.enabled && this.powered;
     const auto = live ? this.autopilot : null;
-    this.lockWanted = live && prefs.mouseFlight && !auto;
+    this.lockWanted = live && prefs.mouseFlight && !auto && !uiOpen();
     this.syncLock();
     // Vuelo arcade (tipo No Man's Sky) a mano; el piloto automático vuela siempre con el modelo newtoniano.
-    const arcade = prefs.flightModel === "arcade" && !auto;
-    // Al pasar a arcade (tras el pulso, el piloto automático o al cambiar de modelo), se sigue a la velocidad que se lleve.
-    if (arcade && !this.wasArcade) this.arcadeSpeed = Math.max(0, this.velocity.dot(this.tmp.set(0, 0, -1).applyQuaternion(this.ship.quaternion)));
+    // Solo con los mandos y los motores: sin ellos (apagados, acoplada) la nave deriva con su inercia y la gravedad.
+    const arcade = prefs.flightModel === "arcade" && !auto && live;
+    // Al pasar a arcade (tras el pulso, el piloto automático o al cambiar de modelo) se parte de la velocidad que se lleve,
+    // sin acelerar sola después (la que pase de la máxima se pierde enseguida, abajo).
+    if (arcade && !this.wasArcade) {
+      this.arcadeSpeed = Math.max(0, this.velocity.dot(this.tmp.set(0, 0, -1).applyQuaternion(this.ship.quaternion)));
+      this.arcadeCruising = false;
+    }
+    // Lo que haya frenado a la nave desde fuera (choques, correcciones del servidor) también frena el acelerador.
+    if (arcade && this.wasArcade) this.arcadeSpeed = Math.min(this.arcadeSpeed, Math.max(0, this.velocity.dot(this.tmp.set(0, 0, -1).applyQuaternion(this.ship.quaternion))));
     this.wasArcade = arcade && !this.pulseOn;
 
     // Mandos de giro (−1 a 1 por eje).
@@ -323,7 +355,7 @@ export class ShipController {
     Object.assign(this.maneuver, { x: input.x, y: input.y, z: input.z, pitch: turn.x, yaw: turn.y, roll: turn.z });
 
     const accelK = prefs.accel * this.performance.accel;
-    const maxSpeed = M.maxSpeed * prefs.maxSpeed * (boost ? M.boostFactor : 1);
+    const maxSpeed = Math.min(this.maneuverCap, M.maxSpeed * prefs.maxSpeed * (boost ? M.boostFactor : 1));
     const steps = Math.max(1, Math.min(16, Math.ceil(dt / M.substep)));
     const h = dt / steps;
     const start = this.ship.position.clone();
@@ -351,13 +383,20 @@ export class ShipController {
       } else if (arcade) {
         // Arcade: la velocidad sigue al acelerador con suavidad (unos 5 s hasta la máxima, sea cual sea) y va siempre
         // hacia el morro, sin derrapar; sin teclas se queda en una velocidad de crucero. La gravedad no tira (como en NMS).
-        const top = M.maxSpeed * prefs.maxSpeed * (boost ? M.boostFactor : 1);
+        const top = maxSpeed;
         // Sin marcha atrás: S frena hasta pararse (los motores solo empujan hacia delante).
-        const throttle = !this.powered ? 0 : input.z < 0 ? 1 : input.z > 0 ? 0 : ARCADE_CRUISE;
+        if (input.z < 0) this.arcadeCruising = true;
+        else if (input.z > 0) this.arcadeCruising = false;
+        const throttle = input.z < 0 ? 1 : input.z > 0 || !this.arcadeCruising ? 0 : ARCADE_CRUISE;
         const want = throttle * top;
-        const rate = (M.maxSpeed * prefs.maxSpeed * (want > this.arcadeSpeed && boost ? M.boostFactor : 1) * prefs.accel) / ARCADE_SECONDS_TO_MAX;
-        const diff = want - this.arcadeSpeed;
-        this.arcadeSpeed += Math.sign(diff) * Math.min(Math.abs(diff), rate * h * (diff < 0 ? 1.4 : 1));
+        if (this.arcadeSpeed > top) {
+          // Más rápido que la máxima (al salir del pulso o del crucero): se pierde enseguida, como al apagar el pulso.
+          this.arcadeSpeed = Math.max(want, top + (this.arcadeSpeed - top) * Math.exp(-M.pulseDumpRate * h));
+        } else {
+          const rate = (M.maxSpeed * prefs.maxSpeed * (want > this.arcadeSpeed && boost ? M.boostFactor : 1) * prefs.accel) / ARCADE_SECONDS_TO_MAX;
+          const diff = want - this.arcadeSpeed;
+          this.arcadeSpeed += Math.sign(diff) * Math.min(Math.abs(diff), rate * h * (diff < 0 ? 1.4 : 1));
+        }
         this.velocity.set(0, 0, -1).applyQuaternion(this.ship.quaternion).multiplyScalar(this.arcadeSpeed);
       } else {
         if (this.powered) this.stepThrust(input, prefs.assist || auto !== null, maxSpeed, accelK * (boost ? M.boostAccelFactor : 1) * thrustScale(prefs.maxSpeed), prefs.inertia, h);
@@ -418,6 +457,7 @@ export class ShipController {
     window.removeEventListener("pointerdown", this.onButtons);
     window.removeEventListener("pointerup", this.onButtons);
     document.removeEventListener("pointerlockchange", this.onLockChange);
+    window.removeEventListener("keydown", this.onAlt);
     this.lockWanted = false;
     this.syncLock();
     this.ghost?.remove();

@@ -186,7 +186,7 @@ export function PlanetColony({ detail, planet, tab = "planet" }: { detail: StarS
 
       {own && tab !== "planet" && (
         <>
-          {tab === "people" && emperorHere && flagship && <UnloadHold hold={flagship.hold} busy={busy} onUnload={() => void run(connection.command("flagship.unload", { colonyId: own.id }))} />}
+          {tab === "resources" && emperorHere && flagship && <UnloadHold hold={flagship.hold} busy={busy} onUnload={() => void run(connection.command("flagship.unload", { colonyId: own.id }))} />}
           {tab === "people" && emperorHere && <Disembark colony={own} aboard={aboard} now={now} busy={busy} onLand={(n) => void run(connection.command("colony.disembark", { colonyId: own.id, humans: n }))} />}
           {tab === "people" && emperorHere && <Embark colony={own} aboard={liveHumans(humans, now)} now={now} busy={busy} onBoard={(n) => void run(connection.command("colony.embark", { colonyId: own.id, humans: n }))} />}
           <ColonyDetail

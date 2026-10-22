@@ -14,7 +14,7 @@ Solo llevan tecla por defecto las acciones que se usan constantemente con las ma
 
 **La cámara y la nave van por separado.** El ratón tiene dos modos, que se cambian con el botón **Ratón** de la barra de acciones (dice en cuál estás):
 
-- **Cámara libre** (por defecto): arrastrar con el ratón **mueve la cámara alrededor de la nave** (arriba, abajo, a los lados, por delante) sin girarla; la rueda acerca o aleja la cámara (con los motores encendidos, el clic izquierdo dispara y Mayús + rueda cambia de arma: entonces se arrastra con el botón derecho; ver [Combate](/wiki/combate#asistencia-de-punteria)) y [[B]] la devuelve detrás de la nave. Pilotas con el teclado: flechas (cabeceo y guiñada) y [[Q]]/[[E]] (alabeo).
+- **Cámara libre** (por defecto): arrastrar con el ratón **mueve la cámara alrededor de la nave** (arriba, abajo, a los lados, por delante) sin girarla; la rueda acerca o aleja la cámara (con los motores encendidos, el clic izquierdo dispara y Ctrl + rueda cambia de arma: entonces se arrastra con el botón derecho; ver [Combate](/wiki/combate#asistencia-de-punteria)) y [[B]] la devuelve detrás de la nave. Pilotas con el teclado: flechas (cabeceo y guiñada) y [[Q]]/[[E]] (alabeo).
 - **Vuelo con ratón**: una **retícula virtual** en el centro de la pantalla. La nave gira hacia donde apunta el cursor respecto al centro, sin arrastrar: cuanto más lejos del centro, más rápido (hasta el círculo exterior); dentro del círculo pequeño (zona muerta) no gira. La cámara va detrás de la nave; con el botón derecho puedes mirar alrededor un momento. Las flechas y [[Q]]/[[E]] siguen funcionando.
 
 En **Ajustes → Controles** puedes cambiar la sensibilidad y la zona muerta del vuelo con ratón e invertir su eje vertical. En cabina, en el modo de cámara libre, el ratón mira alrededor.
@@ -25,11 +25,11 @@ Por defecto se vuela en modo **arcade**, como en No Man's Sky (Ajustes → Pilot
 
 - La nave va siempre hacia donde apunta su morro: no deriva.
 - **W** acelera y **S** frena hasta pararse; no hay marcha atrás (los motores empujan hacia delante).
-- Sin tocar W ni S, mantiene la velocidad de crucero (30 % de la máxima).
+- Al tomar los mandos está parada. Tras pulsar W, si sueltas las teclas mantiene la velocidad de crucero (30 % de la máxima); tras S se queda parada hasta que vuelvas a pulsar W.
 - **A/D** giran a izquierda y derecha y la nave se inclina sola en los giros; al soltar vuelve a nivelarse.
 - El **ratón** apunta la nave (vuelo con ratón activado por defecto); **Mayús**, impulso.
 - Tarda unos 5 s en pasar de parada a la velocidad máxima.
-- Con el vuelo con ratón, un clic sobre la vista **atrapa el ratón**: el cursor (un círculo dorado) no sale del círculo de mando ni de la ventana. **Esc** lo suelta para usar los paneles; se suelta solo al apagar los motores o el vuelo con ratón.
+- Con el vuelo con ratón, un clic sobre la vista **atrapa el ratón**: el cursor (un círculo dorado) no sale del círculo de mando ni de la ventana. **Esc** o **Alt** lo sueltan para usar la interfaz; se suelta solo al abrir una ventana o un panel (planeta, crucero, ajustes…), al apagar los motores o el vuelo con ratón.
 
 El modo **newtoniano** es el de siempre: inercia real, propulsores laterales, subir y bajar y marcha atrás.
 

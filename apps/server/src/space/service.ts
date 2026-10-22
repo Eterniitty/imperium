@@ -339,7 +339,10 @@ export class SpaceService {
   }
 
   /** Posición recibida de un cliente que pilota en `systemId`. */
-  async pose(client: Client, systemId: string, pose: ShipPose & { e?: boolean }): Promise<void> {
+  async pose(client: Client, systemId: string, raw: ShipPose & { e?: boolean }): Promise<void> {
+    // Orientación unitaria (un cuaternión más largo ensancharía el cono de los cañones) y sin campos de más.
+    const ql = Math.hypot(...raw.q) || 1;
+    const pose: ShipPose & { e?: boolean } = { p: raw.p, q: [raw.q[0] / ql, raw.q[1] / ql, raw.q[2] / ql, raw.q[3] / ql], v: raw.v, e: raw.e };
     let m: Member | null | undefined = this.members.get(this.keyOf(client));
     if (!m || m.systemId !== systemId) {
       m = client.piloting ? await this.joinFleetShip(client, systemId, pose) : await this.join(client, systemId, pose);
@@ -751,7 +754,7 @@ export class SpaceService {
       name: pilot.name,
       systemId,
       clients: new Set([client]),
-      pose,
+      pose: { p: pose.p, q: pose.q, v: pose.v },
       poseAt: now,
       history: [{ t: now, p: pose.p }],
       dirty: true,
@@ -873,7 +876,8 @@ export class SpaceService {
     }
     m.park = null;
     m.clients.add(client);
-    m.pose = pose;
+    m.pose = { p: pose.p, q: pose.q, v: pose.v };
+    if ("e" in pose && typeof pose.e === "boolean") m.engines = pose.e;
     m.poseAt = now;
     m.history = [{ t: now, p: pose.p }];
     m.dirty = true;
@@ -1282,7 +1286,8 @@ export class SpaceService {
   /** Disparo de la nave de este cliente. Lo que no cumple las reglas se ignora. */
   fire(client: Client, weapon: WeaponKind, dirIn: Vec3, targetId?: string): void {
     const m = this.members.get(this.keyOf(client));
-    if (m) this.fireFrom(m, weapon, dirIn, targetId);
+    // Solo quien pilota la nave dispara (una aparcada no es una torreta).
+    if (m && !m.park && m.clients.has(client)) this.fireFrom(m, weapon, dirIn, targetId);
   }
 
   /**
@@ -1440,7 +1445,8 @@ export class SpaceService {
     if (v.militia) {
       this.leave(v.emperorId, "destroyed");
       this.combatants.delete(v.emperorId);
-      this.deadMilitia.set(v.emperorId, this.now() + CORE_MILITIA.respawnSec * 1000);
+      // Los refuerzos no reaparecen (vuelven a pedirse): solo se recuerda la patrulla fija.
+      if (!v.militia.help) this.deadMilitia.set(v.emperorId, this.now() + CORE_MILITIA.respawnSec * 1000);
       return;
     }
     if (v.shipId?.startsWith("wing:")) {
@@ -1631,6 +1637,7 @@ export class SpaceService {
     const now = this.now();
     if (now - (this.helpCalledAt.get(m.emperorId) ?? -Infinity) < HELP_CALL.cooldownSec * 1000) return { ok: false, error: "rate_limited" };
     this.helpCalledAt.set(m.emperorId, now);
+    if (this.helpCalledAt.size > 512) for (const [id, at] of this.helpCalledAt) if (now - at > HELP_CALL.cooldownSec * 1000) this.helpCalledAt.delete(id);
     let militia = 0;
     const room = this.rooms.get(m.systemId);
     const layout = this.layout(m.systemId);
@@ -1696,7 +1703,8 @@ export class SpaceService {
     if (list) for (const [id, until] of list) if (until < now) list.delete(id);
     // Quien acude a una llamada de ayuda también se enfrenta a los alienígenas hostiles a quien la pidió.
     const callers = new Set(pack.flatMap((m) => (m.militia?.help ? [m.militia.help.caller] : [])));
-    const hostileToCaller = (o: Member) => !!o.alien && [...callers].some((c) => this.alienHostileTo(o.alien!.factionId, c, now));
+    // (Los refuerzos por un ataque a la milicia, `vs:<agresor>`, no los pidió un Emperador: no cuentan aquí.)
+    const hostileToCaller = (o: Member) => !!o.alien && [...callers].some((c) => !c.startsWith("vs:") && this.alienHostileTo(o.alien!.factionId, c, now));
     const enemies = [...room].filter(
       (o) => o.combat.hull > 0 && !o.militia && (o.kind === "pirate" || hostileToCaller(o) || (!!list && list.has(o.owner ?? o.emperorId) && (o.clients.size > 0 || !!o.escort))),
     );
@@ -1971,7 +1979,8 @@ export class SpaceService {
         if (!m.park || now - m.poseAt < PARKED_POSE_MS) continue;
         if (m.parkUnsaved) {
           m.parkUnsaved = false;
-          void this.flagships.savePark(m.emperorId, m.park).catch((err: unknown) => this.log.error(err, "Error al guardar la nave aparcada"));
+          const id = m.emperorId;
+          void this.flagships.savePark(id, m.park).then(() => this.onFlagship(id)).catch((err: unknown) => this.log.error(err, "Error al guardar la nave aparcada"));
         }
         const layout = this.layout(systemId);
         const p = parkedPosition(m.park, now, layout);
@@ -2015,7 +2024,11 @@ export class SpaceService {
             const push = (reach - d) * ((other.kind === "pirate" || other.park) ? 0.5 : 1);
             const p: Vec3 = [m.pose.p[0] + n[0] * push * sign, m.pose.p[1] + n[1] * push * sign, m.pose.p[2] + n[2] * push * sign];
             if (m.park) {
-              m.park = parkAt(isDeepId(m.systemId) ? null : this.layout(m.systemId), p, now, { q: m.park.q, engines: m.park.engines });
+              // No se la saca del sistema ni se la mete en el calor de la estrella o en un horizonte de sucesos.
+              const layout = isDeepId(m.systemId) ? null : this.layout(m.systemId);
+              const r = Math.hypot(...p);
+              if (layout && (r > layout.boundary * 0.95 || starHeatDps(layout, r) > 0 || insideEventHorizon(layout, r))) continue;
+              m.park = parkAt(layout, p, now, { q: m.park.q, engines: m.park.engines });
               m.parkUnsaved = true;
             }
             m.pose = { ...m.pose, p };

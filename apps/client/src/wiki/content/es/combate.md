@@ -19,7 +19,7 @@ Las naves enemigas miden pocos metros y se ven como un punto: la nave te ayuda a
 - **Puntería automática**: con un blanco fijado, los cañones apuntan solos a ese punto; tú decides cuándo disparar. Los misiles ya persiguen al blanco solos.
 - **Fuego automático** (botón **Fuego auto** de la barra de acciones o del panel de armas, también en Ajustes → Controles): el cañón dispara solo mientras el blanco fijado esté a tiro y en arco. Nunca dispara solo a un compañero.
 - **Seguro de armas**: el botón **Armas: apagadas / listas** de la barra de acciones. Apagadas (lo normal al empezar), no se dispara de ninguna forma y el clic izquierdo selecciona planetas y naves o mueve la cámara.
-- **Ratón**: con las armas listas y los motores encendidos, el **clic izquierdo** dispara el arma seleccionada y **Mayús + rueda** cambia de arma ([[1]] cañón, [[2]] misiles, [[3]] láser); la **rueda** sigue acercando y alejando la cámara. Mover la cámara al **botón derecho** (o Alt + arrastrar), seleccionar un planeta a **Alt + clic** y el piloto automático por doble clic a **Alt + doble clic**. Se puede desactivar en Ajustes → Controles («Ratón para combatir»). Todas las teclas se pueden cambiar.
+- **Ratón**: con las armas listas y los motores encendidos, el **clic izquierdo** dispara el arma seleccionada y **Ctrl + rueda** cambia de arma ([[1]] cañón, [[2]] misiles, [[3]] láser); la **rueda** sigue acercando y alejando la cámara. Mover la cámara al **botón derecho** (o Alt + arrastrar), seleccionar un planeta a **Alt + clic** y el piloto automático por doble clic a **Alt + doble clic**. Se puede desactivar en Ajustes → Controles («Ratón para combatir»). Todas las teclas se pueden cambiar.
 
 {{tabla:punteria}}
 

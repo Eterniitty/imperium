@@ -5,19 +5,17 @@ import { engineRef } from "../engineRef";
 import { useTelemetry } from "../engine/telemetry";
 import { gameStore, useGame, useT } from "../state/store";
 import { formatDistance } from "./FlightHud";
-import { useKeyLabels } from "./keys";
 import { formatDuration } from "./useNow";
 
 type Option = ReturnType<NonNullable<typeof engineRef.current>["cruiseOptions"]>[number];
 
 /**
- * Lista del piloto automático de crucero (tecla N al pilotar): cuerpos,
+ * Lista del piloto automático de crucero (botón «Crucero» de la barra de acciones): cuerpos,
  * cinturones, anomalía y asteroides a los que ir, y naves a las que seguir
  * (primero los compañeros). Se refresca cada segundo.
  */
 export function CruisePanel() {
   const t = useT();
-  const keys = useKeyLabels();
   const open = useGame((s) => s.cruisePanel);
   const [options, setOptions] = useState<Option[]>([]);
   const [active, setActive] = useState<string | null>(null);
@@ -81,7 +79,6 @@ export function CruisePanel() {
 /** Aviso en el HUD mientras el piloto automático está puesto: modo, destino, fase, distancia y cómo cancelarlo. */
 export function CruiseHud() {
   const t = useT();
-  const keys = useKeyLabels();
   const flight = useGame((s) => s.flight);
   const tel = useTelemetry(200);
   const c = tel.cruise;
