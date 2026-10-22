@@ -131,7 +131,7 @@ export class Engine {
     } catch {
       // Sin workers, el juego sigue; solo se para al ocultar la pestaña.
     }
-    // Como en No Man's Sky: se empieza a los mandos de la nave, en el sistema del Emperador
+    // Se empieza a los mandos de la nave, en el sistema del Emperador
     // (o en el túnel cuántico, si está de viaje).
     if (!this.pilot(null) && this.emperor()?.travel) this.enterTunnel();
   }

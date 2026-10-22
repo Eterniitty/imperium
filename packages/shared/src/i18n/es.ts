@@ -1673,7 +1673,7 @@ export const es = {
   "combat.weaponsSafe": "Armas apagadas: actívalas con «Armas» en la barra de acciones.",
   "cruise.hud.orbitStats": "{speed} · altitud {altitude}",
   "settings.flight.model": "Modelo de vuelo",
-  "settings.flight.model.arcade": "Arcade (como No Man's Sky)",
+  "settings.flight.model.arcade": "Arcade",
   "settings.flight.model.newtonian": "Newtoniano (inercia real)",
   "settings.flight.model.arcadeHint": "La nave va siempre hacia donde apunta. {forward} acelera, {back} frena hasta pararse (sin marcha atrás), {strafeLeft}/{strafeRight} giran y la nave se inclina sola; el ratón apunta. Tras acelerar, sin tocar nada sigue a velocidad de crucero (30 %).",
   "settings.flight.model.newtonianHint": "Inercia real: los motores empujan y la nave sigue derivando; lateral, subir/bajar y marcha atrás con los propulsores de maniobra.",

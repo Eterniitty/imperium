@@ -1671,7 +1671,7 @@ export const en: Record<I18nKey, string> = {
   "combat.weaponsSafe": "Weapons off: turn them on with \"Weapons\" in the action bar.",
   "cruise.hud.orbitStats": "{speed} · altitude {altitude}",
   "settings.flight.model": "Flight model",
-  "settings.flight.model.arcade": "Arcade (like No Man's Sky)",
+  "settings.flight.model.arcade": "Arcade",
   "settings.flight.model.newtonian": "Newtonian (real inertia)",
   "settings.flight.model.arcadeHint": "The ship always flies where it points. {forward} speeds up, {back} brakes to a stop (no reverse), {strafeLeft}/{strafeRight} turn and the ship banks by itself; the mouse aims. After speeding up, hands off, it keeps cruise speed (30 %).",
   "settings.flight.model.newtonianHint": "Real inertia: engines push and the ship keeps drifting; strafe, up/down and reverse with the manoeuvring thrusters.",

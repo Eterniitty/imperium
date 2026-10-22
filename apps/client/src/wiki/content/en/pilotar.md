@@ -21,7 +21,7 @@ In **Settings → Controls** you can change the mouse flight sensitivity and dea
 
 ### Flight model: arcade or Newtonian
 
-By default you fly in **arcade** mode, like in No Man's Sky (Settings → Piloting → Flight model):
+By default you fly in **arcade** mode (Settings → Flight → Flight model):
 
 - The ship always flies where its nose points: no drifting.
 - **W** speeds up and **S** brakes to a stop; there is no reverse (the engines push forwards).

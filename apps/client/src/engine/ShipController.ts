@@ -307,7 +307,7 @@ export class ShipController {
     const auto = live ? this.autopilot : null;
     this.lockWanted = this.enabled && live && prefs.mouseFlight && !auto && !uiOpen();
     this.syncLock();
-    // Vuelo arcade (tipo No Man's Sky) a mano; el piloto automático vuela siempre con el modelo newtoniano.
+    // Vuelo arcade a mano; el piloto automático vuela siempre con el modelo newtoniano.
     // Solo con los mandos y los motores: sin ellos (apagados, acoplada) la nave deriva con su inercia y la gravedad.
     const arcade = prefs.flightModel === "arcade" && !auto && live;
     // Al pasar a arcade (tras el pulso, el piloto automático o al cambiar de modelo) se parte de la velocidad que se lleve,
@@ -392,8 +392,8 @@ export class ShipController {
         this.pulseSpeed = stepPulseSpeed(this.pulseSpeed, limit, h);
         this.velocity.set(0, 0, -1).applyQuaternion(this.ship.quaternion).multiplyScalar(this.pulseSpeed);
       } else if (arcade) {
-        // Arcade: la velocidad sigue al acelerador con suavidad (unos 5 s hasta la máxima, sea cual sea) y va siempre
-        // hacia el morro, sin derrapar; sin teclas se queda en una velocidad de crucero. La gravedad no tira (como en NMS).
+        // Arcade: la velocidad sigue al acelerador con suavidad (unos 8 s hasta la máxima con la insignia) y va siempre
+        // hacia el morro, sin derrapar; sin teclas se queda en una velocidad de crucero. La gravedad no tira.
         const top = maxSpeed;
         // Sin marcha atrás: S frena hasta pararse (los motores solo empujan hacia delante).
         if (input.z < 0) this.arcadeCruising = true;

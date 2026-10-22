@@ -21,7 +21,7 @@ En **Ajustes → Controles** puedes cambiar la sensibilidad y la zona muerta del
 
 ### Modelo de vuelo: arcade o newtoniano
 
-Por defecto se vuela en modo **arcade**, como en No Man's Sky (Ajustes → Pilotaje → Modelo de vuelo):
+Por defecto se vuela en modo **arcade** (Ajustes → Vuelo → Modelo de vuelo):
 
 - La nave va siempre hacia donde apunta su morro: no deriva.
 - **W** acelera y **S** frena hasta pararse; no hay marcha atrás (los motores empujan hacia delante).
