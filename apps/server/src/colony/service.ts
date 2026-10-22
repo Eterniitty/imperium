@@ -2,7 +2,9 @@ import {
   ECONOMY,
   getHull,
   getRecipe,
+  techBonus,
   type ComponentAmounts,
+  type TechLevels,
   getInstallation,
   getShipClass,
   HUMANS,
@@ -19,6 +21,7 @@ import {
   addComponents,
   canAfford,
   captureLosses,
+  designMeetsTech,
   hasComponents,
   designStats,
   isBuildable,
@@ -85,6 +88,11 @@ const DETAIL_CACHE = 2_000;
 function designCost(design: ShipDesignSnapshot): { stock: StockAmounts; credits: number } {
   const c = designStats(design).cost;
   return { stock: { metal: c.metal, volatiles: 0, crystal: c.crystal, alloys: c.alloys, rare_metals: c.rare_metals, exotic: c.exotic }, credits: c.credits };
+}
+
+/** Fracción del tiempo de construcción con la tecnología de industria (−5 % por nivel). */
+function industryFactor(tech: TechLevels | undefined): number {
+  return Math.max(0.5, 2 - techBonus(tech, "industry"));
 }
 
 /** Recursos de una receta de la Fábrica (por tanda). */
@@ -587,6 +595,8 @@ export class ColonyService {
       design = { name: d.name, hullId: d.hullId, parts: d.parts };
       const hull = getHull(design.hullId);
       if (!hull || !isBuildable(design)) return { ok: false, error: "design_not_buildable" };
+      const [owner] = await this.db.select({ tech: emperors.tech }).from(emperors).where(eq(emperors.id, emperorId)).limit(1);
+      if (!designMeetsTech(design, owner?.tech as TechLevels | undefined)) return { ok: false, error: "tech_locked" };
       const c = designCost(design);
       cost = c.stock;
       credits = c.credits;
@@ -639,7 +649,9 @@ export class ColonyService {
         .set({ population: state.population, ...pay(state.stock, cost), items: addComponents(row.items, needComponents, -1), resolvedAt: new Date(now) })
         .where(eq(colonies.id, row.id));
       const start = queue.length === 0;
-      const finishAt = now + realDurationMs(hours, this.timeScale);
+      // Tecnología de industria: se construye antes (también lo que espera en la cola, al empezar).
+      const [ind] = await tx.select({ tech: emperors.tech }).from(emperors).where(eq(emperors.id, emperorId)).limit(1);
+      const finishAt = now + realDurationMs(hours * industryFactor(ind?.tech as TechLevels | undefined), this.timeScale);
       const [build] = await tx
         .insert(colonyBuilds)
         .values({ colonyId: row.id, kind, itemId, design, startedAt: start ? new Date(now) : null, finishAt: start ? new Date(finishAt) : null })

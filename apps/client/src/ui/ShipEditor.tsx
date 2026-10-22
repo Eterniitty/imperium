@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { fitsSlot, getHull, hullAtLeast, HULLS, PARTS, type HullSlot, type PartCost } from "@imperium/content";
-import { SHIP_DESIGNS_MAX, type Colony, type I18nKey, type ShipDesignRecord, type ShipDesignsResponse } from "@imperium/shared";
-import { designStats, validateDesign, type DesignProblem } from "@imperium/sim";
+import { fitsSlot, getHull, hullAtLeast, HULLS, meetsTech, PARTS, type HullSlot, type PartCost, type TechLevels, type TechRequirement } from "@imperium/content";
+import { SHIP_DESIGNS_MAX, type Colony, type I18nKey, type ResearchStatus, type ShipDesignRecord, type ShipDesignsResponse } from "@imperium/shared";
+import { designStats, designTech, validateDesign, type DesignProblem } from "@imperium/sim";
 import { connection, useWorld } from "../net/world";
 import { api } from "../state/auth";
 import { gameStore, useGame, useT } from "../state/store";
@@ -48,12 +48,16 @@ export function ShipEditor() {
   const [busy, setBusy] = useState(false);
   const colonies = useWorld((s) => s.colonies);
   const [colonyId, setColonyId] = useState<string>("");
+  const [levels, setLevels] = useState<TechLevels>({});
   const close = () => gameStore.getState().setShipEditorOpen(false);
 
   useEffect(() => {
     if (!open) return;
     void api<ShipDesignsResponse>("GET", "/api/designs").then((r) => {
       if (r.ok) setDesigns(r.data.designs);
+    });
+    void api<ResearchStatus>("GET", "/api/research").then((r) => {
+      if (r.ok) setLevels(r.data.levels as TechLevels);
     });
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== "Escape") return;
@@ -67,7 +71,9 @@ export function ShipEditor() {
   const hull = getHull(draft.hullId) ?? HULLS[0]!;
   const stats = useMemo(() => designStats(draft), [draft]);
   const problems = useMemo(() => validateDesign(draft), [draft]);
-  const buildable = problems.every((p) => p.level !== "error");
+  const missingTech = designTech(draft).filter((r) => !meetsTech(levels, r));
+  const buildable = problems.every((p) => p.level !== "error") && missingTech.length === 0;
+  const lock = (req: TechRequirement | undefined) => (req && !meetsTech(levels, req) ? ` · 🔒 ${t(`tech.${req.tree}` as I18nKey)} ${req.level}` : "");
   const num = (n: number) => fmtInt(n);
 
   if (!open) return null;
@@ -205,6 +211,7 @@ export function ShipEditor() {
                   {HULLS.map((h) => (
                     <option key={h.id} value={h.id}>
                       {t(h.nameKey as I18nKey)}
+                      {lock(h.tech)}
                     </option>
                   ))}
                 </select>
@@ -227,6 +234,7 @@ export function ShipEditor() {
                         {partsFor(s, hull.class).map((p) => (
                           <option key={p.id} value={p.id}>
                             {t(p.nameKey as I18nKey)} · {p.size} · {p.massT} t{p.drawMW ? ` · ${p.drawMW} MW` : ""}
+                            {lock(p.tech)}
                           </option>
                         ))}
                       </select>
@@ -282,6 +290,15 @@ export function ShipEditor() {
             </dl>
             <h3>{t("shipEditor.problems")}</h3>
             <p className={buildable ? "ship-ok small" : "ship-bad small"}>{t(buildable ? "shipEditor.buildable" : "shipEditor.notBuildable")}</p>
+            {missingTech.length > 0 && (
+              <ul className="ship-problems">
+                {missingTech.map((r) => (
+                  <li key={r.tree} className="error">
+                    {t("shipEditor.locked", { tree: t(`tech.${r.tree}` as I18nKey), level: r.level })}
+                  </li>
+                ))}
+              </ul>
+            )}
             {problems.length === 0 ? (
               <p className="muted small">{t("shipEditor.ok")}</p>
             ) : (

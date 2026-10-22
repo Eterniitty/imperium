@@ -18,3 +18,4 @@ export * from "./mercenaries";
 export * from "./shipParts";
 export * from "./manufacturing";
 export * from "./metas";
+export * from "./tech";

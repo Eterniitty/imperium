@@ -1,4 +1,4 @@
-import { anyFleetSpeedLyPerHour, FLEET_TACTICS, getAnyShipClass, getShipClass, MOTHERSHIP_HANGAR, MOTHERSHIP_WORKSHOP, SHIP_CLASSES, SHIP_PASSENGERS, type ShipClassId } from "@imperium/content";
+import { anyFleetSpeedLyPerHour, techBonus, type TechLevels, FLEET_TACTICS, getAnyShipClass, getShipClass, MOTHERSHIP_HANGAR, MOTHERSHIP_WORKSHOP, SHIP_CLASSES, SHIP_PASSENGERS, type ShipClassId } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import { distance, type Cargo, type CommandError, type Fleet, type FleetRoute, type FleetTactic } from "@imperium/shared";
 import { isTravelling, refuelCost, shipFuel, shipFuelMax, travelDurationMs } from "@imperium/sim";
@@ -313,14 +313,16 @@ export class FleetService {
       if (current.location.systemId === dest.id) return { ok: false, error: "already_there" };
 
       // Combustible (solo los jugadores: la IA no se queda tirada): cada nave gasta la distancia.
-      const [owner] = await tx.select({ kind: emperors.kind }).from(emperors).where(eq(emperors.id, emperorId)).limit(1);
+      const [owner] = await tx.select({ kind: emperors.kind, tech: emperors.tech }).from(emperors).where(eq(emperors.id, emperorId)).limit(1);
+      const tech = (owner?.tech ?? {}) as TechLevels;
       if (owner?.kind === "player") {
-        const ly = distance(current.location.position, dest.position);
+        // Tecnología del motor cuántico: el mismo combustible llega más lejos.
+        const ly = distance(current.location.position, dest.position) / techBonus(tech, "quantum");
         if (current.ships.some((s) => s.fuel + 1e-6 < ly)) return { ok: false, error: "no_fuel_fleet" };
         for (const s of current.ships) await tx.update(ships).set({ fuel: Math.max(0, s.fuel - ly) }).where(eq(ships.id, s.id));
       }
 
-      const speed = anyFleetSpeedLyPerHour(current.ships.map((s) => s.classId)) * this.config.TIME_SCALE;
+      const speed = anyFleetSpeedLyPerHour(current.ships.map((s) => s.classId)) * techBonus(tech, "propulsion") * this.config.TIME_SCALE;
       const arriveAt = now + travelDurationMs(current.location.position, dest.position, speed);
       // Salir de un sistema donde combate es huir: deja la batalla.
       const updated = await tx

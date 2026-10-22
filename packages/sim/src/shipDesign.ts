@@ -4,7 +4,7 @@
  * funciona (y qué le falta) y qué estadísticas salen de sus piezas. Funciones
  * puras: las usan el editor (en vivo) y el servidor (que nunca se fía del cliente).
  */
-import { fitsSlot, getHull, getPart, hullAtLeast, type ComponentAmounts, type HullClass, type PartCost, type PartDef, type PartKind } from "@imperium/content";
+import { fitsSlot, getHull, getPart, hullAtLeast, meetsTech, type ComponentAmounts, type HullClass, type PartCost, type PartDef, type PartKind, type TechLevels, type TechRequirement, type TechTree } from "@imperium/content";
 
 /** Un diseño: casco y pieza de cada anclaje ocupado (`slotId → partId`). */
 export interface ShipDesign {
@@ -187,4 +187,19 @@ export function designBattleStats(design: ShipDesign): { attack: number; shield:
     shots: Math.max(1, s.weapons.length),
     profile: hull ? HULL_PROFILE[hull.class] : 1,
   };
+}
+
+/** Tecnología que pide un diseño: el nivel más alto de cada rama entre su casco y sus piezas. */
+export function designTech(design: ShipDesign): TechRequirement[] {
+  const hull = getHull(design.hullId);
+  const need = new Map<TechTree, number>();
+  for (const req of [hull?.tech, ...placed(design).map((p) => p.part.tech)]) {
+    if (req && req.level > (need.get(req.tree) ?? 0)) need.set(req.tree, req.level);
+  }
+  return [...need].map(([tree, level]) => ({ tree, level }));
+}
+
+/** ¿Se puede construir con esta tecnología? */
+export function designMeetsTech(design: ShipDesign, levels: TechLevels | null | undefined): boolean {
+  return designTech(design).every((r) => meetsTech(levels, r));
 }

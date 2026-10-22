@@ -24,6 +24,8 @@ import { ProbeService } from "./probe/service";
 import { MercenaryService } from "./fleet/mercenaries";
 import { designRoutes } from "./design/routes";
 import { rankingRoutes } from "./ranking/routes";
+import { ResearchService } from "./research/service";
+import { researchRoutes } from "./research/routes";
 import { gateRoutes } from "./gate/routes";
 import { MarketService } from "./market/service";
 import { inHumanCore } from "./emperor/world";
@@ -124,6 +126,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   // Niveles de los proyectos comunes: al arrancar (index.ts) o, si no, la primera vez que hagan falta.
   colonies.setBonuses(() => humanity.bonuses());
   colonies.setWallet(humanity);
+  const research = new ResearchService(deps.db, config);
+  research.setWallet(humanity);
   wars.setShieldFactor((systemId) => (inHumanCore(systemId) ? humanity.bonuses().coreShield : 1));
   const market = new MarketService(deps.db, colonies, humanity);
   // Fase 11: facciones alienígenas (territorio, flotas, comercio y diplomacia básica) con la misma tubería de órdenes.
@@ -259,6 +263,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   await app.register(alienRoutes, { config, db: deps.db, emperors, discoveries, wars, aliens });
   await app.register(socialRoutes, { config, db: deps.db, emperors, social, hub });
   await app.register(rankingRoutes, { config, db: deps.db, emperors });
+  await app.register(researchRoutes, { config, db: deps.db, emperors, research });
   await app.register(discoveryRoutes, { config, db: deps.db, emperors, discoveries });
   // Wiki editable por los administradores (ADMIN_EMAILS).
   const wiki = new WikiService(deps.db);
@@ -315,6 +320,9 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     if (found) return () => void hub.publishDiscovered(found.emperorId, found.systemIds);
   });
   // Fin de una construcción: instalación nueva o flota nueva con la nave construida.
+  worker.on("research.done", async (tx, { emperorId }) => {
+    await research.complete(tx, emperorId);
+  });
   worker.on("colony.build", async (tx, { buildId }) => {
     const done = await colonies.completeBuild(tx, buildId);
     if (!done) return;

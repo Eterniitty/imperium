@@ -263,6 +263,8 @@ export type ApiErrorCode =
   | "unknown_article"
   | "unknown_design"
   | "limit_reached"
+  | "research_busy"
+  | "max_level"
   | "internal";
 
 // --- Editor de naves (`docs/editor-naves.md`) ---
@@ -270,6 +272,14 @@ export type ApiErrorCode =
 /** Diseños guardados por Emperador, como mucho. */
 export const SHIP_DESIGNS_MAX = 30;
 export const SHIP_DESIGN_NAME_MAX = 40;
+
+// --- Tecnología por niveles ---
+
+/** Respuesta de `GET /api/research`: niveles por rama y la investigación en marcha. */
+export interface ResearchStatus {
+  levels: Record<string, number>;
+  current: { tree: string; level: number; finishAt: number } | null;
+}
 
 // --- Metas: prestigio, clasificación y objetivos de la era ---
 

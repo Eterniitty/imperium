@@ -14,6 +14,8 @@ export interface EventPayloads {
   "emperor.arrive": { emperorId: string; systemId: string };
   /** Termina una construcción de una colonia (instalación o nave). */
   "colony.build": { buildId: string };
+  /** Fin de una investigación (tecnología por niveles). */
+  "research.done": { emperorId: string };
   /** Recálculo periódico de la cartera de créditos de un Emperador (economía de la humanidad). */
   "economy.settle": { emperorId: string };
   /** Llega un envío de la red del Núcleo (compra del mercado o aporte a un proyecto). */

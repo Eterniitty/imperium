@@ -232,6 +232,13 @@
       "when": 1792650449189,
       "tag": "0033_fabricacion",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792651534242,
+      "tag": "0034_tecnologia",
+      "breakpoints": true
     }
   ]
 }

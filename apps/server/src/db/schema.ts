@@ -87,6 +87,10 @@ export const emperors = pgTable("emperors", {
    * órdenes que las de los jugadores). Los "alien" no salen en la lista de Emperadores.
    */
   kind: text("kind").notNull().default("player"),
+  /** Tecnología investigada (`TECH_TREES` → nivel). */
+  tech: jsonb("tech").$type<Record<string, number>>().notNull().default({}),
+  /** Investigación en marcha: rama, nivel al que llega y cuándo termina (ms). */
+  research: jsonb("research").$type<{ tree: string; level: number; finishAt: number }>(),
   /** Facción alienígena del actor (solo con kind "alien"; id de `FACTIONS`). */
   factionId: text("faction_id").unique(),
   /**

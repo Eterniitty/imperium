@@ -959,3 +959,12 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .ranking-table .tag { margin-left: 8px; }
 .ship-editor-preview { display: flex; justify-content: center; padding: 6px 0 10px; border-bottom: 1px solid var(--line); margin-bottom: 8px; background: radial-gradient(60% 70% at 50% 50%, rgba(63, 208, 255, 0.08), transparent 70%); }
 .ship-editor-preview .ship-thumb img { width: 100%; height: 100%; object-fit: contain; }
+
+/* Investigación. */
+.tech-list { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 12px; }
+.tech-list li { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-m, 6px); background: rgba(255, 255, 255, 0.02); }
+.tech-list .btn { justify-self: start; margin-top: 4px; }
+.tech-head { display: flex; justify-content: space-between; align-items: center; }
+.tech-pips { display: flex; gap: 4px; }
+.tech-pips span { width: 18px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); }
+.tech-pips span.on { background: linear-gradient(90deg, #e8b64c, #ffd27a); }

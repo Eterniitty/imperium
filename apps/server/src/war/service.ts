@@ -1,5 +1,5 @@
 import { randomInt } from "node:crypto";
-import { CONTACT_SENSORS, EMPEROR_FLAGSHIP, FLAGSHIP_BATTLE, FLEET_BATTLE, CARGO_STOCK_IDS, getShipClass, type ShipClassId } from "@imperium/content";
+import { CONTACT_SENSORS, EMPEROR_FLAGSHIP, FLAGSHIP_BATTLE, FLEET_BATTLE, CARGO_STOCK_IDS, getShipClass, techBonus, type ShipClassId, type TechLevels } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import {
   distance,
@@ -48,6 +48,19 @@ const FLAGSHIP_PREFIX = "flagship:";
 const isFlagship = (shipId: string) => shipId.startsWith(FLAGSHIP_PREFIX);
 
 /** La nave del Emperador como nave de batalla (Fase 10). */
+/** Tecnología de unos Emperadores (armas y escudos mejoran sus naves en las batallas por rondas). */
+async function techOf(tx: Tx, ids: string[]): Promise<Map<string, TechLevels>> {
+  if (ids.length === 0) return new Map();
+  const rows = await tx.select({ id: emperors.id, tech: emperors.tech }).from(emperors).where(inArray(emperors.id, ids));
+  return new Map(rows.map((r) => [r.id, r.tech as TechLevels]));
+}
+
+/** Aplica la tecnología del dueño a una nave de batalla. */
+function withTech(ship: BattleShip, tech: TechLevels | undefined): BattleShip {
+  if (!tech) return ship;
+  return { ...ship, attack: ship.attack * techBonus(tech, "weapons"), shield: ship.shield * techBonus(tech, "shields") };
+}
+
 function flagshipBattleShip(emperorId: string, hull: number, shieldFactor: number): BattleShip {
   return { id: `${FLAGSHIP_PREFIX}${emperorId}`, classId: "flagship", attack: FLAGSHIP_BATTLE.attack, shield: FLAGSHIP_BATTLE.battleShield * shieldFactor, hull: Math.ceil(hull) };
 }
@@ -231,13 +244,14 @@ export class WarService {
       .select({ id: ships.id, fleetId: ships.fleetId, classId: ships.classId, hull: ships.hull, design: ships.design })
       .from(ships)
       .where(inArray(ships.fleetId, rows.map((r) => r.id)));
+    const techs = await techOf(tx, [...new Set(rows.map((r) => r.emperorId))]);
     const byEmperor = new Map<string, { fleetIds: string[]; ships: BattleShip[]; flagship: BattleShip | null }>();
     for (const r of rows) {
       const own = shipRows.filter((s) => s.fleetId === r.id);
       if (own.length === 0) continue;
       const e = byEmperor.get(r.emperorId) ?? { fleetIds: [], ships: [], flagship: null };
       e.fleetIds.push(r.id);
-      e.ships.push(...own.map((s) => battleShip(s.id, s.classId, s.hull, 1, "balanced", s.design)));
+      e.ships.push(...own.map((s) => withTech(battleShip(s.id, s.classId, s.hull, 1, "balanced", s.design), techs.get(r.emperorId))));
       byEmperor.set(r.emperorId, e);
     }
     // Fase 10: la nave del Emperador presente combate con su escolta o, fuera del Núcleo, sola.
@@ -316,9 +330,10 @@ export class WarService {
     for (const f of fleetRows) fx.fleets.set(f.id, f.emperorId);
     const bySide: [BattleShip[], BattleShip[]] = [[], []];
     const shield = this.shieldFactor(battle.systemId);
+    const techs = await techOf(tx, [...new Set(fleetRows.map((f) => f.emperorId))]);
     for (const s of shipRows) {
       const side = sideOf.get(fleetOwner.get(s.fleetId)!);
-      if (side !== undefined) bySide[side].push(battleShip(s.id, s.classId, s.hull, shield, fleetTactic.get(s.fleetId), s.design));
+      if (side !== undefined) bySide[side].push(withTech(battleShip(s.id, s.classId, s.hull, shield, fleetTactic.get(s.fleetId), s.design), techs.get(fleetOwner.get(s.fleetId)!)));
     }
     // Fase 10: las naves de los Emperadores de cada bando que siguen en el sistema.
     const owners = new Set(fleetRows.map((f) => f.emperorId));

@@ -306,3 +306,6 @@ export const ShipDesignSaveBodySchema = z.object({
   parts: z.record(z.string().max(20), z.string().max(40)).refine((p) => Object.keys(p).length <= 40),
 });
 export const ShipDesignDeleteBodySchema = z.object({ id: z.string().uuid() });
+
+/** Empezar a investigar una rama de tecnología. */
+export const ResearchStartBodySchema = z.object({ tree: z.enum(["weapons", "shields", "propulsion", "quantum", "industry"]) });

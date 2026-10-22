@@ -54,6 +54,8 @@ import {
   type ComponentAmounts,
   ERA_GOALS,
   PRESTIGE,
+  TECH,
+  TECH_TREES,
   type MetaStat,
   type PartCost,
   type PartDef,
@@ -225,6 +227,32 @@ export const GEN_TABLES: Record<string, Builder> = {
       `${num(locale, Math.ceil(fleetFuelMax(s.id) * FLEET_FUEL.volatilesPerLy * (s.hull / 100)))} ${t("resource.volatiles").toLowerCase()}`,
     ]),
     numeric: [1, 2],
+  }),
+
+  tecnologia: (t, locale) => ({
+    head: [t("wiki.col.level"), t("wiki.col.cost"), t("wiki.col.time")],
+    rows: TECH.credits.map((c, i) => [num(locale, i + 1), `₢ ${num(locale, c)}`, t("colony.costHours", { h: num(locale, TECH.hours[i]!) })]),
+    numeric: [0],
+  }),
+
+  "tecnologia-ramas": (t) => ({
+    head: [t("wiki.col.concept"), t("wiki.col.effect")],
+    rows: TECH_TREES.map((tree) => [t(`tech.${tree}` as I18nKey), t(`tech.${tree}.effect` as I18nKey, { pct: Math.round(TECH.perLevel[tree] * 100), total: 0 }).replace(/ \(.*\)\./, ".")]),
+  }),
+
+  desbloqueos: (t, locale) => ({
+    head: [t("wiki.col.concept"), t("wiki.col.level"), t("shipEditor.col.part")],
+    rows: TECH_TREES.flatMap((tree) =>
+      Array.from({ length: TECH.maxLevel }, (_, i) => i + 1)
+        .map((level) => [
+          t(`tech.${tree}` as I18nKey),
+          num(locale, level),
+          [...HULLS.filter((h) => h.tech?.tree === tree && h.tech.level === level), ...PARTS.filter((p) => p.tech?.tree === tree && p.tech.level === level)]
+            .map((x) => t(x.nameKey as I18nKey))
+            .join(", "),
+        ])
+        .filter((r) => r[2]),
+    ),
   }),
 
   prestigio: (t, locale) => ({

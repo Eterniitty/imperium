@@ -1,3 +1,4 @@
+import { ResearchTab } from "./ResearchTab";
 import { RankingTab } from "./RankingTab";
 import { useEffect } from "react";
 import { gameStore, useGame, useT } from "../state/store";
@@ -9,7 +10,7 @@ import { MarketTab } from "./MarketTab";
  * («Humanidad» y «Mercado») que se abre desde la barra superior. Todo lo que
  * muestra viene del servidor; las órdenes van por el WebSocket.
  */
-const TAB_TITLE = { humanity: "eco.humanity", market: "eco.market", ranking: "eco.ranking" } as const;
+const TAB_TITLE = { humanity: "eco.humanity", market: "eco.market", research: "eco.research", ranking: "eco.ranking" } as const;
 
 export function EconomyPanel() {
   const t = useT();
@@ -39,13 +40,13 @@ export function EconomyPanel() {
           </button>
         </div>
         <div className="tabs" role="tablist">
-          {(["humanity", "market", "ranking"] as const).map((id) => (
+          {(["humanity", "market", "research", "ranking"] as const).map((id) => (
             <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? "lang-btn active" : "lang-btn"} onClick={() => gameStore.getState().setEconomyOpen(id)}>
               {t(TAB_TITLE[id])}
             </button>
           ))}
         </div>
-        {tab === "humanity" ? <HumanityTab /> : tab === "market" ? <MarketTab /> : <RankingTab />}
+        {tab === "humanity" ? <HumanityTab /> : tab === "market" ? <MarketTab /> : tab === "research" ? <ResearchTab /> : <RankingTab />}
       </div>
     </div>
   );
