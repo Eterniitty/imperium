@@ -1,7 +1,7 @@
 import { anyFleetSpeedLyPerHour, techBonus, type TechLevels, FLEET_TACTICS, getAnyShipClass, getShipClass, MOTHERSHIP_HANGAR, MOTHERSHIP_WORKSHOP, SHIP_CLASSES, SHIP_PASSENGERS, type ShipClassId } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
-import { distance, type Cargo, type CommandError, type Fleet, type FleetRoute, type FleetTactic } from "@imperium/shared";
-import { fleetTravelSpeed, isTravelling, refuelCost, shipFuel, shipFuelMax, travelDurationMs } from "@imperium/sim";
+import { distance, type Cargo, type CommandError, type Fleet, type FleetRoute, type FleetTactic, type ShipDesignSnapshot } from "@imperium/shared";
+import { designStats, fleetTravelSpeed, isTravelling, refuelCost, shipFuel, shipFuelMax, travelDurationMs } from "@imperium/sim";
 import type { ColonyService } from "../colony/service";
 import { and, asc, eq, inArray, isNull, lte, or } from "drizzle-orm";
 import type { ServerConfig } from "../config";
@@ -128,16 +128,16 @@ export class FleetService {
     if (f.destSystemId && f.arriveAt && f.arriveAt.getTime() > this.now()) return { ok: false, error: "in_transit" };
     if (f.battleId) return { ok: false, error: "in_battle" };
     const [s] = await this.db
-      .select({ id: ships.id, classId: ships.classId, hull: ships.hull })
+      .select({ id: ships.id, classId: ships.classId, hull: ships.hull, design: ships.design })
       .from(ships)
       .where(and(eq(ships.id, shipId), eq(ships.fleetId, fleetId)))
       .limit(1);
     const cls = s ? getShipClass(s.classId as ShipClassId) : undefined;
     if (!s || !cls) return { ok: false, error: "no_fleet" };
-    if (cls.combat.weapons.length === 0) return { ok: false, error: "ship_unarmed" };
+    if (s.design ? designStats(s.design).weapons.length === 0 : cls.combat.weapons.length === 0) return { ok: false, error: "ship_unarmed" };
     const [{ name } = { name: "" }] = await this.db.select({ name: emperors.name }).from(emperors).where(eq(emperors.id, emperorId)).limit(1);
     const systemId = f.destSystemId ?? f.systemId;
-    return { ok: true, pilot: { shipId: s.id, fleetId, systemId, classId: s.classId, hull: s.hull, name } };
+    return { ok: true, pilot: { shipId: s.id, fleetId, systemId, classId: s.classId, hull: s.hull, name, ...(s.design ? { design: s.design } : {}) } };
   }
 
   /**
@@ -165,9 +165,9 @@ export class FleetService {
    * Naves que salen a escoltar al Emperador en `systemId` (Fase 9d): las
    * armadas de sus flotas paradas allí fuera de batalla, las más grandes primero.
    */
-  async escorts(emperorId: string, systemId: string, max: number): Promise<Array<{ fleetId: string; shipId: string; classId: string; hull: number }>> {
+  async escorts(emperorId: string, systemId: string, max: number): Promise<Array<{ fleetId: string; shipId: string; classId: string; hull: number; design?: ShipDesignSnapshot }>> {
     const all = await this.byEmperor(emperorId);
-    const out: Array<{ fleetId: string; shipId: string; classId: string; hull: number; size: number }> = [];
+    const out: Array<{ fleetId: string; shipId: string; classId: string; hull: number; size: number; design?: ShipDesignSnapshot }> = [];
     for (const f of all) {
       if (f.travel || f.battleId || f.location.systemId !== systemId) continue;
       for (const s of f.ships) {
@@ -177,7 +177,9 @@ export class FleetService {
           for (let i = 0; i < MOTHERSHIP_HANGAR.fighters; i++) out.push({ fleetId: f.id, shipId: `wing:${s.id}:${i}`, classId: MOTHERSHIP_HANGAR.classId, hull: getShipClass(MOTHERSHIP_HANGAR.classId)?.hull ?? 100, size: 0 });
           continue;
         }
-        if (cls && cls.combat.weapons.length > 0) out.push({ fleetId: f.id, shipId: s.id, classId: s.classId, hull: s.hull, size: cls.hull });
+        // Las del Astillero escoltan si llevan armas (sus piezas mandan, fase E4).
+        const armed = s.design ? designStats(s.design).weapons.length > 0 : !!cls && cls.combat.weapons.length > 0;
+        if (cls && armed) out.push({ fleetId: f.id, shipId: s.id, classId: s.classId, hull: s.hull, size: s.design ? designStats(s.design).hull : cls.hull, ...(s.design ? { design: s.design } : {}) });
       }
     }
     // Las naves de la flota primero (por tamaño); el ala de cazas aparte, sin contar en el tope.
@@ -236,10 +238,11 @@ export class FleetService {
         const [cargo] = await tx.select().from(fleetCargo).where(eq(fleetCargo.fleetId, h.fleetId)).for("update").limit(1);
         if (!cargo || cargo.alloys <= 0) return false;
         let alloys = cargo.alloys;
-        const list = await tx.select({ id: ships.id, classId: ships.classId, hull: ships.hull }).from(ships).where(eq(ships.fleetId, h.fleetId));
+        const list = await tx.select({ id: ships.id, classId: ships.classId, hull: ships.hull, design: ships.design }).from(ships).where(eq(ships.fleetId, h.fleetId));
         let any = false;
         for (const s of list) {
-          const max = getShipClass(s.classId as ShipClassId)?.hull ?? s.hull;
+          // Las del Astillero, hasta el casco de su diseño.
+          const max = s.design ? designStats(s.design).hull : (getShipClass(s.classId as ShipClassId)?.hull ?? s.hull);
           const want = Math.min(max - s.hull, MOTHERSHIP_WORKSHOP.hullPerMinute, Math.floor(alloys / MOTHERSHIP_WORKSHOP.alloysPerHull));
           if (want <= 0) continue;
           alloys -= want * MOTHERSHIP_WORKSHOP.alloysPerHull;

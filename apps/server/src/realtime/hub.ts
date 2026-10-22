@@ -1,5 +1,5 @@
 import type { FastifyBaseLogger } from "fastify";
-import { distance, PROTOCOL_VERSION, type CommandError, type DeltaOp, type Emperor, type EmperorView, type Probe, type ServerMessage, type Topic } from "@imperium/shared";
+import { distance, PROTOCOL_VERSION, type CommandError, type DeltaOp, type Emperor, type EmperorView, type Probe, type ServerMessage, type ShipDesignSnapshot, type Topic } from "@imperium/shared";
 import { INTEREST } from "@imperium/content";
 import { positionAt } from "@imperium/sim";
 import type { ColonyService } from "../colony/service";
@@ -23,6 +23,8 @@ export interface RemotePilot {
   classId: string;
   hull: number;
   name: string;
+  /** Nave del Astillero: su diseño (sus piezas mandan en el combate). */
+  design?: ShipDesignSnapshot;
 }
 
 export interface Client {

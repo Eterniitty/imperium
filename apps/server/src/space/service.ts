@@ -1,6 +1,6 @@
-import { AIM_ASSIST, ALIEN_LOCAL, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, SUPERMASSIVE, REPUTATION, getAlienShipClass, getShipClass, HELP_CALL, MINING, PIRATE_AI, PIRATE_AMBUSH, SCAVENGER_LAIR, type ShipClassId } from "@imperium/content";
-import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, MOTHERSHIP_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
-import { addToHold, arriveVelocity, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
+import { AIM_ASSIST, ALIEN_LOCAL, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, SUPERMASSIVE, REPUTATION, getAlienShipClass, getShipClass, HELP_CALL, MINING, PIRATE_AI, PIRATE_AMBUSH, SCAVENGER_LAIR, type ShipClassId, type ShipCombat } from "@imperium/content";
+import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, MOTHERSHIP_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipDesignSnapshot, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
+import { addToHold, arriveVelocity, designStats, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { EmperorService } from "../emperor/service";
 import { inHumanCore } from "../emperor/world";
@@ -117,6 +117,23 @@ const CANNON_GIMBAL_COS = Math.cos((AIM_ASSIST.cannonGimbalDeg * Math.PI) / 180)
  * nave, no salir del sistema) y cada disparo (cadencia, munición, alcance), y
  * difunde a los presentes unas 10 veces por segundo.
  */
+/**
+ * Combate en tiempo real de una nave del Astillero: escudo, recarga y retardo
+ * de sus piezas; cañón si lleva cañones, láseres, antiaéreas o lanzas, y
+ * misiles si lleva lanzamisiles (con las armas y bocas de su clase base).
+ */
+function designCombat(design: ShipDesignSnapshot, base: ShipCombat): ShipCombat {
+  const s = designStats(design);
+  const kinds = new Set(s.weapons.map((w) => (w.weapon === "missile" ? "missile" : "cannon")));
+  return {
+    shield: s.shield,
+    shieldRegenPerSec: s.shieldRegen,
+    shieldDelaySec: s.shieldDelaySec || base.shieldDelaySec,
+    weapons: base.weapons.filter((w) => kinds.has(w.kind === "missile" ? "missile" : "cannon")),
+    ...(base.hardpoints ? { hardpoints: base.hardpoints } : {}),
+  };
+}
+
 export class SpaceService {
   private readonly members = new Map<string, Member>();
   private readonly rooms = new Map<string, Set<Member>>();
@@ -156,7 +173,7 @@ export class SpaceService {
     saveHull(emperorId: string, fleetId: string, shipId: string, hull: number): Promise<void>;
     destroyed(emperorId: string, fleetId: string, shipId: string): Promise<void>;
     /** Naves armadas de las flotas paradas en el sistema que salen a escoltar (Fase 9d). */
-    escorts(emperorId: string, systemId: string, max: number): Promise<Array<{ fleetId: string; shipId: string; classId: string; hull: number }>>;
+    escorts(emperorId: string, systemId: string, max: number): Promise<Array<{ fleetId: string; shipId: string; classId: string; hull: number; design?: ShipDesignSnapshot }>>;
     /** Naves de las flotas alienígenas paradas en el sistema (Fase 9d). */
     aliensIn?(systemId: string, max: number): Promise<Array<{ actorId: string; factionId: string; fleetId: string; shipId: string; classId: string; hull: number }>>;
   } | null = null;
@@ -530,8 +547,10 @@ export class SpaceService {
       if (this.members.has(key) || (this.deadWing.get(key) ?? 0) > now) return;
       const cls = getShipClass(e.classId as ShipClassId);
       if (!cls) return;
-      const combat = new Combatant(cls.hull, cls.combat, now);
-      combat.hull = Math.max(1, Math.min(cls.hull, e.hull));
+      // Nave del Astillero: casco, escudo y armas de sus piezas (fase E4).
+      const maxHull = e.design ? designStats(e.design).hull : cls.hull;
+      const combat = new Combatant(maxHull, e.design ? designCombat(e.design, cls.combat) : cls.combat, now);
+      combat.hull = Math.max(1, Math.min(maxHull, e.hull));
       this.combatants.set(key, combat);
       const p = escortSlot(leader.pose.p, leader.pose.q, i);
       const m: Member = {
@@ -711,8 +730,10 @@ export class SpaceService {
     // Mientras se preparaba la sala pudo dejar de pilotarla.
     if (client.piloting !== pilot) return null;
     const now = this.now();
-    const combat = new Combatant(cls.hull, cls.combat, now);
-    combat.hull = Math.max(1, Math.min(cls.hull, pilot.hull));
+    // Nave del Astillero: casco, escudo y armas de sus piezas (fase E4).
+    const maxHull = pilot.design ? designStats(pilot.design).hull : cls.hull;
+    const combat = new Combatant(maxHull, pilot.design ? designCombat(pilot.design, cls.combat) : cls.combat, now);
+    combat.hull = Math.max(1, Math.min(maxHull, pilot.hull));
     this.combatants.set(key, combat);
     const m: Member = {
       emperorId: key,
