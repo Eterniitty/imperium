@@ -135,6 +135,7 @@ export class ShipController {
       document.body.appendChild(this.ghost);
       this.placeGhost();
     } else {
+      lockedPointer.releasedAt = performance.now();
       this.ghost?.remove();
     }
   };

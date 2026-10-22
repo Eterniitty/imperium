@@ -1673,7 +1673,7 @@ export const en: Record<I18nKey, string> = {
   "settings.flight.model": "Flight model",
   "settings.flight.model.arcade": "Arcade (like No Man's Sky)",
   "settings.flight.model.newtonian": "Newtonian (real inertia)",
-  "settings.flight.model.arcadeHint": "The ship always flies where it points. W speeds up, S brakes to a stop (no reverse), A/D turn and the ship banks by itself; the mouse aims. Hands off, it keeps cruise speed (30 %).",
+  "settings.flight.model.arcadeHint": "The ship always flies where it points. {forward} speeds up, {back} brakes to a stop (no reverse), {strafeLeft}/{strafeRight} turn and the ship banks by itself; the mouse aims. After speeding up, hands off, it keeps cruise speed (30 %).",
   "settings.flight.model.newtonianHint": "Real inertia: engines push and the ship keeps drifting; strafe, up/down and reverse with the manoeuvring thrusters.",
   "help.keysArcade": "Arcade flight (Settings → Flight): {forward} speed up · {back} brake · {strafeLeft}/{strafeRight} turn · mouse: aim · {boost} boost · {rollLeft}/{rollRight} roll",
   "cruise.hud.distance": "Distance",

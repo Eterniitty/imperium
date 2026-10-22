@@ -1675,7 +1675,7 @@ export const es = {
   "settings.flight.model": "Modelo de vuelo",
   "settings.flight.model.arcade": "Arcade (como No Man's Sky)",
   "settings.flight.model.newtonian": "Newtoniano (inercia real)",
-  "settings.flight.model.arcadeHint": "La nave va siempre hacia donde apunta. W acelera, S frena hasta pararse (sin marcha atrás), A/D giran y la nave se inclina sola; el ratón apunta. Sin tocar nada sigue a velocidad de crucero (30 %).",
+  "settings.flight.model.arcadeHint": "La nave va siempre hacia donde apunta. {forward} acelera, {back} frena hasta pararse (sin marcha atrás), {strafeLeft}/{strafeRight} giran y la nave se inclina sola; el ratón apunta. Tras acelerar, sin tocar nada sigue a velocidad de crucero (30 %).",
   "settings.flight.model.newtonianHint": "Inercia real: los motores empujan y la nave sigue derivando; lateral, subir/bajar y marcha atrás con los propulsores de maniobra.",
   "help.keysArcade": "Vuelo arcade (Ajustes → Vuelo): {forward} acelerar · {back} frenar · {strafeLeft}/{strafeRight} girar · ratón: apuntar · {boost} impulso · {rollLeft}/{rollRight} alabeo",
   "cruise.hud.distance": "Distancia",

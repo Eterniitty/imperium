@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { pointerXY } from "./pointerLock";
+import { escapeJustUnlocked, pointerXY } from "./pointerLock";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
 import type { FlagshipStatus, Fleet, I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, ShipDesignSnapshot, WeaponKind, WorldPosition } from "@imperium/shared";
@@ -1259,7 +1259,14 @@ export class SystemView implements View {
       // El impacto, cuando llega, donde tenga sentido oírlo: cerca de la nave propia o del tirador.
       const myId = worldStore.getState().myEmperorId;
       const hitGain = s.target === myId ? 1 : gain;
-      setTimeout(() => playHit(hitGain), Math.max(0, s.hitAt - serverNow()));
+      const target = s.target;
+      const from = new THREE.Vector3(...s.from);
+      const strength = s.weapon === "missile" ? 1.2 : 0.4;
+      setTimeout(() => {
+        playHit(hitGain);
+        // El escudo de una nave ajena se enciende con el impacto (no se sabe cuánto le queda).
+        if (target && target !== myId) this.remote.shieldHit(target, from, strength, settingsStore.getState().prefs.reduceEffects);
+      }, Math.max(0, s.hitAt - serverNow()));
     }
   }
 
@@ -2076,6 +2083,8 @@ export class SystemView implements View {
   }
 
   onKey(code: string): void {
+    // El Esc que suelta el ratón atrapado no cancela el salto ni el crucero.
+    if (code === "Escape" && escapeJustUnlocked()) return;
     if (this.ship) {
       // Encender o apagar a mano el pulso o los motores es pilotar: el piloto automático se desactiva.
       if (this.autopilot.active && !this.quantum && (isBound("pulse", code) || isBound("engines", code))) this.cancelCruise("cruise.manual");

@@ -308,6 +308,7 @@ export class SpaceService {
   private stateFor(m: Member, viewer: Member | null): ShipState {
     const owner = m.owner ?? m.emperorId;
     const classId = m.ai?.classId ?? m.classId;
+    const known = viewer === null || viewer === m || viewer.allies.has(owner) || (viewer.owner ?? viewer.emperorId) === owner;
     return {
       id: m.emperorId,
       kind: m.kind,
@@ -316,10 +317,11 @@ export class SpaceService {
       // Compañeros, y las naves propias entre sí (la insignia aparcada y la nave de flota que se pilota).
       ally: viewer !== null && viewer !== m && (viewer.allies.has(owner) || (viewer.owner ?? viewer.emperorId) === owner),
       ...m.pose,
-      hull: Math.round(m.combat.hull),
-      hullMax: m.combat.hullMax,
-      shield: Math.round(m.combat.shield),
-      shieldMax: m.combat.shieldMax,
+      // Casco y escudo exactos solo para la propia nave y los compañeros: de las demás solo se sabe si el escudo
+      // está activo (se ve en la cúpula); el casco va siempre «lleno».
+      ...(known
+        ? { hull: Math.round(m.combat.hull), hullMax: m.combat.hullMax, shield: Math.round(m.combat.shield), shieldMax: m.combat.shieldMax }
+        : { hull: m.combat.hullMax, hullMax: m.combat.hullMax, shield: m.combat.shield > 0.5 ? m.combat.shieldMax : 0, shieldMax: m.combat.shieldMax }),
     };
   }
 

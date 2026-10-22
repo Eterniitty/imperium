@@ -92,9 +92,10 @@ export class RemoteShips {
         rig.setThrust(Math.min(1, v.speed / 1000), v.speed > 2000);
         rig.tick(time, dt, Math.max(0, 1 - v.speed / 60));
       }
-      // El escudo de la otra nave pierde carga: su cúpula se enciende.
+      // El escudo de la otra nave pierde carga: su cúpula se enciende. (De las naves ajenas el servidor solo dice si el
+      // escudo está activo; sus impactos los enciende `shieldHit`, con cada disparo que les llega.)
       const shield = remote.state.shield;
-      if (v.lastShield >= 0 && shield < v.lastShield - 0.5) {
+      if (remote.state.ally && v.lastShield >= 0 && shield < v.lastShield - 0.5) {
         if (!v.dome) {
           v.dome = new ShieldDome(v.lengthM);
           this.group.add(v.dome.mesh);
@@ -166,6 +167,18 @@ export class RemoteShips {
   muzzleOf(id: string, weapon: WeaponKind, index: number): THREE.Vector3 | null {
     const v = this.visuals.get(id);
     return v ? shipRig(v.ship).muzzle(weapon, index, new THREE.Vector3()) : null;
+  }
+
+  /** Un disparo alcanza a una nave ajena con el escudo activo: su cúpula se enciende del lado de quien disparó. */
+  shieldHit(id: string, from: THREE.Vector3, strength: number, reduce: boolean): void {
+    const v = this.visuals.get(id);
+    const state = spaceStore.getState().ships[id]?.state;
+    if (!v || !state || state.shield <= 0.5) return;
+    if (!v.dome) {
+      v.dome = new ShieldDome(v.lengthM);
+      this.group.add(v.dome.mesh);
+    }
+    v.dome.impact(from.clone().sub(v.ship.position), strength, reduce);
   }
 
   /** Eslora (m) con que se dibuja una nave remota, o null si no se dibuja. */

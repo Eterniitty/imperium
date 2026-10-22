@@ -678,7 +678,7 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       return { a, b, sa, sb, systemId };
     }
 
-    it("un cañonazo que acierta baja el escudo del enemigo y ambos lo ven", async () => {
+    it("un cañonazo que acierta baja el escudo del enemigo; él lo ve y el atacante solo sabe que su escudo sigue activo", async () => {
       const { b, sa, sb } = await duel();
       const from = sb.messages.length;
       sa.send({ t: "fire", weapon: "cannon", dir: [0, 0, -1] });
@@ -687,7 +687,9 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       expect(shot.hitAt).not.toBeNull();
       const hurt = await sb.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id && m.ship.shield < 200, from);
       expect(hurt.ship).toMatchObject({ shield: 186, hull: 400 });
-      expect((await sa.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id && m.ship.shield === 186)).ship.hull).toBe(400);
+      // El atacante (no es su compañero) no sabe cuánto escudo le queda: solo que sigue activo (22-10-2026).
+      const seen = await sa.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id, from);
+      expect(seen.ship).toMatchObject({ shield: 200, hull: 400 });
     });
 
     it("fallar no hace daño, y entre compañeros no hay fuego amigo", async () => {

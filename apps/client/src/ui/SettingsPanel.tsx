@@ -187,6 +187,7 @@ function InterfaceSection() {
 /** Pilotaje: asistencia, ratón, cámara, combate con ratón, aceleración, inercia y velocidad. */
 function FlightSection() {
   const t = useT();
+  const keys = useKeyLabels();
   const flight = useSettings((s) => s.prefs.flight);
   const set = (changes: Partial<typeof flight>) => settingsStore.getState().setPrefs({ flight: { ...flight, ...changes } });
   const check = (key: "assist" | "mouseFlight" | "invertCameraY" | "mouseInvertY" | "mouseFire" | "autoFire", label: I18nKey) => (
@@ -202,7 +203,7 @@ function FlightSection() {
   return (
     <>
       <h3 className="set-group">{t("settings.group.assist")}</h3>
-      <Row label={t("settings.flight.model")} htmlFor="pref-flightModel" hint={t(flight.flightModel === "arcade" ? "settings.flight.model.arcadeHint" : "settings.flight.model.newtonianHint")}>
+      <Row label={t("settings.flight.model")} htmlFor="pref-flightModel" hint={t(flight.flightModel === "arcade" ? "settings.flight.model.arcadeHint" : "settings.flight.model.newtonianHint", keys)}>
         <select id="pref-flightModel" className="auth-input set-select" value={flight.flightModel} onChange={(e) => set({ flightModel: e.target.value === "newtonian" ? "newtonian" : "arcade" })}>
           <option value="arcade">{t("settings.flight.model.arcade")}</option>
           <option value="newtonian">{t("settings.flight.model.newtonian")}</option>
