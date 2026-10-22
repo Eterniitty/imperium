@@ -34,29 +34,34 @@ export function TutorialPanel() {
     setDone(false);
   }, [stepKey]);
 
+  // Cada poco: dónde está lo que se resalta y si el paso ya está hecho.
   useEffect(() => {
     if (!step) {
       setRect(null);
       return;
     }
-    let timer: number | null = null;
+    let finished = false;
     const tick = () => {
       // Lo que se resalta: el primero visible con ese `data-tutorial`.
       const el = step.target ? [...document.querySelectorAll<HTMLElement>(`[data-tutorial="${step.target}"]`)].find((e) => e.offsetParent !== null) : null;
       const r = el?.getBoundingClientRect() ?? null;
       setRect((prev) => (r && prev && r.x === prev.x && r.y === prev.y && r.width === prev.width && r.height === prev.height ? prev : r));
-      if (step.done && start.current && !done && step.done({ start: start.current, now: snapshot() })) {
+      if (!finished && step.done && start.current && step.done({ start: start.current, now: snapshot() })) {
+        finished = true;
         setDone(true);
-        timer = window.setTimeout(() => tutorialStore.getState().next(), DONE_PAUSE_MS);
       }
     };
     tick();
     const id = window.setInterval(tick, POLL_MS);
-    return () => {
-      window.clearInterval(id);
-      if (timer !== null) window.clearTimeout(timer);
-    };
-  }, [step, done]);
+    return () => window.clearInterval(id);
+  }, [step]);
+
+  // Hecho: una pausa con la marca y al siguiente paso (sin depender del efecto de arriba, que se repite).
+  useEffect(() => {
+    if (!done || !stepKey) return;
+    const id = window.setTimeout(() => tutorialStore.getState().next(), DONE_PAUSE_MS);
+    return () => window.clearTimeout(id);
+  }, [done, stepKey]);
 
   if (!active || !chapter || !step) return null;
   const store = tutorialStore.getState();
