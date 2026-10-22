@@ -92,13 +92,13 @@ export function TopBar() {
         </button>
       )}
       {emperor && (
-        <button className="btn hide-sm" onClick={() => gameStore.getState().setEconomyOpen("humanity")} title={t("eco.humanityTitle")}>
+        <button className="btn hide-sm" data-tutorial="humanity" onClick={() => gameStore.getState().setEconomyOpen("humanity")} title={t("eco.humanityTitle")}>
           {t("eco.humanity")}
         </button>
       )}
       {/* Fase 10: linaje (Cunas, Herederos, muertes); en rojo mientras el Emperador se gesta. */}
       {emperor && (
-        <button className={emperor.gestating ? "btn hide-sm lineage-btn dead" : "btn hide-sm lineage-btn"} onClick={() => gameStore.getState().setLineageOpen(true)} title={t("lineage.openTitle")}>
+        <button data-tutorial="lineage" className={emperor.gestating ? "btn hide-sm lineage-btn dead" : "btn hide-sm lineage-btn"} onClick={() => gameStore.getState().setLineageOpen(true)} title={t("lineage.openTitle")}>
           {t("lineage.open")}
         </button>
       )}

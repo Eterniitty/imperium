@@ -11,6 +11,7 @@ import { gameStore } from "../state/store";
 import { telemetry, type FlightTelemetry } from "../engine/telemetry";
 import { spaceStore } from "../net/space";
 import { empireStore } from "../ui/EmpireWindow";
+import { contractsStore } from "../ui/ContractsWindow";
 
 /** Lo que mira una comprobación: el estado al empezar el paso y el de ahora. */
 export interface StepContext {
@@ -32,6 +33,10 @@ export interface Snapshot {
   targetId: string | null;
   selectedPlanet: number | null;
   empireOpen: boolean;
+  docked: boolean;
+  economyOpen: string | null;
+  lineageOpen: boolean;
+  contractsOpen: boolean;
 }
 
 export function snapshot(): Snapshot {
@@ -49,6 +54,10 @@ export function snapshot(): Snapshot {
     targetId: spaceStore.getState().targetId,
     selectedPlanet: g.selectedPlanet,
     empireOpen: empireStore.getState().open,
+    docked: spaceStore.getState().docked !== null,
+    economyOpen: g.economyOpen,
+    lineageOpen: g.lineageOpen,
+    contractsOpen: contractsStore.getState().open,
   };
 }
 
@@ -170,6 +179,42 @@ export const CHAPTERS: TutorialChapter[] = [
       { id: "fuel" },
       { id: "routes" },
       { id: "name" },
+    ],
+  },
+  {
+    id: "mothership",
+    needsFlight: true,
+    steps: [
+      { id: "what" },
+      { id: "approach", target: "cruise" },
+      { id: "dock", target: "dock", keys: ["dock"], optional: true, done: (c) => c.now.docked },
+      { id: "pilot" },
+      { id: "travel" },
+      { id: "undock", target: "dock", keys: ["dock"], done: (c) => !c.now.docked },
+    ],
+  },
+  {
+    id: "economy",
+    steps: [
+      { id: "credits", target: "credits" },
+      { id: "market", target: "credits", done: (c) => c.now.economyOpen === "market" },
+      { id: "humanity", target: "humanity", done: (c) => c.now.economyOpen === "humanity" },
+      { id: "projects" },
+      { id: "reputation" },
+    ],
+  },
+  {
+    id: "lineage",
+    steps: [{ id: "open", target: "lineage", done: (c) => c.now.lineageOpen }, { id: "fall" }, { id: "cradles" }, { id: "heirs" }],
+  },
+  {
+    id: "contracts",
+    steps: [
+      { id: "open", target: "contracts", done: (c) => c.now.contractsOpen },
+      { id: "goals" },
+      { id: "offers" },
+      { id: "progress" },
+      { id: "rank" },
     ],
   },
 ];

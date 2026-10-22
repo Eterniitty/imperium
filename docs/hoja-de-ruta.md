@@ -152,7 +152,7 @@ Plan en `docs/juego-solitario.md` y `docs/tutorial.md`. Orden:
 - [x] Sucesos en el espacio (22-10-2026): restos a la deriva y señales de socorro con decisión y trampa (`SPACE_EVENTS`, Wiki «Sucesos en el espacio»). Pendiente: más tipos (anomalías, emboscadas anunciadas) y que pasen también en el espacio profundo.
 - [x] Objetivos diarios y semanales con racha (22-10-2026; `GOALS`, `GoalService`, migración 0049).
 - [x] Tutorial: capítulos 5–8 (combate, minería, colonias y flotas; 22-10-2026).
-- [ ] Tutorial: capítulos 9–12 (nodriza, economía, linaje y contratos).
+- [x] Tutorial: capítulos 9–12 (nodriza, economía, linaje y contratos; 22-10-2026). Pendiente: capítulo del Astillero con el editor nuevo (E13).
 - [ ] Retos de combate, crisis de colonias y lore como recompensa.
 
 ## Editor 3D de construcción de naves (petición del 22-10-2026, noche)
