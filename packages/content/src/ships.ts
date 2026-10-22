@@ -94,7 +94,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 1,
     consumedOnUse: false,
     combat: { shield: 40, shieldRegenPerSec: 8, shieldDelaySec: 4, weapons: [CANNON_LIGHT] },
-    model: { archetype: "scout", lengthM: 60, hullShape: "needle", engines: 2, dish: true },
+    model: { archetype: "scout", lengthM: 96, hullShape: "needle", engines: 2, dish: true },
   },
   {
     id: "fighter",
@@ -113,7 +113,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 0.8,
     consumedOnUse: false,
     combat: { shield: 50, shieldRegenPerSec: 10, shieldDelaySec: 3, weapons: [CANNON_RAPID] },
-    model: { archetype: "fighter", lengthM: 20, hullShape: "needle", engines: 1, wings: true },
+    model: { archetype: "fighter", lengthM: 37, hullShape: "needle", engines: 1, wings: true },
   },
   {
     id: "interceptor",
@@ -133,7 +133,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 1.5,
     consumedOnUse: false,
     combat: { shield: 80, shieldRegenPerSec: 12, shieldDelaySec: 3, weapons: [CANNON, { ...MISSILE, ammo: 2, damage: 70 }] },
-    model: { archetype: "fighter", lengthM: 32, hullShape: "needle", engines: 2, wings: true },
+    model: { archetype: "fighter", lengthM: 57, hullShape: "needle", engines: 2, wings: true },
   },
   {
     id: "corvette",
@@ -154,7 +154,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 1.8,
     consumedOnUse: false,
     combat: { shield: 120, shieldRegenPerSec: 14, shieldDelaySec: 3, weapons: [FLAK] },
-    model: { archetype: "frigate", lengthM: 80, hullShape: "wedge", engines: 2 },
+    model: { archetype: "frigate", lengthM: 117, hullShape: "wedge", engines: 2 },
   },
   {
     id: "frigate",
@@ -174,7 +174,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 3,
     consumedOnUse: false,
     combat: { shield: 150, shieldRegenPerSec: 12, shieldDelaySec: 4, weapons: [CANNON, MISSILE] },
-    model: { archetype: "frigate", lengthM: 140, hullShape: "spindle", engines: 2 },
+    model: { archetype: "frigate", lengthM: 149, hullShape: "spindle", engines: 2 },
   },
   {
     id: "destroyer",

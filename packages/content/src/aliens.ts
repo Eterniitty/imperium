@@ -98,14 +98,14 @@ export const ALIEN_SHIP_CLASSES: readonly AlienShipClassDefinition[] = withHardp
     id: "scav_skiff", speciesId: "scavengers", nameKey: "ship.scav_skiff.name", descriptionKey: "ship.scav_skiff.description",
     role: "swarm", hull: 70, attack: 9, battleShield: 0, speedLyPerHour: 170, scannerRangeLy: 6, cargo: 20,
     combat: { shield: 20, shieldRegenPerSec: 5, shieldDelaySec: 4, weapons: [cannon(5, 0.35, 1500, 1300)] },
-    model: { lengthM: 20, hullShape: "needle", engines: 1, wings: true },
+    model: { lengthM: 37, hullShape: "needle", engines: 1, wings: true },
     flight: { speedU: 280, preferredRangeU: 600 },
   },
   {
     id: "scav_raider", speciesId: "scavengers", nameKey: "ship.scav_raider.name", descriptionKey: "ship.scav_raider.description",
     role: "raider", hull: 120, attack: 14, battleShield: 5, speedLyPerHour: 160, scannerRangeLy: 10, cargo: 60,
     combat: { shield: 40, shieldRegenPerSec: 6, shieldDelaySec: 4, weapons: [cannon(7, 0.45, 1800, 1300)] },
-    model: { lengthM: 34, hullShape: "wedge", engines: 2 },
+    model: { lengthM: 60, hullShape: "wedge", engines: 2 },
     flight: { speedU: 230, preferredRangeU: 900 },
   },
   {
@@ -113,7 +113,7 @@ export const ALIEN_SHIP_CLASSES: readonly AlienShipClassDefinition[] = withHardp
     id: "scav_harpoon", speciesId: "scavengers", nameKey: "ship.scav_harpoon.name", descriptionKey: "ship.scav_harpoon.description",
     role: "boarder", hull: 190, attack: 20, battleShield: 8, speedLyPerHour: 150, scannerRangeLy: 8, cargo: 200,
     combat: { shield: 60, shieldRegenPerSec: 6, shieldDelaySec: 4, weapons: [cannon(16, 0.7, 900, 1100)] },
-    model: { lengthM: 42, hullShape: "spindle", engines: 2, hangar: true },
+    model: { lengthM: 72, hullShape: "spindle", engines: 2, hangar: true },
     flight: { speedU: 260, preferredRangeU: 350 },
   },
   {
@@ -121,14 +121,14 @@ export const ALIEN_SHIP_CLASSES: readonly AlienShipClassDefinition[] = withHardp
     id: "scav_bomber", speciesId: "scavengers", nameKey: "ship.scav_bomber.name", descriptionKey: "ship.scav_bomber.description",
     role: "bomber", hull: 150, attack: 28, battleShield: 6, speedLyPerHour: 140, scannerRangeLy: 10, cargo: 40,
     combat: { shield: 40, shieldRegenPerSec: 5, shieldDelaySec: 4, weapons: [cannon(5, 0.5, 1500, 1300), { ...missile(60, 6), cooldownSec: 5, ammoRegenSec: 20 }] },
-    model: { lengthM: 48, hullShape: "brick", engines: 2 },
+    model: { lengthM: 81, hullShape: "brick", engines: 2 },
     flight: { speedU: 200, preferredRangeU: 3200 },
   },
   {
     id: "scav_breaker", speciesId: "scavengers", nameKey: "ship.scav_breaker.name", descriptionKey: "ship.scav_breaker.description",
     role: "heavy", hull: 260, attack: 24, battleShield: 10, speedLyPerHour: 110, scannerRangeLy: 8, cargo: 300,
     combat: { shield: 70, shieldRegenPerSec: 6, shieldDelaySec: 5, weapons: [cannon(10, 0.5, 1800, 1300), missile(70, 4)] },
-    model: { lengthM: 70, hullShape: "brick", engines: 3, turrets: 2 },
+    model: { lengthM: 107, hullShape: "brick", engines: 3, turrets: 2 },
     flight: { speedU: 170, preferredRangeU: 1200 },
   },
   {
@@ -144,13 +144,13 @@ export const ALIEN_SHIP_CLASSES: readonly AlienShipClassDefinition[] = withHardp
     id: "vesperi_aegis", speciesId: "vesperi", nameKey: "ship.vesperi_aegis.name", descriptionKey: "ship.vesperi_aegis.description",
     role: "escort", hull: 380, attack: 26, battleShield: 40, speedLyPerHour: 100, scannerRangeLy: 12, cargo: 0,
     combat: { shield: 260, shieldRegenPerSec: 22, shieldDelaySec: 3, weapons: [cannon(12, 0.25)] },
-    model: { lengthM: 60, hullShape: "disc", engines: 2 },
+    model: { lengthM: 96, hullShape: "disc", engines: 2 },
   },
   {
     id: "vesperi_watchtower", speciesId: "vesperi", nameKey: "ship.vesperi_watchtower.name", descriptionKey: "ship.vesperi_watchtower.description",
     role: "scout", hull: 140, attack: 12, battleShield: 20, speedLyPerHour: 180, scannerRangeLy: 25, cargo: 0,
     combat: { shield: 90, shieldRegenPerSec: 12, shieldDelaySec: 3, weapons: [cannon(8, 0.3)] },
-    model: { lengthM: 30, hullShape: "spindle", engines: 1 },
+    model: { lengthM: 54, hullShape: "spindle", engines: 1 },
   },
   // --- Nómadas del Vacío (anillo 3+): caravanas que comercian ---
   {
@@ -163,14 +163,14 @@ export const ALIEN_SHIP_CLASSES: readonly AlienShipClassDefinition[] = withHardp
     id: "nomad_corsair", speciesId: "void_nomads", nameKey: "ship.nomad_corsair.name", descriptionKey: "ship.nomad_corsair.description",
     role: "escort", hull: 200, attack: 30, battleShield: 15, speedLyPerHour: 200, scannerRangeLy: 15, cargo: 80,
     combat: { shield: 100, shieldRegenPerSec: 12, shieldDelaySec: 4, weapons: [cannon(12, 0.22), missile(80, 4)] },
-    model: { lengthM: 38, hullShape: "needle", engines: 2 },
+    model: { lengthM: 66, hullShape: "needle", engines: 2 },
   },
   // --- ELYDRI (anillo 3+): escudos y tecnología antigua ---
   {
     id: "elydri_prism", speciesId: "elydri", nameKey: "ship.elydri_prism.name", descriptionKey: "ship.elydri_prism.description",
     role: "line", hull: 260, attack: 34, battleShield: 60, speedLyPerHour: 140, scannerRangeLy: 20, cargo: 0,
     combat: { shield: 320, shieldRegenPerSec: 30, shieldDelaySec: 3, weapons: [cannon(15, 0.25, 2400, 1800)] },
-    model: { lengthM: 50, hullShape: "shard", engines: 0 },
+    model: { lengthM: 83, hullShape: "shard", engines: 0 },
   },
   {
     id: "elydri_reliquary", speciesId: "elydri", nameKey: "ship.elydri_reliquary.name", descriptionKey: "ship.elydri_reliquary.description",
@@ -183,20 +183,20 @@ export const ALIEN_SHIP_CLASSES: readonly AlienShipClassDefinition[] = withHardp
     id: "grey_watcher", speciesId: "greys", nameKey: "ship.grey_watcher.name", descriptionKey: "ship.grey_watcher.description",
     role: "scout", hull: 120, attack: 10, battleShield: 40, speedLyPerHour: 260, scannerRangeLy: 30, cargo: 0,
     combat: { shield: 160, shieldRegenPerSec: 20, shieldDelaySec: 3, weapons: [cannon(9, 0.3, 2600, 2000)] },
-    model: { lengthM: 26, hullShape: "disc", engines: 0 },
+    model: { lengthM: 47, hullShape: "disc", engines: 0 },
   },
   {
     id: "grey_theorem", speciesId: "greys", nameKey: "ship.grey_theorem.name", descriptionKey: "ship.grey_theorem.description",
     role: "line", hull: 320, attack: 55, battleShield: 45, speedLyPerHour: 160, scannerRangeLy: 20, cargo: 0,
     combat: { shield: 260, shieldRegenPerSec: 25, shieldDelaySec: 3, weapons: [cannon(20, 0.3, 2800, 2200), missile(100, 4, 6000)] },
-    model: { lengthM: 70, hullShape: "ring", engines: 0 },
+    model: { lengthM: 107, hullShape: "ring", engines: 0 },
   },
   // --- AURELIANOS (anillo 4+): flotas nobles ---
   {
     id: "aurelian_lancer", speciesId: "aurelians", nameKey: "ship.aurelian_lancer.name", descriptionKey: "ship.aurelian_lancer.description",
     role: "line", hull: 300, attack: 42, battleShield: 20, speedLyPerHour: 170, scannerRangeLy: 12, cargo: 40,
     combat: { shield: 160, shieldRegenPerSec: 14, shieldDelaySec: 4, weapons: [cannon(15, 0.2), missile(90, 6)] },
-    model: { lengthM: 55, hullShape: "needle", engines: 3 },
+    model: { lengthM: 90, hullShape: "needle", engines: 3 },
   },
   {
     id: "aurelian_bastion", speciesId: "aurelians", nameKey: "ship.aurelian_bastion.name", descriptionKey: "ship.aurelian_bastion.description",
@@ -209,7 +209,7 @@ export const ALIEN_SHIP_CLASSES: readonly AlienShipClassDefinition[] = withHardp
     id: "tharaxi_drone", speciesId: "tharaxi", nameKey: "ship.tharaxi_drone.name", descriptionKey: "ship.tharaxi_drone.description",
     role: "swarm", hull: 60, attack: 12, battleShield: 0, speedLyPerHour: 190, scannerRangeLy: 6, cargo: 0,
     combat: { shield: 0, shieldRegenPerSec: 0, shieldDelaySec: 0, weapons: [cannon(6, 0.3, 1200, 1100)] },
-    model: { lengthM: 14, hullShape: "pod", engines: 1 },
+    model: { lengthM: 27, hullShape: "pod", engines: 1 },
   },
   {
     id: "tharaxi_node", speciesId: "tharaxi", nameKey: "ship.tharaxi_node.name", descriptionKey: "ship.tharaxi_node.description",
@@ -222,7 +222,7 @@ export const ALIEN_SHIP_CLASSES: readonly AlienShipClassDefinition[] = withHardp
     id: "nihil_veil", speciesId: "nihil", nameKey: "ship.nihil_veil.name", descriptionKey: "ship.nihil_veil.description",
     role: "stealth", hull: 180, attack: 50, battleShield: 25, speedLyPerHour: 210, scannerRangeLy: 18, cargo: 0,
     combat: { shield: 140, shieldRegenPerSec: 18, shieldDelaySec: 3, weapons: [cannon(18, 0.3, 2200, 1800)] },
-    model: { lengthM: 40, hullShape: "crescent", engines: 0 },
+    model: { lengthM: 69, hullShape: "crescent", engines: 0 },
   },
   {
     id: "nihil_rift", speciesId: "nihil", nameKey: "ship.nihil_rift.name", descriptionKey: "ship.nihil_rift.description",
@@ -235,7 +235,7 @@ export const ALIEN_SHIP_CLASSES: readonly AlienShipClassDefinition[] = withHardp
     id: "erad_purger", speciesId: "eradicators", nameKey: "ship.erad_purger.name", descriptionKey: "ship.erad_purger.description",
     role: "line", hull: 420, attack: 60, battleShield: 40, speedLyPerHour: 170, scannerRangeLy: 15, cargo: 0,
     combat: { shield: 260, shieldRegenPerSec: 22, shieldDelaySec: 3, weapons: [cannon(20, 0.2), missile(120, 6)] },
-    model: { lengthM: 80, hullShape: "wedge", engines: 4 },
+    model: { lengthM: 117, hullShape: "wedge", engines: 4 },
   },
   {
     id: "erad_sentence", speciesId: "eradicators", nameKey: "ship.erad_sentence.name", descriptionKey: "ship.erad_sentence.description",
