@@ -1,0 +1,1 @@
+ALTER TABLE "emperors" ALTER COLUMN "flagship_hull" SET DEFAULT 1600;

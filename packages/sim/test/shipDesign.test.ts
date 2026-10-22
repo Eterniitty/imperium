@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateContent } from "@imperium/content";
+import { getPart, validateContent } from "@imperium/content";
 import { designStats, isBuildable, validateDesign, type ShipDesign } from "../src/shipDesign";
 
 /** Una fragata completa: puente, reactor, dos motores, motor cuántico, depósito, escudo y dos armas. */
@@ -75,7 +75,7 @@ describe("editor de naves: reglas", () => {
     expect(b.turnDegPerSec).toBeLessThan(a.turnDegPerSec);
     expect(b.accel).toBeLessThan(a.accel);
     expect(b.jumpRangeLy!).toBeLessThan(a.jumpRangeLy!);
-    expect(b.hull).toBe(a.hull + 250);
+    expect(b.hull).toBe(a.hull + getPart("armor_m")!.stats.hull!);
     const slow = designStats({ ...FRIGATE, parts: { ...FRIGATE.parts, sys1: "quantum_a" } });
     expect(slow.riftLyPerHour!).toBeLessThan(a.riftLyPerHour!);
     expect(slow.chargeSec!).toBeGreaterThan(a.chargeSec!);

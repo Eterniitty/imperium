@@ -89,7 +89,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     cost: { metal: 120, volatiles: 80, crystal: 10, alloys: 0 },
     requires: SHIPYARD,
     buildTimeHours: 2,
-    hull: 60,
+    hull: 240,
     attack: 2,
     battleShield: 0,
     speedLyPerHour: 240,
@@ -97,7 +97,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     scannerRangeLy: 25,
     upkeepVolatilesPerHour: 1,
     consumedOnUse: false,
-    combat: { shield: 40, shieldRegenPerSec: 8, shieldDelaySec: 4, weapons: [CANNON_LIGHT] },
+    combat: { shield: 160, shieldRegenPerSec: 32, shieldDelaySec: 4, weapons: [CANNON_LIGHT] },
     model: { archetype: "scout", lengthM: 96, hullShape: "needle", engines: 2, dish: true },
   },
   {
@@ -108,7 +108,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     cost: { metal: 140, volatiles: 50, crystal: 5, alloys: 0 },
     requires: SHIPYARD,
     buildTimeHours: 1.5,
-    hull: 90,
+    hull: 360,
     attack: 17,
     battleShield: 2,
     speedLyPerHour: 200,
@@ -116,7 +116,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     scannerRangeLy: 6,
     upkeepVolatilesPerHour: 0.8,
     consumedOnUse: false,
-    combat: { shield: 50, shieldRegenPerSec: 10, shieldDelaySec: 3, weapons: [CANNON_RAPID] },
+    combat: { shield: 200, shieldRegenPerSec: 40, shieldDelaySec: 3, weapons: [CANNON_RAPID] },
     model: { archetype: "fighter", lengthM: 37, hullShape: "needle", engines: 1, wings: true },
   },
   {
@@ -127,7 +127,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     cost: { metal: 220, volatiles: 90, crystal: 15, alloys: 0 },
     requires: SHIPYARD,
     buildTimeHours: 2.5,
-    hull: 140,
+    hull: 560,
     attack: 30,
     battleShots: 2,
     battleShield: 8,
@@ -136,7 +136,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     scannerRangeLy: 14,
     upkeepVolatilesPerHour: 1.5,
     consumedOnUse: false,
-    combat: { shield: 80, shieldRegenPerSec: 12, shieldDelaySec: 3, weapons: [CANNON, { ...MISSILE, ammo: 2, damage: 70 }] },
+    combat: { shield: 320, shieldRegenPerSec: 48, shieldDelaySec: 3, weapons: [CANNON, { ...MISSILE, ammo: 2, damage: 70 }] },
     model: { archetype: "fighter", lengthM: 57, hullShape: "needle", engines: 2, wings: true },
   },
   {
@@ -147,7 +147,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     cost: { metal: 260, volatiles: 100, crystal: 10, alloys: 0 },
     requires: SHIPYARD,
     buildTimeHours: 3,
-    hull: 200,
+    hull: 800,
     attack: 22,
     battleShots: 4,
     battleProfile: 2,
@@ -157,7 +157,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     scannerRangeLy: 10,
     upkeepVolatilesPerHour: 1.8,
     consumedOnUse: false,
-    combat: { shield: 120, shieldRegenPerSec: 14, shieldDelaySec: 3, weapons: [FLAK] },
+    combat: { shield: 480, shieldRegenPerSec: 56, shieldDelaySec: 3, weapons: [FLAK] },
     model: { archetype: "frigate", lengthM: 117, hullShape: "wedge", engines: 2 },
   },
   {
@@ -168,7 +168,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     cost: { metal: 400, volatiles: 150, crystal: 25, alloys: 0 },
     requires: SHIPYARD,
     buildTimeHours: 6,
-    hull: 300,
+    hull: 1200,
     attack: 40,
     battleProfile: 2,
     battleShield: 15,
@@ -177,7 +177,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     scannerRangeLy: 12,
     upkeepVolatilesPerHour: 3,
     consumedOnUse: false,
-    combat: { shield: 150, shieldRegenPerSec: 12, shieldDelaySec: 4, weapons: [CANNON, MISSILE] },
+    combat: { shield: 600, shieldRegenPerSec: 48, shieldDelaySec: 4, weapons: [CANNON, MISSILE] },
     model: { archetype: "frigate", lengthM: 149, hullShape: "spindle", engines: 2 },
   },
   {
@@ -188,7 +188,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     cost: { metal: 650, volatiles: 200, crystal: 35, alloys: 60 },
     requires: SHIPYARD_REFINERY,
     buildTimeHours: 9,
-    hull: 480,
+    hull: 1920,
     attack: 68,
     battleShots: 2,
     battleProfile: 3,
@@ -198,7 +198,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     scannerRangeLy: 12,
     upkeepVolatilesPerHour: 4.5,
     consumedOnUse: false,
-    combat: { shield: 260, shieldRegenPerSec: 18, shieldDelaySec: 4, weapons: [CANNON_HEAVY, TORPEDO] },
+    combat: { shield: 1040, shieldRegenPerSec: 72, shieldDelaySec: 4, weapons: [CANNON_HEAVY, TORPEDO] },
     model: { archetype: "frigate", lengthM: 230, hullShape: "wedge", engines: 3, turrets: 2 },
   },
   {
@@ -209,7 +209,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     cost: { metal: 1300, volatiles: 420, crystal: 80, alloys: 150, rare_metals: 40 },
     requires: DRYDOCK,
     buildTimeHours: 16,
-    hull: 1000,
+    hull: 4000,
     attack: 140,
     battleShots: 3,
     battleProfile: 4,
@@ -219,7 +219,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     scannerRangeLy: 16,
     upkeepVolatilesPerHour: 7,
     consumedOnUse: false,
-    combat: { shield: 600, shieldRegenPerSec: 30, shieldDelaySec: 4, weapons: [CANNON_HEAVY, { ...TORPEDO, ammo: 8 }] },
+    combat: { shield: 2400, shieldRegenPerSec: 120, shieldDelaySec: 4, weapons: [CANNON_HEAVY, { ...TORPEDO, ammo: 8 }] },
     model: { archetype: "capital", lengthM: 480, hullShape: "monolith", engines: 4, turrets: 4 },
   },
   {
@@ -230,7 +230,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     cost: { metal: 1500, volatiles: 500, crystal: 100, alloys: 180, rare_metals: 60, exotic: 6 },
     requires: DRYDOCK,
     buildTimeHours: 22,
-    hull: 1400,
+    hull: 5600,
     attack: 220,
     battleShots: 8,
     battleProfile: 5,
@@ -240,7 +240,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     scannerRangeLy: 20,
     upkeepVolatilesPerHour: 9,
     consumedOnUse: false,
-    combat: { shield: 700, shieldRegenPerSec: 25, shieldDelaySec: 5, weapons: [FLAK, { ...MISSILE, ammo: 12 }] },
+    combat: { shield: 2800, shieldRegenPerSec: 100, shieldDelaySec: 5, weapons: [FLAK, { ...MISSILE, ammo: 12 }] },
     model: { archetype: "capital", lengthM: 620, hullShape: "brick", engines: 4, hangar: true, turrets: 2 },
   },
   {
@@ -252,7 +252,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     cost: { metal: 3000, volatiles: 1200, crystal: 240, alloys: 420, rare_metals: 140, exotic: 14 },
     requires: DRYDOCK,
     buildTimeHours: 36,
-    hull: 2600,
+    hull: 10400,
     attack: 180,
     battleShots: 6,
     battleProfile: 8,
@@ -266,7 +266,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     upkeepVolatilesPerHour: 16,
     consumedOnUse: false,
     dockFlagship: true,
-    combat: { shield: 1400, shieldRegenPerSec: 30, shieldDelaySec: 5, weapons: [FLAK, { ...MISSILE, ammo: 16 }] },
+    combat: { shield: 5600, shieldRegenPerSec: 120, shieldDelaySec: 5, weapons: [FLAK, { ...MISSILE, ammo: 16 }] },
     model: { archetype: "capital", lengthM: 1600, hullShape: "brick", engines: 6, hangar: true, turrets: 4 },
   },
   {
@@ -277,7 +277,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     cost: { metal: 200, volatiles: 60, crystal: 0, alloys: 0 },
     requires: SHIPYARD,
     buildTimeHours: 3,
-    hull: 50,
+    hull: 200,
     attack: 0,
     battleProfile: 2,
     battleShield: 5,
@@ -286,7 +286,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     scannerRangeLy: 5,
     upkeepVolatilesPerHour: 2,
     consumedOnUse: false,
-    combat: { shield: 60, shieldRegenPerSec: 6, shieldDelaySec: 5, weapons: [] },
+    combat: { shield: 240, shieldRegenPerSec: 24, shieldDelaySec: 5, weapons: [] },
     model: { archetype: "transport", lengthM: 160, hullShape: "pod", engines: 2, pods: 4 },
   },
   {
@@ -297,7 +297,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     cost: { metal: 600, volatiles: 180, crystal: 0, alloys: 60 },
     requires: SHIPYARD_REFINERY,
     buildTimeHours: 7,
-    hull: 280,
+    hull: 1120,
     attack: 0,
     battleProfile: 4,
     battleShield: 25,
@@ -306,7 +306,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     scannerRangeLy: 5,
     upkeepVolatilesPerHour: 4,
     consumedOnUse: false,
-    combat: { shield: 160, shieldRegenPerSec: 8, shieldDelaySec: 5, weapons: [CANNON_LIGHT] },
+    combat: { shield: 640, shieldRegenPerSec: 32, shieldDelaySec: 5, weapons: [CANNON_LIGHT] },
     model: { archetype: "transport", lengthM: 400, hullShape: "pod", engines: 3, pods: 10 },
   },
   {
@@ -317,7 +317,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     cost: { metal: 480, volatiles: 200, crystal: 20, alloys: 40 },
     requires: SHIPYARD_REFINERY,
     buildTimeHours: 6,
-    hull: 380,
+    hull: 1520,
     attack: 6,
     battleProfile: 3,
     battleShield: 25,
@@ -326,7 +326,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     scannerRangeLy: 6,
     upkeepVolatilesPerHour: 3,
     consumedOnUse: false,
-    combat: { shield: 180, shieldRegenPerSec: 10, shieldDelaySec: 4, weapons: [CANNON_LIGHT] },
+    combat: { shield: 720, shieldRegenPerSec: 40, shieldDelaySec: 4, weapons: [CANNON_LIGHT] },
     model: { archetype: "transport", lengthM: 210, hullShape: "brick", engines: 2, hangar: true },
   },
   {
@@ -337,7 +337,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     cost: { metal: 600, volatiles: 300, crystal: 40, alloys: 0 },
     requires: SHIPYARD,
     buildTimeHours: 12,
-    hull: 120,
+    hull: 480,
     attack: 0,
     battleProfile: 3,
     battleShield: 10,
@@ -346,7 +346,7 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     scannerRangeLy: 8,
     upkeepVolatilesPerHour: 4,
     consumedOnUse: true,
-    combat: { shield: 80, shieldRegenPerSec: 6, shieldDelaySec: 5, weapons: [] },
+    combat: { shield: 320, shieldRegenPerSec: 24, shieldDelaySec: 5, weapons: [] },
     model: { archetype: "transport", lengthM: 280, hullShape: "spindle", engines: 3, habitat: true },
   },
 ]);
@@ -421,8 +421,8 @@ export const EMPEROR_FLAGSHIP: {
 } = {
   speedLyPerHour: 200,
   scannerRangeLy: 15,
-  hull: 400,
-  combat: { shield: 200, shieldRegenPerSec: 20, shieldDelaySec: 4, weapons: [FLAGSHIP_CANNON, FLAGSHIP_MISSILE], hardpoints: FLAGSHIP_HARDPOINTS },
+  hull: 1600,
+  combat: { shield: 800, shieldRegenPerSec: 80, shieldDelaySec: 4, weapons: [FLAGSHIP_CANNON, FLAGSHIP_MISSILE], hardpoints: FLAGSHIP_HARDPOINTS },
 };
 
 /** Segundos que tarda en cargar el motor cuántico (con la nave ya alineada con el destino). Con la alineación y la entrada en la grieta, el salto se prepara en unos 20 s. */
@@ -471,7 +471,8 @@ export const QUANTUM_MAX_LY = FLAGSHIP_SUPPLIES.fuelMax / FLAGSHIP_SUPPLIES.quan
  */
 export const FLEET_BATTLE = {
   roundGameSeconds: 30,
-  maxRounds: 40,
+  /** ×4 desde el 22-10-2026, con la vida de las naves (la guerra dura más; el daño no cambia). */
+  maxRounds: 160,
   /** Variación del daño de cada disparo, en tanto por ciento (±). */
   damageSpreadPct: 20,
 } as const;
@@ -528,7 +529,7 @@ export const FLAGSHIP_DOCK = {
   fuelPerSec: 20,
   cannonPerSec: 50,
   missilesPerSec: 1,
-  hullPerSec: 12,
+  hullPerSec: 48,
 } as const;
 
 /**

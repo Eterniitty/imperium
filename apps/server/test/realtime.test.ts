@@ -317,7 +317,7 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
     const sb = await connect(b.cookies);
     const fleetsA = sa.messages.find(snapOf("me"))!.data.fleets;
     expect(fleetsA).toHaveLength(1);
-    expect(fleetsA[0]).toMatchObject({ number: 1, location: a.emperor.location, travel: null, ships: [{ classId: "explorer", hull: 60 }] });
+    expect(fleetsA[0]).toMatchObject({ number: 1, location: a.emperor.location, travel: null, ships: [{ classId: "explorer", hull: 240 }] });
     const fleetsB = sb.messages.find(snapOf("me"))!.data.fleets;
     expect(fleetsB.map((f) => f.id)).not.toContain(fleetsA[0]!.id);
   });
@@ -494,7 +494,7 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
 
       sb.send({ t: "pose", systemId, ...pose(near(systemId, [110, 0, 0])) });
       const seenB = await sb.next(is("space"));
-      expect(seenB.ships.filter(notMilitia)).toMatchObject([{ id: a.emperor.id, name: "Aurelia", ally: false, p: near(systemId, [100, 0, 0]), hull: 400, shield: 200 }]);
+      expect(seenB.ships.filter(notMilitia)).toMatchObject([{ id: a.emperor.id, name: "Aurelia", ally: false, p: near(systemId, [100, 0, 0]), hull: 1600, shield: 800 }]);
 
       // B se mueve: A recibe su posición (y no la suya propia).
       const from = sa.messages.length;
@@ -687,11 +687,11 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       const shot = await sb.next(is("shot"), from);
       expect(shot).toMatchObject({ weapon: "cannon", target: null, speed: EMPEROR_FLAGSHIP.combat.weapons.find((w) => w.kind === "cannon")!.speedU });
       expect(shot.hitAt).not.toBeNull();
-      const hurt = await sb.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id && m.ship.shield < 200, from);
-      expect(hurt.ship).toMatchObject({ shield: 186, hull: 400 });
+      const hurt = await sb.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id && m.ship.shield < 800, from);
+      expect(hurt.ship).toMatchObject({ shield: 786, hull: 1600 });
       // El atacante (no es su compañero) no sabe cuánto escudo le queda: solo que sigue activo (22-10-2026).
       const seen = await sa.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id, fromA);
-      expect(seen.ship).toMatchObject({ shield: 200, hull: 400 });
+      expect(seen.ship).toMatchObject({ shield: 800, hull: 1600 });
     });
 
     it("fallar no hace daño, y entre compañeros no hay fuego amigo", async () => {
@@ -699,7 +699,7 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       sa.send({ t: "fire", weapon: "cannon", dir: [0, 0, -1] });
       sa.send({ t: "fire", weapon: "missile", dir: [0, 0, -1], target: b.emperor.id });
       await settle(400);
-      expect(app.space.combatOf(b.emperor.id).shield).toBe(200);
+      expect(app.space.combatOf(b.emperor.id).shield).toBe(800);
       void a;
     });
 
@@ -715,7 +715,7 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       const weapons = await sa.next((m): m is Extract<ServerMessage, { t: "weapons" }> => m.t === "weapons" && m.weapons.some((w) => w.kind === "missile" && w.ammo === 5));
       expect(weapons.weapons.find((w) => w.kind === "missile")).toMatchObject({ ammo: 5, ammoMax: 6 });
       await settle(900);
-      expect(app.space.combatOf(b.emperor.id).shield).toBe(110);
+      expect(app.space.combatOf(b.emperor.id).shield).toBe(710);
     });
 
     it("una nave destruida sale del sistema; su Emperador cae, se gesta y renace en el Núcleo Humano (sin Cunas)", async () => {
@@ -744,9 +744,9 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       expect(status).toMatchObject({ generation: 2, dead: null });
       expect(status!.deaths[0]).toMatchObject({ cause: "combat", by: "Aurelia", streak: 1, rebirthKind: "core", systemId });
       const ship = await app.flagships.status(b.emperor.id);
-      expect(ship!.supplies.hull).toBe(400);
+      expect(ship!.supplies.hull).toBe(1600);
       // La nave nueva vuelve a estar en memoria entera al pilotarla.
-      expect([app.space.combatOf(b.emperor.id).hull, app.space.combatOf(b.emperor.id).shield]).toEqual([400, 200]);
+      expect([app.space.combatOf(b.emperor.id).hull, app.space.combatOf(b.emperor.id).shield]).toEqual([EMPEROR_FLAGSHIP.hull, EMPEROR_FLAGSHIP.combat.shield]);
     });
   });
 });

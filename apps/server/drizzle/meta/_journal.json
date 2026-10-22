@@ -288,6 +288,20 @@
       "when": 1792683472645,
       "tag": "0041_fleet_name",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1792687293335,
+      "tag": "0042_durabilidad_x4",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1792687549604,
+      "tag": "0043_casco_por_defecto",
+      "breakpoints": true
     }
   ]
 }

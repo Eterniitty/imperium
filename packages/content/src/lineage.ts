@@ -59,13 +59,13 @@ export const FLAGSHIP_BATTLE = {
  */
 export const FLAGSHIP_REPAIR = {
   /** Puntos de casco por segundo que repara la tripulación… */
-  onboardPerSec: 0.1,
+  onboardPerSec: 0.4,
   /** …tras tantos segundos sin recibir daño. */
   onboardDelaySec: 30,
   /** Puntos de casco por segundo junto a una colonia propia. */
-  colonyPerSec: 20,
+  colonyPerSec: 80,
   /** Aleaciones de la colonia por punto de casco. */
-  alloysPerHull: 0.25,
+  alloysPerHull: 0.0625,
 } as const;
 
 /** Doctrina de gobierno de un Heredero (la elige el jugador). */

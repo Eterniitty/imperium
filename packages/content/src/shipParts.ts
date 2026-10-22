@@ -129,7 +129,7 @@ export const HULLS: readonly HullDef[] = [
     nameKey: "part.hull_skiff",
     class: "S",
     massT: 60,
-    hull: 120,
+    hull: 480,
     cargo: 20,
     slots: [slot("bridge", "S", "bridge"), slot("core", "S", ...CORE), slot("drive", "S", ...DRIVE), slot("sys1", "S", ...SYSTEMS), slot("sys2", "S", ...SYSTEMS), slot("gun1", "S", ...HARDPOINT)],
     cost: { credits: 300, metal: 150 },
@@ -142,7 +142,7 @@ export const HULLS: readonly HullDef[] = [
     nameKey: "part.hull_frigate",
     class: "M",
     massT: 220,
-    hull: 320,
+    hull: 1280,
     cargo: 60,
     slots: [
       slot("bridge", "M", "bridge"),
@@ -166,7 +166,7 @@ export const HULLS: readonly HullDef[] = [
     nameKey: "part.hull_cruiser",
     class: "L",
     massT: 900,
-    hull: 900,
+    hull: 3600,
     cargo: 200,
     slots: [
       slot("bridge", "L", "bridge"),
@@ -197,7 +197,7 @@ export const HULLS: readonly HullDef[] = [
     nameKey: "part.hull_capital",
     class: "XL",
     massT: 3200,
-    hull: 2400,
+    hull: 9600,
     cargo: 800,
     slots: [
       slot("bridge", "L", "bridge"),
@@ -233,7 +233,7 @@ export const HULLS: readonly HullDef[] = [
     nameKey: "part.hull_mothership",
     class: "XL",
     massT: 9000,
-    hull: 4200,
+    hull: 16800,
     cargo: 1500,
     slots: [
       slot("bridge", "L", "bridge"),
@@ -292,9 +292,9 @@ export const PARTS: readonly PartDef[] = [
   { id: "tank_m", nameKey: "part.tank_m", kind: "tank", size: "M", massT: 18, drawMW: 0, stats: { fuel: 1000 }, cost: { credits: 180, metal: 80 } },
   { id: "tank_l", nameKey: "part.tank_l", kind: "tank", size: "L", massT: 50, drawMW: 0, stats: { fuel: 3200 }, cost: { credits: 480, metal: 200 } },
   // Escudos.
-  { id: "shield_light", nameKey: "part.shield_light", kind: "shield", size: "S", massT: 10, drawMW: 4, stats: { shield: 150, shieldRegen: 10, shieldDelaySec: 3 }, cost: { credits: 200, metal: 40, crystal: 10 } },
-  { id: "shield_fleet", nameKey: "part.shield_fleet", kind: "shield", size: "M", massT: 30, drawMW: 12, stats: { shield: 600, shieldRegen: 25, shieldDelaySec: 4 }, cost: { credits: 700, metal: 100, crystal: 40 }, components: { circuits: 3, power_cells: 2 }, tech: { tree: "shields", level: 2 } },
-  { id: "shield_siege", nameKey: "part.shield_siege", kind: "shield", size: "L", massT: 90, drawMW: 36, stats: { shield: 2000, shieldRegen: 45, shieldDelaySec: 6 }, cost: { credits: 2400, crystal: 120, alloys: 80 }, minHull: "L", components: { superconductors: 4, power_cells: 6 }, tech: { tree: "shields", level: 4 } },
+  { id: "shield_light", nameKey: "part.shield_light", kind: "shield", size: "S", massT: 10, drawMW: 4, stats: { shield: 600, shieldRegen: 40, shieldDelaySec: 3 }, cost: { credits: 200, metal: 40, crystal: 10 } },
+  { id: "shield_fleet", nameKey: "part.shield_fleet", kind: "shield", size: "M", massT: 30, drawMW: 12, stats: { shield: 2400, shieldRegen: 100, shieldDelaySec: 4 }, cost: { credits: 700, metal: 100, crystal: 40 }, components: { circuits: 3, power_cells: 2 }, tech: { tree: "shields", level: 2 } },
+  { id: "shield_siege", nameKey: "part.shield_siege", kind: "shield", size: "L", massT: 90, drawMW: 36, stats: { shield: 8000, shieldRegen: 180, shieldDelaySec: 6 }, cost: { credits: 2400, crystal: 120, alloys: 80 }, minHull: "L", components: { superconductors: 4, power_cells: 6 }, tech: { tree: "shields", level: 4 } },
   // Armas.
   { id: "cannon_s", nameKey: "part.cannon_s", kind: "weapon", size: "S", massT: 6, drawMW: 2, stats: { weapon: "cannon", dps: 30, rangeM: 8000 }, cost: { credits: 140, metal: 50 } },
   { id: "laser_m", nameKey: "part.laser_m", kind: "weapon", size: "M", massT: 18, drawMW: 10, stats: { weapon: "laser", dps: 70, rangeM: 10400 }, cost: { credits: 520, metal: 80, crystal: 30 }, components: { optics: 2, circuits: 1 }, tech: { tree: "weapons", level: 1 } },
@@ -309,8 +309,8 @@ export const PARTS: readonly PartDef[] = [
   { id: "hangar_l", nameKey: "part.hangar_l", kind: "hangar", size: "L", massT: 120, drawMW: 10, stats: { fighters: 4 }, cost: { credits: 2200, metal: 500, alloys: 80 }, minHull: "L", components: { hull_plates: 10, circuits: 4 }, tech: { tree: "industry", level: 3 } },
   { id: "sensor_s", nameKey: "part.sensor_s", kind: "sensor", size: "S", massT: 4, drawMW: 2, stats: { scanLy: 6 }, cost: { credits: 180, crystal: 15 } },
   { id: "sensor_m", nameKey: "part.sensor_m", kind: "sensor", size: "M", massT: 12, drawMW: 5, stats: { scanLy: 15 }, cost: { credits: 520, crystal: 40 }, components: { optics: 3, circuits: 3 }, tech: { tree: "industry", level: 1 } },
-  { id: "armor_m", nameKey: "part.armor_m", kind: "armor", size: "M", massT: 60, drawMW: 0, stats: { hull: 250 }, cost: { credits: 300, metal: 220 }, components: { hull_plates: 6 } },
-  { id: "armor_l", nameKey: "part.armor_l", kind: "armor", size: "L", massT: 180, drawMW: 0, stats: { hull: 900 }, cost: { credits: 900, metal: 600, alloys: 60 }, components: { hull_plates: 16 }, tech: { tree: "shields", level: 3 } },
+  { id: "armor_m", nameKey: "part.armor_m", kind: "armor", size: "M", massT: 60, drawMW: 0, stats: { hull: 1000 }, cost: { credits: 300, metal: 220 }, components: { hull_plates: 6 } },
+  { id: "armor_l", nameKey: "part.armor_l", kind: "armor", size: "L", massT: 180, drawMW: 0, stats: { hull: 3600 }, cost: { credits: 900, metal: 600, alloys: 60 }, components: { hull_plates: 16 }, tech: { tree: "shields", level: 3 } },
 ];
 
 export function getHull(id: string): HullDef | undefined {
