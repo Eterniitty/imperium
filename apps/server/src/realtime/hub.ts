@@ -272,6 +272,11 @@ export class Hub {
     });
   }
 
+  /** Emperadores con alguna conexión abierta ahora. */
+  onlineEmperors(): string[] {
+    return [...new Set([...this.clients].map((c) => c.emperorId).filter((id): id is string => !!id))];
+  }
+
   /** Envía a su dueño sus objetivos del día y de la semana. */
   publishGoals(emperorId: string): Promise<void> {
     return this.enqueue(async () => {

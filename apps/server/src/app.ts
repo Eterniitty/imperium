@@ -377,6 +377,19 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     );
   }, 60_000);
   app.addHook("onClose", async () => clearInterval(workshop));
+  // Cambio de día de juego: ofertas de contratos y objetivos nuevos para quien esté conectado.
+  const DAY_MS = 24 * 3_600_000;
+  let lastDay = Math.floor((Date.now() * config.TIME_SCALE) / DAY_MS);
+  const newDay = setInterval(() => {
+    const day = Math.floor((Date.now() * config.TIME_SCALE) / DAY_MS);
+    if (day === lastDay) return;
+    lastDay = day;
+    for (const id of hub.onlineEmperors()) {
+      void hub.publishContracts(id);
+      void hub.publishGoals(id);
+    }
+  }, 30_000);
+  app.addHook("onClose", async () => clearInterval(newDay));
   // Antes de cerrar conexiones: dejar de difundir y parar la cola de eventos, para que
   // nada use la base de datos mientras se apaga.
   app.addHook("preClose", async () => {
