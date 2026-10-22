@@ -837,7 +837,7 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .help-call { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; border-color: rgba(255, 138, 106, 0.6); }
 
 /* Barra de acciones del piloto (docs/rediseno-interfaz.md): botones para lo que no lleva tecla. */
-.action-bar { position: absolute; left: 12px; bottom: 112px; display: flex; flex-direction: column; gap: 6px; padding: 8px; max-width: 272px; animation: panel-in 0.22s ease-out both; }
+.action-bar { position: absolute; left: 12px; bottom: 112px; display: flex; flex-direction: column; gap: 6px; padding: 8px; max-width: 272px; }
 .action-group { display: flex; flex-wrap: wrap; gap: 4px; }
 .action-group + .action-group { border-top: 1px solid rgba(143, 220, 255, 0.12); padding-top: 6px; }
 .action-btn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; font: inherit; font-size: 12px; letter-spacing: 0.02em; color: var(--muted); background: rgba(8, 14, 26, 0.6); border: 1px solid rgba(143, 220, 255, 0.18); border-radius: 5px; cursor: pointer; transition: color 0.15s, border-color 0.15s, background 0.15s, transform 0.08s; }
@@ -847,7 +847,6 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .action-btn.on { color: #120c02; background: var(--gold); border-color: var(--gold); }
 .action-btn.on kbd { color: #120c02; border-color: rgba(18, 12, 2, 0.4); }
 .action-btn kbd { font-size: 10px; padding: 0 4px; }
-@keyframes panel-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .action-bar { animation: none; } .action-btn { transition: none; } }
 .action-btn.help-btn { color: #ffb39e; border-color: rgba(255, 138, 106, 0.45); }
 .action-btn.help-btn:hover { color: #ffd3c6; border-color: rgba(255, 138, 106, 0.8); }
@@ -914,3 +913,11 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .settings:not(.settings-menu) { padding: 0 22px 18px; }
 .settings:not(.settings-menu) > .settings-head { position: sticky; top: 0; z-index: 2; margin: 0 -22px 6px; padding: 16px 22px 12px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, rgba(18, 26, 44, 0.98), rgba(12, 18, 32, 0.96)); }
 .settings:not(.settings-menu) > .settings-head h2 { font-size: 20px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+/* HUD (U4): los paneles entran suavemente al aparecer; la barra superior, con un filo dorado. */
+/* Solo opacidad: varios paneles del HUD se centran con transform y una animación de desplazamiento lo pisaría. */
+.hud > .panel, .hud > .left-col > .panel { animation: hud-in 0.25s ease-out; }
+@keyframes hud-in { from { opacity: 0; } }
+.topbar.panel { background: linear-gradient(180deg, rgba(20, 30, 50, 0.85), rgba(10, 15, 28, 0.82)); border-color: rgba(232, 182, 76, 0.18); }
+.topbar.panel::after { content: ""; position: absolute; left: 18px; right: 18px; bottom: -1px; height: 1px; background: linear-gradient(90deg, transparent, rgba(232, 182, 76, 0.45), transparent); pointer-events: none; }
+.reduce-fx .hud > .panel, .reduce-fx .hud > .left-col > .panel { animation: none; }
+@media (prefers-reduced-motion: reduce) { .hud > .panel, .hud > .left-col > .panel { animation: none; } }
