@@ -48,6 +48,11 @@ function useUiScale(): number {
 }
 
 export function App() {
+  // «Reducir efectos» también quita las animaciones de la interfaz (clase en la raíz para el CSS).
+  const reduceFx = useSettings((s) => s.prefs.reduceEffects);
+  useEffect(() => {
+    document.documentElement.classList.toggle("reduce-fx", reduceFx);
+  }, [reduceFx]);
   const started = useGame((s) => s.started);
   const view = useGame((s) => s.view);
   // Con un sistema seleccionado, su panel ya dice la clase de la estrella y necesita el sitio de la leyenda.
