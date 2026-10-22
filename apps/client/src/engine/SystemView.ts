@@ -22,7 +22,7 @@ import { playEngineStart, playEngineStop, stopEngineSound } from "../audio/engin
 import { RiftField } from "./fx/riftPortal";
 import { playMiningPulse } from "../audio/miningSfx";
 import { DeepField } from "./DeepField";
-import { distanceGain, playCannon, playExplosion, playHit, playMissile } from "../audio/combatSfx";
+import { distanceGain, playAlarm, playCannon, playExplosion, playHit, playMissile, playMissileWarning } from "../audio/combatSfx";
 import { isBound, settingsStore, SPEED_MODES, type Action } from "../state/settings";
 import { gameStore } from "../state/store";
 import { Backdrop } from "./Backdrop";
@@ -209,6 +209,8 @@ export class SystemView implements View {
   private impactShake = 0;
   /** Retroceso de los disparos propios (0–1): sacude y empuja la cámara un instante. */
   private fireKick = 0;
+  /** Casco en el fotograma anterior (para ver los golpes que le llegan). */
+  private lastHull = -1;
   /** Fase del piloto automático en el fotograma anterior (para avisar al entrar en órbita). */
   private lastCruisePhase = "";
   /** Naves cuya grieta de llegada anunciada ya se usó (para no cerrarla a destiempo). */
@@ -1228,6 +1230,8 @@ export class SystemView implements View {
     telemetry.pulseCharge = flight.pulseCharging;
     telemetry.pulseLimit = flight.pulseLimit;
     telemetry.thrust = flight.thrust;
+    if (telemetry.missileIncoming !== null && serverNow() > telemetry.missileIncoming) telemetry.missileIncoming = null;
+    else if (telemetry.missileIncoming !== null) playMissileWarning();
     flightSound.update({ power: this.enginePower(), thrust: flight.thrust, speed: flight.speed, pulse: flight.pulseActive, charge: flight.pulseCharging, pulseMax: PULSE_MAX_SPEED });
     // Actitud respecto al plano orbital (y = arriba) y rumbo respecto a la estrella.
     const up = new THREE.Vector3(0, 1, 0);
@@ -1289,6 +1293,11 @@ export class SystemView implements View {
     const own = s.id === worldStore.getState().myEmperorId;
     const gain = own ? 1 : distanceGain(this.ship.position.distanceTo(new THREE.Vector3(...s.from)));
     if (s.weapon === "missile") playMissile(gain);
+    // Misil hacia la nave propia: aviso hasta que llegue.
+    if (s.weapon === "missile" && s.target === worldStore.getState().myEmperorId && s.hitAt !== null && !own) {
+      telemetry.missileIncoming = Math.max(telemetry.missileIncoming ?? 0, s.hitAt);
+      playMissileWarning();
+    }
     else if (!own) playCannon(gain, false);
     if (s.hitAt !== null) {
       // El impacto, cuando llega, donde tenga sentido oírlo: cerca de la nave propia o del tirador.
@@ -1609,9 +1618,54 @@ export class SystemView implements View {
         }
       }
       dome.impact(from ? from.clone().sub(ship.position) : null, (this.lastShield - shield) / Math.max(1, self.shieldMax) * 4, reduce);
+      this.reportHit(from, shield / Math.max(1, self.shieldMax), false);
     }
+    // Golpe en el casco (sin escudo o atravesándolo): chispas en la nave y aviso de casco dañado.
+    const hull = self?.hull ?? 0;
+    if (self && this.lastHull >= 0 && hull < this.lastHull - 0.5 && heat <= 0) {
+      const from = this.nearestThreat(ship.position);
+      const at = ship.position.clone().add(from ? from.clone().sub(ship.position).setLength(this.ownLength * 0.35) : new THREE.Vector3(0, 0, -this.ownLength * 0.35).applyQuaternion(ship.quaternion));
+      this.effects.hullSparks(at);
+      this.impactShake = Math.max(this.impactShake, 0.7);
+      this.reportHit(from, shield / Math.max(1, self.shieldMax), true);
+    }
+    this.lastHull = self ? hull : -1;
     this.lastShield = self ? shield : -1;
     dome.update(dt, this.time, ship, shield > 0.5);
+  }
+
+  /** La nave más cercana (posible atacante), o null. */
+  private nearestThreat(at: THREE.Vector3): THREE.Vector3 | null {
+    let best = Infinity;
+    let from: THREE.Vector3 | null = null;
+    for (const s of Object.values(spaceStore.getState().ships)) {
+      const p = this.remote.positionOf(s.state.id);
+      const d = p ? p.distanceTo(at) : Infinity;
+      if (p && d < best && !s.state.ally) {
+        best = d;
+        from = p;
+      }
+    }
+    return from;
+  }
+
+  /**
+   * Avisos de ataque: dirección del golpe en pantalla, escudo que queda y si
+   * llegó al casco (los muestra `DamageAlert`); en cabina, más sacudida; y la
+   * alarma si el casco sufre o el escudo cae por debajo de un cuarto.
+   */
+  private reportHit(from: THREE.Vector3 | null, shieldLeft: number, hull: boolean): void {
+    let angle = Math.PI / 2;
+    if (from) {
+      const p = from.clone().project(this.camera);
+      // Detrás de la cámara la proyección sale invertida.
+      const behind = p.z > 1;
+      angle = Math.atan2(behind ? -p.y : p.y, behind ? -p.x : p.x);
+    }
+    telemetry.hit = { at: performance.now(), angle, shield: shieldLeft, hull };
+    const cockpit = gameStore.getState().cameraView === "first";
+    this.impactShake = Math.max(this.impactShake, (hull ? 0.6 : 0.3) * (cockpit ? 1.6 : 1));
+    if (hull || shieldLeft < 0.25) playAlarm(hull ? 1 : 0.6);
   }
 
   /** Deshace la sacudida del fotograma anterior (antes de volver a colocar la cámara). */

@@ -22,9 +22,15 @@ void main() {
 }
 `;
 
+/** Impactos que conviven a la vez en la cúpula (los más viejos dejan sitio a los nuevos). */
+const MAX_IMPACTS = 6;
+/** Segundos que tarda la onda de un impacto en recorrer la burbuja y apagarse. */
+const IMPACT_LIFE = 1.6;
+
 const FRAGMENT = /* glsl */ `
-uniform vec3 uHitDir;
-uniform float uHit;
+#define MAX_IMPACTS ${MAX_IMPACTS}
+uniform vec4 uImpacts[MAX_IMPACTS]; // xyz: dirección del impacto (local); w: edad (s), < 0 = libre
+uniform float uStrength[MAX_IMPACTS];
 uniform vec3 uHeatDir;
 uniform float uHeat;
 uniform float uTime;
@@ -48,12 +54,23 @@ float hexEdge(vec3 p) {
 void main() {
   float rim = pow(1.0 - abs(dot(normalize(vNormalV), normalize(vViewDir))), 2.2);
   float hex = hexEdge(vLocal);
-  // Lado del golpe y lado de la estrella.
-  float hitSide = smoothstep(0.2, 1.0, dot(vLocal, uHitDir));
+  // Cada impacto: un destello en el punto del golpe y una onda que nace allí y recorre toda la burbuja,
+  // encendiendo los hexágonos a su paso, cada vez más débil.
+  float wave = 0.0;
+  for (int i = 0; i < MAX_IMPACTS; i++) {
+    vec4 im = uImpacts[i];
+    if (im.w < 0.0 || im.w > ${IMPACT_LIFE.toFixed(2)}) continue;
+    float ang = acos(clamp(dot(vLocal, normalize(im.xyz)), -1.0, 1.0));
+    float front = im.w * 2.6;                      // radianes recorridos (la onda da la vuelta en ~1,2 s)
+    float ring = exp(-pow((ang - front) * 5.0, 2.0)); // el frente de la onda
+    float fade = 1.0 - im.w / ${IMPACT_LIFE.toFixed(2)};
+    float core = exp(-ang * 7.0) * exp(-im.w * 5.0);  // el destello del golpe
+    wave += uStrength[i] * (ring * fade * fade * (0.3 + 0.9 * hex) + core * 1.4);
+  }
   float heatSide = smoothstep(-0.2, 1.0, dot(vLocal, uHeatDir));
   // El calor «respira» despacio (menos de 1 Hz): ondula, no parpadea.
   float breathe = 0.85 + 0.15 * sin(uTime * 2.4 + dot(vLocal, vec3(3.0, 2.0, 1.0)));
-  float hit = uHit * (0.25 + 0.75 * hitSide) * (0.35 + 0.65 * hex + rim);
+  float hit = wave * (0.5 + 0.5 * rim + 0.4 * hex);
   float heat = uHeat * heatSide * breathe * (0.3 + 0.7 * hex + rim * 0.8);
   vec3 shield = vec3(0.45, 0.85, 1.0);
   vec3 warm = vec3(1.0, 0.62, 0.25);
@@ -66,9 +83,8 @@ void main() {
 
 export class ShieldDome {
   readonly mesh: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
-  private hit = 0;
-  /** Brillo al que sube tras un impacto (en unas centésimas: nunca de golpe). */
-  private hitTarget = 0;
+  /** Impactos vivos: dirección local, edad y fuerza (ver `FRAGMENT`). */
+  private impacts: Array<{ dir: THREE.Vector3; age: number; strength: number }> = [];
   private heat = 0;
   private heatTarget = 0;
   private readonly inv = new THREE.Quaternion();
@@ -78,8 +94,8 @@ export class ShieldDome {
     const material = new THREE.ShaderMaterial({
       ...withLogDepth({ vertexShader: VERTEX, fragmentShader: FRAGMENT }),
       uniforms: {
-        uHitDir: { value: new THREE.Vector3(0, 0, -1) },
-        uHit: { value: 0 },
+        uImpacts: { value: Array.from({ length: MAX_IMPACTS }, () => new THREE.Vector4(0, 0, -1, -1)) },
+        uStrength: { value: new Array<number>(MAX_IMPACTS).fill(0) },
         uHeatDir: { value: new THREE.Vector3(0, 0, 1) },
         uHeat: { value: 0 },
         uTime: { value: 0 },
@@ -97,15 +113,18 @@ export class ShieldDome {
     this.mesh.frustumCulled = false;
   }
 
-  /** Impacto contra el escudo desde `fromWorld` (dirección en el mundo hacia el atacante), con fuerza 0–1. */
+  /**
+   * Impacto contra el escudo desde `fromWorld` (dirección en el mundo hacia el
+   * atacante, o null: por delante), con fuerza 0–1: la onda nace en ese punto
+   * de la burbuja y la recorre entera.
+   */
   impact(fromWorld: THREE.Vector3 | null, strength: number, reduce: boolean): void {
-    if (fromWorld && fromWorld.lengthSq() > 0) {
-      this.inv.copy(this.mesh.quaternion).invert();
-      (this.mesh.material.uniforms.uHitDir!.value as THREE.Vector3).copy(fromWorld).normalize().applyQuaternion(this.inv);
-    }
+    this.inv.copy(this.mesh.quaternion).invert();
+    const dir = fromWorld && fromWorld.lengthSq() > 0 ? fromWorld.clone().normalize().applyQuaternion(this.inv) : new THREE.Vector3(0, 0, -1);
     // Cuenta como un destello pequeño (el gran destello es el del impacto en `Effects`).
-    const peak = Math.min(1, 0.35 + strength) * flashGain(20) * (reduce ? 0.35 : 1);
-    this.hitTarget = Math.max(this.hitTarget, peak);
+    const s = Math.min(1, 0.35 + strength) * flashGain(20) * (reduce ? 0.35 : 1);
+    if (this.impacts.length >= MAX_IMPACTS) this.impacts.shift();
+    this.impacts.push({ dir, age: 0, strength: s });
   }
 
   /** Calor de una estrella: 0–1 y dirección en el mundo hacia ella (o 0: sin calor). */
@@ -117,19 +136,29 @@ export class ShieldDome {
     }
   }
 
-  /** Sigue a la nave y apaga el brillo poco a poco. Sin escudo, no se ve. */
+  /** Sigue a la nave y hace avanzar las ondas de los impactos. Sin escudo, no se ve. */
   update(dt: number, time: number, ship: THREE.Object3D, shieldLeft: boolean): void {
     this.mesh.position.copy(ship.getWorldPosition(this.mesh.position));
     ship.getWorldQuaternion(this.mesh.quaternion);
-    if (this.hitTarget > this.hit) this.hit = Math.min(this.hitTarget, this.hit + dt * 12);
-    else this.hitTarget = 0;
-    this.hit = Math.max(0, this.hit - (this.hitTarget ? 0 : dt * 1.6));
+    for (const im of this.impacts) im.age += dt;
+    this.impacts = this.impacts.filter((im) => im.age < IMPACT_LIFE);
     this.heat += (this.heatTarget - this.heat) * Math.min(1, dt * 2);
     const u = this.mesh.material.uniforms;
-    u.uHit!.value = shieldLeft ? this.hit : 0;
+    const slots = u.uImpacts!.value as THREE.Vector4[];
+    const strengths = u.uStrength!.value as number[];
+    for (let i = 0; i < MAX_IMPACTS; i++) {
+      const im = this.impacts[i];
+      if (im && shieldLeft) {
+        slots[i]!.set(im.dir.x, im.dir.y, im.dir.z, im.age);
+        strengths[i] = im.strength;
+      } else {
+        slots[i]!.w = -1;
+        strengths[i] = 0;
+      }
+    }
     u.uHeat!.value = shieldLeft ? this.heat : 0;
     u.uTime!.value = time % 1000;
-    this.mesh.visible = shieldLeft && (this.hit > 0.003 || this.heat > 0.003);
+    this.mesh.visible = shieldLeft && (this.impacts.length > 0 || this.heat > 0.003);
   }
 
   dispose(): void {

@@ -313,6 +313,14 @@ export class Effects {
     this.flashes.push({ sprite, age: 0, life, size, ring, gain: flashGain(size) });
   }
 
+  /** Golpe en el casco sin escudo: chispas y metal al rojo en el punto del impacto. */
+  hullSparks(at: THREE.Vector3): void {
+    this.impact(at, false);
+    const b = new Burst(at, 30, 260, 0.8, 0xffe0a0, 4);
+    this.group.add(b.points);
+    this.bursts.push(b);
+  }
+
   /** Impacto: destello, chispas y un pequeño anillo. */
   private impact(at: THREE.Vector3, big: boolean): void {
     this.flash(at, big ? 110 : 55, big ? 0.55 : 0.32);

@@ -38,6 +38,14 @@ export interface FlightTelemetry {
   cruise: { mode: "goto" | "follow" | "orbit"; name: string; phase: "align" | "cruise" | "approach" | "formation" | "orbit"; distance: number; seconds: number | null } | null;
   /** Calor de la estrella: daño por segundo (0 fuera de la zona), si es mortal y si es un agujero negro. */
   heat: { dps: number; lethal: boolean; blackHole: boolean };
+  /**
+   * Último golpe recibido (para los avisos de ataque): hora (performance.now),
+   * ángulo en pantalla hacia el atacante (rad; 0 = derecha, π/2 = arriba),
+   * escudo que queda (0–1) y si el golpe llegó al casco.
+   */
+  hit: { at: number; angle: number; shield: number; hull: boolean } | null;
+  /** Misil enemigo en camino hacia la nave propia: hora de impacto (hora del servidor), o null. */
+  missileIncoming: number | null;
 }
 
 export const telemetry: FlightTelemetry = {
@@ -59,6 +67,8 @@ export const telemetry: FlightTelemetry = {
   gravity: { g: 0, region: "deep", body: null },
   cruise: null,
   heat: { dps: 0, lethal: false, blackHole: false },
+  hit: null,
+  missileIncoming: null,
 };
 
 /** Copia de la telemetría refrescada cada `intervalMs` (para los números del HUD). */

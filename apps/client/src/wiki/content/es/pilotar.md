@@ -155,6 +155,10 @@ En el panel de **Flotas** (también en el puente de mando, durante un viaje cuá
 
 Al desconectarte o dejar los mandos, tu nave **no desaparece**: se queda en el espacio, donde la dejaste. Si estaba junto a un planeta o una luna (dentro de su esfera de influencia), lo acompaña en su órbita y al volver la encuentras en el mismo sitio respecto a él; en el espacio abierto orbita la estrella como los planetas. Conserva su orientación y los **motores como los dejaste**: si los dejas encendidos, al volver siguen encendidos; si los apagas, apagados. Los demás la ven y pueden atacarla; los piratas solo persiguen naves pilotadas.
 
+## Avisos de ataque
+
+Al recibir un golpe, el borde de la pantalla se enciende en rojo **por el lado de donde viene**, la cámara se sacude (más en cabina) y sale en grande **ESCUDOS AL X %** o, si llega al casco, **CASCO DAÑADO** con alarma y chispas en la nave. Si un misil viene hacia ti, **MISIL ENTRANTE** con pitidos hasta que llega. El escudo se ve como una onda que nace en el punto del impacto y recorre toda la burbuja.
+
 ## Sonido
 
 En Ajustes → Sonido, **Motores** baja o sube solo el zumbido de los motores y el viento del pulso. Con los motores en marcha se oye su zumbido, que sube de tono con el empuje, y un rumor de fondo. El pulso suena como un viento que crece con la velocidad, con un tono que sube mientras se carga. El piloto automático avisa con dos notas al llegar o al entrar en órbita. Todo va por el volumen de efectos de Ajustes.

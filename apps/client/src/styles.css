@@ -1111,3 +1111,10 @@ button.legend-title { background: none; border: none; padding: 0; width: 100%; t
 .cruise-pill strong { color: #5fd3e6; }
 .cruise-pill-arrow { color: #5fd3e6; }
 .cruise-limited { color: var(--gold); max-width: 300px; }
+
+/* Avisos de ataque: borde rojo por el lado del golpe y avisos grandes en el centro, por encima de la mira. */
+.damage-alert { position: absolute; inset: 0; pointer-events: none; z-index: 7; }
+.damage-vignette { position: absolute; inset: 0; mix-blend-mode: screen; }
+.damage-banner { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); padding: 6px 18px; font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: 0.18em; color: #8fe9ff; text-shadow: 0 0 12px rgba(95, 211, 230, 0.8), 0 0 2px #000; border-top: 1px solid rgba(143, 233, 255, 0.5); border-bottom: 1px solid rgba(143, 233, 255, 0.5); background: rgba(4, 10, 20, 0.35); white-space: nowrap; }
+.damage-banner.hull { color: #ff5a4a; text-shadow: 0 0 14px rgba(255, 60, 40, 0.9), 0 0 2px #000; border-color: rgba(255, 90, 74, 0.6); animation: hud-blink 0.35s ease-in-out infinite alternate; }
+.damage-banner.missile { top: 22%; color: #ffb14a; font-size: 22px; text-shadow: 0 0 14px rgba(255, 160, 40, 0.9), 0 0 2px #000; border-color: rgba(255, 177, 74, 0.6); animation: hud-blink 0.25s ease-in-out infinite alternate; }

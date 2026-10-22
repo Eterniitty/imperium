@@ -26,6 +26,7 @@ import { Legend } from "./Legend";
 import { PlanetPanel } from "./PlanetPanel";
 import { PlanetWindow } from "./PlanetWindow";
 import { MapLayersPanel } from "./MapLayersPanel";
+import { DamageAlert } from "./DamageAlert";
 import { QuantumHud } from "./QuantumHud";
 import { QuantumPanel } from "./QuantumPanel";
 import { CruiseHud, CruisePanel } from "./CruisePanel";
@@ -128,6 +129,7 @@ export function App() {
           <>
             <FlightHud />
             <CombatHud />
+            <DamageAlert />
             <EscortHud />
             <ActionBar />
             {/* Puente de mando a bordo de la nave nodriza (acoplado): el imperio, como en el túnel. */}

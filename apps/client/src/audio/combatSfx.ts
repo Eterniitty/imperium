@@ -185,3 +185,47 @@ export function playExplosion(gain = 1): void {
 export function distanceGain(meters: number): number {
   return Math.max(0, Math.min(1, 1 - Math.log10(Math.max(meters, 300) / 300) / 1.45));
 }
+
+/** Alarma de daño: dos pitidos graves y ásperos (como mucho uno cada 1,2 s). */
+export function playAlarm(gain = 1): void {
+  if (gain < 0.03 || !throttle("alarm", 1200)) return;
+  music.effect((ctx, out) => {
+    const t = ctx.currentTime;
+    for (const at of [0, 0.22]) {
+      const o = ctx.createOscillator();
+      o.type = "square";
+      o.frequency.setValueAtTime(440, t + at);
+      o.frequency.linearRampToValueAtTime(330, t + at + 0.16);
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 1600;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t + at);
+      g.gain.exponentialRampToValueAtTime(0.09 * gain, t + at + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + at + 0.18);
+      o.connect(lp).connect(g).connect(out);
+      o.start(t + at);
+      o.stop(t + at + 0.2);
+    }
+  });
+}
+
+/** Aviso de misil entrante: pitidos agudos y rápidos (como mucho una tanda cada 0,8 s). */
+export function playMissileWarning(): void {
+  if (!throttle("missile-warn", 800)) return;
+  music.effect((ctx, out) => {
+    const t = ctx.currentTime;
+    for (const at of [0, 0.12, 0.24]) {
+      const o = ctx.createOscillator();
+      o.type = "triangle";
+      o.frequency.value = 1320;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t + at);
+      g.gain.exponentialRampToValueAtTime(0.06, t + at + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + at + 0.08);
+      o.connect(g).connect(out);
+      o.start(t + at);
+      o.stop(t + at + 0.1);
+    }
+  });
+}

@@ -13,6 +13,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { HULL_PROPORTIONS, type ShipHardpoints } from "@imperium/content";
 import type { WeaponKind } from "@imperium/shared";
 import { glowTexture } from "../textures";
+import { withLogDepth } from "../logDepth";
 import { buildAlien } from "./alien";
 import { buildHuman, type Recipe } from "./human";
 import { hash, Parts, prep, seeded, SLOTS, type LightMode, type Slot } from "./kit";
@@ -174,11 +175,74 @@ function flameGeometry(): THREE.BufferGeometry {
   return flameGeo;
 }
 const basicCache = new Map<string, THREE.Material>();
-function flameMaterial(color: number, core: boolean): THREE.MeshBasicMaterial {
-  const key = `${color}|${core}`;
-  let m = basicCache.get(key) as THREE.MeshBasicMaterial | undefined;
+
+/**
+ * Llama de plasma de los motores (shader propio): núcleo blanco-azulado muy
+ * caliente, bordes ionizados del color del motor, turbulencia que fluye hacia
+ * atrás y diamantes de choque junto a la tobera. Brillo aditivo. La longitud
+ * la da la escala de cada instancia (empuje, marcha y pulso); el tiempo es común.
+ */
+const PLASMA_VERTEX = /* glsl */ `
+varying vec2 vUv;
+varying float vRim;
+void main() {
+  vUv = uv;
+  vec4 local = vec4(position, 1.0);
+  #ifdef USE_INSTANCING
+  local = instanceMatrix * local;
+  #endif
+  vec4 mv = modelViewMatrix * local;
+  vec3 n = normalize(normalMatrix * mat3(${"instanceMatrix"}) * normal);
+  vRim = abs(dot(n, normalize(-mv.xyz)));
+  gl_Position = projectionMatrix * mv;
+}
+`;
+const PLASMA_FRAGMENT = /* glsl */ `
+uniform vec3 uColor;
+uniform float uTime;
+uniform float uCore;
+varying vec2 vUv;
+varying float vRim;
+float hash21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i), hash21(i + vec2(1.0, 0.0)), f.x), mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+void main() {
+  float v = vUv.y;                       // 0 en la tobera, 1 en la punta
+  float around = vUv.x * 6.2831853;
+  // Turbulencia que fluye hacia atrás (dos capas de ruido).
+  vec2 q = vec2(around * 1.6, v * 7.0 - uTime * 9.0);
+  float turb = noise(q) * 0.65 + noise(q * 2.3 + 4.1) * 0.35;
+  // Diamantes de choque: bandas brillantes cerca de la tobera que se apagan hacia la punta.
+  float diamonds = pow(0.5 + 0.5 * cos(v * 38.0 - uTime * 4.0), 6.0) * smoothstep(0.65, 0.0, v);
+  // Cuerpo: denso en el eje (frente a la cámara) y fino en los bordes; se apaga hacia la punta.
+  float body = pow(vRim, 1.4) * (1.0 - smoothstep(0.15, 1.0, v));
+  float edge = (1.0 - vRim) * smoothstep(0.0, 0.25, v) * (1.0 - v) * turb;
+  float heat = body * (0.55 + 0.6 * turb) + diamonds * 0.9 * body;
+  vec3 hot = vec3(0.82, 0.92, 1.0);      // plasma blanco-azulado
+  vec3 color = mix(uColor, hot, clamp(heat * (0.6 + uCore), 0.0, 1.0)) * (heat * 1.6 + edge * 0.9);
+  float alpha = clamp(heat + edge * 0.6, 0.0, 1.0) * (uCore > 0.5 ? 0.85 : 0.55);
+  if (alpha < 0.004) discard;
+  gl_FragColor = vec4(color, alpha);
+}
+`;
+/** Hora común de todas las llamas de plasma (la pone cada nave al avanzar). */
+const plasmaTime = { value: 0 };
+function flameMaterial(color: number, core: boolean): THREE.Material {
+  const key = `plasma|${color}|${core}`;
+  let m = basicCache.get(key);
   if (!m) {
-    m = new THREE.MeshBasicMaterial({ color: core ? 0xffffff : color, transparent: true, opacity: core ? 0.7 : 0.42, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    m = new THREE.ShaderMaterial({
+      ...withLogDepth({ vertexShader: PLASMA_VERTEX, fragmentShader: PLASMA_FRAGMENT }),
+      uniforms: { uColor: { value: new THREE.Color(color) }, uTime: plasmaTime, uCore: { value: core ? 1 : 0 } },
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+    });
     basicCache.set(key, m);
   }
   return m;
@@ -342,6 +406,7 @@ export function assembleShip(t: Template, opts: AssembleOptions): THREE.Group {
       spin.set(c(m.pitch), -c(m.yaw), -c(m.roll));
     },
     tick(time, dt, idle) {
+      plasmaTime.value = time % 1000;
       const flicker = 0.9 + 0.1 * Math.sin(time * 37 + phase) * Math.sin(time * 23);
       // Llamas desde el 70 % del arranque (el encendido); antes, solo se calientan las toberas.
       const lit = Math.max(0, Math.min(1, (power - 0.7) / 0.3));
