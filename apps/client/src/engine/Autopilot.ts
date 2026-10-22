@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { FLAGSHIP_LENGTH_M, FLIGHT_MODEL, MINING } from "@imperium/content";
 import { PULSE_APPROACH_SEC, PULSE_MIN_SPEED } from "@imperium/sim";
 import { translate, type AnomalyType, type DeepRegionView, type I18nKey, type Locale } from "@imperium/shared";
-import { settingsStore } from "../state/settings";
+import { settingsStore, thrustScale } from "../state/settings";
 import type { Maneuver } from "./ShipController";
 
 /**
@@ -173,7 +173,8 @@ export class Autopilot {
       u.normalize();
       if (Math.abs(rel.length() - R0) < Math.max(ORBIT_CAPTURE_M, R0 * 0.25)) {
         orbiting = true;
-        const vOrb = M.maxSpeed * prefs.maxSpeed * M.boostFactor * ORBIT_SPEED_FACTOR;
+        // La órbita no crece con una velocidad de maniobra alta (a cientos de km/s no sería una órbita).
+        const vOrb = M.maxSpeed * Math.min(1, prefs.maxSpeed) * M.boostFactor * ORBIT_SPEED_FACTOR;
         const tangent = new THREE.Vector3().crossVectors(UP, u).normalize();
         orbitVel.copy(tangent).multiplyScalar(vOrb);
         // El sitio en la órbita, un poco por delante (así se avanza en vez de pararse).
@@ -239,6 +240,9 @@ export class Autopilot {
     if (!ctx.canPulse) pulse = false;
     else if (ctx.pulseOn) pulse = dGoal > PULSE_EXIT_M || targetFast;
     else pulse = (dGoal > PULSE_ENTER_M || (targetFast && dGoal > 2_000)) && align > 0.97;
+    // Dial del crucero: si su límite no pasa de la velocidad con impulso, no hace falta el pulso.
+    const limit = prefs.cruiseLimit > 0 ? prefs.cruiseLimit : Infinity;
+    if (limit <= boostMax) pulse = false;
 
     // Hacia dónde mirar.
     let face: THREE.Vector3 | null = uAim;
@@ -260,7 +264,7 @@ export class Autopilot {
       let cap = Math.max(PULSE_MIN_SPEED, (dGoal - PULSE_STOP_MARGIN_M) / PULSE_APPROACH_SEC);
       if (follow) cap = Math.max(PULSE_MIN_SPEED, targetSpeed + Math.max(0, dGoal - 2_000) / PULSE_APPROACH_SEC);
       // Girando, más despacio (el pulso solo empuja hacia el morro).
-      cmd.pulseCap = cap * Math.max(0.05, Math.min(1, (align - 0.5) * 2));
+      cmd.pulseCap = Math.min(limit, cap * Math.max(0.05, Math.min(1, (align - 0.5) * 2)));
       return "ok";
     }
 
@@ -268,8 +272,8 @@ export class Autopilot {
     this.phase = orbiting ? "orbit" : follow ? "formation" : dGoal > PULSE_ENTER_M && ctx.canPulse ? "align" : "approach";
     // Lejos, o aún rápido (al salir del pulso): con impulso, que también frena más.
     const far = dGoal > 3_000 || relVel.length() > M.maxSpeed * prefs.maxSpeed * 1.05;
-    const brake = M.reverseAccel * prefs.accel * (far ? M.boostAccelFactor : 1);
-    const vMax = M.maxSpeed * prefs.maxSpeed * (far ? M.boostFactor : 1);
+    const brake = M.reverseAccel * prefs.accel * (far ? M.boostAccelFactor : 1) * thrustScale(prefs.maxSpeed);
+    const vMax = Math.min(limit, M.maxSpeed * prefs.maxSpeed * (far ? M.boostFactor : 1));
     // Mientras se gira para el pulso, despacio (para no alejarse del rumbo).
     const turning = !follow && dGoal > PULSE_ENTER_M && ctx.canPulse && align < 0.97;
     let speed = Math.min(vMax, Math.sqrt(2 * brake * Math.max(0, dGoal - tol * 0.3)) * 0.75, dGoal * 0.6);

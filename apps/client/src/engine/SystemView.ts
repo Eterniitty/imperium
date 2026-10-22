@@ -1189,6 +1189,14 @@ export class SystemView implements View {
     const aim = this.cannonAim;
     const auto = settingsStore.getState().prefs.flight.autoFire && aim !== null && aim.relation !== "ally" && aim.inArc && aim.inRange;
     if (!manual && !auto) return;
+    // Seguro de armas puesto: no se dispara (se avisa si se intenta a mano).
+    if (settingsStore.getState().prefs.flight.weaponsSafe) {
+      if (manual && this.time - this.enginesHintAt > 4) {
+        this.enginesHintAt = this.time;
+        this.events.notify("combat.weaponsSafe");
+      }
+      return;
+    }
     // Sin motores no hay armas.
     if (this.engines.state !== "on") {
       if (manual && this.time - this.enginesHintAt > 4) {
@@ -1238,6 +1246,7 @@ export class SystemView implements View {
 
   /** Lanza un misil al objetivo fijado (el servidor comprueba alcance, ángulo y munición). */
   private fireMissile(): void {
+    if (settingsStore.getState().prefs.flight.weaponsSafe) return this.events.notify("combat.weaponsSafe");
     if (this.engines.state !== "on") return this.events.notify("pilot.enginesOffShort", "engines");
     const target = spaceStore.getState().targetId;
     if (!target) return this.events.notify("combat.noMissileTarget", "lockTarget");
@@ -1277,7 +1286,8 @@ export class SystemView implements View {
 
   /** Motores encendidos y ratón para combatir: el clic izquierdo dispara y la rueda cambia de arma. */
   private weaponsArmed(): boolean {
-    return !!this.ship && this.engines.state === "on" && !this.quantum && !this.arrival && settingsStore.getState().prefs.flight.mouseFire;
+    const f = settingsStore.getState().prefs.flight;
+    return !!this.ship && this.engines.state === "on" && !this.quantum && !this.arrival && f.mouseFire && !f.weaponsSafe;
   }
 
   /** Armas seleccionables ahora (el láser de minería, solo en el espacio profundo). */

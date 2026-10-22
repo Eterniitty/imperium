@@ -7,7 +7,7 @@ import type { PilotAction } from "../engine/SystemView";
 import { useTelemetry } from "../engine/telemetry";
 import { spaceStore } from "../net/space";
 import { useWorld } from "../net/world";
-import { useSettings } from "../state/settings";
+import { settingsStore, useSettings } from "../state/settings";
 import { gameStore, useGame, useT } from "../state/store";
 import { KeyHint } from "./common";
 import { HelpButton } from "./HelpCall";
@@ -71,6 +71,18 @@ export function ActionBar() {
         {(mothership || docked) && <ActionButton action="dock" on={!!docked}>{t(docked ? "actions.undock" : "actions.dock")}</ActionButton>}
       </div>
       <div className="action-group">
+        {/* Seguro de armas: con él puesto no se dispara y el clic selecciona. */}
+        <button
+          type="button"
+          className={prefs.weaponsSafe ? "action-btn" : "action-btn on"}
+          title={t("actions.weaponsTitle")}
+          onClick={() => {
+            const f = settingsStore.getState().prefs.flight;
+            settingsStore.getState().setPrefs({ flight: { ...f, weaponsSafe: !f.weaponsSafe } });
+          }}
+        >
+          <span>{t(prefs.weaponsSafe ? "actions.weaponsOff" : "actions.weaponsOn")}</span>
+        </button>
         <ActionButton action="targetNearest">{t("actions.targetNearest")}</ActionButton>
         <ActionButton action="targetNext">{t("actions.targetNext")}</ActionButton>
         <ActionButton action="autoFire" on={prefs.autoFire}>

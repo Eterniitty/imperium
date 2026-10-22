@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { PULSE_CHARGE_SEC, stepPulseSpeed } from "@imperium/sim";
 import { FLIGHT_MODEL } from "@imperium/content";
-import { settingsStore } from "../state/settings";
+import { settingsStore, thrustScale } from "../state/settings";
 import type { Keyboard } from "./input";
 import type { CruiseCommand } from "./Autopilot";
 
@@ -266,7 +266,7 @@ export class ShipController {
         this.pulseSpeed = stepPulseSpeed(this.pulseSpeed, limit, h);
         this.velocity.set(0, 0, -1).applyQuaternion(this.ship.quaternion).multiplyScalar(this.pulseSpeed);
       } else {
-        if (this.powered) this.stepThrust(input, prefs.assist || auto !== null, maxSpeed, accelK * (boost ? M.boostAccelFactor : 1), prefs.inertia, h);
+        if (this.powered) this.stepThrust(input, prefs.assist || auto !== null, maxSpeed, accelK * (boost ? M.boostAccelFactor : 1) * thrustScale(prefs.maxSpeed), prefs.inertia, h);
         if (this.gravity) this.gravity(this.ship.position, this.external);
         else this.external.set(0, 0, 0);
         this.velocity.addScaledVector(this.external, h);
@@ -312,7 +312,7 @@ export class ShipController {
     acc.applyQuaternion(this.ship.quaternion);
     this.velocity.addScaledVector(acc, h);
     // Al apagar el pulso, la velocidad que pasa de la máxima con impulso se pierde en un par de segundos.
-    const cap = M.maxSpeed * M.boostFactor * 1.2;
+    const cap = M.maxSpeed * Math.max(1, settingsStore.getState().prefs.flight.maxSpeed) * M.boostFactor * 1.2;
     const speed = this.velocity.length();
     if (speed > cap) this.velocity.multiplyScalar((cap + (speed - cap) * Math.exp(-M.pulseDumpRate * h)) / speed);
     if (assist && input.lengthSq() === 0 && this.velocity.lengthSq() < 0.01 && this.external.lengthSq() === 0) this.velocity.set(0, 0, 0);

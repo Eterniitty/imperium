@@ -154,8 +154,14 @@ export interface FlightPrefs {
   accel: number;
   /** Inercia de la asistencia (0,5 = muy ágil, 2 = muy pesada). */
   inertia: number;
-  /** Fracción de la velocidad máxima de maniobra (0,25–1). */
+  /**
+   * Multiplicador de la velocidad máxima de maniobra (0,25–400): con 1, 250 m/s
+   * y 1 km/s con impulso; con 400, 100 km/s y 400 km/s con impulso (petición del
+   * usuario). Por encima de 1, los propulsores empujan más (`thrustScale`).
+   */
   maxSpeed: number;
+  /** Velocidad máxima del piloto automático de crucero (m/s); 0 = sin límite (el pulso entero). */
+  cruiseLimit: number;
   /** Invertir el eje vertical de la cámara orbital. */
   invertCameraY: boolean;
   /**
@@ -166,6 +172,21 @@ export interface FlightPrefs {
   mouseFire: boolean;
   /** Fuego automático del cañón cuando el blanco fijado está a tiro y en el arco de los montajes. */
   autoFire: boolean;
+  /**
+   * Seguro de armas (petición del usuario): no se dispara de ninguna forma y el
+   * clic izquierdo vuelve a seleccionar y mover la cámara. Por defecto, puesto.
+   */
+  weaponsSafe: boolean;
+}
+
+/** Tope del multiplicador de la velocidad de maniobra: 400 km/s con impulso. */
+export const MAX_SPEED_MULT = 400;
+/** Tope del dial del crucero (m/s): la velocidad máxima del pulso. */
+export const CRUISE_LIMIT_MAX = 5_000_000;
+
+/** Empuje extra de los propulsores con una velocidad máxima alta: llegar a ella no lleva minutos. */
+export function thrustScale(maxSpeed: number): number {
+  return Math.max(1, maxSpeed) ** 0.75;
 }
 
 export const DEFAULT_FLIGHT_PREFS: FlightPrefs = {
@@ -177,9 +198,11 @@ export const DEFAULT_FLIGHT_PREFS: FlightPrefs = {
   accel: 1,
   inertia: 1,
   maxSpeed: 1,
+  cruiseLimit: 0,
   invertCameraY: false,
   mouseFire: true,
   autoFire: false,
+  weaponsSafe: true,
 };
 
 function loadFlightPrefs(saved: unknown): FlightPrefs {
@@ -195,10 +218,12 @@ function loadFlightPrefs(saved: unknown): FlightPrefs {
     mouseInvertY: bool(f.mouseInvertY, d.mouseInvertY),
     accel: num(f.accel, 0.5, 1.5, d.accel),
     inertia: num(f.inertia, 0.5, 2, d.inertia),
-    maxSpeed: num(f.maxSpeed, 0.25, 1, d.maxSpeed),
+    maxSpeed: num(f.maxSpeed, 0.25, MAX_SPEED_MULT, d.maxSpeed),
+    cruiseLimit: num(f.cruiseLimit, 0, CRUISE_LIMIT_MAX, d.cruiseLimit),
     invertCameraY: bool(f.invertCameraY, d.invertCameraY),
     mouseFire: bool(f.mouseFire, d.mouseFire),
     autoFire: bool(f.autoFire, d.autoFire),
+    weaponsSafe: bool(f.weaponsSafe, d.weaponsSafe),
   };
 }
 

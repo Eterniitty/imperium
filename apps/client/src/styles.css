@@ -974,3 +974,12 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .logistics-items li { display: flex; gap: 10px; align-items: center; }
 .goals.legends li { grid-template-columns: 1fr auto; }
 .quantum-list li:has(.cruise-orbit) { display: flex; gap: 6px; align-items: stretch; } .quantum-list li:has(.cruise-orbit) > .quantum-dest { flex: 1; } .cruise-orbit { white-space: nowrap; padding: 4px 10px; font-size: 12px; }
+
+/* Dial de velocidad del crucero. */
+.speed-dial { display: flex; justify-content: center; margin: 4px 0; }
+.speed-dial svg { cursor: grab; touch-action: none; user-select: none; }
+.speed-dial .dial-track { fill: none; stroke: rgba(255, 255, 255, 0.12); stroke-width: 6; stroke-linecap: round; }
+.speed-dial .dial-fill { fill: none; stroke: var(--gold); stroke-width: 6; stroke-linecap: round; }
+.speed-dial .dial-knob { fill: #fff3d0; stroke: var(--gold); stroke-width: 2; }
+.speed-dial .dial-value { fill: var(--text); font: 600 13px var(--font-display); text-anchor: middle; dominant-baseline: middle; }
+.speed-dial .dial-label { fill: var(--muted); font: 9px var(--font-body); text-anchor: middle; letter-spacing: 0.08em; text-transform: uppercase; }

@@ -4,6 +4,7 @@ import {
   ACTIONS,
   conflictsOf,
   keyLabel,
+  MAX_SPEED_MULT,
   settingsStore,
   UI_SCALES,
   uiScaleFor,
@@ -13,6 +14,7 @@ import {
   type Quality,
   type UiScale,
 } from "../state/settings";
+import { FLIGHT_MODEL } from "@imperium/content";
 import { useAuth } from "../state/auth";
 import { useKeyLabels } from "./keys";
 import { SocialTab } from "./SocialTab";
@@ -73,6 +75,18 @@ function Toggle({ id, checked, onChange }: { id: string; checked: boolean; onCha
 }
 
 /** Deslizador con su valor a la derecha. */
+/** Redondea el multiplicador de velocidad a una cifra cómoda (1, 2, 5, 10…). */
+function roundMult(m: number): number {
+  if (m < 1) return Math.round(m * 20) / 20;
+  const p = 10 ** Math.floor(Math.log10(m));
+  return Math.round(m / p * 4) / 4 * p;
+}
+
+/** «850 m/s», «12 km/s». */
+export function fmtSpeedMs(v: number): string {
+  return v < 1000 ? `${Math.round(v)} m/s` : `${Math.round(v / 100) / 10 >= 100 ? Math.round(v / 1000) : Math.round(v / 100) / 10} km/s`;
+}
+
 function Slider({ id, value, min, max, step, onChange, format }: { id: string; value: number; min: number; max: number; step: number; onChange: (v: number) => void; format: (v: number) => string }) {
   const pct = ((value - min) / (max - min)) * 100;
   return (
@@ -191,7 +205,18 @@ function FlightSection() {
       {check("assist", "settings.flight.assist")}
       {range("accel", "settings.flight.accel", 0.5, 1.5)}
       {range("inertia", "settings.flight.inertia", 0.5, 2)}
-      {range("maxSpeed", "settings.flight.maxSpeed", 0.25, 1)}
+      {/* Velocidad máxima: escala logarítmica, de 250 m/s a 400 km/s con impulso. */}
+      <Row label={t("settings.flight.maxSpeed")} htmlFor="pref-maxSpeed" hint={t("settings.flight.maxSpeedHint")}>
+        <Slider
+          id="pref-maxSpeed"
+          value={Math.round((Math.log(flight.maxSpeed / 0.25) / Math.log(MAX_SPEED_MULT / 0.25)) * 1000)}
+          min={0}
+          max={1000}
+          step={1}
+          onChange={(v) => set({ maxSpeed: roundMult(0.25 * (MAX_SPEED_MULT / 0.25) ** (v / 1000)) })}
+          format={(v) => fmtSpeedMs(FLIGHT_MODEL.maxSpeed * FLIGHT_MODEL.boostFactor * 0.25 * (MAX_SPEED_MULT / 0.25) ** (v / 1000))}
+        />
+      </Row>
       <h3 className="set-group">{t("settings.group.mouse")}</h3>
       {check("mouseFlight", "settings.flight.mouseFlight")}
       {range("mouseSensitivity", "settings.flight.mouseSensitivity", 0.3, 3)}

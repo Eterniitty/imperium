@@ -1,3 +1,4 @@
+import { SpeedDial } from "./SpeedDial";
 import { useEffect, useState } from "react";
 import { engineRef } from "../engineRef";
 import { useTelemetry } from "../engine/telemetry";
@@ -66,6 +67,7 @@ export function CruisePanel() {
           ✕
         </button>
       </div>
+      <SpeedDial />
       <p className="muted small">{t("cruise.hint")}</p>
       <h3>{t("cruise.ships")}</h3>
       {ships.length === 0 ? <p className="muted small">{t("cruise.noShipsList")}</p> : <ul className="quantum-list">{ships.map(row)}</ul>}
@@ -92,6 +94,7 @@ export function CruiseHud() {
         {t(c.mode === "follow" ? "cruise.hud.follow" : c.mode === "orbit" ? "cruise.hud.orbit" : "cruise.hud.goto")} <strong>{c.name}</strong> · <span className="mono">{formatDistance(c.distance)}</span>
         {c.seconds !== null && <span className="mono"> · {formatDuration(c.seconds * 1000)}</span>}
       </div>
+      <SpeedDial size={64} />
       <div className="muted small">
         {t("cruise.hud.cancel")}
         <button className="link-btn" onClick={() => engineRef.current?.cancelCruise()}>
