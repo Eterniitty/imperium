@@ -149,8 +149,8 @@ Plan en `docs/juego-solitario.md` y `docs/tutorial.md`. Orden:
 - [ ] Contratos: reparto de recursos que obligue a transportar de verdad (que no se cumpla cargando y descargando en el mismo sistema).
 - [x] Rango del Emperador (22-10-2026): experiencia, diez títulos y mejoras de los contratos (`RANKS`, `RankService`, migración 0047, Wiki «Rango»). Pendiente: mejoras de la nave (bodega, combustible, misiles).
 - [x] Tutorial: motor, menú (Ajustes → Tutorial) y capítulos 1–4 (22-10-2026).
-- [ ] Eventos en el espacio con decisiones.
-- [ ] Objetivos diarios y semanales.
+- [x] Sucesos en el espacio (22-10-2026): restos a la deriva y señales de socorro con decisión y trampa (`SPACE_EVENTS`, Wiki «Sucesos en el espacio»). Pendiente: más tipos (anomalías, emboscadas anunciadas) y que pasen también en el espacio profundo.
+- [x] Objetivos diarios y semanales con racha (22-10-2026; `GOALS`, `GoalService`, migración 0049).
 - [ ] Tutorial: capítulos 5–12.
 - [ ] Retos de combate, crisis de colonias y lore como recompensa.
 
@@ -209,3 +209,7 @@ Plan por fases en `docs/editor-naves.md` («Editor 3D de construcción»). No em
 ## Antes de abrir al público (obligatorio, en paralelo)
 
 Lista de `docs/despliegue.md`: estáticos desde Cloudflare, 80/443 solo desde Cloudflare, límites por IP y cuenta, vigilante de tráfico saliente con corte automático. Además: dominio propio, HTTPS, correo real (SMTP con SPF/DKIM/DMARC) y `APP_ENV=production`.
+
+## Muy largo plazo: versión de escritorio (idea del usuario, 22-10-2026)
+
+Cuando el juego esté completo y funcional: envolver el cliente web en una aplicación de escritorio (Electron o Tauri), con el mismo servidor y la misma cuenta, actualización automática y gratis. No se empieza nada todavía. Mientras tanto, **no atar el cliente al navegador sin necesidad**. Por ejemplo, la puerta de entrada hoy rechaza los agentes de usuario que no son de ordenador: la aplicación necesitaría su propia vía de entrada.
