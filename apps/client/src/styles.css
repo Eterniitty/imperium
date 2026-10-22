@@ -1185,3 +1185,9 @@ button.legend-title { background: none; border: none; padding: 0; width: 100%; t
 @media (prefers-reduced-motion: reduce) { .tutorial-ring { animation: none; } }
 .tutorial-menu { display: flex; flex-direction: column; gap: 10px; }
 .tutorial-menu .contract-list { padding: 0; }
+/* Ventana de contratos: cinco pestañas (más ancha y con las pestañas más juntas); los botones de una fila bajan si no caben. */
+.contracts-win { width: 440px; }
+.contracts-win .empire-tabs { overflow-x: auto; scrollbar-width: none; }
+.contracts-win .empire-tabs .planet-win-tab { padding: 8px 7px; font-size: 11px; letter-spacing: 0.06em; }
+.contract-row { flex-wrap: wrap; }
+.contract-main { flex: 1 1 240px; }

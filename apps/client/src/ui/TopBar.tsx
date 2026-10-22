@@ -64,10 +64,8 @@ export function TopBar() {
 
       {emperor && (
         <button className="stat stat-button" data-tutorial="emperor" onClick={() => engineRef.current?.goToEmperor()} title={t("emperor.goTo")}>
-          <span className="stat-label">
-            {t("emperor.label")}
-            {rankTitle && <> · {rankTitle}</>}
-          </span>
+          {/* El título del rango sustituye a «Emperador» (la barra va en una sola línea). */}
+          <span className="stat-label">{rankTitle ?? t("emperor.label")}</span>
           <span className="stat-value">{emperor.name}</span>
           {travel && (
             <span className="stat-sub">
