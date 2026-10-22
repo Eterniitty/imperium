@@ -391,6 +391,8 @@ export interface FlagshipStatus {
     travel?: { from: [number, number, number]; until: number };
     /** En órbita sin piloto: giro (rad/s) alrededor del eje vertical del cuerpo anclado. */
     spin?: number;
+    /** Acoplada en el hangar de una nodriza de esta flota (o llegando así). */
+    dock?: { fleetId: string; slot: number; colonyPlanet: number | null };
   };
   /**
    * Combustible y munición guardados (lo que se gasta al pilotar llega aparte, en

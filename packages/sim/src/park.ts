@@ -36,6 +36,12 @@ export interface ParkedOrbit {
    * derecha sobre +Y), desde la hora `at` (o desde la llegada, si va de camino).
    */
   spin?: number;
+  /**
+   * Acoplada en el hangar de una nodriza de su flota (o llegando así de un viaje
+   * con ella): al volver a los mandos sigue acoplada. Se guarda para que no se
+   * pierda si el servidor se reinicia.
+   */
+  dock?: { fleetId: string; slot: number; colonyPlanet: number | null };
 }
 
 /** Centro del cuerpo al que está anclada la nave a la hora `t`, o null si no lo está (o no existe). */

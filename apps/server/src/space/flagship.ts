@@ -2,7 +2,7 @@ import { ECONOMY, EMPEROR_FLAGSHIP, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUP
 import { universeSeedFromString } from "@imperium/procgen";
 import { isDeepId, type CommandError, type FlagshipStatus, type StarSystemDetail, type StarSystemSummary } from "@imperium/shared";
 import { deepLayout, defaultPark, regenFuel, sanitizeHold, sanitizePark, systemLayout, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
-import { and, eq, isNull, lte, or } from "drizzle-orm";
+import { and, eq, isNull, lte, or, sql } from "drizzle-orm";
 import type { ColonyService } from "../colony/service";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
@@ -20,7 +20,7 @@ export interface ParkRow {
   parkY: number | null;
   parkZ: number | null;
   parkAt: Date | null;
-  parkExtra?: { anchor?: { planet: number; moon?: number }; q?: [number, number, number, number]; engines?: boolean; travel?: { from: [number, number, number]; until: number }; spin?: number } | null;
+  parkExtra?: { anchor?: { planet: number; moon?: number }; q?: [number, number, number, number]; engines?: boolean; travel?: { from: [number, number, number]; until: number }; spin?: number; dock?: { fleetId: string; slot: number; colonyPlanet: number | null } } | null;
 }
 
 /** Columnas de los recursos de la nave. */
@@ -37,13 +37,13 @@ interface SuppliesRow {
 export function parkFromRow(row: ParkRow): ParkedOrbit | null {
   if (row.parkX === null || row.parkY === null || row.parkZ === null || row.parkAt === null) return null;
   const x = row.parkExtra ?? {};
-  return { p: [row.parkX, row.parkY, row.parkZ], at: row.parkAt.getTime(), ...(x.anchor ? { anchor: x.anchor } : {}), ...(x.q ? { q: x.q } : {}), ...(x.engines !== undefined ? { engines: x.engines } : {}), ...(x.travel ? { travel: x.travel } : {}), ...(x.spin ? { spin: x.spin } : {}) };
+  return { p: [row.parkX, row.parkY, row.parkZ], at: row.parkAt.getTime(), ...(x.anchor ? { anchor: x.anchor } : {}), ...(x.q ? { q: x.q } : {}), ...(x.engines !== undefined ? { engines: x.engines } : {}), ...(x.travel ? { travel: x.travel } : {}), ...(x.spin ? { spin: x.spin } : {}), ...(x.dock ? { dock: x.dock } : {}) };
 }
 
 /** Columnas para guardar una órbita de aparcamiento (null: la de por defecto). */
 export function parkColumns(park: ParkedOrbit | null): ParkRow {
   return park
-    ? { parkX: park.p[0], parkY: park.p[1], parkZ: park.p[2], parkAt: new Date(park.at), parkExtra: park.anchor || park.q || park.engines !== undefined || park.travel || park.spin ? { anchor: park.anchor, q: park.q ? [park.q[0], park.q[1], park.q[2], park.q[3]] : undefined, engines: park.engines, travel: park.travel ? { from: [park.travel.from[0], park.travel.from[1], park.travel.from[2]], until: park.travel.until } : undefined, spin: park.spin } : null }
+    ? { parkX: park.p[0], parkY: park.p[1], parkZ: park.p[2], parkAt: new Date(park.at), parkExtra: park.anchor || park.q || park.engines !== undefined || park.travel || park.spin || park.dock ? { anchor: park.anchor, q: park.q ? [park.q[0], park.q[1], park.q[2], park.q[3]] : undefined, engines: park.engines, travel: park.travel ? { from: [park.travel.from[0], park.travel.from[1], park.travel.from[2]], until: park.travel.until } : undefined, spin: park.spin, dock: park.dock } : null }
     : { parkX: null, parkY: null, parkZ: null, parkAt: null, parkExtra: null };
 }
 
@@ -141,6 +141,7 @@ export class FlagshipService {
         engines: park.engines,
         travel: park.travel ? { from: [park.travel.from[0], park.travel.from[1], park.travel.from[2]], until: park.travel.until } : undefined,
         spin: park.spin,
+        dock: park.dock,
       },
       supplies: {
         fuel: regenFuel(row.fuel, (now - row.fuelAt.getTime()) / 1000),
@@ -242,6 +243,14 @@ export class FlagshipService {
   }
 
   /** Guarda dónde queda aparcada la nave (al dejar de pilotarla). */
+  /** Llegará acoplada en el hangar de esta flota (viaje con ella): se apunta en su aparcamiento de llegada. */
+  async setArrivalDock(emperorId: string, dock: { fleetId: string; slot: number; colonyPlanet: number | null }): Promise<void> {
+    await this.db
+      .update(emperors)
+      .set({ parkExtra: sql`coalesce(${emperors.parkExtra}, '{}'::jsonb) || jsonb_build_object('dock', ${JSON.stringify(dock)}::jsonb)` })
+      .where(eq(emperors.id, emperorId));
+  }
+
   async savePark(emperorId: string, park: ParkedOrbit | null): Promise<void> {
     await this.db.update(emperors).set(parkColumns(park)).where(eq(emperors.id, emperorId));
   }

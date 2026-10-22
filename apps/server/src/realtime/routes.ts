@@ -293,7 +293,14 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                   }
                   case "fleet.move": {
                     // Viaje acoplado: si la nave del Emperador va en el hangar de esta flota, viaja con ella.
-                    const carried = space.dockedFleet(owner.emperorId) === msg.args.fleetId;
+                    // Acoplada en memoria o, si el sistema se durmió (mapa abierto, sin pilotos) o el servidor se reinició,
+                    // según lo guardado con su aparcamiento.
+                    let carried = space.dockedFleet(owner.emperorId) === msg.args.fleetId;
+                    if (!carried) {
+                      const status = await flagships.status(owner.emperorId);
+                      const fleet = status?.park.dock?.fleetId === msg.args.fleetId ? await fleets.byId(msg.args.fleetId) : null;
+                      carried = !!fleet && !fleet.travel && fleet.location.systemId === status!.systemId;
+                    }
                     const here = carried ? space.positionOf(owner.emperorId) : null;
                     if (carried) await space.flushSupplies(owner.emperorId);
                     const res = await fleets.move(owner.emperorId, msg.args.fleetId, msg.args.systemId);
@@ -306,6 +313,8 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                       const ride = await emperors.move(owner.accountId, dest, { here, withFleet: { arriveAt, at } });
                       if (ride.ok) {
                         space.expectDock(ride.emperor.id, { systemId: dest, fleetId: res.fleet.id, slot: slot.slot, colonyPlanet: slot.colonyPlanet });
+                        // También en la base: si el servidor se reinicia durante el viaje, llega igualmente acoplada.
+                        await flagships.setArrivalDock(ride.emperor.id, { fleetId: res.fleet.id, slot: slot.slot, colonyPlanet: slot.colonyPlanet });
                         space.leave(ride.emperor.id, "jump");
                         space.suppliesChanged(ride.emperor.id);
                         await hub.publish(ride.emperor.id);

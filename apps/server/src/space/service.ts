@@ -879,6 +879,7 @@ export class SpaceService {
       client.send({ t: "poseRejected", p: at, q: pose.q, v: [0, 0, 0] });
       return;
     }
+    const parkedDock = m.park?.dock;
     m.park = null;
     m.clients.add(client);
     m.pose = { p: pose.p, q: pose.q, v: pose.v };
@@ -897,8 +898,9 @@ export class SpaceService {
     const arrival = this.riftArrivals.take(m.emperorId, now);
     if (arrival) this.relayRift(m, arrival);
     void this.sendHold(m);
-    // Llegó acoplada en una nodriza (viaje con su flota): sigue en el hangar.
-    const carried = this.expectedDocks.get(m.emperorId);
+    // Llegó acoplada en una nodriza (viaje con su flota) o se dejó acoplada: sigue en el hangar. Lo de memoria
+    // (`expectDock`) o, si el servidor se reinició, lo guardado con el aparcamiento.
+    const carried = this.expectedDocks.get(m.emperorId) ?? (parkedDock && !m.dock ? { systemId: m.systemId, ...parkedDock } : undefined);
     if (carried) {
       this.expectedDocks.delete(m.emperorId);
       if (carried.systemId === m.systemId) {
@@ -1134,6 +1136,8 @@ export class SpaceService {
     // Se queda donde se dejó: junto al planeta o luna en cuya esfera está (y lo acompaña), con su orientación y sus motores.
     const layout = isDeepId(m.systemId) ? null : this.layout(m.systemId);
     m.park = this.cruisePark(m, layout, p, now) ?? parkAt(layout, p, now, { q: m.pose.q, engines: m.engines ?? false });
+    // Acoplada: se guarda con el aparcamiento (si el servidor se reinicia, sigue acoplada al volver).
+    if (m.dock) m.park = { ...m.park, dock: { fleetId: m.dock.fleetId, slot: m.dock.slot, colonyPlanet: m.dock.colonyPlanet } };
     // Acoplada en una nodriza, sigue acoplada aunque se deje de pilotar (para viajar con su flota).
     this.dismissEscorts(m.emperorId);
     m.pose = { p, q: m.pose.q, v: parkedVelocity(m.park, now, layout) };
