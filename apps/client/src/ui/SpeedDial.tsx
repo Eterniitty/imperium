@@ -29,7 +29,7 @@ const TICKS: ReadonlyArray<readonly [number, string]> = [
   [CRUISE_LIMIT_MAX, String(Math.round(CRUISE_LIMIT_MAX / 1000))],
 ];
 
-export function SpeedDial({ size = 150, speed }: { size?: number; /** Velocidad actual (m/s): aguja fina sobre el arco. */ speed?: number }) {
+export function SpeedDial({ size = 150, speed, wheel = true }: { size?: number; /** Velocidad actual (m/s): aguja fina sobre el arco. */ speed?: number; /** Girar con la rueda (no en el aviso: se tocaba sin querer al hacer zoom). */ wheel?: boolean }) {
   const t = useT();
   const limit = useSettings((s) => s.prefs.flight.cruiseLimit);
   const ref = useRef<SVGSVGElement>(null);
@@ -78,6 +78,7 @@ export function SpeedDial({ size = 150, speed }: { size?: number; /** Velocidad 
           if (e.buttons) fromEvent(e);
         }}
         onWheel={(e) => {
+          if (!wheel) return;
           e.stopPropagation();
           // Desde «máx.» (fuera de la escala), un paso abajo vuelve a lo más alto de la escala.
           const next = p >= FREE_FROM && e.deltaY > 0 ? FREE_FROM - 0.03 : p + (e.deltaY < 0 ? 0.03 : -0.03);

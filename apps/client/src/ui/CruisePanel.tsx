@@ -6,6 +6,7 @@ import { useTelemetry } from "../engine/telemetry";
 import { gameStore, useGame, useT } from "../state/store";
 import { formatDistance } from "./FlightHud";
 import { formatDuration } from "./useNow";
+import { useSettings } from "../state/settings";
 
 type Option = ReturnType<NonNullable<typeof engineRef.current>["cruiseOptions"]>[number];
 
@@ -91,6 +92,7 @@ export function CruiseHud() {
   const flight = useGame((s) => s.flight);
   const tel = useTelemetry(200);
   const c = tel.cruise;
+  const cruiseLimit = useSettings((s) => s.prefs.flight.cruiseLimit);
   const [mini, setMini] = useState(readMini);
   const toggle = () => {
     setMini(!mini);
@@ -117,7 +119,7 @@ export function CruiseHud() {
       <button type="button" className="icon-btn cruise-hud-min" aria-label={t("cruise.hud.minimize")} title={t("cruise.hud.minimize")} onClick={toggle}>
         ▁
       </button>
-      {c.phase !== "orbit" && <SpeedDial size={112} speed={tel.speed} />}
+      {c.phase !== "orbit" && <SpeedDial size={112} speed={tel.speed} wheel={false} />}
       <div className="cruise-info">
         <div className="stat-label">
           {t("cruise.title")} · {t(`cruise.phase.${c.phase}`)}
@@ -151,6 +153,7 @@ export function CruiseHud() {
             </div>
           </>
         )}
+        {cruiseLimit > 0 && c.phase !== "orbit" && <div className="small cruise-limited">{t("cruise.hud.limited", { v: fmtSpeedMs(cruiseLimit) })}</div>}
         <div className="cruise-cancel">
           <span className="muted small">{t("cruise.hud.cancel")}</span>
           <button className="btn small" onClick={() => engineRef.current?.cancelCruise()}>

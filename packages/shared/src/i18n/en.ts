@@ -1717,6 +1717,7 @@ export const en: Record<I18nKey, string> = {
   "settings.textSelectHint": "When off, game text is not highlighted when dragging the mouse (text fields can still be selected).",
   "cruise.hud.minimize": "Minimise the cruise notice",
   "cruise.hud.expand": "Expand the cruise notice",
+  "cruise.hud.limited": "Limited to {v} by the dial: drag it all the way right (\"max\") to go at pulse speed.",
   "shipEditor.open": "Shipyard",
   "shipEditor.openTitle": "Design your ships part by part",
   "shipEditor.title": "Shipyard · ship design",

@@ -1719,6 +1719,7 @@ export const es = {
   "settings.textSelectHint": "Apagado, el texto del juego no se resalta al arrastrar el ratón (los campos de texto sí se pueden seleccionar).",
   "cruise.hud.minimize": "Minimizar el aviso del crucero",
   "cruise.hud.expand": "Desplegar el aviso del crucero",
+  "cruise.hud.limited": "Limitado a {v} por el dial: arrástralo del todo a la derecha («máx.») para ir a la velocidad del pulso.",
   "shipEditor.open": "Astillero",
   "shipEditor.openTitle": "Diseña tus naves pieza a pieza",
   "shipEditor.title": "Astillero · diseño de naves",

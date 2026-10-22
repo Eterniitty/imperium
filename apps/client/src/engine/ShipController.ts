@@ -370,7 +370,9 @@ export class ShipController {
     const gear = prefs.speedMode;
     const fastTop = M.maxSpeed * prefs.maxSpeed * (boost ? M.boostFactor : 1);
     // (El piloto automático vuela siempre con la marcha rápida: la marcha es para pilotar a mano.)
-    const maxSpeed = Math.min(this.maneuverCap, gear === "fast" || auto ? fastTop : SPEED_MODE_TOP[gear] * (boost ? 2 : 1));
+    // El límite del dial del crucero vale también sin pulso (si no, el dial diría 1,4 km/s y la nave iría a 130).
+    const cruiseCap = auto && prefs.cruiseLimit > 0 ? prefs.cruiseLimit : Infinity;
+    const maxSpeed = Math.min(this.maneuverCap, cruiseCap, gear === "fast" || auto ? fastTop : SPEED_MODE_TOP[gear] * (boost ? 2 : 1));
     const steps = Math.max(1, Math.min(16, Math.ceil(dt / M.substep)));
     const h = dt / steps;
     const start = this.ship.position.clone();
