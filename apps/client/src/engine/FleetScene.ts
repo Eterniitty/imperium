@@ -12,13 +12,13 @@
  */
 import * as THREE from "three";
 import { contentDictionaries, getFaction, getShipClass, type ShipClassId } from "@imperium/content";
-import type { Battle, Colony, Fleet, Locale, ShipCounts } from "@imperium/shared";
+import type { Battle, Colony, Fleet, Locale, ShipCounts, ShipDesignSnapshot } from "@imperium/shared";
 import { translate } from "@imperium/shared";
 import { fleetRallyPoint, fleetSlotPosition, type SystemLayout } from "@imperium/sim";
 import { serverNow, worldStore } from "../net/world";
 import { fleetShipId, spaceStore } from "../net/space";
 import { gameStore } from "../state/store";
-import { createShipModel, shipLength } from "./shipFactory";
+import { createDesignModel, createShipModel, designLook, shipLength } from "./shipFactory";
 import type { ShipRig } from "./shipModel";
 import { labelTexture } from "./textures";
 
@@ -65,9 +65,30 @@ interface Tracer {
 }
 
 /** Lista de clases de un recuento, de la más grande a la más pequeña, con un tope de naves. */
+/** Clave de dibujo de una nave del Astillero: «d|casco|piezas». */
+function designKey(d: Pick<ShipDesignSnapshot, "hullId" | "parts">): string {
+  return `d|${d.hullId}|${JSON.stringify(Object.entries(d.parts).sort(([a], [b]) => (a < b ? -1 : 1)))}`;
+}
+
+function parseDesignKey(id: string): Pick<ShipDesignSnapshot, "hullId" | "parts"> | null {
+  if (!id.startsWith("d|")) return null;
+  const hullId = id.split("|", 3)[1] ?? "";
+  try {
+    return { hullId, parts: Object.fromEntries(JSON.parse(id.slice(3 + hullId.length)) as Array<[string, string]>) };
+  } catch {
+    return null;
+  }
+}
+
+/** Eslora para colocar la nave en la cuña: la de su clase o la de su diseño. */
+function visualLength(id: string): number | null {
+  const d = parseDesignKey(id);
+  return d ? (designLook(d)?.model.lengthM ?? null) : shipLength(id);
+}
+
 function expand(counts: ShipCounts): string[] {
   const out: string[] = [];
-  const entries = Object.entries(counts).sort((a, b) => (shipLength(b[0]) ?? 0) - (shipLength(a[0]) ?? 0));
+  const entries = Object.entries(counts).sort((a, b) => (visualLength(b[0]) ?? 0) - (visualLength(a[0]) ?? 0));
   // Reparto proporcional hasta el tope, al menos una de cada clase.
   const total = entries.reduce((a, [, n]) => a + n, 0);
   for (const [id, n] of entries) {
@@ -82,7 +103,7 @@ function expand(counts: ShipCounts): string[] {
  * cada vez más anchas. Separación según la eslora mayor.
  */
 function wedge(classIds: string[]): THREE.Vector3[] {
-  const big = Math.max(40, ...classIds.map((id) => shipLength(id) ?? 40));
+  const big = Math.max(40, ...classIds.map((id) => visualLength(id) ?? 40));
   const step = big * 2.2;
   const out: THREE.Vector3[] = [];
   let row = 0;
@@ -190,7 +211,12 @@ export class FleetScene {
       seen.add(f.id);
       const counts: ShipCounts = {};
       // Las naves que vuelan por su cuenta (escoltas o pilotadas a distancia) no se dibujan con su flota.
-      for (const s of f.ships) if (!flying[fleetShipId(s.id)]) counts[s.classId] = (counts[s.classId] ?? 0) + 1;
+      for (const s of f.ships) {
+        if (flying[fleetShipId(s.id)]) continue;
+        // Las naves del Astillero se dibujan con su diseño (clave con casco y piezas).
+        const id = s.design ? designKey(s.design) : s.classId;
+        counts[id] = (counts[id] ?? 0) + 1;
+      }
       const h = this.hidden;
       if (h && h.fleetId === f.id && counts[h.classId]) counts[h.classId]! -= 1;
       const key = JSON.stringify(Object.entries(counts).sort());
@@ -263,7 +289,8 @@ export class FleetScene {
   }
 
   private makeShip(classId: string, accent: number, slot: THREE.Vector3): ShipVisual | null {
-    const obj = createShipModel(classId, { accent });
+    const design = parseDesignKey(classId);
+    const obj = design ? createDesignModel(design, { accent }) : createShipModel(classId, { accent });
     if (!obj) return null;
     obj.position.copy(slot);
     return { classId, obj, rig: obj.userData.rig as ShipRig, slot, alive: true };
