@@ -74,6 +74,8 @@ El motor de pulso ([[P]], encender y apagar) es un **supercrucero** para cruzar 
 
 ## Piloto automático de crucero
 
+El aviso del crucero se minimiza con **▁** en una pastilla («→ destino · llegada») y se despliega con un clic; se recuerda.
+
 El crucero **sigue con el mapa galáctico abierto** (M): la nave sigue volando hacia su destino y, al volver (M o «Pilotar»), la encuentras donde va, con el aviso del crucero. Ver otro sistema desde el mapa sí lo deja (la nave queda aparcada).
 
 Y si **cierras la pestaña** en pleno crucero hacia un planeta o una luna, la nave **sigue hasta allí sin ti**: en línea recta, como mucho a la velocidad del pulso (el servidor calcula el tiempo; no puede ser menos de lo que tardaría volando) y gastando el combustible del pulso de todo el trayecto (si no alcanza, se queda donde estaba). Al volver, la encuentras de camino o ya allí; si aún no había llegado, el crucero se reanuda solo.

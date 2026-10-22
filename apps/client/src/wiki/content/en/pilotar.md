@@ -74,6 +74,8 @@ The pulse drive ([[P]], on and off) is a **supercruise** to cross the system fro
 
 ## Cruise autopilot
 
+The cruise notice minimises with **▁** into a pill ("→ destination · arrival") and expands with a click; it is remembered.
+
 Cruise **keeps going with the galaxy map open** (M): the ship keeps flying to its destination and, when you come back (M or "Pilot"), you find it where it is, with the cruise notice. Viewing another system from the map does stop it (the ship stays parked).
 
 And if you **close the tab** mid-cruise towards a planet or moon, the ship **keeps going there without you**: in a straight line, at most at pulse speed (the server works out the time; never less than flying would take) and spending the pulse fuel for the whole trip (if there is not enough, it stays where it was). When you come back you find it on its way or already there; if it had not arrived, cruise resumes by itself.
