@@ -43,6 +43,7 @@ function perkLines(t: ReturnType<typeof useT>, p: RankPerk): string[] {
   if (p.contractRewardPct) out.push(t("rank.perk.contractRewardPct", { n: p.contractRewardPct }));
   if (p.holdPct) out.push(t("rank.perk.holdPct", { n: p.holdPct }));
   if (p.fuelPct) out.push(t("rank.perk.fuelPct", { n: p.fuelPct }));
+  if (p.missiles) out.push(t("rank.perk.missiles", { n: p.missiles }));
   return out;
 }
 

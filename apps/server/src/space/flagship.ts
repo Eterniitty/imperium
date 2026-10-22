@@ -1,4 +1,4 @@
-import { ECONOMY, EMPEROR_FLAGSHIP, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, holdCapacityFor, fuelCapacityFor, FLAGSHIP_SUPPLIES, HOLD_STOCK_IDS, type StockId } from "@imperium/content";
+import { ECONOMY, EMPEROR_FLAGSHIP, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, holdCapacityFor, fuelCapacityFor, missileCapacityFor, FLAGSHIP_SUPPLIES, HOLD_STOCK_IDS, type StockId } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import { isDeepId, type CommandError, type FlagshipStatus, type StarSystemDetail, type StarSystemSummary } from "@imperium/shared";
 import { deepLayout, defaultPark, regenFuel, sanitizeHold, sanitizePark, systemLayout, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
@@ -150,7 +150,7 @@ export class FlagshipService {
         cannon: row.cannonAmmo,
         cannonMax: ammoMax("cannon"),
         missiles: row.missiles,
-        missilesMax: ammoMax("missile"),
+        missilesMax: missileCapacityFor(row.xp),
         hull: row.flagshipHull,
         hullMax: EMPEROR_FLAGSHIP.hull,
       },
@@ -160,10 +160,10 @@ export class FlagshipService {
   }
 
   /** Bodega de la nave (lo minado). */
-  /** Depósito de combustible (con la mejora del rango). */
-  async fuelCapacity(emperorId: string): Promise<number> {
+  /** Depósito de combustible y misiles que caben (con las mejoras del rango). */
+  async rankCapacities(emperorId: string): Promise<{ fuel: number; missiles: number }> {
     const [row] = await this.db.select({ xp: emperors.xp }).from(emperors).where(eq(emperors.id, emperorId));
-    return fuelCapacityFor(row?.xp ?? 0);
+    return { fuel: fuelCapacityFor(row?.xp ?? 0), missiles: missileCapacityFor(row?.xp ?? 0) };
   }
 
   /** Capacidad de la bodega (con la mejora del rango). */

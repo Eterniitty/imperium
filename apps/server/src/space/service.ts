@@ -266,13 +266,15 @@ export class SpaceService {
     return c;
   }
 
-  /** Vuelve a leer el depósito de la nave de un Emperador (al crearla y al subir de rango). */
+  /** Vuelve a leer el depósito y los misiles de la nave de un Emperador (al crearla y al subir de rango). */
   refreshFuelMax(emperorId: string): void {
     void this.flagships
-      .fuelCapacity(emperorId)
+      .rankCapacities(emperorId)
       .then((n) => {
         const c = this.combatants.get(emperorId);
-        if (c) c.fuelMax = n;
+        if (!c) return;
+        c.fuelMax = n.fuel;
+        c.setMissileCap(n.missiles);
       })
       .catch((err: unknown) => this.log.error(err, "Error al leer el depósito de la nave"));
   }

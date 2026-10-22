@@ -21,6 +21,3 @@ Si cumples los tres del día varios días seguidos, haces una **racha**: cada d�
 {{tabla:rangos}}
 
 Las mejoras se suman: cada rango conserva las de los anteriores. Las aplica el servidor en cuanto subes, también a las ofertas del día que aún no has aceptado.
-
-> [!dev]
-> Habrá más mejoras de la nave con el rango (misiles).

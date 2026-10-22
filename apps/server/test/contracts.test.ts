@@ -6,7 +6,7 @@
  */
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { COLONY_REQUESTS, CONTRACTS, FLAGSHIP_HOLD, FLAGSHIP_SUPPLIES, fuelCapacityFor, GOALS, goalXp, holdCapacityFor, RANK_XP, RANKS, rankOf, rankPerks } from "@imperium/content";
+import { COLONY_REQUESTS, CONTRACTS, FLAGSHIP_HOLD, FLAGSHIP_SUPPLIES, fuelCapacityFor, missileCapacityFor, GOALS, goalXp, holdCapacityFor, RANK_XP, RANKS, rankOf, rankPerks } from "@imperium/content";
 import { LOGIN_TOKEN_PARAM, type Emperor } from "@imperium/shared";
 import { buildApp } from "../src/app";
 import { sessionCookieName } from "../src/auth/routes";
@@ -26,10 +26,11 @@ describe("rango del Emperador (datos)", () => {
     expect(rankOf(RANKS[3]!.xp - 1).index).toBe(2);
     expect(rankOf(RANKS[3]!.xp).index).toBe(3);
     expect(rankOf(1e9).next).toBeNull();
-    expect(rankPerks(0)).toEqual({ contractSlots: 0, contractOffers: 0, contractRewardPct: 0, holdPct: 0, fuelPct: 0 });
+    expect(rankPerks(0)).toEqual({ contractSlots: 0, contractOffers: 0, contractRewardPct: 0, holdPct: 0, fuelPct: 0, missiles: 0 });
     expect(holdCapacityFor(0)).toBe(FLAGSHIP_HOLD.capacity);
     expect(holdCapacityFor(RANKS.at(-1)!.xp)).toBeGreaterThan(FLAGSHIP_HOLD.capacity);
     expect(fuelCapacityFor(0)).toBe(FLAGSHIP_SUPPLIES.fuelMax);
+    expect(missileCapacityFor(RANKS.at(-1)!.xp)).toBeGreaterThan(missileCapacityFor(0));
     expect(fuelCapacityFor(RANKS.at(-1)!.xp)).toBeGreaterThan(FLAGSHIP_SUPPLIES.fuelMax);
     const top = rankPerks(RANKS.length - 1);
     expect(top.contractSlots).toBeGreaterThan(rankPerks(2).contractSlots - 1);
@@ -79,7 +80,7 @@ describe.skipIf(!TEST_DATABASE_URL)("contratos y rango", () => {
     expect((await app.contracts.view(e.id)).offers).toEqual(view.offers);
 
     // Se aceptan hasta llenar los huecos (ofertas de un día con más de las necesarias).
-    const many = app.contracts.offers(e.id, Date.now(), { contractSlots: 0, contractOffers: CONTRACTS.maxActive + 1, contractRewardPct: 0, holdPct: 0, fuelPct: 0 });
+    const many = app.contracts.offers(e.id, Date.now(), { contractSlots: 0, contractOffers: CONTRACTS.maxActive + 1, contractRewardPct: 0, holdPct: 0, fuelPct: 0, missiles: 0 });
     const offer = view.offers[0]!;
     expect(await app.contracts.accept(e.id, offer.id)).toEqual({ ok: true });
     expect(await app.contracts.accept(e.id, offer.id)).toEqual({ ok: false, error: "unknown_contract" });

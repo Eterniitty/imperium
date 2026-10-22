@@ -21,6 +21,3 @@ If you complete all three daily goals several days in a row, you build a **strea
 {{tabla:rangos}}
 
 Improvements add up: each rank keeps those of the ranks before it. The server applies them as soon as you rise, including to today's offers you have not accepted yet.
-
-> [!dev]
-> More ship improvements will come with rank (missiles).

@@ -45,6 +45,12 @@ interface Reactor {
 
 /** Estado de combate de una nave. Dura aunque salga del sistema (no se cura saliendo y entrando). */
 export class Combatant {
+  /** Misiles que caben (la nave del Emperador los aumenta con el rango, `missileCapacityFor`). */
+  setMissileCap(n: number): void {
+    const w = this.weapons.get("missile");
+    if (w && w.def.ammo !== null && w.def.ammo !== n) w.def = { ...w.def, ammo: n };
+  }
+
   /** Depósito de combustible (la nave del Emperador lo agranda con el rango, `fuelCapacityFor`). */
   fuelMax: number = FLAGSHIP_SUPPLIES.fuelMax;
   hull: number;
