@@ -127,6 +127,8 @@ Cuando tomas los mandos en un sistema donde tienes flotas paradas (fuera de bata
 
 ## Acoplarse en una nave nodriza
 
+Acoplado, el botón **Pilotar la nodriza** de la barra de acciones te da sus mandos con tu nave dentro: llévala por el sistema y, al soltarlos (M), la flota y tu nave se quedan donde la dejes (lo guarda el servidor), y vuelves a estar acoplado.
+
 Si viajas acoplado, **por el túnel va la nodriza**, con tu nave dentro, y llegas con tu flota, dentro de su hangar.
 
 Las naves de tus flotas paradas (sobre todo las nodrizas) **son sólidas**: chocas con su casco (una cápsula a lo largo de la nave) y el piloto automático las rodea. Para acoplarte basta con estar a su alcance (unos 4 km más su eslora); al desacoplarte tienes unos segundos para salir del hangar sin chocar.

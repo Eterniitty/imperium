@@ -1773,6 +1773,8 @@ export const en: Record<I18nKey, string> = {
   "wiki.library.empty": "No book matches.",
   "wiki.edit.bylineKind": "Attribution type",
   "wiki.edit.formatHint": "Formatting without HTML: \"::: center\", \"::: right\", \"::: justify\" or \"::: verse\" (keeps line breaks), closed with \":::\"; \"---\" is a separator. In books only the layout changes, never the text.",
+  "actions.pilotMothership": "Pilot the mothership",
+  "actions.pilotMothershipTitle": "Pilot the mothership with your ship inside; when you let go (M), the fleet and your ship stay where you leave it",
   "shipEditor.open": "Shipyard",
   "shipEditor.openTitle": "Design your ships part by part",
   "shipEditor.title": "Shipyard · ship design",

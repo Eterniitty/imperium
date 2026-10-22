@@ -313,6 +313,11 @@ export class FleetService {
     });
   }
 
+  /** Sitio de una flota parada dentro de su sistema (donde se dejó su nodriza pilotada). */
+  async setLocalP(fleetId: string, p: [number, number, number]): Promise<void> {
+    await this.db.update(fleets).set({ localP: p }).where(and(eq(fleets.id, fleetId), isNull(fleets.destSystemId)));
+  }
+
   /** Renombra una flota propia (null: vuelve a «Flota N»). */
   async rename(emperorId: string, fleetId: string, name: string | null): Promise<boolean> {
     const rows = await this.db

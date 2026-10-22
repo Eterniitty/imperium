@@ -1775,6 +1775,8 @@ export const es = {
   "wiki.library.empty": "Ningún libro coincide.",
   "wiki.edit.bylineKind": "Tipo de atribución",
   "wiki.edit.formatHint": "Formato sin HTML: «::: centro», «::: derecha», «::: justificado» o «::: verso» (respeta los saltos de línea), cerrados con «:::»; «---» es un separador. En los libros solo se cambia la maquetación, nunca el texto.",
+  "actions.pilotMothership": "Pilotar la nodriza",
+  "actions.pilotMothershipTitle": "Pilotar la nodriza con tu nave dentro; al soltar los mandos (M), la flota y tu nave se quedan donde la dejes",
   "shipEditor.open": "Astillero",
   "shipEditor.openTitle": "Diseña tus naves pieza a pieza",
   "shipEditor.title": "Astillero · diseño de naves",

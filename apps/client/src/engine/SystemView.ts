@@ -17,7 +17,7 @@ import { createDesignModel, createShipModel, designLook, shipLength } from "./sh
 import { ShieldDome } from "./fx/shieldDome";
 import { Effects } from "./Effects";
 import { worldStore } from "../net/world";
-import { BODY_COLLISION, EMPEROR_FLAGSHIP, FLIGHT_MODEL, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_SUPPLIES, MINING, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC, QUANTUM_RIFT, SHIP_COLLISION, STAR_HEAT_LETHAL_DPS, FLAGSHIP_DOCK } from "@imperium/content";
+import { BODY_COLLISION, EMPEROR_FLAGSHIP, FLIGHT_MODEL, getShipClass, type ShipClassId, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_SUPPLIES, MINING, QUANTUM_ALIGN_RAD_PER_SEC, QUANTUM_CHARGE_SEC, QUANTUM_RIFT, SHIP_COLLISION, STAR_HEAT_LETHAL_DPS, FLAGSHIP_DOCK } from "@imperium/content";
 import { playQuantumCharge, playQuantumTear, stopQuantumCharge } from "../audio/quantumSfx";
 import { playEngineStart, playEngineStop, stopEngineSound } from "../audio/engineSfx";
 import { RiftField } from "./fx/riftPortal";
@@ -662,7 +662,9 @@ export class SystemView implements View {
       this.ownLength = length;
       this.ownRadius = Math.max(30, length * 0.45);
       this.fleetScene.hide(remote.fleetId, remote.classId, remote.design);
-      ship.position.copy(this.fleetScene.fleetPosition(remote.fleetId) ?? this.fleetScene.anchor(new THREE.Vector3())).add(new THREE.Vector3(0, length * 2, length * 4));
+      // La nodriza sale justo donde está (va con la nave del Emperador dentro); las demás, a un lado de su flota.
+      const isMother = !remote.design && getShipClass(remote.classId as ShipClassId)?.dockFlagship;
+      ship.position.copy(this.fleetScene.fleetPosition(remote.fleetId) ?? this.fleetScene.anchor(new THREE.Vector3())).add(isMother ? new THREE.Vector3() : new THREE.Vector3(0, length * 2, length * 4));
     } else {
       ship = createFlagship(0xc792ff);
       ship.scale.setScalar(SHIP_SCALE);

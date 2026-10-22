@@ -13,6 +13,7 @@ const PATHS = {
   gearNormal: "M4 15a8 8 0 0 1 16 0M12 15V7",
   gearFast: "M4 15a8 8 0 0 1 16 0M12 15l5-4",
   cruise: "M4 18L12 4l8 14-8-4z",
+  mothership: "M2 13l3-5h14l3 5-3 4H5zM8 8V5h8v3M7 13h10",
   follow: "M5 17l4-10 4 10-4-2zM13 13l3-7 3 7-3-1.5z",
   dock: "M4 9h6v6H4zM14 12h6M17 9l3 3-3 3",
   weapons: "M12 2v5M12 17v5M2 12h5M17 12h5M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z",

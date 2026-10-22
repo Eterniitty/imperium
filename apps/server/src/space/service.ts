@@ -177,6 +177,8 @@ export class SpaceService {
   /** Naves de flota pilotadas a distancia: guardar su casco al dejarlas y borrarlas si las destruyen (los pone el servidor). */
   fleetShips: {
     saveHull(emperorId: string, fleetId: string, shipId: string, hull: number): Promise<void>;
+    /** La nave nodriza pilotada a distancia se deja aquí: la flota (y quien va acoplado) se queda en ese sitio. */
+    moveFleet?(emperorId: string, fleetId: string, p: [number, number, number]): Promise<void>;
     destroyed(emperorId: string, fleetId: string, shipId: string): Promise<void>;
     /** Naves armadas de las flotas paradas en el sistema que salen a escoltar (Fase 9d). */
     escorts(emperorId: string, systemId: string, max: number): Promise<Array<{ fleetId: string; shipId: string; classId: string; hull: number; design?: ShipDesignSnapshot }>>;
@@ -461,12 +463,50 @@ export class SpaceService {
       m.clients.delete(client);
       if (m.clients.size === 0) {
         const hull = Math.round(m.combat.hull);
+        // Una nodriza pilotada se queda donde la dejaron, con su flota (y la nave del Emperador acoplada dentro).
+        if (getShipClass((m.classId ?? "") as ShipClassId)?.dockFlagship && !isDeepId(m.systemId)) this.leaveMothershipAt(m.owner!, m.fleetId!, m.systemId, m.pose.p);
         this.leave(key, "left");
         this.combatants.delete(key);
         void this.fleetShips?.saveHull(m.owner!, m.fleetId!, m.shipId!, hull).catch((err: unknown) => this.log.error(err, "Error al guardar el casco de una nave de flota"));
       }
     }
     if (reason === "destroyed") client.send({ t: "remoteEnded", reason });
+  }
+
+  /**
+   * La nodriza de `fleetId` se deja en `p`: se guarda el sitio de la flota y,
+   * si la nave del Emperador va acoplada en ella, se mueve con ella.
+   */
+  private leaveMothershipAt(emperorId: string, fleetId: string, systemId: string, p: Vec3): void {
+    const at: [number, number, number] = [p[0], p[1], p[2]];
+    void this.fleetShips?.moveFleet?.(emperorId, fleetId, at).catch((err: unknown) => this.log.error(err, "Error al guardar el sitio de una flota"));
+    const e = this.members.get(emperorId);
+    if (!e) {
+      // El sistema se durmió (nadie lo pilotaba ya): se corrige lo guardado.
+      void (async () => {
+        const st = await this.flagships.status(emperorId);
+        const d = st?.park.dock;
+        if (!st || st.systemId !== systemId || d?.fleetId !== fleetId) return;
+        const park = { ...parkAt(this.layout(systemId), at, this.now(), { q: st.park.q, engines: st.park.engines }), dock: { ...d, at } };
+        await this.flagships.savePark(emperorId, park);
+        this.onFlagship(emperorId);
+      })().catch((err: unknown) => this.log.error(err, "Error al mover la nave acoplada"));
+      return;
+    }
+    if (e.systemId === systemId && e.dock?.fleetId === fleetId) {
+      e.dock = { ...e.dock, at };
+      if (e.park) {
+        const layout = this.layout(systemId);
+        e.park = { ...parkAt(layout, at, this.now(), { q: e.park.q, engines: e.park.engines }), dock: { fleetId, slot: e.dock.slot, colonyPlanet: e.dock.colonyPlanet, at } };
+        e.pose = { ...e.pose, p: at };
+        e.dirty = true;
+        const park = e.park;
+        void this.flagships
+          .savePark(emperorId, park)
+          .then(() => this.onFlagship(emperorId))
+          .catch((err: unknown) => this.log.error(err, "Error al guardar la nave aparcada"));
+      }
+    }
   }
 
   /**

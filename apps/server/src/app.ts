@@ -182,6 +182,10 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
       await fleets.setShipHull(fleetId, shipId, hull);
       await hub.publishFleet(emperorId, fleetId);
     },
+    moveFleet: async (emperorId, fleetId, p) => {
+      await fleets.setLocalP(fleetId, p);
+      await hub.publishFleet(emperorId, fleetId);
+    },
     destroyed: async (emperorId, fleetId, shipId) => {
       await fleets.removeShip(fleetId, shipId);
       await hub.publishFleet(emperorId, fleetId);

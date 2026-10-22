@@ -127,6 +127,8 @@ When you take the controls in a system where you have stationary fleets (not in 
 
 ## Docking in a mothership
 
+While docked, the **Pilot the mothership** button in the action bar gives you its controls with your ship inside: fly it around the system and, when you let go (M), the fleet and your ship stay where you leave it (the server keeps it) and you are docked again.
+
 If you travel docked, **the mothership goes through the tunnel** with your ship inside, and you arrive with your fleet, inside its hangar.
 
 The ships of your stopped fleets (motherships above all) **are solid**: you collide with their hull (a capsule along the ship) and the autopilot flies around them. To dock you just need to be in range (about 4 km plus its length); when you undock you have a few seconds to leave the hangar without colliding.

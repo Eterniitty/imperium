@@ -38,6 +38,7 @@ export function ActionBar() {
   const fleets = useWorld((s) => s.fleets);
   if (tel.quantumCharge !== null || tel.quantumAlign !== null) return null;
   // Acoplar: hay una nodriza propia parada en este sistema.
+  const dockMother = docked ? fleets[docked.fleetId]?.ships.find((s) => getShipClass(s.classId as ShipClassId)?.dockFlagship) : undefined;
   const mothership = !remote && (Object.values(fleets) as Fleet[]).some((f) => !f.travel && f.location.systemId === systemId && f.ships.some((s) => getShipClass(s.classId as ShipClassId)?.dockFlagship));
   const engines = tel.engines;
   return (
@@ -58,6 +59,12 @@ export function ActionBar() {
       <ActionButton action="cruise" icon="cruise" on={tel.cruise !== null && tel.cruise.mode !== "follow"} label={t(tel.cruise ? "actions.cruiseStop" : "actions.cruise")} />
       <ActionButton action="follow" icon="follow" on={tel.cruise?.mode === "follow"} label={t("actions.follow")} />
       {(mothership || docked) && <ActionButton action="dock" icon="dock" on={!!docked} label={t(docked ? "actions.undock" : "actions.dock")} />}
+      {/* Acoplado: tomar los mandos de la nodriza (tu nave va dentro y se queda donde la dejes). */}
+      {docked && dockMother && (
+        <button type="button" className="action-btn" aria-label={t("actions.pilotMothership")} title={t("actions.pilotMothershipTitle")} onClick={() => void engineRef.current?.pilotFleetShip(docked.fleetId, dockMother.id)}>
+          <HudIcon name="mothership" />
+        </button>
+      )}
       <i className="action-sep" />
       {/* Seguro de armas: con él puesto no se dispara y el clic selecciona. */}
       <button
