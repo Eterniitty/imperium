@@ -7,6 +7,9 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import WebSocket from "ws";
 import { LOGIN_TOKEN_PARAM, PROTOCOL_VERSION, WS_CLOSE, type Emperor, type EmperorView, type Fleet, type ServerMessage, type Topic, type Visibility } from "@imperium/shared";
 import { generateSector, universeSeedFromString } from "@imperium/procgen";
+import { findSystem } from "./systems";
+import { inHumanCore } from "../src/emperor/world";
+import { piratesOf } from "../src/space/pirates";
 import { defaultPark, parkedPosition, planetPosition, quantumFuelCost } from "@imperium/sim";
 import { EMPEROR_FLAGSHIP, CONTRACTS, SPACE_EVENTS } from "@imperium/content";
 import { buildApp } from "../src/app";
@@ -490,6 +493,32 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       sa.send({ t: "cmd", cmdId: "ayuda-0002", op: "help.call", args: {} });
       expect(await sa.next(ack("ayuda-0002"))).toMatchObject({ ok: false, error: "rate_limited" });
     });
+
+    it("reto de caza: solo fuera del Núcleo con Carroñeros; la manada aparece alrededor y no se repite enseguida", async () => {
+      const { a, b, sa, sb, systemId } = await twoInOneSystem("hidden");
+      const ack = (cmdId: string) => (m: ServerMessage): m is Extract<ServerMessage, { t: "ack" }> => m.t === "ack" && m.cmdId === cmdId;
+      // En el Núcleo, no.
+      await parkAt(b.emperor.id, near(systemId, [100, 0, 0]));
+      sb.send({ t: "pose", systemId, ...pose(near(systemId, [100, 0, 0])) });
+      await sb.next(is("space"));
+      sb.send({ t: "cmd", cmdId: "reto-00001", op: "challenge.start", args: {} });
+      expect(await sb.next(ack("reto-00001"))).toMatchObject({ ok: false, error: "no_pirates" });
+      // Fuera, en un sistema con Carroñeros.
+      const outer = findSystem(seed, (s) => !inHumanCore(s.id) && piratesOf(s.id).length > 0, 2);
+      await database.db.update(emperors).set({ systemId: outer.id }).where(eq(emperors.id, a.emperor.id));
+      const at = near(outer.id, [100, 0, 0]);
+      await parkAt(a.emperor.id, at);
+      sa.send({ t: "pose", systemId: outer.id, ...pose(at) });
+      await sa.next((m): m is Extract<ServerMessage, { t: "space" }> => m.t === "space" && m.systemId === outer.id);
+      sa.send({ t: "cmd", cmdId: "reto-00002", op: "challenge.start", args: {} });
+      expect(await sa.next(ack("reto-00002"))).toMatchObject({ ok: true });
+      expect(await sa.next(is("challenge"))).toMatchObject({ kills: 0, wave: 1 });
+      sa.send({ t: "cmd", cmdId: "reto-00003", op: "challenge.start", args: {} });
+      expect(await sa.next(ack("reto-00003"))).toMatchObject({ ok: false, error: "rate_limited" });
+      // Al irse (deja de pilotar), el reto acaba con lo que lleve.
+      sa.send({ t: "leave" });
+      await settle(1500);
+    }, 20_000);
 
     it("rescate: quedarse junto a los restos de un contrato el tiempo pedido lo da por cumplido (y solo ese)", async () => {
       const { a, sa, systemId } = await twoInOneSystem("hidden");

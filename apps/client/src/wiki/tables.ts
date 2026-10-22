@@ -17,6 +17,7 @@ import {
   GOALS,
   type GoalKind,
   SPACE_EVENTS,
+  HUNT_CHALLENGE,
   type RankPerk,
   AI_PERSONALITIES,
   type AiPersonality,
@@ -302,6 +303,14 @@ export const GEN_TABLES: Record<string, Builder> = {
     numeric: [1],
   }),
 
+  "reto-caza": (t, locale) =>
+    kv(t, [
+      ["wiki.k.challengeDuration", t("wiki.v.minutes", { n: Math.round(HUNT_CHALLENGE.durationSec / 60) })],
+      ["wiki.k.challengeWave", `${num(locale, HUNT_CHALLENGE.waveDelaySec)} s`],
+      ["wiki.k.challengeReward", t("wiki.v.challengeReward", { xp: HUNT_CHALLENGE.xpPerKill, credits: num(locale, HUNT_CHALLENGE.creditsPerKill) })],
+      ["wiki.k.challengeRest", t("wiki.v.minutes", { n: HUNT_CHALLENGE.cooldownMin })],
+    ]),
+
   sucesos: (t, locale) =>
     kv(t, [
       ["wiki.k.eventArrival", `${num(locale, SPACE_EVENTS.chanceOnArrival * 100)} %`],
@@ -338,6 +347,7 @@ export const GEN_TABLES: Record<string, Builder> = {
       [t("rank.src.mine", { n: RANK_XP.minedPerXp })],
       [t("rank.src.event", { a: SPACE_EVENTS.salvage.xp, b: SPACE_EVENTS.distress.xp })],
       [t("rank.src.goal", { a: GOALS.daily.xp, b: GOALS.weekly.xp })],
+      [t("rank.src.challenge", { n: HUNT_CHALLENGE.xpPerKill })],
     ],
   }),
 

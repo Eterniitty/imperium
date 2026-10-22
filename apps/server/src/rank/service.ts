@@ -29,6 +29,23 @@ export class RankService {
     return { xp: row.xp, up: rankOf(row.xp).index > rankOf(row.xp - n).index };
   }
 
+  /** Lo que ve el jugador: su experiencia y su récord del reto de caza. */
+  async view(emperorId: string): Promise<{ xp: number; best: number }> {
+    const [row] = await this.db.select({ xp: emperors.xp, best: emperors.challengeBest }).from(emperors).where(eq(emperors.id, emperorId)).limit(1);
+    return { xp: row?.xp ?? 0, best: row?.best ?? 0 };
+  }
+
+  /** Guarda el récord del reto de caza si `kills` lo supera; devuelve el récord y si es nuevo. */
+  async challengeRecord(emperorId: string, kills: number): Promise<{ best: number; record: boolean }> {
+    return this.db.transaction(async (tx) => {
+      const [row] = await tx.select({ best: emperors.challengeBest }).from(emperors).where(eq(emperors.id, emperorId)).for("update").limit(1);
+      const old = row?.best ?? 0;
+      if (kills <= old) return { best: old, record: false };
+      await tx.update(emperors).set({ challengeBest: kills }).where(eq(emperors.id, emperorId));
+      return { best: kills, record: true };
+    });
+  }
+
   async of(emperorId: string, tx?: Tx): Promise<number> {
     const [row] = await (tx ?? this.db).select({ xp: emperors.xp }).from(emperors).where(eq(emperors.id, emperorId)).limit(1);
     return row?.xp ?? 0;

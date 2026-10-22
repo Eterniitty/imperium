@@ -66,6 +66,8 @@ export interface SpaceState {
   beams: Record<string, number>;
   /** Suceso en el espacio de la nave propia (`SPACE_EVENTS`): la señal y si falta decidir. */
   event: { id: string; kind: "salvage" | "distress"; at: [number, number, number]; expiresAt: number; decide: boolean } | null;
+  /** Reto de caza en marcha (`HUNT_CHALLENGE`). */
+  challenge: { until: number; kills: number; wave: number } | null;
   /** Bodega y refinería de a bordo según el servidor (mientras se pilota). */
   hold: { hold: Partial<Record<StockId, number>>; capacity: number; refining: boolean } | null;
   /** Último pulso de minería rechazado (motivo y hora local), para avisar en el HUD. */
@@ -90,7 +92,7 @@ export const fleetShipId = (shipId: string) => `ship:${shipId}`;
 /** Armas que se pueden seleccionar: cañón, misiles y láser de minería (solo en el espacio profundo). */
 export type SelectedWeapon = "cannon" | "missile" | "laser";
 
-const EMPTY: SpaceState = { systemId: null, ships: {}, correction: null, self: null, weapons: [], supplies: null, targetId: null, weapon: "cannon", shots: [], explosions: [], rifts: [], destroyed: null, field: null, beams: {}, event: null, hold: null, mineFail: null, aim: null, mining: false, remote: null, remoteEnded: null, docked: null, undocked: false };
+const EMPTY: SpaceState = { systemId: null, ships: {}, correction: null, self: null, weapons: [], supplies: null, targetId: null, weapon: "cannon", shots: [], explosions: [], rifts: [], destroyed: null, field: null, beams: {}, event: null, challenge: null, hold: null, mineFail: null, aim: null, mining: false, remote: null, remoteEnded: null, docked: null, undocked: false };
 
 export const spaceStore = createStore<SpaceState>()(() => ({ ...EMPTY }));
 

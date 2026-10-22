@@ -275,6 +275,9 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     await hub.publishFlagship(owner.emperorId);
                     return { ok: true } as const;
                   }
+                  case "challenge.start": {
+                    return space.startChallenge(owner.emperorId);
+                  }
                   case "event.decide": {
                     return space.decideEvent(owner.emperorId, msg.args.id, msg.args.go);
                   }

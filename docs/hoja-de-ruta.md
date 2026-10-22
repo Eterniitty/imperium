@@ -153,7 +153,8 @@ Plan en `docs/juego-solitario.md` y `docs/tutorial.md`. Orden:
 - [x] Objetivos diarios y semanales con racha (22-10-2026; `GOALS`, `GoalService`, migración 0049).
 - [x] Tutorial: capítulos 5–8 (combate, minería, colonias y flotas; 22-10-2026).
 - [x] Tutorial: capítulos 9–12 (nodriza, economía, linaje y contratos; 22-10-2026). Pendiente: capítulo del Astillero con el editor nuevo (E13).
-- [ ] Retos de combate, crisis de colonias y lore como recompensa.
+- [x] Reto de caza (22-10-2026): oleadas de Carroñeros durante 5 minutos fuera del Núcleo, pago por derribo y récord personal (`HUNT_CHALLENGE`, migración 0051).
+- [ ] Crisis de colonias y lore como recompensa.
 
 ## Editor 3D de construcción de naves (petición del 22-10-2026, noche)
 

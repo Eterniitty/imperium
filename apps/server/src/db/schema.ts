@@ -94,6 +94,8 @@ export const emperors = pgTable("emperors", {
   /** Racha de días con los objetivos del día cumplidos, y el último día que contó. */
   goalStreak: integer("goal_streak").notNull().default(0),
   goalStreakDay: integer("goal_streak_day").notNull().default(-1),
+  /** Récord personal del reto de caza (`HUNT_CHALLENGE`: derribos en un reto). */
+  challengeBest: integer("challenge_best").notNull().default(0),
   /** Tecnología investigada (`TECH_TREES` → nivel). */
   tech: jsonb("tech").$type<Record<string, number>>().notNull().default({}),
   /** Investigación en marcha: rama, nivel al que llega y cuándo termina (ms). */

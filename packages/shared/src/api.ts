@@ -223,6 +223,8 @@ export interface GoalsView {
 /** Rango del Emperador (tema `me`, `rank`): su experiencia; el rango y las mejoras salen de `RANKS` (`@imperium/content`). */
 export interface RankView {
   xp: number;
+  /** Récord personal del reto de caza (derribos). */
+  best?: number;
 }
 
 /** Táctica de una flota en las batallas por rondas (efectos en `FLEET_TACTICS` de `@imperium/content`). */

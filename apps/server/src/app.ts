@@ -1,4 +1,4 @@
-import { CONTRACTS, RANK_XP } from "@imperium/content";
+import { CONTRACTS, HUNT_CHALLENGE, RANK_XP } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import { eq } from "drizzle-orm";
 import { discoveries as discoveriesTable, emperors as emperorsTable } from "./db/schema";
@@ -254,6 +254,13 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   contracts.onSpots = (emperorId, spots) => space.setRescueSpots(emperorId, spots);
   space.onRescue = (emperorId, contractId) => pushContract(emperorId, "rescue", 1, contractId);
   logistics.onDelivered = (emperorId, units) => pushContract(emperorId, "deliver", units);
+  // Reto de caza: paga por derribo y guarda el récord.
+  space.onChallengeEnd = async (emperorId, kills) => {
+    if (kills > 0) space.onEventReward?.(emperorId, { credits: kills * HUNT_CHALLENGE.creditsPerKill, xp: kills * HUNT_CHALLENGE.xpPerKill });
+    const r = await rank.challengeRecord(emperorId, kills);
+    if (r.record) await hub.publishRank(emperorId);
+    return r;
+  };
   // Sucesos en el espacio: lo que pagan (la bodega la llena el espacio local).
   space.onEventReward = (emperorId, r) =>
     void (async () => {

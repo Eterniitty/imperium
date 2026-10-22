@@ -1,4 +1,4 @@
-import { AIM_ASSIST, ALIEN_LOCAL, CONTRACTS, SPACE_EVENTS, type SpaceEventKind, QUANTUM_RIFT, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, SUPERMASSIVE, REPUTATION, getAlienShipClass, getShipClass, HELP_CALL, MINING, PIRATE_AI, PIRATE_AMBUSH, SCAVENGER_LAIR, type ShipClassId, type ShipCombat } from "@imperium/content";
+import { AIM_ASSIST, ALIEN_LOCAL, CONTRACTS, HUNT_CHALLENGE, SPACE_EVENTS, type SpaceEventKind, QUANTUM_RIFT, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, SUPERMASSIVE, REPUTATION, getAlienShipClass, getShipClass, HELP_CALL, MINING, PIRATE_AI, PIRATE_AMBUSH, SCAVENGER_LAIR, type ShipClassId, type ShipCombat } from "@imperium/content";
 import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, MOTHERSHIP_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipDesignSnapshot, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
 import { addToHold, arriveVelocity, designStats, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, parkAt, anchorCenter, PULSE_CHARGE_SEC, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
@@ -1561,6 +1561,7 @@ export class SpaceService {
       if (v.kind === "pirate" && attackerOwner && !attackerOwner.startsWith("pirate:") && !attackerOwner.startsWith("militia:")) {
         this.onReputation?.(attackerOwner, v.ai?.anchored ? REPUTATION.lairKill : REPUTATION.pirateKill);
         this.onPirateKill?.(attackerOwner);
+        this.challengeKill(attackerOwner, v.systemId);
       }
       void this.destroy(v, attackerName);
     }
@@ -1578,6 +1579,75 @@ export class SpaceService {
   /** Desde cuándo está cada nave junto a unos restos (clave `emperorId:contractId`). */
   private readonly rescueSince = new Map<string, number>();
   private lastRescueCheck = 0;
+
+  // --- Reto de caza (`HUNT_CHALLENGE`; en memoria, solo mientras se pilota) ---
+
+  /** Al acabar un reto: paga y guarda el récord (lo pone app.ts); devuelve el récord y si es nuevo. */
+  onChallengeEnd: ((emperorId: string, kills: number) => Promise<{ best: number; record: boolean }>) | null = null;
+  private readonly challenges = new Map<string, { systemId: string; until: number; kills: number; wave: number; nextWaveAt: number | null }>();
+  private readonly challengeRest = new Map<string, number>();
+
+  /** Empieza un reto de caza: pilotando, fuera del Núcleo y en un sistema con Carroñeros. */
+  startChallenge(emperorId: string): { ok: true } | { ok: false; error: CommandError } {
+    const m = this.members.get(emperorId);
+    const now = this.now();
+    if (!m || m.kind !== "emperor" || m.clients.size === 0 || m.park || isDeepId(m.systemId)) return { ok: false, error: "not_present" };
+    if (inHumanCore(m.systemId) || piratesOf(m.systemId).length === 0) return { ok: false, error: "no_pirates" };
+    if (this.challenges.has(emperorId) || (this.challengeRest.get(emperorId) ?? 0) > now) return { ok: false, error: "rate_limited" };
+    const c = { systemId: m.systemId, until: now + HUNT_CHALLENGE.durationSec * 1000, kills: 0, wave: 1, nextWaveAt: null };
+    this.challenges.set(emperorId, c);
+    this.challengeWave(m.systemId, m.pose.p, true);
+    this.sendTo(m, { t: "challenge", until: c.until, kills: 0, wave: 1 });
+    return { ok: true };
+  }
+
+  /** Llega una oleada: los Carroñeros del sistema (también los caídos, salvo la guarida) aparecen alrededor. */
+  private challengeWave(systemId: string, center: Vec3, first: boolean): void {
+    const room = this.rooms.get(systemId);
+    if (!room) return;
+    if (!first) piratesOf(systemId).forEach((_, i) => this.deadPirates.delete(`pirate:${systemId}:${i}`));
+    this.spawnPirates(systemId, room);
+    this.surround(systemId, center);
+  }
+
+  private challengeKill(emperorId: string, systemId: string): void {
+    const c = this.challenges.get(emperorId);
+    const m = this.members.get(emperorId);
+    if (!c || c.systemId !== systemId || !m) return;
+    c.kills++;
+    this.sendTo(m, { t: "challenge", until: c.until, kills: c.kills, wave: c.wave });
+  }
+
+  private checkChallenges(now: number): void {
+    for (const [emperorId, c] of this.challenges) {
+      const m = this.members.get(emperorId);
+      // Se va del sistema, aparca o cae: el reto acaba con lo que lleve.
+      if (!m || m.clients.size === 0 || m.park || m.systemId !== c.systemId || m.combat.hull <= 0 || now >= c.until) {
+        this.endChallenge(emperorId, c.kills, m ?? null, now);
+        continue;
+      }
+      const alive = [...(this.rooms.get(c.systemId) ?? [])].some((o) => o.kind === "pirate" && !o.ai?.anchored && o.combat.hull > 0);
+      if (alive) continue;
+      if (c.nextWaveAt === null) c.nextWaveAt = now + HUNT_CHALLENGE.waveDelaySec * 1000;
+      else if (now >= c.nextWaveAt) {
+        c.nextWaveAt = null;
+        c.wave++;
+        this.challengeWave(c.systemId, m.pose.p, false);
+        this.sendTo(m, { t: "challenge", until: c.until, kills: c.kills, wave: c.wave });
+      }
+    }
+  }
+
+  private endChallenge(emperorId: string, kills: number, m: Member | null, now: number): void {
+    this.challenges.delete(emperorId);
+    this.challengeRest.set(emperorId, now + HUNT_CHALLENGE.cooldownMin * 60_000);
+    const reward = { xp: kills * HUNT_CHALLENGE.xpPerKill, credits: kills * HUNT_CHALLENGE.creditsPerKill };
+    void (this.onChallengeEnd ? this.onChallengeEnd(emperorId, kills) : Promise.resolve({ best: kills, record: false }))
+      .then((r) => {
+        if (m && m.clients.size > 0) this.sendTo(m, { t: "challengeEnd", kills, best: r.best, record: r.record, reward });
+      })
+      .catch((err: unknown) => this.log.error(err, "Error al cerrar un reto de caza"));
+  }
 
   // --- Sucesos en el espacio (`SPACE_EVENTS`; en memoria, solo mientras se pilota) ---
 
@@ -2384,6 +2454,7 @@ export class SpaceService {
       this.lastRescueCheck = now;
       this.checkRescues(now);
       this.checkEvents(now);
+      this.checkChallenges(now);
     }
     if (now - this.lastSuppliesSend >= SUPPLIES_SEND_MS) {
       this.lastSuppliesSend = now;

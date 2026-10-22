@@ -62,3 +62,9 @@ They only chase **piloted** ships: your parked ship does not interest them. Dest
 The fleets in their territory also change with depth: skiffs and raiders at the edge; breakers, bombers and the odd mothership in the deepest regions.
 
 {{tabla:carroneros-flotas}}
+
+## Hunt challenge
+
+If you want to test yourself against them, the **Goals** tab of the contracts window has the **hunt challenge**: flying **outside the Human Core**, in a system with Scavengers, press **Start here**. The system's pack appears all around you and, each time it falls completely, another **wave** arrives. At the top centre you see the wave, your kills and the time left. If you leave the system, park or fall, the challenge ends with what you have. When it ends you are paid for each kill and your **record** is saved.
+
+{{tabla:reto-caza}}

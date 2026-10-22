@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
-import { GOALS, RANK_XP, RANKS, rankOf, rankPerks, SPACE_EVENTS, type RankPerk } from "@imperium/content";
+import { GOALS, HUNT_CHALLENGE, RANK_XP, RANKS, rankOf, rankPerks, SPACE_EVENTS, type RankPerk } from "@imperium/content";
 import type { Contract, ContractOffer, Goal as GoalItem, I18nKey } from "@imperium/shared";
+import { spaceStore } from "../net/space";
 import { connection, useWorld } from "../net/world";
 import { useT } from "../state/store";
 import { engineRef } from "../engineRef";
@@ -86,7 +87,39 @@ function GoalsTab() {
         </>
       )}
       <p className="muted small">{t("goal.hint")}</p>
+      <ChallengeBox />
     </div>
+  );
+}
+
+/** Reto de caza: récord personal y empezar uno donde se pilota. */
+function ChallengeBox() {
+  const t = useT();
+  const best = useWorld((s) => s.rank?.best ?? 0);
+  const running = useStore(spaceStore, (s) => s.challenge !== null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<I18nKey | null>(null);
+  const start = async () => {
+    setBusy(true);
+    setError(await connection.command("challenge.start", {}));
+    setBusy(false);
+  };
+  return (
+    <>
+      <h3>{t("challenge.title")}</h3>
+      <p className="muted small">{t("challenge.hint", { min: Math.round(HUNT_CHALLENGE.durationSec / 60) })}</p>
+      <div className="space-event-foot">
+        <span className="small">{t("challenge.best", { n: best })}</span>
+        <button type="button" className="btn btn-small" disabled={busy || running} onClick={() => void start()}>
+          {t("challenge.start")}
+        </button>
+      </div>
+      {error && (
+        <p className="auth-error small" role="alert">
+          {t(error)}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -143,6 +176,7 @@ function RankTab() {
         <li>{t("rank.src.mine", { n: RANK_XP.minedPerXp })}</li>
         <li>{t("rank.src.event", { a: SPACE_EVENTS.salvage.xp, b: SPACE_EVENTS.distress.xp })}</li>
         <li>{t("rank.src.goal", { a: GOALS.daily.xp, b: GOALS.weekly.xp })}</li>
+        <li>{t("rank.src.challenge", { n: HUNT_CHALLENGE.xpPerKill })}</li>
       </ul>
       <p className="muted small">{t("rank.keep")}</p>
     </div>

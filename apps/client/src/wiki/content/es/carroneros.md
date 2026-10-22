@@ -62,3 +62,9 @@ Solo persiguen naves **pilotadas**: tu nave aparcada no les llama la atención. 
 Las flotas de su territorio también cambian con la profundidad: en el borde, esquifes y asaltantes; en lo más hondo, desguazadores, bombarderos y alguna nave nodriza.
 
 {{tabla:carroneros-flotas}}
+
+## Reto de caza
+
+Si quieres medirte con ellos, en la pestaña **Objetivos** de la ventana de contratos tienes el **reto de caza**: pilotando **fuera del Núcleo Humano**, en un sistema con Carroñeros, pulsa **Empezar aquí**. La manada del sistema aparece a tu alrededor y, cada vez que cae entera, llega otra **oleada**. Arriba en el centro ves la oleada, tus derribos y el tiempo que queda. Si te vas del sistema, aparcas o caes, el reto acaba con lo que lleves. Al terminar cobras por cada derribo y se guarda tu **récord**.
+
+{{tabla:reto-caza}}

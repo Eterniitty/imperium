@@ -400,6 +400,17 @@ class Connection {
       case "field":
         spaceStore.setState({ field: msg.region });
         return;
+      case "challenge": {
+        if (!spaceStore.getState().challenge) gameStore.getState().notify("challenge.started");
+        else if (spaceStore.getState().challenge!.wave < msg.wave) gameStore.getState().notify("challenge.wave", { n: msg.wave });
+        spaceStore.setState({ challenge: { until: msg.until, kills: msg.kills, wave: msg.wave } });
+        return;
+      }
+      case "challengeEnd": {
+        spaceStore.setState({ challenge: null });
+        gameStore.getState().notify(msg.record ? "challenge.record" : "challenge.end", { kills: msg.kills, best: msg.best, xp: msg.reward.xp, credits: msg.reward.credits });
+        return;
+      }
       case "spaceEvent": {
         const prev = spaceStore.getState().event;
         spaceStore.setState({ event: { id: msg.id, kind: msg.kind, at: msg.at, expiresAt: msg.expiresAt, decide: msg.decide } });

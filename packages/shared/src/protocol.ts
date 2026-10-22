@@ -81,6 +81,8 @@ export interface CommandArgs {
   "flagship.refine": { on: boolean };
   /** Suceso en el espacio con decisión (señal de socorro): acudir o no. */
   "event.decide": { id: string; go: boolean };
+  /** Empieza un reto de caza en el sistema donde se pilota (`HUNT_CHALLENGE`). */
+  "challenge.start": Record<string, never>;
   /** Tira por la borda todo un recurso de la bodega (para hacer sitio). */
   "flagship.jettison": { resource: StockId };
   "fleet.move": { fleetId: string; systemId: string };
@@ -329,6 +331,7 @@ export type CommandError =
   | "in_battle"
   | "unknown_contract"
   | "too_many_contracts"
+  | "no_pirates"
   | "unknown_emperor"
   /** La nave no tiene armas (no se puede pilotar a distancia). */
   | "ship_unarmed"
@@ -447,6 +450,10 @@ export type ServerMessage =
    */
   | { t: "spaceEvent"; id: string; kind: "salvage" | "distress"; at: [number, number, number]; expiresAt: number; decide: boolean }
   /** El suceso terminó: cumplido (con su recompensa), trampa, ignorado, perdido o porque la nave se fue. */
+  /** Reto de caza en marcha: hasta cuándo, derribos y oleada. */
+  | { t: "challenge"; until: number; kills: number; wave: number }
+  /** Reto de caza terminado: derribos, récord personal (y si es nuevo) y lo que paga. */
+  | { t: "challengeEnd"; kills: number; best: number; record: boolean; reward: { xp: number; credits: number } }
   | { t: "spaceEventEnd"; id: string; outcome: "done" | "trap" | "ignored" | "expired" | "left"; reward?: { credits?: number; xp?: number; units?: number } }
   /** Láser de minería de una nave de la región (para dibujarlo): el asteroide, o null si se apaga. */
   | { t: "beam"; id: string; asteroid: number | null }

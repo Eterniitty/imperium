@@ -177,7 +177,7 @@ export class Hub {
           this.lineage ? this.lineage.status(client.emperorId) : Promise.resolve(null),
           this.probes ? this.probes.list(client.emperorId) : Promise.resolve([]),
           this.contracts ? this.contracts.view(client.emperorId) : Promise.resolve(null),
-          this.rank ? this.rank.of(client.emperorId).then((xp) => ({ xp })) : Promise.resolve(null),
+          this.rank ? this.rank.view(client.emperorId) : Promise.resolve(null),
           this.goals ? this.goals.view(client.emperorId) : Promise.resolve(null),
         ]);
         if (!this.clients.has(client) || !humans || !wallet) return;
@@ -290,8 +290,8 @@ export class Hub {
   publishRank(emperorId: string): Promise<void> {
     return this.enqueue(async () => {
       if (!this.rank) return;
-      const xp = await this.rank.of(emperorId);
-      this.send("me", this.nextMeSeq(emperorId), [{ path: "rank", v: { xp } }], (c) => c.emperorId === emperorId);
+      const v = await this.rank.view(emperorId);
+      this.send("me", this.nextMeSeq(emperorId), [{ path: "rank", v }], (c) => c.emperorId === emperorId);
     });
   }
 

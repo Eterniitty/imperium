@@ -33,3 +33,20 @@ export const SPACE_EVENTS = {
   /** Socorro: recompensa al rescatar y probabilidad de trampa (solo fuera del Núcleo, si hay Carroñeros). */
   distress: { credits: 400, reputation: 2, xp: 25, trapChance: 0.3 },
 } as const;
+
+/**
+ * Reto de caza (`docs/juego-solitario.md`, prioridad 5): pilotando fuera del
+ * Núcleo Humano, en un sistema con Carroñeros, se empieza un reto de
+ * `durationSec`. La manada aparece alrededor; cuando cae entera llega otra
+ * oleada. Cada derribo suma; al acabar paga y se guarda el récord personal.
+ */
+export const HUNT_CHALLENGE = {
+  durationSec: 300,
+  /** Segundos entre que cae una oleada y llega la siguiente. */
+  waveDelaySec: 8,
+  /** Recompensa por cada derribo (además de lo normal de un derribo). */
+  xpPerKill: 10,
+  creditsPerKill: 60,
+  /** Minutos de espera para volver a empezar un reto. */
+  cooldownMin: 20,
+} as const;
