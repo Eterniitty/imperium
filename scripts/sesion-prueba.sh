@@ -7,7 +7,9 @@
 #   ./scripts/sesion-prueba.sh borrar <token> → borra esa cuenta con la API del juego
 #                                               (como «Borrar cuenta» en Ajustes)
 #
-# Pendiente de que el usuario lo apruebe (excepción en el hook de datos personales).
+# Autorizado por el usuario el 22-10-2026 como única vía para tocar cuentas de prueba (regla 11).
+#   ./scripts/sesion-prueba.sh limpiar        → borra, sin leer filas, las cuentas de prueba sin sesión
+#                                               vigente (por si alguna se quedó colgada)
 set -euo pipefail
 DB="${DB:-imperium}"
 API="${API:-http://127.0.0.1:3000}"
@@ -47,8 +49,25 @@ SQL
     sed -i "/^$hash\$/d" "$LIST"
     echo "borrada"
     ;;
+  limpiar)
+    # Sus eventos pendientes primero (si no, quedarían reintentos sobre filas borradas); luego las cuentas
+    # (en cascada: sesiones, Emperador, flotas…). Solo cuentas de prueba sin ninguna sesión vigente.
+    psql -d "$DB" -v ON_ERROR_STOP=1 -qtA >/dev/null <<'SQL'
+WITH stale AS (
+  SELECT a.id FROM accounts a
+  WHERE a.email LIKE 'prueba-%@example.invalid'
+    AND NOT EXISTS (SELECT 1 FROM sessions s WHERE s.account_id = a.id AND s.expires_at > now())
+), emps AS (
+  SELECT e.id::text AS id FROM emperors e WHERE e.account_id IN (SELECT id FROM stale)
+), ev AS (
+  DELETE FROM scheduled_events WHERE payload->>'emperorId' IN (SELECT id FROM emps)
+)
+DELETE FROM accounts WHERE id IN (SELECT id FROM stale);
+SQL
+    echo "limpio"
+    ;;
   *)
-    echo "uso: $0 crear | borrar <token>" >&2
+    echo "uso: $0 crear | borrar <token> | limpiar" >&2
     exit 2
     ;;
 esac

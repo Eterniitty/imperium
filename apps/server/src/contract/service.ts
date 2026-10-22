@@ -115,18 +115,27 @@ export class ContractService {
     const next = rng(`${emperorId}:${day}`);
     const total = KINDS.reduce((n, k) => n + CONTRACTS.kinds[k].weight, 0);
     const out: ContractOffer[] = [];
+    const seen = new Set<string>();
     for (let i = 0; i < CONTRACTS.offersPerDay + perks.contractOffers; i++) {
-      let roll = next() * total;
+      // Sin dos ofertas iguales el mismo día (se vuelve a sortear unas pocas veces).
       let kind: Kind = KINDS[0]!;
-      for (const k of KINDS) {
-        roll -= CONTRACTS.kinds[k].weight;
-        if (roll <= 0) {
-          kind = k;
-          break;
+      let tier = 0;
+      for (let tries = 0; tries < 6; tries++) {
+        let roll = next() * total;
+        kind = KINDS[0]!;
+        for (const k of KINDS) {
+          roll -= CONTRACTS.kinds[k].weight;
+          if (roll <= 0) {
+            kind = k;
+            break;
+          }
         }
+        const targets = CONTRACTS.kinds[kind].targets;
+        tier = Math.min(targets.length - 1, Math.floor(next() * targets.length));
+        if (!seen.has(`${kind}:${tier}`)) break;
       }
+      seen.add(`${kind}:${tier}`);
       const def = CONTRACTS.kinds[kind];
-      const tier = Math.min(def.targets.length - 1, Math.floor(next() * def.targets.length));
       const target = def.targets[tier]!;
       const credits = Math.round(target * def.creditsPer * (1 + perks.contractRewardPct / 100));
       out.push({ id: `${day}:${i}`, kind, target, credits, reputation: def.reputationPerTier * (tier + 1), hours: def.hours });

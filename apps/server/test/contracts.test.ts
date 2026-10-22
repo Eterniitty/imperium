@@ -69,6 +69,8 @@ describe.skipIf(!TEST_DATABASE_URL)("contratos y rango", () => {
     const view = await app.contracts.view(e.id);
     expect(view.offers).toHaveLength(CONTRACTS.offersPerDay);
     expect(view.maxActive).toBe(CONTRACTS.maxActive);
+    // Sin dos ofertas iguales el mismo día.
+    expect(new Set(view.offers.map((o) => `${o.kind}:${o.target}`)).size).toBe(view.offers.length);
     // Deterministas: las mismas ofertas al pedirlas otra vez.
     expect((await app.contracts.view(e.id)).offers).toEqual(view.offers);
 
