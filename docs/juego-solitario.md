@@ -28,3 +28,17 @@ Petición del usuario (22-10-2026): «aún no se siente como un juego». Hace fa
 - **Cliente**: ventana «Contratos» con pestañas (Ofertas, En curso, Completados), objetivo marcado en el mapa y en el espacio (destino del crucero), aviso al completar y recompensa.
 - Sin texto libre: todo son plantillas con nombres de sistemas y recursos.
 - Wiki: artículo «Contratos».
+
+## Estado (22-10-2026, noche)
+
+| # | Mecánica | Estado |
+|---|---|---|
+| 1 | Contratos | ✓ Hecho: caza, exploración, minería, rescate (restos en un sistema conocido, señal y destino del crucero) y reparto (descarga en otro sistema que el de carga); tablero diario sin repetidos, plazos, pago. |
+| 2 | Rango del Emperador | ✓ Hecho: diez rangos, experiencia de casi todo lo que se hace; mejoras de contratos (huecos, ofertas, recompensa) y de la bodega. Pendiente: combustible y misiles. |
+| 3 | Sucesos en el espacio | ✓ Hecho: restos a la deriva (también en el espacio profundo) y señales de socorro con decisión y trampa. Pendiente: más tipos. |
+| 4 | Objetivos del día y de la semana | ✓ Hecho, con racha. |
+| 5 | Retos de combate | ✓ Hecho: reto de caza por oleadas con récord personal. |
+| 6 | Colonias que piden cosas | ✓ Hecho: escasez y malestar con plazo, premio y castigo. |
+| 7 | Lore como recompensa | Sin empezar. |
+
+Todo vive en la ventana de contratos (pestañas Objetivos, Ofertas, En curso, Historial y Rango) y lo explica el tutorial (capítulo 12) y la Wiki (Contratos, Rango, Sucesos en el espacio, Carroñeros y Colonias).
