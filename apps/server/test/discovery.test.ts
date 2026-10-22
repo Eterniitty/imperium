@@ -7,7 +7,8 @@ import { eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import WebSocket from "ws";
 import { EMPEROR_FLAGSHIP, getShipClass, STARTING_FLEET } from "@imperium/content";
-import { generateSector, generateSystemDetail, universeSeedFromString } from "@imperium/procgen";
+import { generateSystemDetail, universeSeedFromString } from "@imperium/procgen";
+import { findSystems } from "./systems";
 import { LOGIN_TOKEN_PARAM, PROTOCOL_VERSION, type Emperor, type ServerMessage, type StarSystemDetail } from "@imperium/shared";
 import { buildApp } from "../src/app";
 import { sessionCookieName } from "../src/auth/routes";
@@ -46,7 +47,7 @@ describe.skipIf(!TEST_DATABASE_URL)("niebla de guerra", () => {
   const SESSION_COOKIE = sessionCookieName(config);
   const seed = universeSeedFromString(config.UNIVERSE_SEED);
   /** Sistemas lejanos (a 500 a.l. del Núcleo Humano): nadie los conoce al empezar. */
-  const farSystems = generateSector(seed, { x: 5, y: 0, z: 0 }).systems;
+  const farSystems = findSystems(seed, 2, () => true, 5);
   let app: Awaited<ReturnType<typeof buildApp>>;
   let wsUrl = "";
   const sockets: WebSocket[] = [];

@@ -215,10 +215,11 @@ describe("especies en el juego (Fase 11)", () => {
   });
 
   it("getAnyShipClass encuentra naves humanas y alienígenas", async () => {
-    const { getAnyShipClass, anyFleetSpeedLyPerHour } = await import("../src");
+    const { getAnyShipClass, anyFleetSpeedLyPerHour, TRAVEL_SPEED_SCALE } = await import("../src");
     expect(getAnyShipClass("frigate")!.attack).toBe(getShipClass("frigate")!.attack);
     expect(getAnyShipClass("tharaxi_drone")!.hull).toBeGreaterThan(0);
     expect(getAnyShipClass("no_existe")).toBeUndefined();
-    expect(anyFleetSpeedLyPerHour(["frigate", "nomad_ark"])).toBe(Math.min(getShipClass("frigate")!.speedLyPerHour, getAnyShipClass("nomad_ark")!.speedLyPerHour));
+    // La de la nave más lenta, con la escala de los viajes entre estrellas.
+    expect(anyFleetSpeedLyPerHour(["frigate", "nomad_ark"])).toBe(Math.min(getShipClass("frigate")!.speedLyPerHour, getAnyShipClass("nomad_ark")!.speedLyPerHour) * TRAVEL_SPEED_SCALE);
   });
 });

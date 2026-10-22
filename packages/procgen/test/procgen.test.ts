@@ -56,9 +56,12 @@ describe("generateSector", () => {
     for (let x = -2; x <= 2; x++) {
       for (let z = -2; z <= 2; z++) {
         const coord = { x, y: 0, z };
+        // Los límites por sector son los de antes del aclarado de la versión 3 (que deja ~1 de cada 150 estrellas).
+        const full = generateSector(SEED, coord, 2);
+        expect(full.systems.length).toBeGreaterThanOrEqual(MIN_SYSTEMS_PER_SECTOR);
+        expect(full.systems.length).toBeLessThanOrEqual(MAX_SYSTEMS_PER_SECTOR);
         const sector = generateSector(SEED, coord);
-        expect(sector.systems.length).toBeGreaterThanOrEqual(MIN_SYSTEMS_PER_SECTOR);
-        expect(sector.systems.length).toBeLessThanOrEqual(MAX_SYSTEMS_PER_SECTOR);
+        expect(sector.systems.length).toBeLessThanOrEqual(full.systems.length);
         for (const s of sector.systems) {
           expect(worldToSector(s.position)).toEqual(coord);
           expect(ids.has(s.id)).toBe(false);
@@ -113,8 +116,9 @@ describe("generateSystemDetail", () => {
 
   it("los gigantes gaseosos no tienen metal: la geografía importa", () => {
     let checked = 0;
-    for (let x = 0; x < 6; x++) {
-      for (const s of generateSector(SEED, { x, y: 2, z: 0 }).systems) {
+    // Con la galaxia de ~30 000 estrellas (versión 3) hay pocos sistemas por sector: se miran más.
+    for (let x = -12; x <= 12; x++) {
+      for (const s of [-1, 0, 1].flatMap((z) => generateSector(SEED, { x, y: 0, z }).systems)) {
         for (const p of generateSystemDetail(SEED, s, DETAIL).planets) {
           if (p.type === "gas_giant") {
             expect(p.deposits.metal).toBe(0);

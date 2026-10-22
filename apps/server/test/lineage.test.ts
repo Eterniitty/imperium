@@ -10,7 +10,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import WebSocket from "ws";
 import { EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, getShipClass, HEIRS, LINEAGE } from "@imperium/content";
-import { generateSector, universeSeedFromString } from "@imperium/procgen";
+import { universeSeedFromString } from "@imperium/procgen";
+import { findSystem } from "./systems";
 import { LOGIN_TOKEN_PARAM, PROTOCOL_VERSION, type Emperor, type LineageStatus, type ServerMessage, type StarSystemSummary } from "@imperium/shared";
 import { gestationMs, planetPosition } from "@imperium/sim";
 import { buildApp } from "../src/app";
@@ -43,7 +44,7 @@ describe.skipIf(!TEST_DATABASE_URL)("muerte y linaje (Fase 10)", () => {
   const spawns = new Set(spawnCandidates(seed).map((s) => s.id));
   const [sysA, sysB] = spawnCandidates(seed).filter((s) => details.detail(s).planets.length >= 2) as [StarSystemSummary, StarSystemSummary];
   /** Un sistema con planetas fuera del Núcleo Humano. */
-  const outer = generateSector(seed, { x: 2, y: 0, z: 0 }).systems.find((s) => details.detail(s).planets.length >= 1 && !inHumanCore(s.id))!;
+  const outer = findSystem(seed, (s) => details.detail(s).planets.length >= 1 && !inHumanCore(s.id), 2);
   let app: Awaited<ReturnType<typeof buildApp>>;
   let wsUrl = "";
   const sockets: WebSocket[] = [];

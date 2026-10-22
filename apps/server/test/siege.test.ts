@@ -10,7 +10,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import WebSocket from "ws";
 import { AI_EMPERORS, ALIEN_SIEGE, getFaction, getShipClass, getSpecies, SIEGE } from "@imperium/content";
-import { generateSector, universeSeedFromString } from "@imperium/procgen";
+import { universeSeedFromString } from "@imperium/procgen";
+import { findSystem, systemsOutward } from "./systems";
 import { LOGIN_TOKEN_PARAM, PROTOCOL_VERSION, type Emperor, type ServerMessage, type Siege, type StarSystemSummary } from "@imperium/shared";
 import { buildApp } from "../src/app";
 import { sessionCookieName } from "../src/auth/routes";
@@ -56,7 +57,7 @@ describe.skipIf(!TEST_DATABASE_URL)("conquista de planetas (Fase 9b)", () => {
   const details = new DiscoveryService(db, config);
   const [sysA, sysB] = spawnCandidates(seed).filter((s) => details.detail(s).planets.length >= 2) as [StarSystemSummary, StarSystemSummary];
   /** Un sistema con planetas fuera del Núcleo Humano. */
-  const outer = generateSector(seed, { x: 2, y: 0, z: 0 }).systems.find((s) => details.detail(s).planets.length >= 1 && !inHumanCore(s.id))!;
+  const outer = findSystem(seed, (s) => details.detail(s).planets.length >= 1 && !inHumanCore(s.id), 2);
   let app: Awaited<ReturnType<typeof buildApp>>;
   let wsUrl = "";
   const sockets: WebSocket[] = [];
@@ -317,16 +318,14 @@ describe.skipIf(!TEST_DATABASE_URL)("conquista de planetas (Fase 9b)", () => {
     // Una facción hostil que ataca, con un sistema con planetas en su territorio.
     let target: StarSystemSummary | null = null;
     let factionId = "";
-    for (let x = 2; x <= 16 && !target; x++)
-      for (let y = -1; y <= 1 && !target; y++)
-        for (const s of generateSector(app.aliens.territory.universeSeed, { x, y, z: 0 }).systems) {
-          const o = app.aliens.territory.owner(s);
-          if (!o || getFaction(o.factionId)?.relation !== "hostile" || getSpecies(o.speciesId)?.ai.intruders !== "attack") continue;
-          if (details.detail(s).planets.length === 0) continue;
-          target = s;
-          factionId = o.factionId;
-          break;
-        }
+    for (const s of systemsOutward(app.aliens.territory.universeSeed, 2)) {
+      const o = app.aliens.territory.owner(s);
+      if (!o || getFaction(o.factionId)?.relation !== "hostile" || getSpecies(o.speciesId)?.ai.intruders !== "attack") continue;
+      if (details.detail(s).planets.length === 0) continue;
+      target = s;
+      factionId = o.factionId;
+      break;
+    }
     expect(target).toBeTruthy();
     const victim = await player("Colono", sysA.id, ["freighter"]);
     const c = await colony(victim.emperor.id, target!.id, details.detail(target!).planets[0]!.index);

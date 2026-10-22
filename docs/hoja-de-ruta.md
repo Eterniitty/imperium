@@ -115,6 +115,31 @@ Informe completo en Claude Docs («Aeonarch — Plan de juego»). Cinco fases, c
 - [ ] **Materiales y fabricación** (petición del usuario): ✔ F1 Fábrica, seis componentes con recetas y cadenas (`RECIPES`, `colonies.items`, encargo `craft`), las piezas avanzadas del Astillero los piden; ✔ F2 transportarlos en las bodegas (`fleet.items`, `fleet_cargo.items`); falta venderlos en el mercado.
 - [x] **Libros en la Wiki** (grupo «Libros», firma del autor; solo administradores).
 
+## Dónde se quedó el trabajo (22-10-2026, noche; antes del reinicio del servidor)
+
+Hecho y desplegado ese día por la tarde y la noche:
+- **Contratos (fase 1)**: ver más abajo.
+- **Crucero**: con el vuelo con ratón, mover el cursor suelto ya no lo cancela; un clic sobre la vista toma los mandos.
+- **Privacidad**:
+  - registros con la IP recortada (/24, /48), sin agente de usuario y sin la consulta de la URL, también en la puerta;
+  - resumen al inicio de la política de privacidad;
+  - términos «proyecto privado, gratuito y sin ánimo de lucro: no se piden ni se aceptan dinero ni ayudas de ningún tipo» y línea en la portada;
+  - `LEGAL_VERSION` 2026-10-22;
+  - Impressum según § 18 Abs. 1 MStV.
+- **Tests al día con la galaxia v3**: ayudante `apps/server/test/systems.ts`, que busca sistemas en anillos de sectores; 313/314 en verde.
+
+Pendiente, en este orden:
+1. **El usuario (con sudo)**:
+   - ejecutar `scripts/claude-ro.sql`: rol de solo lectura sin correos ni IP; instrucciones en el propio archivo;
+   - decidir si vacía las entradas antiguas del registro de accesos de la puerta (IP completa hasta el 22-10);
+   - decidir si quita `MAIL_LOG_LINKS`: el journal guarda el enlace de acceso.
+2. **Sábado 24-10**: planificar que Claude se ejecute con un usuario del sistema aparte, sin acceso a la base ni a los secretos (regla 11 de CLAUDE.md).
+3. **Rango del Emperador**: era la siguiente tarea de juego y aún no está empezado.
+4. Luego, el resto de «Siguiente: que se sienta como un juego» y los textos legales en alemán, con el mismo enfoque de proyecto privado (sin § 5 DDG).
+5. **Revisar**:
+   - con la galaxia v3 hay regiones alienígenas de un solo sistema; ahí la guarnición no aparece, porque no se crea en el sistema del intruso. Quizá convenga dejarla aparecer en ese sistema;
+   - el test «dos naves en el mismo sistema se ven y se mueven» de `realtime.test.ts` falló una vez en la suite completa y pasa solo: es intermitente.
+
 ## Siguiente: que se sienta como un juego (22-10-2026)
 
 Plan en `docs/juego-solitario.md` y `docs/tutorial.md`. Orden:

@@ -8,7 +8,8 @@
 import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { ALIEN_AI, getFaction, getShipClass, getSpecies, SPECIES } from "@imperium/content";
-import { coreRing, generateSector, regionKey } from "@imperium/procgen";
+import { coreRing, regionKey } from "@imperium/procgen";
+import { systemsOutward } from "./systems";
 import { LOGIN_TOKEN_PARAM, type AliensResponse, type ContactsResponse, type Emperor, type StarSystemSummary, type SystemAliensResponse } from "@imperium/shared";
 import { buildApp } from "../src/app";
 import { territorySeed } from "../src/ai/territory";
@@ -58,12 +59,10 @@ describe.skipIf(!TEST_DATABASE_URL)("especies alienígenas (Fase 11)", () => {
 
   /** Primer sistema (recorriendo anillos hacia fuera) cuyo dueño cumple `pred`. */
   function findTerritory(pred: (factionId: string) => boolean, extra: (s: StarSystemSummary) => boolean = () => true): StarSystemSummary {
-    for (let x = 2; x <= 16; x++)
-      for (let y = -1; y <= 1; y++)
-        for (const s of generateSector(app.aliens.territory.universeSeed, { x, y, z: 0 }).systems) {
-          const o = app.aliens.territory.owner(s);
-          if (o && pred(o.factionId) && extra(s)) return s;
-        }
+    for (const s of systemsOutward(app.aliens.territory.universeSeed, 2)) {
+      const o = app.aliens.territory.owner(s);
+      if (o && pred(o.factionId) && extra(s)) return s;
+    }
     throw new Error("No se encontró territorio");
   }
 
@@ -103,23 +102,27 @@ describe.skipIf(!TEST_DATABASE_URL)("especies alienígenas (Fase 11)", () => {
     expect(territorySeed(DEV_DETAIL_SEED)).not.toBe(territorySeed("otra-semilla-secreta-muy-larga"));
     const t = app.aliens.territory;
     const seen = new Set<string>();
-    for (let x = -1; x <= 14; x++)
-      for (let y = -1; y <= 1; y++)
-        for (const s of generateSector(t.universeSeed, { x, y, z: 0 }).systems) {
-          const o = t.owner(s);
-          if (coreRing(s.sector) <= 1) expect(o).toBeNull();
-          if (!o) continue;
-          seen.add(o.speciesId);
-          expect(coreRing(s.sector)).toBeGreaterThanOrEqual(getSpecies(o.speciesId)!.territory.minCoreRing);
-          expect(getFaction(o.factionId)!.speciesId).toBe(o.speciesId);
-        }
+    for (const s of systemsOutward(t.universeSeed, 0, 30)) {
+      const o = t.owner(s);
+      if (coreRing(s.sector) <= 1) expect(o).toBeNull();
+      if (!o) continue;
+      seen.add(o.speciesId);
+      expect(coreRing(s.sector)).toBeGreaterThanOrEqual(getSpecies(o.speciesId)!.territory.minCoreRing);
+      expect(getFaction(o.factionId)!.speciesId).toBe(o.speciesId);
+    }
     // Hay varias especies, y los Precursores no tienen territorio (solo ruinas).
     expect(seen.size).toBeGreaterThanOrEqual(3);
     expect(seen.has("precursors")).toBe(false);
   });
 
   it("una flota que entra en territorio de una facción hostil despierta la región y recibe una respuesta; combaten por rondas", async () => {
-    const target = findTerritory((f) => getFaction(f)!.relation === "hostile" && getSpecies(getFaction(f)!.speciesId)!.ai.intruders === "attack");
+    // Con otro sistema suyo en la región (la guarnición no aparece en el del intruso; con la galaxia de
+    // ~30 000 estrellas hay regiones de un solo sistema).
+    const t = app.aliens.territory;
+    const target = findTerritory(
+      (f) => getFaction(f)!.relation === "hostile" && getSpecies(getFaction(f)!.speciesId)!.ai.intruders === "attack",
+      (s) => t.factionSystems(regionKey(t.regionOf(s)), t.owner(s)!.factionId).length >= 2,
+    );
     const factionId = app.aliens.territory.owner(target)!.factionId;
     const key = regionKey(app.aliens.territory.regionOf(target));
     const p = await player("Intrusa", "0:0:0:0", ["frigate", "frigate"]);
