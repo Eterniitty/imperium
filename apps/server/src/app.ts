@@ -175,7 +175,11 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
       .catch((err: unknown) => app.log.error(err, "Error en el progreso de un objetivo"));
   const publishRank = async (emperorId: string, up: boolean) => {
     await hub.publishRank(emperorId);
-    if (up) await hub.publishContracts(emperorId);
+    // Al subir cambian las mejoras: el tablero de contratos y la bodega de la nave.
+    if (up) {
+      await hub.publishContracts(emperorId);
+      await hub.publishFlagship(emperorId);
+    }
   };
   const pushContract = (emperorId: string, kind: "hunt" | "explore" | "mine" | "rescue", amount: number, contractId?: string) =>
     void contracts

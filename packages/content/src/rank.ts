@@ -5,6 +5,7 @@
  * rangos dan una mejora; todas las aplica el servidor. La experiencia nunca se
  * pierde (tampoco al morir: el linaje la conserva).
  */
+import { FLAGSHIP_HOLD } from "./deepspace";
 
 /** Mejoras acumuladas a partir de un rango (se suman a las de los anteriores). */
 export interface RankPerk {
@@ -14,6 +15,8 @@ export interface RankPerk {
   contractOffers?: number;
   /** Recompensa de los contratos (créditos), en tanto por ciento de más. */
   contractRewardPct?: number;
+  /** Capacidad de la bodega de la nave del Emperador, en tanto por ciento de más. */
+  holdPct?: number;
 }
 
 export interface RankDef {
@@ -26,13 +29,13 @@ export interface RankDef {
 
 export const RANKS: readonly RankDef[] = [
   { id: "aspirant", xp: 0 },
-  { id: "captain", xp: 100 },
+  { id: "captain", xp: 100, perk: { holdPct: 10 } },
   { id: "commander", xp: 250, perk: { contractSlots: 1 } },
-  { id: "commodore", xp: 500 },
+  { id: "commodore", xp: 500, perk: { holdPct: 10 } },
   { id: "rearAdmiral", xp: 900, perk: { contractOffers: 1 } },
-  { id: "admiral", xp: 1500 },
+  { id: "admiral", xp: 1500, perk: { holdPct: 15 } },
   { id: "grandAdmiral", xp: 2400, perk: { contractRewardPct: 20 } },
-  { id: "voidLord", xp: 3600 },
+  { id: "voidLord", xp: 3600, perk: { holdPct: 15 } },
   { id: "archon", xp: 5200, perk: { contractSlots: 1, contractOffers: 1 } },
   { id: "aeonarch", xp: 7500, perk: { contractRewardPct: 20 } },
 ];
@@ -58,13 +61,19 @@ export function rankOf(xp: number): { index: number; rank: RankDef; next: RankDe
 
 /** Mejoras de un rango: las suyas y las de todos los anteriores. */
 export function rankPerks(index: number): Required<RankPerk> {
-  const out: Required<RankPerk> = { contractSlots: 0, contractOffers: 0, contractRewardPct: 0 };
+  const out: Required<RankPerk> = { contractSlots: 0, contractOffers: 0, contractRewardPct: 0, holdPct: 0 };
   for (let i = 0; i <= index && i < RANKS.length; i++) {
     const p = RANKS[i]!.perk;
     if (!p) continue;
     out.contractSlots += p.contractSlots ?? 0;
     out.contractOffers += p.contractOffers ?? 0;
     out.contractRewardPct += p.contractRewardPct ?? 0;
+    out.holdPct += p.holdPct ?? 0;
   }
   return out;
+}
+
+/** Capacidad de la bodega de la nave del Emperador con la experiencia `xp` (`FLAGSHIP_HOLD` más la mejora del rango). */
+export function holdCapacityFor(xp: number): number {
+  return Math.round(FLAGSHIP_HOLD.capacity * (1 + rankPerks(rankOf(xp).index).holdPct / 100));
 }

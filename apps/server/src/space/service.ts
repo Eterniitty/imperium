@@ -969,7 +969,7 @@ export class SpaceService {
   private async sendHold(m: Member, hold?: Hold): Promise<void> {
     try {
       const h = hold ?? (await this.flagships.hold(m.emperorId));
-      this.sendTo(m, { t: "hold", hold: h, capacity: FLAGSHIP_HOLD.capacity, refining: this.refining.has(m.emperorId) });
+      this.sendTo(m, { t: "hold", hold: h, capacity: await this.flagships.holdCapacity(m.emperorId), refining: this.refining.has(m.emperorId) });
     } catch (err) {
       this.log.error(err, "Error al leer la bodega");
     }
@@ -1016,9 +1016,9 @@ export class SpaceService {
       if (left <= 0.01) return fail("empty");
       const take = Math.min(want, left);
       // Primero la bodega (con la fila bloqueada): lo que quepa es lo que se extrae.
-      const stored = await this.flagships.updateHold(m.emperorId, (hold) => {
+      const stored = await this.flagships.updateHold(m.emperorId, (hold, capacity) => {
         // Lluvia de mineral (crisis galáctica): rinde más.
-        const { hold: next, added } = addToHold(hold, miningYield(a.kind, take * (this.crisis?.factor("miningYield") ?? 1)));
+        const { hold: next, added } = addToHold(hold, miningYield(a.kind, take * (this.crisis?.factor("miningYield") ?? 1)), capacity);
         return added > 1e-6 ? { hold: next, result: { hold: next, added } } : null;
       });
       if (!stored) return fail("full");
@@ -1688,8 +1688,8 @@ export class SpaceService {
     const loot: Hold = { metal: (units * split[0]!) / sum, volatiles: (units * split[1]!) / sum, rare_metals: (units * split[2]!) / sum };
     this.onEventReward?.(m.emperorId, { xp: E.salvage.xp });
     void this.flagships
-      .updateHold(m.emperorId, (hold) => {
-        const { hold: next, added } = addToHold(hold, loot);
+      .updateHold(m.emperorId, (hold, capacity) => {
+        const { hold: next, added } = addToHold(hold, loot, capacity);
         return added > 1e-6 ? { hold: next, result: { hold: next, added } } : null;
       })
       .then((stored) => {

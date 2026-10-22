@@ -1,4 +1,4 @@
-import { ECONOMY, EMPEROR_FLAGSHIP, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, HOLD_STOCK_IDS, type StockId } from "@imperium/content";
+import { ECONOMY, EMPEROR_FLAGSHIP, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, holdCapacityFor, FLAGSHIP_SUPPLIES, HOLD_STOCK_IDS, type StockId } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import { isDeepId, type CommandError, type FlagshipStatus, type StarSystemDetail, type StarSystemSummary } from "@imperium/shared";
 import { deepLayout, defaultPark, regenFuel, sanitizeHold, sanitizePark, systemLayout, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
@@ -122,7 +122,7 @@ export class FlagshipService {
   /** Estado de la nave para su dueño (tema `me`), o null si no hay Emperador. */
   async status(emperorId: string): Promise<FlagshipStatus | null> {
     const [row] = await this.db
-      .select({ id: emperors.id, systemId: emperors.systemId, destSystemId: emperors.destSystemId, departAt: emperors.departAt, arriveAt: emperors.arriveAt, hold: emperors.hold, ...PARK_COLUMNS, ...SUPPLY_COLUMNS })
+      .select({ id: emperors.id, systemId: emperors.systemId, destSystemId: emperors.destSystemId, departAt: emperors.departAt, arriveAt: emperors.arriveAt, hold: emperors.hold, xp: emperors.xp, ...PARK_COLUMNS, ...SUPPLY_COLUMNS })
       .from(emperors)
       .where(eq(emperors.id, emperorId));
     if (!row) return null;
@@ -155,11 +155,17 @@ export class FlagshipService {
         hullMax: EMPEROR_FLAGSHIP.hull,
       },
       hold: sanitizeHold(row.hold),
-      holdCapacity: FLAGSHIP_HOLD.capacity,
+      holdCapacity: holdCapacityFor(row.xp),
     };
   }
 
   /** Bodega de la nave (lo minado). */
+  /** Capacidad de la bodega (con la mejora del rango). */
+  async holdCapacity(emperorId: string): Promise<number> {
+    const [row] = await this.db.select({ xp: emperors.xp }).from(emperors).where(eq(emperors.id, emperorId));
+    return holdCapacityFor(row?.xp ?? 0);
+  }
+
   async hold(emperorId: string): Promise<Hold> {
     const [row] = await this.db.select({ hold: emperors.hold }).from(emperors).where(eq(emperors.id, emperorId));
     return sanitizeHold(row?.hold);
@@ -169,11 +175,11 @@ export class FlagshipService {
    * Cambia la bodega dentro de una transacción con la fila bloqueada: `fn`
    * recibe la actual y devuelve la nueva (o null para no cambiar nada).
    */
-  async updateHold<T>(emperorId: string, fn: (hold: Hold) => { hold: Hold; result: T } | null): Promise<T | null> {
+  async updateHold<T>(emperorId: string, fn: (hold: Hold, capacity: number) => { hold: Hold; result: T } | null): Promise<T | null> {
     return this.db.transaction(async (tx) => {
-      const [row] = await tx.select({ hold: emperors.hold, deadAt: emperors.deadAt }).from(emperors).where(eq(emperors.id, emperorId)).for("update").limit(1);
+      const [row] = await tx.select({ hold: emperors.hold, deadAt: emperors.deadAt, xp: emperors.xp }).from(emperors).where(eq(emperors.id, emperorId)).for("update").limit(1);
       if (!row || row.deadAt) return null;
-      const out = fn(sanitizeHold(row.hold));
+      const out = fn(sanitizeHold(row.hold), holdCapacityFor(row.xp));
       if (!out) return null;
       await tx.update(emperors).set({ hold: sanitizeHold(out.hold) }).where(eq(emperors.id, emperorId));
       return out.result;
