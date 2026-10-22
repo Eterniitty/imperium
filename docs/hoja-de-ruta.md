@@ -107,8 +107,8 @@ Informe completo en Claude Docs («Aeonarch — Plan de juego»). Cinco fases, c
 
 ## Rediseño de la interfaz y editor de naves (petición del 21-10-2026)
 
-- [ ] **Interfaz profesional** (`docs/rediseno-interfaz.md`): U1 teclas solo para lo constante y botones para lo demás; U2 sistema de diseño; U3 menú con Esc; U4 HUD por zonas y animaciones; U5 mapa y paneles.
-- [ ] **Editor de naves por piezas** (`docs/editor-naves.md`): E1 piezas y reglas; E2 servidor; E3 editor; E4 las estadísticas mandan; E5 modelos 3D de las piezas.
+- [ ] **Interfaz profesional** (`docs/rediseno-interfaz.md`): ✔ U1 teclas solo para lo constante y barra de acciones; ✔ U2 sistema de diseño; ✔ U3 menú de ajustes nuevo; ✔ U4 (fundidos del HUD; falta reordenar el HUD por zonas); U5 mapa y paneles.
+- [ ] **Editor de naves por piezas** (`docs/editor-naves.md`): ✔ E1 piezas y reglas (`packages/content` shipParts.ts, `packages/sim` shipDesign.ts, con pruebas); E2 servidor; E3 editor; E4 las estadísticas mandan; E5 modelos 3D de las piezas.
 - [x] **Libros en la Wiki** (grupo «Libros», firma del autor; solo administradores).
 
 ## Antes de abrir al público (obligatorio, en paralelo)

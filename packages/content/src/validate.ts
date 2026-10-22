@@ -2,6 +2,7 @@ import type { FactionDefinition, ShipClassDefinition, ShipCombat, SpeciesDefinit
 import { SPECIES } from "./species";
 import { FACTIONS } from "./factions";
 import { SHIP_CLASSES } from "./ships";
+import { fitsSlot, HULLS, hullAtLeast, PARTS } from "./shipParts";
 import { contentEn, contentEs, type ContentDictionary } from "./i18n";
 import { ALIEN_SHIP_CLASSES, SCAVENGER_DANGER, type AlienShipClassDefinition } from "./aliens";
 import { ECONOMY, getInstallation, STOCK_IDS } from "./economy";
@@ -171,6 +172,23 @@ export function validateContent(
       const ship = alienShips.find((a) => a.id === id);
       if (!ship || ship.speciesId !== "scavengers" || !ship.flight) errors.push(`${where}: ${id} no es una nave de los Carroñeros con vuelo`);
     }
+  }
+
+  // Editor de naves: cascos y piezas (ids únicos, anclajes con sentido, valores no negativos).
+  for (const id of duplicates([...HULLS.map((h) => h.id), ...PARTS.map((p) => p.id)])) errors.push(`Id de casco o pieza duplicado: ${id}`);
+  for (const h of HULLS) {
+    keys.push(h.nameKey);
+    for (const id of duplicates(h.slots.map((s) => s.id))) errors.push(`casco ${h.id}: anclaje duplicado ${id}`);
+    if (!h.slots.some((s) => s.kinds.includes("bridge")) || !h.slots.some((s) => s.kinds.includes("reactor")) || !h.slots.some((s) => s.kinds.includes("thruster")))
+      errors.push(`casco ${h.id}: le falta anclaje para puente, reactor o motor`);
+    if (!(h.massT > 0 && h.hull > 0 && h.cargo >= 0)) errors.push(`casco ${h.id}: masa, casco o bodega inválidos`);
+  }
+  for (const p of PARTS) {
+    keys.push(p.nameKey);
+    if (!(p.massT > 0 && p.drawMW >= 0 && p.cost.credits >= 0)) errors.push(`pieza ${p.id}: masa, energía o coste inválidos`);
+    if (Object.values(p.stats).some((v) => typeof v === "number" && !(v >= 0))) errors.push(`pieza ${p.id}: estadística negativa`);
+    if (!HULLS.some((h) => h.slots.some((s) => s.kinds.includes(p.kind) && fitsSlot(p.size, s.size) && (!p.minHull || hullAtLeast(h.class, p.minHull)))))
+      errors.push(`pieza ${p.id}: no cabe en ningún casco`);
   }
 
   // Claves i18n presentes y no vacías en ambos idiomas
