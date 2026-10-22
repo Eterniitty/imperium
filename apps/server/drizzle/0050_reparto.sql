@@ -1,0 +1,1 @@
+ALTER TABLE "fleet_cargo" ADD COLUMN "loaded_in" text;

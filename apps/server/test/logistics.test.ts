@@ -156,6 +156,24 @@ describe.skipIf(!TEST_DATABASE_URL)("logística", () => {
     expect(await cmd("fleet.move", { fleetId, systemId: sysB.id })).toMatchObject({ ok: true });
   });
 
+  it("reparto: solo cuenta lo descargado en otro sistema que el de carga", async () => {
+    const { emperor, a, b, fleetId, cmd } = await setup();
+    const delivered: number[] = [];
+    app.logistics.onDelivered = (id, units) => {
+      if (id === emperor.id) delivered.push(units);
+    };
+    // Cargar y descargar en el mismo sistema no cuenta (se carga de sobra: en los tests la colonia vuelve a llenar el almacén enseguida).
+    expect(await cmd("fleet.transfer", { fleetId, colonyId: a.id, direction: "load", amounts: { metal: 600 } })).toMatchObject({ ok: true });
+    expect((await cargoOf(fleetId))!.loadedIn).toBe(sysA.id);
+    expect(await cmd("fleet.transfer", { fleetId, colonyId: a.id, direction: "unload", amounts: { metal: 100 } })).toMatchObject({ ok: true });
+    expect(delivered).toEqual([]);
+    // Llevarlo a una colonia de otro sistema sí.
+    expect(await cmd("fleet.move", { fleetId, systemId: sysB.id })).toMatchObject({ ok: true });
+    await arrive(fleetId);
+    expect(await cmd("fleet.transfer", { fleetId, colonyId: b.id, direction: "unload", amounts: { metal: 80 } })).toMatchObject({ ok: true });
+    expect(delivered.reduce((x, y) => x + y, 0)).toBeCloseTo(80, 3);
+  });
+
   it("rutas no válidas: misma colonia, nada que llevar o sin bodega", async () => {
     const { a, b, fleetId, cmd } = await setup();
     expect(await cmd("fleet.route", { fleetId, fromColonyId: a.id, toColonyId: a.id, carry: ["metal"], humans: false })).toMatchObject({ ok: false, error: "invalid_route" });

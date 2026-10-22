@@ -146,7 +146,7 @@ Plan en `docs/juego-solitario.md` y `docs/tutorial.md`. Orden:
 
 - [x] Contratos (fase 1, 22-10-2026): caza de Carroñeros, exploración y minería, con tablero diario, plazos y pago en créditos y reputación (`ContractService`, migración 0046, Wiki «Contratos»).
 - [x] Contratos (fase 2, 22-10-2026): rescate con restos a la deriva, señal en el sistema, destino del crucero y «Ver en el mapa» (migración 0048).
-- [ ] Contratos: reparto de recursos que obligue a transportar de verdad (que no se cumpla cargando y descargando en el mismo sistema).
+- [x] Contratos: reparto de recursos (22-10-2026): solo cuenta lo que una flota descarga en una colonia propia de otro sistema que el de carga (`fleet_cargo.loaded_in`, migración 0050).
 - [x] Rango del Emperador (22-10-2026): experiencia, diez títulos y mejoras de los contratos (`RANKS`, `RankService`, migración 0047, Wiki «Rango»). Pendiente: mejoras de la nave (bodega, combustible, misiles).
 - [x] Tutorial: motor, menú (Ajustes → Tutorial) y capítulos 1–4 (22-10-2026).
 - [x] Sucesos en el espacio (22-10-2026): restos a la deriva y señales de socorro con decisión y trampa (`SPACE_EVENTS`, Wiki «Sucesos en el espacio»). Pendiente: más tipos (anomalías, emboscadas anunciadas) y que pasen también en el espacio profundo.

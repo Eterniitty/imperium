@@ -157,7 +157,7 @@ export interface Probe {
 }
 
 /** Tipo de contrato (`CONTRACTS` de `@imperium/content`). */
-export type ContractKind = "hunt" | "explore" | "mine" | "rescue";
+export type ContractKind = "hunt" | "explore" | "mine" | "rescue" | "deliver";
 
 /** Oferta del tablero de contratos (se renueva cada día). */
 export interface ContractOffer {

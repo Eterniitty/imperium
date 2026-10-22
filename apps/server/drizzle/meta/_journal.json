@@ -344,6 +344,13 @@
       "when": 1792704408864,
       "tag": "0049_objetivos",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1792709331043,
+      "tag": "0050_reparto",
+      "breakpoints": true
     }
   ]
 }

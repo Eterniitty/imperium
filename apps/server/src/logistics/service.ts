@@ -55,14 +55,22 @@ export class LogisticsService {
       row,
       cargo,
       items,
+      loadedIn: c?.loadedIn ?? null,
       capacity: fleetCapacity(shipRows.map((s) => s.classId)),
       at: isTravelling(place, now) ? null : place.location.systemId,
     };
   }
 
-  private async saveCargo(tx: Tx, fleetId: string, cargo: Cargo): Promise<void> {
-    await tx.insert(fleetCargo).values({ fleetId, ...cargo }).onConflictDoUpdate({ target: fleetCargo.fleetId, set: { ...cargo } });
+  private async saveCargo(tx: Tx, fleetId: string, cargo: Cargo, loadedIn?: string | null): Promise<void> {
+    const extra = loadedIn !== undefined ? { loadedIn } : {};
+    await tx
+      .insert(fleetCargo)
+      .values({ fleetId, ...cargo, ...extra })
+      .onConflictDoUpdate({ target: fleetCargo.fleetId, set: { ...cargo, ...extra } });
   }
+
+  /** Contratos de reparto: recursos llevados a una colonia de otro sistema que el de carga (lo pone app.ts). */
+  onDelivered: ((emperorId: string, units: number) => void) | null = null;
 
   /**
    * Mueve recursos y pasajeros entre una flota y una colonia propia del mismo
@@ -125,8 +133,16 @@ export class LogisticsService {
     }
     if (KINDS.every((k) => moved[k] <= EPS)) return clamp ? { ok: true, moved } : { ok: false, error: "nothing_to_transfer" };
 
-    await this.saveCargo(tx, fleetId, cargo);
+    // Reparto: lo descargado en otro sistema que el de carga cuenta; al cargar, se apunta dónde.
+    const resources = (c: Cargo) => CARGO_STOCK_IDS.reduce((a, r) => a + c[r], 0);
+    const here = colony.row.systemId;
+    let loadedIn: string | null = fleet.loadedIn;
+    if (direction === "load" && resources(moved) > EPS) loadedIn = here;
+    const delivered = direction === "unload" && fleet.loadedIn && fleet.loadedIn !== here ? resources(moved) : 0;
+    if (resources(cargo) <= EPS) loadedIn = null;
+    await this.saveCargo(tx, fleetId, cargo, loadedIn);
     await this.colonies.writeState(tx, colonyId, { population, stock }, now);
+    if (delivered > EPS) this.onDelivered?.(emperorId, delivered);
     const sign = direction === "load" ? -1 : 1;
     await tx.insert(resourceLedger).values({
       emperorId,

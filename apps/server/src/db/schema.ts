@@ -561,6 +561,8 @@ export const fleetCargo = pgTable(
     humans: doublePrecision("humans").notNull().default(0),
     /** Componentes fabricados en la bodega (ocupan sitio como los recursos). */
     items: jsonb("items").$type<Record<string, number>>().notNull().default({}),
+    /** Sistema donde se cargaron por última vez recursos (para los contratos de reparto: cuenta lo que se lleva a otro). */
+    loadedIn: text("loaded_in"),
   },
   (t) => [check("fleet_cargo_nonnegative", sql`${t.metal} >= 0 AND ${t.volatiles} >= 0 AND ${t.crystal} >= 0 AND ${t.alloys} >= 0 AND ${t.humans} >= 0`)],
 );

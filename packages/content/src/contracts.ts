@@ -4,7 +4,7 @@
  * (de forma determinista por Emperador) y caducan si no se cumplen a tiempo.
  * Todo son plantillas: sin texto libre.
  */
-export type ContractKind = "hunt" | "explore" | "mine" | "rescue";
+export type ContractKind = "hunt" | "explore" | "mine" | "rescue" | "deliver";
 
 export interface ContractKindDef {
   /** Objetivos posibles (de fácil a difícil). */
@@ -39,5 +39,7 @@ export const CONTRACTS = {
     mine: { targets: [40, 100, 220], creditsPer: 5, reputationPerTier: 1, hours: 48, weight: 2 },
     /** Llegar a unos restos a la deriva y quedarse junto a ellos (un solo nivel). */
     rescue: { targets: [1], creditsPer: 650, reputationPerTier: 3, hours: 24, weight: 2 },
+    /** Llevar en flota recursos a una colonia propia de otro sistema que el de carga (unidades descargadas). */
+    deliver: { targets: [100, 250, 500], creditsPer: 3, reputationPerTier: 1, hours: 72, weight: 2 },
   } satisfies Record<ContractKind, ContractKindDef>,
 } as const;

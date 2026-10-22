@@ -181,7 +181,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
       await hub.publishFlagship(emperorId);
     }
   };
-  const pushContract = (emperorId: string, kind: "hunt" | "explore" | "mine" | "rescue", amount: number, contractId?: string) =>
+  const pushContract = (emperorId: string, kind: "hunt" | "explore" | "mine" | "rescue" | "deliver", amount: number, contractId?: string) =>
     void contracts
       .progress(emperorId, kind, amount, contractId)
       .then(async (r) => {
@@ -253,6 +253,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   contracts.systemName = (id) => findSystem(universeSeed, id)?.name;
   contracts.onSpots = (emperorId, spots) => space.setRescueSpots(emperorId, spots);
   space.onRescue = (emperorId, contractId) => pushContract(emperorId, "rescue", 1, contractId);
+  logistics.onDelivered = (emperorId, units) => pushContract(emperorId, "deliver", units);
   // Sucesos en el espacio: lo que pagan (la bodega la llena el espacio local).
   space.onEventReward = (emperorId, r) =>
     void (async () => {
@@ -572,6 +573,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   app.decorate("contracts", contracts);
   app.decorate("rank", rank);
   app.decorate("goals", goals);
+  app.decorate("logistics", logistics);
   app.decorate("lineage", lineage);
   app.decorate("mercenaries", mercenaries);
   app.decorate("wars", wars);
@@ -597,5 +599,6 @@ declare module "fastify" {
     contracts: ContractService;
     rank: RankService;
     goals: GoalService;
+    logistics: LogisticsService;
   }
 }
