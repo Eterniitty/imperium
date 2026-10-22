@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { withLogDepth } from "./logDepth";
 import { Rng } from "@imperium/procgen";
+import { GALAXY, type WorldPosition } from "@imperium/shared";
 
 /**
  * Fondo lejano: una esfera con nebulosas de color, un campo de estrellas
@@ -42,6 +43,8 @@ export class Backdrop {
         uColC: { value: new THREE.Color() },
         uAmount: { value: 1 },
         uShift: { value: new THREE.Vector3() },
+        uCenterDir: { value: new THREE.Vector3(1, 0, 0) },
+        uCenterGlow: { value: 0.5 },
       },
       ...withLogDepth({
         vertexShader: /* glsl */ `
@@ -58,6 +61,8 @@ export class Backdrop {
           uniform vec3 uColC;
           uniform float uAmount;
           uniform vec3 uShift;
+          uniform vec3 uCenterDir;
+          uniform float uCenterGlow;
           varying vec3 vDir;
           float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7)) + uSeed) * 43758.5453); }
           float noise(vec3 p) {
@@ -72,7 +77,12 @@ export class Backdrop {
             float n = fbm(d * 2.2);
             float band = exp(-pow(d.y * 3.2 + (n - 0.5) * 1.2, 2.0));
             float lanes = smoothstep(0.42, 0.62, fbm(d * 7.0 + 3.0));
-            vec3 milky = vec3(0.07, 0.065, 0.07) * band * (0.55 + 0.45 * fbm(d * 12.0)) * mix(1.0, 0.35, lanes * band);
+            // Hacia el centro de la galaxia la banda brilla más y se ve el bulbo dorado; hacia fuera, se apaga.
+            float toward = max(dot(d, uCenterDir), 0.0);
+            float side = 0.45 + 1.1 * pow(toward, 3.0) * uCenterGlow;
+            vec3 milky = vec3(0.07, 0.065, 0.07) * band * side * (0.55 + 0.45 * fbm(d * 12.0)) * mix(1.0, 0.35, lanes * band);
+            float bulge = pow(toward, 10.0) * uCenterGlow * (0.6 + 0.4 * n) * mix(1.0, 0.45, lanes);
+            milky += vec3(0.2, 0.15, 0.08) * bulge;
             // Nebulosas: ruido deformado (filamentos), dos o tres colores y núcleos más brillantes.
             vec3 q = d * 1.6 + uShift;
             vec3 w = vec3(fbm(q + 1.7), fbm(q + 9.2), fbm(q + 4.4));
@@ -115,6 +125,15 @@ export class Backdrop {
     (u.uShift!.value as THREE.Vector3).set(rng.range(-50, 50), rng.range(-50, 50), rng.range(-50, 50));
     this.buildStars(rng);
     this.buildGalaxies(rng);
+  }
+
+  /** Orienta la galaxia en el cielo según dónde está el sistema: el centro, más brillante cuanto más cerca. */
+  setGalaxyPosition(p: WorldPosition): void {
+    const dir = new THREE.Vector3(GALAXY.center.x - p.x, GALAXY.center.y - p.y, GALAXY.center.z - p.z);
+    const dist = dir.length();
+    if (dist < 1) dir.set(1, 0, 0);
+    (this.skyMat.uniforms.uCenterDir!.value as THREE.Vector3).copy(dir.normalize());
+    this.skyMat.uniforms.uCenterGlow!.value = THREE.MathUtils.clamp(1.6 - dist / GALAXY.radius, 0.3, 1.6);
   }
 
   private buildStars(rng: Rng): void {

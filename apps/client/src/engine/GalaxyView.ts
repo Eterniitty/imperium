@@ -11,6 +11,7 @@ import {
 import { REBASE_DISTANCE } from "../config";
 import { isBound } from "../state/settings";
 import { gameStore } from "../state/store";
+import { GalaxyCloud } from "./GalaxyCloud";
 import { Backdrop } from "./Backdrop";
 import { EmperorMarkers } from "./EmperorMarkers";
 import { FlightController } from "./FlightController";
@@ -42,12 +43,13 @@ function smoothstep(t: number): number {
  */
 export class GalaxyView implements View {
   readonly scene = new THREE.Scene();
-  readonly camera = new THREE.PerspectiveCamera(55, 1, 0.1, 20000);
+  readonly camera = new THREE.PerspectiveCamera(55, 1, 0.1, 200_000);
   readonly controls: OrbitControls;
   readonly sectors = new SectorManager();
 
   private origin: WorldPosition;
   private backdrop = new Backdrop();
+  private cloud = new GalaxyCloud();
   private sectorBox: THREE.LineSegments;
   private selectRing: THREE.Sprite;
   private hoverRing: THREE.Sprite;
@@ -77,7 +79,8 @@ export class GalaxyView implements View {
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.08;
     this.controls.minDistance = 4;
-    this.controls.maxDistance = 900;
+    // Lejos, hasta ver la galaxia entera (30 000 a.l.).
+    this.controls.maxDistance = 45_000;
     this.controls.zoomSpeed = 1.2;
     this.controls.screenSpacePanning = true;
     this.controls.target.set(0, 0, 0);
@@ -86,7 +89,7 @@ export class GalaxyView implements View {
     this.flight = new FlightController(this.camera, dom, keyboard);
 
     this.sectors.setOrigin(this.origin);
-    this.scene.add(this.backdrop.object, this.sectors.group);
+    this.scene.add(this.backdrop.object, this.cloud.object, this.sectors.group);
 
     // Caja del sector actual: da referencia espacial en 3D.
     this.sectorBox = new THREE.LineSegments(
@@ -306,6 +309,7 @@ export class GalaxyView implements View {
     }
 
     this.updateMarkers();
+    this.cloud.update(this.origin, this.camera.position.distanceTo(this.controls.target));
     this.backdrop.follow(this.camera);
   }
 

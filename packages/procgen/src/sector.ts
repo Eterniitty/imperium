@@ -1,4 +1,5 @@
 import {
+  GALAXY,
   GENERATOR_VERSION,
   MAX_SYSTEMS_PER_SECTOR,
   MIN_SYSTEMS_PER_SECTOR,
@@ -14,6 +15,7 @@ import { fbm3 } from "./noise";
 import { Rng } from "./rng";
 import { STAR_CLASS_WEIGHTS } from "./stars";
 import { generateStarName } from "./names";
+import { GALAXY_CENTER_SECTOR, galaxyDensity } from "./galaxy";
 
 /** Convierte la semilla textual del universo en un entero de 32 bits. */
 export function universeSeedFromString(seed: string): number {
@@ -49,10 +51,11 @@ export function generateSector(
   const density = sectorDensity(universeSeed, coord);
 
   const span = MAX_SYSTEMS_PER_SECTOR - MIN_SYSTEMS_PER_SECTOR;
-  const count = Math.min(
-    MAX_SYSTEMS_PER_SECTOR,
-    MIN_SYSTEMS_PER_SECTOR + Math.floor(density * density * span + rng.next() * 5),
-  );
+  const raw = Math.min(MAX_SYSTEMS_PER_SECTOR, MIN_SYSTEMS_PER_SECTOR + Math.floor(density * density * span + rng.next() * 5));
+  // Desde la versión 2, la forma de la galaxia (disco, brazos, bulbo): fuera de ella, nada.
+  const shape = generatorVersion >= 2 ? galaxyDensity(coord) : 1;
+  const isCenter = generatorVersion >= 2 && coord.x === GALAXY_CENTER_SECTOR.x && coord.y === GALAXY_CENTER_SECTOR.y && coord.z === GALAXY_CENTER_SECTOR.z;
+  const count = generatorVersion >= 2 ? Math.max(isCenter ? 1 : 0, Math.floor(raw * shape + rng.next())) : raw;
 
   // Algunos sectores tienen cúmulos: parte de sus estrellas se agrupan.
   const clusterCount = rng.chance(0.35 + density * 0.4) ? rng.int(1, 2) : 0;
@@ -88,13 +91,20 @@ export function generateSector(
     ly = Math.min(SECTOR_SIZE - 0.01, Math.max(0, ly));
     lz = Math.min(SECTOR_SIZE - 0.01, Math.max(0, lz));
 
+    const name = generateStarName(rng);
+    const starClass = rng.weighted(STAR_CLASS_WEIGHTS);
+    // El agujero negro supermasivo del centro de la galaxia.
+    if (isCenter && i === 0) {
+      systems.push({ id: systemId(coord, 0), sector: { ...coord }, index: 0, name: GALAXY.centerName, position: { ...GALAXY.center }, starClass: "BH" });
+      continue;
+    }
     systems.push({
       id: systemId(coord, i),
       sector: { ...coord },
       index: i,
-      name: generateStarName(rng),
+      name,
       position: { x: origin.x + lx, y: origin.y + ly, z: origin.z + lz },
-      starClass: rng.weighted(STAR_CLASS_WEIGHTS),
+      starClass,
     });
   }
 

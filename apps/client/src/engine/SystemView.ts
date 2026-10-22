@@ -291,6 +291,7 @@ export class SystemView implements View {
     this.systemId = summary.id;
     // Cada sistema, su cielo (nebulosas y galaxias), siempre el mismo.
     this.backdrop.setSeed(hashString(summary.id));
+    this.backdrop.setGalaxyPosition(summary.position);
     this.fleetScene.setSystem(summary.id, layout);
     this.starName = summary.name;
 
