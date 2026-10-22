@@ -5,7 +5,7 @@
  * insertar, y ocultar o cambiar de grupo el artículo.
  */
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { BASE_LOCALES, WIKI_BODY_MAX, WIKI_BYLINE_MAX, WIKI_NOTE_MAX, WIKI_SLUG_MAX, WIKI_TITLE_MAX, isValidWikiSlug, type I18nKey, type Locale, type WikiPageMeta, type WikiPublished, type WikiRevisionInfo } from "@imperium/shared";
+import { BASE_LOCALES, WIKI_BODY_MAX, WIKI_BYLINE_KINDS, WIKI_BYLINE_MAX, WIKI_NOTE_MAX, WIKI_SLUG_MAX, WIKI_TITLE_MAX, isValidWikiSlug, type I18nKey, type Locale, type WikiBylineKind, type WikiPageMeta, type WikiPublished, type WikiRevisionInfo } from "@imperium/shared";
 import { wikiApi } from "./api";
 import { articleSource, buildArticle, sourceKey, wikiIndex, type WikiRemote } from "./articles";
 import { diffChunks, diffLines } from "./diff";
@@ -143,7 +143,7 @@ export function WikiEditor({
     onPublished(p);
   };
 
-  const setMeta = async (change: { hidden?: boolean; group?: WikiGroup; byline?: string }) => {
+  const setMeta = async (change: { hidden?: boolean; group?: WikiGroup; byline?: string; bylineKind?: WikiBylineKind | null }) => {
     setBusy(true);
     const res = await wikiApi.meta({ slug, ...change });
     setBusy(false);
@@ -298,6 +298,17 @@ export function WikiEditor({
               }}
             />
           </label>
+          <label>
+            <span>{t("wiki.edit.bylineKind")}</span>
+            <select value={entry.bylineKind ?? "written"} disabled={busy} onChange={(e) => void setMeta({ bylineKind: e.target.value as WikiBylineKind })}>
+              {WIKI_BYLINE_KINDS.map((k) => (
+                <option key={k} value={k}>
+                  {t(`wiki.bylineKind.${k}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="wiki-hint">{t("wiki.edit.formatHint")}</p>
           <button className="wiki-btn" disabled={busy} onClick={() => void setMeta({ hidden: !entry.hidden })}>
             {entry.hidden ? t("wiki.edit.show") : t("wiki.edit.hide")}
           </button>

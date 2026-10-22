@@ -7,6 +7,7 @@ import { BlockView, type T } from "./render";
 import { searchArticles } from "./search";
 import { WIKI_GROUPS, WIKI_HOME, isWikiSlug, routeSlug, wikiPath } from "./slugs";
 import { WikiCreate, WikiEditor } from "./WikiEditor";
+import { LIBRARY_SLUG, Library, RelatedBooks } from "./Library";
 
 /** Misma clave que el juego: el idioma elegido allí vale aquí y al revés. */
 const LOCALE_KEY = "imperium.locale";
@@ -119,7 +120,9 @@ export function WikiApp() {
   const toc = article ? article.blocks.filter((b): b is Extract<Block, { t: "h" }> => b.t === "h" && b.level === 2) : [];
 
   let main: ReactNode;
-  if (query.trim()) {
+  if (!query.trim() && slug === LIBRARY_SLUG && mode === "view") {
+    main = <Library entries={entries} remote={remote} locale={locale} t={t} titleOf={titleOf} link={navLink} />;
+  } else if (query.trim()) {
     main = (
       <section className="wiki-results" aria-live="polite">
         <h1>{t("wiki.results", { q: query.trim() })}</h1>
@@ -186,9 +189,10 @@ export function WikiApp() {
           <Fragment key={n}>
             <BlockView b={b} t={t} locale={locale} go={go} />
             {/* La firma, bajo el título. */}
-            {n === 0 && entry.byline && <p className="wiki-byline">{t("wiki.byline", { name: entry.byline })}</p>}
+            {n === 0 && (entry.byline || entry.bylineKind === "anonymous") && <p className="wiki-byline">{t(`wiki.byline.${entry.bylineKind ?? "written"}`, { name: entry.byline ?? "" })}</p>}
           </Fragment>
         ))}
+        {entry.group === "books" && <RelatedBooks slug={entry.slug} entries={entries} remote={remote} locale={locale} t={t} titleOf={titleOf} link={navLink} />}
         <nav className="wiki-pager">
           {prev ? navLink(prev, <>← {titleOf(prev)}</>, "prev") : <span />}
           {next ? navLink(next, <>{titleOf(next)} →</>, "next") : <span />}
@@ -258,7 +262,16 @@ export function WikiApp() {
             </section>
           )}
           {/* Los grupos vacíos (p. ej. «Libros» antes del primero) no salen en el índice. */}
-          {WIKI_GROUPS.filter((g) => entries.some((e) => e.group === g)).map((g) => (
+          {WIKI_GROUPS.filter((g) => entries.some((e) => e.group === g)).map((g) =>
+            // Los libros (cientos): una sola entrada, la biblioteca.
+            g === "books" ? (
+              <section key={g}>
+                <h2>{t(`wiki.group.${g}`)}</h2>
+                <ul>
+                  <li>{navLink(LIBRARY_SLUG, <>📚 {t("wiki.library")}</>)}</li>
+                </ul>
+              </section>
+            ) : (
             <section key={g}>
               <h2>{t(`wiki.group.${g}`)}</h2>
               <ul>
@@ -282,7 +295,8 @@ export function WikiApp() {
                   ))}
               </ul>
             </section>
-          ))}
+            ),
+          )}
           <a className="wiki-game show-sm" href="/">
             {t("wiki.backToGame")}
           </a>

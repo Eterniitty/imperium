@@ -1030,6 +1030,8 @@ export const wikiPages = pgTable(
     position: integer("position").notNull().default(0),
     /** Firma bajo el título (los libros: su autor). */
     byline: text("byline"),
+    /** Tipo de atribución del libro (`WIKI_BYLINE_KINDS`); null: «Escrito por». */
+    bylineKind: text("byline_kind"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

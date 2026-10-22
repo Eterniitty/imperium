@@ -19,6 +19,10 @@ Cerrar la pestaña no detiene nada. Lo que la nave estaba haciendo (crucero, sal
 - **Reportes con motivos fijos**, elegidos de una lista y sin texto del que reporta: nombre ofensivo u odioso, suplantación de identidad, contenido sexual o inapropiado en nombres, trampas o uso de errores, acoso o persecución en el juego, spam o cuentas múltiples. Se puede reportar un perfil, una flota o un planeta renombrado. Un reporte por motivo, jugador y objetivo, con límite de frecuencia. Cola solo para el administrador, con acciones: forzar renombrado, aviso y suspensión. Los términos recogen las normas y sanciones, y la privacidad qué se guarda de un reporte y cuánto tiempo.
 - **El administrador no ve datos personales** (correo, IP, sesiones) ni puede exportar datos de jugadores: solo juego y moderación. La exportación del RGPD (art. 15 y 20) la pide y la recibe solo el propio jugador, en su panel de cuenta.
 
+## Principio: los libros de la Wiki no se corrigen (22-10-2026, petición del usuario)
+
+En la sección de libros no se corrige ni se comenta nada del texto: ni redacción, ni ortografía, ni puntuación (los guiones de los diálogos se quedan como están), ni sangrías. Si se traducen al inglés, la traducción es literal y fiel, sin mejorarlo. Solo se cambia la maquetación (columna centrada, tipo de atribución, biblioteca y bloques de alineación), y nunca el texto.
+
 ## 2. Bucle de juego
 
 1. **Explorar**: enviar exploradores, levantar la niebla de guerra, descubrir sistemas, recursos y anomalías.

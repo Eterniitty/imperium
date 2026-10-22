@@ -28,7 +28,25 @@ export type Block =
   | { t: "table"; head: Inline[][]; rows: Inline[][][] }
   | { t: "quote"; kind: "quote" | "dev" | "note"; c: Inline[] }
   | { t: "gen"; id: string }
-  | { t: "cards"; id: string };
+  | { t: "cards"; id: string }
+  /** `::: centro` … `:::` (también derecha y justificado): los bloques de dentro con esa alineación. */
+  | { t: "align"; align: "center" | "right" | "justify"; blocks: Block[] }
+  /** `::: verso` … `:::`: cada línea se respeta (poemas, canciones, cartas). */
+  | { t: "verse"; lines: Inline[][] }
+  /** `---`: separador de escena. */
+  | { t: "hr" };
+
+/** Nombres de los bloques `:::` (en los dos idiomas). */
+const ALIGNS: Record<string, "center" | "right" | "justify" | "verse"> = {
+  centro: "center",
+  center: "center",
+  derecha: "right",
+  right: "right",
+  justificado: "justify",
+  justify: "justify",
+  verso: "verse",
+  verse: "verse",
+};
 
 /** Ancla de un título: minúsculas, sin tildes, guiones. */
 export function anchorId(text: string): string {
@@ -122,6 +140,22 @@ export function parseMarkdown(src: string): Block[] {
       continue;
     }
     let m: RegExpExecArray | null;
+    if ((m = /^:::\s*([a-záéíóú]+)$/i.exec(trimmed)) && ALIGNS[m[1]!.toLowerCase()]) {
+      // Bloque con formato hasta el `:::` que lo cierra (o hasta el final).
+      const kind = ALIGNS[m[1]!.toLowerCase()]!;
+      const inner: string[] = [];
+      i++;
+      while (i < lines.length && lines[i]!.trim() !== ":::") inner.push(lines[i++]!);
+      i++;
+      if (kind === "verse") blocks.push({ t: "verse", lines: inner.map((l) => parseInline(l.trim())) });
+      else blocks.push({ t: "align", align: kind, blocks: parseMarkdown(inner.join("\n")) });
+      continue;
+    }
+    if (/^(-{3,}|\*\s\*\s\*)$/.test(trimmed)) {
+      blocks.push({ t: "hr" });
+      i++;
+      continue;
+    }
     if ((m = /^(#{1,3})\s+(.*)$/.exec(trimmed))) {
       const c = parseInline(m[2]!);
       const text = plain(c);
@@ -164,7 +198,7 @@ export function parseMarkdown(src: string): Block[] {
       const parts: string[] = [];
       while (i < lines.length) {
         const lt = lines[i]!.trim();
-        if (lt === "" || /^(#{1,3}\s|[-*]\s|\d+\.\s|>|\||\{\{(tabla|fichas):)/.test(lt)) break;
+        if (lt === "" || /^(#{1,3}\s|[-*]\s|\d+\.\s|>|\||\{\{(tabla|fichas):|:::|-{3,}$)/.test(lt)) break;
         parts.push(lt);
         i++;
       }
@@ -190,6 +224,8 @@ export function internalLinks(blocks: Block[]): string[] {
     }
   };
   for (const b of blocks) {
+    if (b.t === "align") out.push(...internalLinks(b.blocks));
+    if (b.t === "verse") b.lines.forEach(walk);
     if (b.t === "h" || b.t === "p" || b.t === "quote") walk(b.c);
     else if (b.t === "ul" || b.t === "ol") b.items.forEach(walk);
     else if (b.t === "table") {
@@ -207,6 +243,8 @@ export function internalLinks(blocks: Block[]): string[] {
 export function blocksText(blocks: Block[], generated: (b: Extract<Block, { t: "gen" | "cards" }>) => string = () => ""): string {
   const parts: string[] = [];
   for (const b of blocks) {
+    if (b.t === "align") parts.push(blocksText(b.blocks, generated));
+    if (b.t === "verse") parts.push(...b.lines.map(plain));
     if (b.t === "gen" || b.t === "cards") parts.push(generated(b));
     if (b.t === "h" || b.t === "p" || b.t === "quote") parts.push(plain(b.c));
     else if (b.t === "ul" || b.t === "ol") parts.push(...b.items.map(plain));

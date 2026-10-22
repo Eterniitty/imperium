@@ -105,6 +105,27 @@ export function BlockView({ b, t, locale, go }: { b: Block; t: T; locale: Locale
         </L>
       );
     }
+    case "align":
+      return (
+        <div className={`wiki-align-${b.align}`}>
+          {b.blocks.map((x, n) => (
+            <BlockView key={n} b={x} t={t} locale={locale} go={go} />
+          ))}
+        </div>
+      );
+    case "verse":
+      return (
+        <p className="wiki-verse">
+          {b.lines.map((l, n) => (
+            <span key={n}>
+              <InlineView c={l} go={go} />
+              {n < b.lines.length - 1 && <br />}
+            </span>
+          ))}
+        </p>
+      );
+    case "hr":
+      return <hr className="wiki-sep" />;
     case "quote":
       return (
         <div className={`wiki-callout wiki-callout-${b.kind}`} role={b.kind === "quote" ? undefined : "note"}>

@@ -3,6 +3,7 @@ import {
   isWikiSlug,
   WIKI_ARTICLES,
   type Locale,
+  type WikiBylineKind,
   type WikiGroup,
   type WikiPageMeta,
   type WikiPublished,
@@ -33,7 +34,7 @@ type RevisionRow = typeof wikiRevisions.$inferSelect;
 type PageRow = typeof wikiPages.$inferSelect;
 
 function pageMeta(row: PageRow): WikiPageMeta {
-  return { slug: row.slug, group: row.group as WikiGroup, hidden: row.hidden, custom: row.custom, position: row.position, byline: row.byline };
+  return { slug: row.slug, group: row.group as WikiGroup, hidden: row.hidden, custom: row.custom, position: row.position, byline: row.byline, bylineKind: (row.bylineKind as WikiBylineKind | null) ?? null };
 }
 
 function published(row: Pick<RevisionRow, "id" | "slug" | "locale" | "body" | "createdAt">): WikiPublished {
@@ -197,7 +198,7 @@ export class WikiService {
   }
 
   /** Ocultar o mostrar un artículo, o cambiarlo de grupo en el índice. */
-  async setMeta(author: WikiAuthor, input: { slug: string; hidden?: boolean; group?: WikiGroup; byline?: string }): Promise<WikiPageMeta> {
+  async setMeta(author: WikiAuthor, input: { slug: string; hidden?: boolean; group?: WikiGroup; byline?: string; bylineKind?: WikiBylineKind | null }): Promise<WikiPageMeta> {
     return this.db.transaction(async (tx) => {
       if (!(await this.exists(tx, input.slug))) throw new WikiError(404, "unknown_article");
       const base = WIKI_ARTICLES.find((a) => a.slug === input.slug);
@@ -206,6 +207,7 @@ export class WikiService {
         group: input.group ?? (current?.group as WikiGroup | undefined) ?? base!.group,
         hidden: input.hidden ?? current?.hidden ?? false,
         byline: input.byline !== undefined ? input.byline.trim() || null : (current?.byline ?? null),
+        bylineKind: input.bylineKind !== undefined ? input.bylineKind : (current?.bylineKind ?? null),
       };
       const [row] = await tx
         .insert(wikiPages)
@@ -217,6 +219,9 @@ export class WikiService {
       }
       if (input.group !== undefined && input.group !== (current?.group ?? base?.group)) {
         await this.log(tx, author, { action: "group", slug: input.slug, detail: input.group });
+      }
+      if (input.bylineKind !== undefined && next.bylineKind !== (current?.bylineKind ?? null)) {
+        await this.log(tx, author, { action: "byline", slug: input.slug, detail: `kind:${next.bylineKind ?? ""}` });
       }
       if (input.byline !== undefined && next.byline !== (current?.byline ?? null)) {
         await this.log(tx, author, { action: "byline", slug: input.slug, detail: next.byline ?? "" });

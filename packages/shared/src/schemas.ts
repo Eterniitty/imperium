@@ -6,7 +6,7 @@
 import { z } from "zod";
 import { EMPEROR_NAME_MAX, EMPEROR_NAME_MIN, PLANET_NAME_MAX, PLANET_NAME_MIN, SHIP_DESIGN_NAME_MAX, VISIBILITIES, type Visibility } from "./api";
 import { BASE_LOCALES, type Locale } from "./i18n";
-import { WIKI_BODY_MAX, WIKI_BYLINE_MAX, WIKI_GROUPS, WIKI_NOTE_MAX, WIKI_SLUG_MAX, WIKI_SLUG_RE, WIKI_TITLE_MAX } from "./wiki";
+import { WIKI_BODY_MAX, WIKI_BYLINE_MAX, WIKI_GROUPS, WIKI_NOTE_MAX, WIKI_SLUG_MAX, WIKI_SLUG_RE, WIKI_TITLE_MAX, WIKI_BYLINE_KINDS } from "./wiki";
 
 export const LocaleSchema = z.enum(BASE_LOCALES as [Locale, ...Locale[]]);
 
@@ -327,8 +327,10 @@ export const WikiMetaBodySchema = z
     group: z.enum(WIKI_GROUPS).optional(),
     /** Firma; texto vacío la quita. */
     byline: z.string().max(WIKI_BYLINE_MAX).optional(),
+    /** Tipo de atribución (null: «Escrito por»). */
+    bylineKind: z.enum(WIKI_BYLINE_KINDS).nullable().optional(),
   })
-  .refine((b) => b.hidden !== undefined || b.group !== undefined || b.byline !== undefined);
+  .refine((b) => b.hidden !== undefined || b.group !== undefined || b.byline !== undefined || b.bylineKind !== undefined);
 export type WikiMetaBody = z.input<typeof WikiMetaBodySchema>;
 
 /** Guardar un diseño de nave (nuevo sin `id`). El servidor comprueba que el casco y las piezas existen; puede guardarse a medias. */

@@ -137,7 +137,7 @@ describe.skipIf(!TEST_DATABASE_URL)("Wiki editable", () => {
     const admin = await login("jefa@ejemplo.com");
     expect((await post("/api/wiki/create", { slug: "leyes", group: "start", locale: "es", title: "X" }, admin)).json()).toEqual({ error: "slug_taken" });
     const created = (await post("/api/wiki/create", { slug: "rutas-comerciales", group: "empire", locale: "es", title: "Rutas <b>comerciales</b>" }, admin)).json<WikiPageResponse>();
-    expect(created.page).toEqual({ slug: "rutas-comerciales", group: "empire", hidden: false, custom: true, position: 1, byline: null });
+    expect(created.page).toEqual({ slug: "rutas-comerciales", group: "empire", hidden: false, custom: true, position: 1, byline: null, bylineKind: null });
     // El título es texto: el renderizador de la Wiki lo escapa.
     expect(created.published!.body).toBe("# Rutas <b>comerciales</b>\n\n");
     expect((await post("/api/wiki/create", { slug: "rutas-comerciales", group: "empire", locale: "es", title: "Y" }, admin)).statusCode).toBe(409);

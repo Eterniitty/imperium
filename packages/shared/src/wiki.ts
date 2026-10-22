@@ -13,6 +13,13 @@
 import type { Locale } from "./i18n/index";
 
 export const WIKI_GROUPS = ["start", "world", "ship", "empire", "war", "people", "lore", "books"] as const;
+/**
+ * Tipo de atribución de un libro (la frase la forma el idioma: «Escrito por X»,
+ * «Extracto de las memorias de X», «Relato anónimo»…). También sirve de
+ * categoría en la biblioteca.
+ */
+export const WIKI_BYLINE_KINDS = ["written", "memoirs", "attributed", "transcript", "anonymous", "compiled", "translated", "oral", "fragment", "diary", "letter", "report"] as const;
+export type WikiBylineKind = (typeof WIKI_BYLINE_KINDS)[number];
 export type WikiGroup = (typeof WIKI_GROUPS)[number];
 
 /** Artículos del repositorio, en el orden del índice. Para añadir uno: su slug aquí y un `.md` en cada idioma. */
@@ -81,6 +88,8 @@ export interface WikiPageMeta {
   position: number;
   /** Firma que se muestra bajo el título (los libros llevan su autor), o null. */
   byline: string | null;
+  /** Cómo se atribuye (null: «Escrito por»). */
+  bylineKind: WikiBylineKind | null;
 }
 
 /** Versión publicada (última revisión) de un artículo en un idioma. */
