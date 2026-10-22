@@ -2016,7 +2016,7 @@ export const en: Record<I18nKey, string> = {
   "tut.contracts.title": "Contracts, goals and rank",
   "tut.contracts.summary": "What to do each day and how to progress.",
   "tut.contracts.open": "Open the contracts window.",
-  "tut.contracts.goals": "Under “Goals” you have three daily goals and one weekly goal: they are completed on their own while you play, and completing all three daily goals several days in a row builds a streak.",
+  "tut.contracts.goals": "Under “Goals” you have three daily goals and one weekly goal, completed on their own while you play (completing all three daily goals several days in a row builds a streak); below them, your colonies' requests and the hunt challenge.",
   "tut.contracts.offers": "Under “Offers” you accept today's contracts: hunting Scavengers, exploring, mining, delivering resources or rescuing wreckage. They have a deadline and pay credits, reputation and experience.",
   "tut.contracts.progress": "“Active” shows the progress of each accepted contract; the server counts it even if you close the tab.",
   "tut.contracts.rank": "Under “Rank” you see your experience and what each rank gives: more contracts at once, more offers and bigger rewards. End of the tutorial: good luck, Emperor!",

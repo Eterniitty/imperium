@@ -2018,7 +2018,7 @@ export const es = {
   "tut.contracts.title": "Contratos, objetivos y rango",
   "tut.contracts.summary": "Qué hacer cada día y cómo progresar.",
   "tut.contracts.open": "Abre la ventana de contratos.",
-  "tut.contracts.goals": "En «Objetivos» tienes tres objetivos del día y uno de la semana: se cumplen solos mientras juegas, y cumplir los tres del día varios días seguidos hace racha.",
+  "tut.contracts.goals": "En «Objetivos» tienes tres objetivos del día y uno de la semana, que se cumplen solos mientras juegas (cumplir los tres del día varios días seguidos hace racha); debajo, las peticiones de tus colonias y el reto de caza.",
   "tut.contracts.offers": "En «Ofertas» aceptas contratos del día: cazar Carroñeros, explorar, minar, repartir recursos o rescatar restos. Llevan plazo y pagan créditos, reputación y experiencia.",
   "tut.contracts.progress": "«En curso» muestra el progreso de cada contrato aceptado; el servidor lo cuenta aunque cierres la pestaña.",
   "tut.contracts.rank": "En «Rango» ves tu experiencia y lo que da cada rango: más contratos a la vez, más ofertas y más recompensa. Fin del tutorial: ¡buena suerte, Emperador!",
