@@ -27,6 +27,7 @@ import { PlanetPanel } from "./PlanetPanel";
 import { PlanetWindow } from "./PlanetWindow";
 import { MapLayersPanel } from "./MapLayersPanel";
 import { DamageAlert } from "./DamageAlert";
+import { EmpireWindow } from "./EmpireWindow";
 import { QuantumHud } from "./QuantumHud";
 import { QuantumPanel } from "./QuantumPanel";
 import { CruiseHud, CruisePanel } from "./CruisePanel";
@@ -106,21 +107,12 @@ export function App() {
           <>
             <QuantumHud />
             {/* Puente de mando: se gobierna el imperio mientras dura el viaje. */}
-            <div className="left-col">
-              <BridgePanel />
-              <FleetsPanel />
-              <WarPanel />
-              <ColoniesPanel />
-            </div>
+            <EmpireWindow bridge />
           </>
         ) : view === "galaxy" ? (
           <>
             <FlightHud />
-            <div className="left-col">
-              <FleetsPanel />
-              <WarPanel />
-              <ColoniesPanel />
-            </div>
+            <EmpireWindow />
             <SystemPanel />
             <MapLayersPanel />
             {!hasSelection && <Legend />}
@@ -133,14 +125,7 @@ export function App() {
             <EscortHud />
             <ActionBar />
             {/* Puente de mando a bordo de la nave nodriza (acoplado): el imperio, como en el túnel. */}
-            {docked && (
-              <div className="left-col">
-                <BridgePanel />
-                <FleetsPanel />
-                <WarPanel />
-                <ColoniesPanel />
-              </div>
-            )}
+            {docked && <EmpireWindow bridge />}
             <MiningHud />
             <QuantumHud />
             <CruiseHud />

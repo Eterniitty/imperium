@@ -7,6 +7,7 @@ import { useKeyLabels } from "./keys";
 import { formatDuration, useServerNow } from "./useNow";
 import { useGame, useT } from "../state/store";
 import { ServerStatus } from "./ServerStatus";
+import { EmpireButton } from "./EmpireWindow";
 import { useWorld } from "../net/world";
 import { fmtCredits, fmtInt, fmtRate, liveCredits, liveHumans } from "./colonies";
 
@@ -101,6 +102,8 @@ export function TopBar() {
         </button>
       )}
 
+      {/* Imperio: flotas y colonias en una ventana con pestañas. */}
+      {emperor && <EmpireButton />}
       {emperor && (
         <button className="btn" onClick={() => engineRef.current?.toggleMap()} title={t("action.toggleMap")}>
           {t((view === "system" && flight) || view === "tunnel" ? "pilot.map" : "pilot.pilot")} <kbd>{keys.toggleMap}</kbd>
@@ -127,30 +130,6 @@ export function TopBar() {
               {sector.x} · {sector.y} · {sector.z}
             </span>
           </div>
-          <div className="stat hide-md">
-            <span className="stat-label">{t("hud.position")}</span>
-            <span className="stat-value mono">
-              {fmt(focus.x)}, {fmt(focus.y)}, {fmt(focus.z)} {t("unit.ly")}
-            </span>
-          </div>
-          <div className="stat hide-sm hide-md">
-            <span className="stat-label">{t("hud.systems")}</span>
-            <span className="stat-value mono">{loaded.toLocaleString()}</span>
-          </div>
-          <form className="goto hide-md" onSubmit={go} title={t("hud.gotoTitle")}>
-            {(["x", "y", "z"] as const).map((k) => (
-              <input
-                key={k}
-                aria-label={k}
-                value={target[k]}
-                inputMode="numeric"
-                onChange={(e) => setTarget({ ...target, [k]: e.target.value.replace(/[^-0-9]/g, "") })}
-              />
-            ))}
-            <button className="btn" type="submit">
-              {t("hud.goto")}
-            </button>
-          </form>
         </>
       )}
 
@@ -166,17 +145,54 @@ export function TopBar() {
           </div>
         )}
         <CrisisBanner />
-      <ServerStatus />
+        <ServerStatus compact />
         {/* La Wiki es una página aparte: en otra pestaña, para no perder la partida. */}
-        <a className="btn btn-link" href="/wiki/" target="_blank" rel="noopener" title={t("wiki.openTitle")}>
-          {t("wiki.open")}
+        <a className="icon-btn" href="/wiki/" target="_blank" rel="noopener" title={t("wiki.openTitle")} aria-label={t("wiki.open")}>
+          📖
         </a>
+        {/* Lo menos usado: posición, sistemas cargados, ir a unas coordenadas y FPS (la barra cabe en una línea). */}
+        <details className="topbar-more">
+          <summary className="icon-btn" title={t("hud.more")} aria-label={t("hud.more")}>
+            ⋯
+          </summary>
+          <div className="topbar-more-menu panel">
+            {view !== "system" && (
+              <>
+          <div className="stat">
+            <span className="stat-label">{t("hud.position")}</span>
+            <span className="stat-value mono">
+              {fmt(focus.x)}, {fmt(focus.y)}, {fmt(focus.z)} {t("unit.ly")}
+            </span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">{t("hud.systems")}</span>
+            <span className="stat-value mono">{loaded.toLocaleString()}</span>
+          </div>
+          <form className="goto" onSubmit={go} title={t("hud.gotoTitle")}>
+            {(["x", "y", "z"] as const).map((k) => (
+              <input
+                key={k}
+                aria-label={k}
+                value={target[k]}
+                inputMode="numeric"
+                onChange={(e) => setTarget({ ...target, [k]: e.target.value.replace(/[^-0-9]/g, "") })}
+              />
+            ))}
+            <button className="btn" type="submit">
+              {t("hud.goto")}
+            </button>
+          </form>
+              </>
+            )}
+            <span className="fps mono">
+              {fps} {t("hud.fps")}
+            </span>
+          </div>
+        </details>
         <button className="icon-btn" onClick={() => gameStore.getState().setSettingsOpen(true)} aria-label={t("settings.open")} title={t("settings.title")}>
           ⚙
         </button>
-        <span className="fps mono hide-md">
-          {fps} {t("hud.fps")}
-        </span>
+
       </div>
     </header>
   );

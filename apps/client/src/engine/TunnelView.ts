@@ -3,6 +3,7 @@ import { FLAGSHIP_LENGTH_M } from "@imperium/content";
 import { settingsStore } from "../state/settings";
 import { serverNow } from "../net/world";
 import { createFlagship, disposeShip, SHIP_SCALE, shipRig } from "./shipModel";
+import { createShipModel, shipLength } from "./shipFactory";
 import { glowTexture } from "./textures";
 import type { View } from "./View";
 
@@ -145,7 +146,7 @@ function paletteFor(star: number): { a: THREE.Color; b: THREE.Color; dest: THREE
 export class TunnelView implements View {
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(62, 1, 0.5, LENGTH * 2);
-  private readonly ship: THREE.Group;
+  private ship: THREE.Group;
   private readonly tunnel: THREE.Mesh;
   private readonly uniforms = {
     uTime: { value: 0 },
@@ -166,6 +167,8 @@ export class TunnelView implements View {
   private journey: { from: { a: THREE.Color; b: THREE.Color; dest: THREE.Color }; to: { a: THREE.Color; b: THREE.Color; dest: THREE.Color }; departAt: number; arriveAt: number } | null = null;
   private tmp2 = new THREE.Vector2();
   private camPos = new THREE.Vector3(0, L * 0.55, L * 2.4);
+  /** Qué nave se dibuja: "flagship" o la clase de la nodriza en la que va acoplado. */
+  private vessel = "flagship";
 
   constructor() {
     this.scene.background = new THREE.Color(0x01020a);
@@ -219,6 +222,25 @@ export class TunnelView implements View {
    */
   setJourney(fromStar: number, toStar: number, departAt: number, arriveAt: number): void {
     this.journey = { from: paletteFor(fromStar), to: paletteFor(toStar), departAt, arriveAt };
+  }
+
+  /**
+   * Nave que viaja por el túnel: la del Emperador o, si va acoplado en el hangar
+   * de una nodriza, la nodriza (escalada para que quepa a la vista como la suya).
+   */
+  setVessel(classId: string | null): void {
+    const key = classId ?? "flagship";
+    if (this.vessel === key) return;
+    this.vessel = key;
+    const model = classId ? createShipModel(classId) : null;
+    const next = model ?? createFlagship(0xc792ff);
+    if (model) next.scale.setScalar((L * 1.15) / Math.max(1, shipLength(classId!) ?? L));
+    else next.scale.setScalar(SHIP_SCALE);
+    this.scene.remove(this.ship);
+    disposeShip(this.ship);
+    this.ship = next;
+    this.scene.add(this.ship);
+    shipRig(this.ship).setThrust(1, true);
   }
 
   /** Radio aleatorio (más cerca de la pared que del centro), ángulo y largo de una estela. */

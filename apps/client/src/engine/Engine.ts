@@ -1,7 +1,8 @@
 import * as THREE from "three";
+import { getShipClass, type ShipClassId } from "@imperium/content";
 import { pointerXY } from "./pointerLock";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { distance, isDeepId, translate, type I18nKey, type SectorCoord, type StarSystemSummary, type WorldPosition } from "@imperium/shared";
+import { distance, isDeepId, translate, type Fleet, type I18nKey, type SectorCoord, type StarSystemSummary, type WorldPosition } from "@imperium/shared";
 import { killerLabel, naturalCause } from "../ui/deathCause";
 import { isTravelling, positionAt, quantumFuelCost, regenFuel } from "@imperium/sim";
 import { STAR_CLASSES } from "@imperium/procgen";
@@ -450,6 +451,17 @@ export class Engine {
     if (this.active !== this.system && this.system.backgroundCruise) this.system.update(dt);
   };
 
+  /** Flota con nodriza que viaja ahora al mismo destino y a la vez que el Emperador (va acoplado en ella), o null. */
+  private carrierFleet(): Fleet | null {
+    const emperor = this.emperor();
+    if (!emperor?.travel) return null;
+    const docked = spaceStore.getState().docked?.fleetId;
+    const fleets = Object.values(worldStore.getState().fleets) as Fleet[];
+    const sameTrip = (f: Fleet) => !!f.travel && f.travel.to.systemId === emperor.travel!.to.systemId && Math.abs(f.travel.arriveAt - emperor.travel!.arriveAt) < 5_000;
+    const withMother = (f: Fleet) => f.ships.some((sh) => getShipClass(sh.classId as ShipClassId)?.dockFlagship);
+    return fleets.find((f) => f.id === docked && sameTrip(f)) ?? fleets.find((f) => sameTrip(f) && withMother(f)) ?? null;
+  }
+
   /** Viaje en curso: la nave deja el sistema y se ve el túnel cuántico hasta llegar. */
   private enterTunnel(): void {
     const emperor = this.emperor();
@@ -460,6 +472,10 @@ export class Engine {
     // Colores del túnel: de la estrella de origen a la de destino.
     const color = (id: string) => STAR_CLASSES[findSystemSummary(id)?.starClass ?? "G"].color;
     this.tunnel.setJourney(color(emperor.location.systemId), color(emperor.travel.to.systemId), emperor.travel.departAt, emperor.travel.arriveAt);
+    // Acoplado en una nodriza (viaje con su flota): por el túnel va la nodriza, con la nave dentro.
+    const carrier = this.carrierFleet();
+    this.tunnel.setVessel(carrier ? (carrier.ships.find((sh) => getShipClass(sh.classId as ShipClassId)?.dockFlagship)?.classId ?? null) : null);
+    gameStore.getState().setCarriedBy(carrier ? carrier.id : null);
     this.switchTo(this.tunnel);
     gameStore.getState().setView("tunnel");
   }

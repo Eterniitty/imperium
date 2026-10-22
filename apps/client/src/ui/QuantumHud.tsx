@@ -12,6 +12,7 @@ import { formatDuration, useServerNow } from "./useNow";
  * durante el viaje, en la vista del túnel: destino, tiempo restante y progreso.
  */
 export function QuantumHud() {
+  const carriedBy = useGame((st) => st.carriedBy);
   const t = useT();
   const keys = useKeyLabels();
   const view = useGame((s) => s.view);
@@ -32,7 +33,7 @@ export function QuantumHud() {
         <div className="flight-bar quantum-bar">
           <span style={{ width: `${k * 100}%` }} />
         </div>
-        <div className="muted small">{t("quantum.tunnelHint", { map: keys.toggleMap })}</div>
+        <div className="muted small">{t(carriedBy ? "quantum.tunnelHintCarried" : "quantum.tunnelHint", { map: keys.toggleMap })}</div>
         {/* Espacio profundo: salir del túnel aquí (se gasta solo el combustible recorrido). */}
         <button
           className="btn quantum-drop"

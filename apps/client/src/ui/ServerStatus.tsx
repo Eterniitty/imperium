@@ -11,7 +11,7 @@ const POLL_MS = 30_000;
  * el estado del WebSocket y cuántos Emperadores hay en línea; si no (sin
  * servidor o sin Emperador), consulta `/api/health` de vez en cuando.
  */
-export function ServerStatus() {
+export function ServerStatus({ compact = false }: { compact?: boolean }) {
   const t = useT();
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const status = useWorld((s) => s.status);
@@ -40,6 +40,15 @@ export function ServerStatus() {
 
   if (status !== "idle") {
     const label = status === "open" ? t("server.players", { count: players }) : status === "connecting" ? t("server.connecting") : t("server.offline");
+    // Compacto (barra superior): el punto y el número; el texto, al pasar el ratón.
+    if (compact)
+      return (
+        <span className="server-status compact" title={`${t("server.label")}: ${label}`}>
+          <span className={status === "open" ? "server-dot online" : "server-dot"} aria-hidden="true" />
+          <span className="mono">{status === "open" ? players : "—"}</span>
+          <span className="sr-only">{label}</span>
+        </span>
+      );
     return (
       <span className="server-status stacked" title={t("server.title")}>
         <span className="server-line">

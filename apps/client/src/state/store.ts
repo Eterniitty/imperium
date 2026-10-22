@@ -68,6 +68,8 @@ export interface GameState {
   quantumTarget: StarSystemSummary | null;
   /** Lista de destinos del piloto automático de crucero abierta (al pilotar). */
   cruisePanel: boolean;
+  /** Viaje acoplado: flota (con nodriza) en la que va la nave del Emperador por el túnel, o null. */
+  carriedBy: string | null;
 
   /** Entra en el juego; con Emperador, la cámara empieza en su sistema y lo selecciona. */
   start(at?: SystemLocation): void;
@@ -88,6 +90,7 @@ export interface GameState {
   toggleCameraView(): void;
   setQuantumPanel(open: boolean): void;
   setCruisePanel(open: boolean): void;
+  setCarriedBy(fleetId: string | null): void;
   setQuantumTarget(target: StarSystemSummary | null): void;
 }
 
@@ -144,6 +147,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   quantumPanel: false,
   quantumTarget: null,
   cruisePanel: false,
+  carriedBy: null,
 
   start: (at) => {
     if (!at) return set({ started: true });
@@ -189,6 +193,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   toggleCameraView: () => set({ cameraView: get().cameraView === "first" ? "third" : "first" }),
   setQuantumPanel: (quantumPanel) => set(quantumPanel ? { quantumPanel, cruisePanel: false } : { quantumPanel }),
   setCruisePanel: (cruisePanel) => set(cruisePanel ? { cruisePanel, quantumPanel: false } : { cruisePanel }),
+  setCarriedBy: (carriedBy) => set({ carriedBy }),
   setQuantumTarget: (quantumTarget) => set({ quantumTarget }),
 
   notify: (key, params) => {

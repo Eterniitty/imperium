@@ -127,6 +127,8 @@ When you take the controls in a system where you have stationary fleets (not in 
 
 ## Docking in a mothership
 
+If you travel docked, **the mothership goes through the tunnel** with your ship inside, and you arrive with your fleet, inside its hangar.
+
 The ships of your stopped fleets (motherships above all) **are solid**: you collide with their hull (a capsule along the ship) and the autopilot flies around them. To dock you just need to be in range (about 4 km plus its length); when you undock you have a few seconds to leave the hangar without colliding.
 
 The **mothership** is the biggest ship you can build (1600 m, in an orbital drydock; see [Human ships](/wiki/naves)). When one of your fleets with a mothership is stationary in the system where you are flying, get close to it and press [[Enter]] (dock): your ship enters its hangar and **resupplies from the fleet's hold** as it would next to one of your colonies (volatiles → fuel, metal → ammunition, alloys → missiles and hull). Fill the fleet's hold at a colony first (see [Fleets](/wiki/flotas)).
