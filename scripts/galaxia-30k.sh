@@ -17,7 +17,7 @@ if [ "${1:-}" != "--si" ]; then
   exit 1
 fi
 
-PARKING_COMMIT=c4be053
+PARKING_COMMIT=559f0f0
 
 echo "==> Copias de seguridad"
 ./scripts/backup-db.sh
