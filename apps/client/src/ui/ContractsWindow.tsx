@@ -107,7 +107,7 @@ export function ContractsButton() {
   if (!view) return null;
   const active = view.list.filter((c) => c.status === "active").length;
   return (
-    <button type="button" className={open ? "btn empire-btn on" : "btn empire-btn"} title={t("contract.openRank")} aria-pressed={open} onClick={() => contractsStore.getState().set({ open: !open })}>
+    <button type="button" data-tutorial="contracts" className={open ? "btn empire-btn on" : "btn empire-btn"} title={t("contract.openRank")} aria-pressed={open} onClick={() => contractsStore.getState().set({ open: !open })}>
       <HudIcon name="contract" size={14} className="inline-icon" /> <span className="mono">{active}</span>
       {view.offers.length > 0 && <span className="contract-dot" aria-hidden />}
     </button>

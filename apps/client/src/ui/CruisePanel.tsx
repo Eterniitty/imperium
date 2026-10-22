@@ -68,12 +68,14 @@ export function CruisePanel() {
           ✕
         </button>
       </div>
-      <SpeedDial />
+      <div data-tutorial="speed-dial">
+        <SpeedDial />
+      </div>
       <p className="muted small">{t("cruise.hint")}</p>
       <h3>{t("cruise.ships")}</h3>
       {ships.length === 0 ? <p className="muted small">{t("cruise.noShipsList")}</p> : <ul className="quantum-list">{ships.map(row)}</ul>}
       <h3>{t("cruise.places")}</h3>
-      {places.length === 0 ? <p className="muted small">{t("cruise.none")}</p> : <ul className="quantum-list">{places.map(row)}</ul>}
+      {places.length === 0 ? <p className="muted small">{t("cruise.none")}</p> : <ul className="quantum-list" data-tutorial="cruise-list">{places.map(row)}</ul>}
     </aside>
   );
 }
@@ -107,7 +109,7 @@ export function CruiseHud() {
   if (mini) {
     // Minimizado: una pastilla con el destino y la llegada (clic: desplegar).
     return (
-      <button type="button" className="cruise-pill panel" role="status" title={t("cruise.hud.expand")} onClick={toggle}>
+      <button type="button" className="cruise-pill panel" role="status" data-tutorial="cruise-hud" title={t("cruise.hud.expand")} onClick={toggle}>
         <HudIcon name={c.phase === "orbit" ? "orbit" : "cruise"} size={14} className="cruise-pill-arrow" />
         <strong>{c.name}</strong>
         {c.phase !== "orbit" && c.seconds !== null && <span className="mono">{formatDuration(c.seconds * 1000)}</span>}
@@ -116,7 +118,7 @@ export function CruiseHud() {
     );
   }
   return (
-    <div className="cruise-hud panel" role="status">
+    <div className="cruise-hud panel" role="status" data-tutorial="cruise-hud">
       <button type="button" className="icon-btn cruise-hud-min" aria-label={t("cruise.hud.minimize")} title={t("cruise.hud.minimize")} onClick={toggle}>
         ▁
       </button>

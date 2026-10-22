@@ -1166,3 +1166,22 @@ button.legend-title { background: none; border: none; padding: 0; width: 100%; t
 .rank-list li:not(.current):not(.reached) { opacity: 0.7; }
 .rank-mark { color: var(--gold); text-align: center; }
 .rank-perk { color: var(--muted); }
+
+/* Tutorial: panel abajo a la derecha (el borde izquierdo es de la barra de acciones), anillo sobre lo que hay que tocar. */
+.tutorial-panel { position: fixed; right: 16px; bottom: 120px; width: min(340px, calc(100vw - 32px)); z-index: 40; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; border-color: rgba(232, 182, 76, 0.45); }
+.tutorial-head { display: flex; align-items: center; gap: 8px; }
+.tutorial-head .contract-kind { flex: 1; }
+.tutorial-chapter { font-size: 15px; letter-spacing: 0.04em; }
+.tutorial-progress { height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.tutorial-progress span { display: block; height: 100%; background: var(--gold); transition: width 0.4s; }
+.tutorial-text { margin: 4px 0 0; line-height: 1.5; }
+.tutorial-text.done { color: var(--gold); }
+.tutorial-check { font-weight: 700; }
+.tutorial-keys { display: flex; gap: 6px; flex-wrap: wrap; margin: 0; }
+.tutorial-foot { display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; }
+.tutorial-pill { position: fixed; right: 16px; bottom: 120px; z-index: 40; padding: 6px 12px; font-size: 12px; cursor: pointer; color: var(--text); border-color: rgba(232, 182, 76, 0.45); }
+.tutorial-ring { position: fixed; z-index: 39; pointer-events: none; border: 2px solid var(--gold); border-radius: 8px; box-shadow: 0 0 0 4px rgba(232, 182, 76, 0.15), 0 0 18px rgba(232, 182, 76, 0.45); animation: tutorial-ring 1.6s ease-in-out infinite; transition: left 0.2s, top 0.2s, width 0.2s, height 0.2s; }
+@keyframes tutorial-ring { 50% { box-shadow: 0 0 0 7px rgba(232, 182, 76, 0.08), 0 0 26px rgba(232, 182, 76, 0.6); } }
+@media (prefers-reduced-motion: reduce) { .tutorial-ring { animation: none; } }
+.tutorial-menu { display: flex; flex-direction: column; gap: 10px; }
+.tutorial-menu .contract-list { padding: 0; }

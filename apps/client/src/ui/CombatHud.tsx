@@ -64,7 +64,7 @@ export function CombatHud() {
 
   return (
     <>
-      <div className="combat-self panel" aria-label={t("combat.hull")}>
+      <div className="combat-self panel" aria-label={t("combat.hull")} data-tutorial="supplies">
         <div className="hud-stats">
           <Stat icon="shield" kind="shield" label={t("combat.shield")} value={self.shield} />
           <Stat icon="hull" kind="hull" label={t("combat.hull")} value={self.hull} warn={self.hull < self.hullMax * 0.25} />

@@ -78,7 +78,7 @@ export function QuantumPanel() {
       {list.length === 0 ? (
         <p className="small warn-text">{t("quantum.noneInRange")}</p>
       ) : (
-        <ul className="quantum-list">
+        <ul className="quantum-list" data-tutorial="quantum-list">
           {list.map(({ system, ly }) => (
             <li key={system.id}>
               <button className="quantum-dest" onClick={() => engineRef.current?.startQuantum(system)}>

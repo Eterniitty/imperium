@@ -63,7 +63,7 @@ export function TopBar() {
       </div>
 
       {emperor && (
-        <button className="stat stat-button" onClick={() => engineRef.current?.goToEmperor()} title={t("emperor.goTo")}>
+        <button className="stat stat-button" data-tutorial="emperor" onClick={() => engineRef.current?.goToEmperor()} title={t("emperor.goTo")}>
           <span className="stat-label">
             {t("emperor.label")}
             {rankTitle && <> · {rankTitle}</>}
@@ -88,7 +88,7 @@ export function TopBar() {
 
       {/* Economía de la humanidad: créditos (abre el mercado) y el panel «Humanidad». */}
       {emperor && wallet && (
-        <button className="stat stat-button credits-stat" onClick={() => gameStore.getState().setEconomyOpen("market")} title={t("eco.marketTitle")}>
+        <button className="stat stat-button credits-stat" data-tutorial="credits" onClick={() => gameStore.getState().setEconomyOpen("market")} title={t("eco.marketTitle")}>
           <span className="stat-label">{t("eco.credits")}</span>
           <span className="stat-value mono">₢ {fmtCredits(liveCredits(wallet, now))}</span>
         </button>
@@ -115,7 +115,7 @@ export function TopBar() {
       {emperor && <EmpireButton />}
       {emperor && <ContractsButton />}
       {emperor && (
-        <button className="btn" onClick={() => engineRef.current?.toggleMap()} title={t("action.toggleMap")}>
+        <button className="btn" data-tutorial="pilot" onClick={() => engineRef.current?.toggleMap()} title={t("action.toggleMap")}>
           {t((view === "system" && flight) || view === "tunnel" ? "pilot.map" : "pilot.pilot")} <kbd>{keys.toggleMap}</kbd>
         </button>
       )}
@@ -157,7 +157,7 @@ export function TopBar() {
         <CrisisBanner />
         <ServerStatus compact />
         {/* La Wiki es una página aparte: en otra pestaña, para no perder la partida. */}
-        <a className="btn btn-link" href="/wiki/" target="_blank" rel="noopener" title={t("wiki.openTitle")}>
+        <a className="btn btn-link" data-tutorial="wiki" href="/wiki/" target="_blank" rel="noopener" title={t("wiki.openTitle")}>
           {t("wiki.open")}
         </a>
         {/* Lo menos usado: posición, sistemas cargados, ir a unas coordenadas y FPS (la barra cabe en una línea). */}
@@ -199,7 +199,7 @@ export function TopBar() {
             </span>
           </div>
         </details>
-        <button className="icon-btn" onClick={() => gameStore.getState().setSettingsOpen(true)} aria-label={t("settings.open")} title={t("settings.title")}>
+        <button className="icon-btn" data-tutorial="settings" onClick={() => gameStore.getState().setSettingsOpen(true)} aria-label={t("settings.open")} title={t("settings.title")}>
           <HudIcon name="gear" size={16} />
         </button>
 

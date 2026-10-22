@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { TutorialMenu } from "../tutorial/TutorialPanel";
 import type { I18nKey } from "@imperium/shared";
 import {
   ACTIONS,
@@ -25,7 +26,7 @@ import { openPhotoNotice } from "../state/photoNotice";
 
 const QUALITIES: Quality[] = ["auto", "high", "medium", "low"];
 
-type Section = "graphics" | "audio" | "interface" | "flight" | "controls" | "social" | "account";
+type Section = "graphics" | "audio" | "interface" | "flight" | "controls" | "tutorial" | "social" | "account";
 
 /** Iconos de las secciones (SVG en línea: la CSP no deja cargar nada de fuera). */
 const ICONS: Record<Section, ReactNode> = {
@@ -34,6 +35,7 @@ const ICONS: Record<Section, ReactNode> = {
   interface: <path d="M4 4h16v16H4zM4 9h16M9 9v11" />,
   flight: <path d="M12 2l3 7 7 2-7 2-3 9-3-9-7-2 7-2z" />,
   controls: <path d="M3 7h18v10H3zM7 11h1M11 11h1M15 11h1M8 14h8" />,
+  tutorial: <path d="M4 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H4zM20 5h-4a3 3 0 0 0-3 3M20 5v13h-6" />,
   social: <path d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20a6 6 0 0 1 12 0M17 11a2.5 2.5 0 1 0 0-5M21 19a4.5 4.5 0 0 0-4-4.5" />,
   account: <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0" />,
 };
@@ -367,7 +369,7 @@ export function SettingsPanel() {
   }, [open, capturing]);
 
   if (!open) return null;
-  const sections: Section[] = ["graphics", "audio", "interface", "flight", "controls", ...(hasEmperor ? (["social"] as const) : []), ...(hasAccount ? (["account"] as const) : [])];
+  const sections: Section[] = ["graphics", "audio", "interface", "flight", "controls", ...(hasEmperor ? (["tutorial"] as const) : []), ...(hasEmperor ? (["social"] as const) : []), ...(hasAccount ? (["account"] as const) : [])];
   const current = sections.includes(section) ? section : "graphics";
   const close = () => gameStore.getState().setSettingsOpen(false);
 
@@ -400,6 +402,7 @@ export function SettingsPanel() {
             {current === "interface" && <InterfaceSection />}
             {current === "flight" && <FlightSection />}
             {current === "controls" && <ControlsSection capturing={capturing} setCapturing={setCapturing} />}
+            {current === "tutorial" && <TutorialMenu />}
             {current === "social" && <SocialTab />}
             {current === "account" && <AccountTab />}
           </div>

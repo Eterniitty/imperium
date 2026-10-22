@@ -1,5 +1,7 @@
 # Primeros pasos
 
+> El **tutorial guiado** (Ajustes → **Tutorial**) te lleva paso a paso por la barra superior, el pilotaje, el crucero, el pulso y el salto, sobre tu partida real. Se puede repetir cuando quieras y no da recompensas.
+
 ## Entrar en el juego
 
 1. En la portada escribe tu **correo electrónico**, marca la casilla (tener al menos 16 años y aceptar los términos de uso y la política de privacidad) y pulsa **Enviar enlace de acceso**.

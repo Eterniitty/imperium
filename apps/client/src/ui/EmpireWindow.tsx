@@ -44,7 +44,7 @@ export function EmpireButton() {
   const colonies = Object.values(colonyMap) as Colony[];
   const short = colonies.some((c) => c.shortage);
   return (
-    <button type="button" className={open ? "btn empire-btn on" : "btn empire-btn"} title={t("empire.open")} aria-pressed={open} onClick={() => empireStore.getState().set({ open: !open })}>
+    <button type="button" data-tutorial="empire" className={open ? "btn empire-btn on" : "btn empire-btn"} title={t("empire.open")} aria-pressed={open} onClick={() => empireStore.getState().set({ open: !open })}>
       <HudIcon name="fleet" size={14} className="inline-icon" /> <span className="mono">{fleets}</span> <HudIcon name="colony" size={14} className="inline-icon" /> <span className={short ? "mono empire-short" : "mono"}>{colonies.length}</span>
     </button>
   );

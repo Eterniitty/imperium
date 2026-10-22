@@ -1,5 +1,7 @@
 # First steps
 
+> The **guided tutorial** (Settings → **Tutorial**) walks you step by step through the top bar, flying, cruise, the pulse and the jump, over your real game. You can repeat it whenever you like and it gives no rewards.
+
 ## Signing in
 
 1. On the start page, enter your **email address**, tick the box (you are at least 16 and accept the terms of use and the privacy policy) and press **Send sign-in link**.

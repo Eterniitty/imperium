@@ -7,7 +7,7 @@ Petición del usuario (22-10-2026): un tutorial guiado de **todas** las mecánic
 - **Pasos guiados sobre la partida real**, sin recompensas aprovechables: cada paso explica qué hacer, resalta el botón o la zona (atributo `data-tutorial` en la interfaz) y se da por hecho cuando el juego lo comprueba (telemetría, estado del mundo o una orden aceptada). Nada de lo que se haga en el tutorial paga créditos ni experiencia extra.
 - Los pasos que no se pueden hacer en ese momento (p. ej. no hay piratas cerca o no hay nodriza) se explican y se pueden saltar, con un enlace a la Wiki.
 - **Menú «Tutorial»** en Ajustes (y enlace desde la Wiki): lista de capítulos con su estado (sin empezar, en curso, hecho), botones Empezar, Repetir y Reiniciar todo.
-- **Progreso** guardado en el navegador y en la cuenta (preferencias), reiniciable.
+- **Progreso** guardado en el navegador (`aeon.tutorial`), reiniciable desde el menú. Guardarlo también en la cuenta queda para cuando haya preferencias en el servidor.
 - Ventana pequeña y plegable del paso actual (texto, «Siguiente», «Saltar», «Salir»), sin tapar la barra de acciones.
 - Textos en es/en; cada paso con su clave i18n. Datos de los capítulos en `apps/client/src/tutorial/chapters.ts` (pasos, objetivo resaltado, condición de hecho).
 
@@ -32,3 +32,7 @@ Petición del usuario (22-10-2026): un tutorial guiado de **todas** las mecánic
 2. Capítulos 1–4 (lo básico para empezar a jugar).
 3. Capítulos 5–11.
 4. Capítulo de contratos cuando estos existan.
+
+## Estado (22-10-2026, noche)
+
+Hecho: motor (`apps/client/src/tutorial/`: `chapters.ts` con los pasos como datos, `store.ts` con el progreso y `TutorialPanel.tsx` con el panel, el anillo de resaltado y el menú de Ajustes → Tutorial) y capítulos 1–4 (Primeros pasos, Pilotar, Crucero y órbita, Pulso y salto). Los elementos resaltados llevan `data-tutorial` (los botones de la barra de acciones, con el nombre de su acción). Pendiente: capítulos 5–12.

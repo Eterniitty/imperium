@@ -15,7 +15,7 @@ import { HudIcon, type HudIconName } from "./hudIcons";
 /** Botón de la barra: icono, su tecla en la esquina y el nombre al pasar el ratón; hace la acción del piloto. */
 function ActionButton({ action, on, icon, label, title }: { action: PilotAction; on?: boolean; icon: HudIconName; label: string; title?: string }) {
   return (
-    <button type="button" className={on ? "action-btn on" : "action-btn"} aria-pressed={on} aria-label={label} title={title ? `${label} — ${title}` : label} onClick={() => engineRef.current?.pilotAction(action)}>
+    <button type="button" data-tutorial={action} className={on ? "action-btn on" : "action-btn"} aria-pressed={on} aria-label={label} title={title ? `${label} — ${title}` : label} onClick={() => engineRef.current?.pilotAction(action)}>
       <HudIcon name={icon} />
       <KeyHint action={action} />
     </button>
