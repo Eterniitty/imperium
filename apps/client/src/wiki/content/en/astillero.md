@@ -16,6 +16,7 @@ Save the design and, below, choose the **colony** and press **Build here**. The 
 - The design is built **as it was when ordered**: if you change or delete it later, the ordered ship does not change.
 - If you **cancel** the order, you get everything back if it had not started and part of it if it had (resources and credits).
 - In **round-based fleet battles** its parts rule: attack = 0.4 × its weapons' damage per second, shield per round = half the recharge plus 1 % of the capacity, one shot per weapon and a target size by hull. It has the **hull points** and **berths** of its parts.
+- As an **escort** or **piloted remotely** it fights with the hull, shield and weapons of its parts, and when piloted its **acceleration** and **turn rate** come from its mass and drives.
 - Between stars it travels at its **quantum drive's speed** and with the **range of its tanks** (see [Fleets](/wiki/flotas#fuel)).
 - Its **3D model** comes from its parts (engines, turrets, holds, hangar…) on the shape of the stock class closest to its hull; for now it uses that class's **scanner**.
 
@@ -36,4 +37,4 @@ Save the design and, below, choose the **colony** and press **Build here**. The 
 {{tabla:piezas}}
 
 > [!dev]
-> **In development**: its acceleration and turn rate ruling when piloting it (as an escort or piloted remotely it already fights with the hull, shield and weapons of its parts).
+> **In development**: the scanner from its sensors and its own drawing of parts (for now it is drawn on the shape of its base class).
