@@ -42,7 +42,7 @@ function buildHull(parts: Parts, look: ShipLook, rnd: () => number): number {
       const x = pos.getX(i);
       const y = pos.getY(i);
       const z = pos.getZ(i);
-      const f = 1 + 0.12 * Math.sin(z * k1 * Math.PI + x * 9) * Math.cos(y * k2 * 7 + z * 5);
+      const f = 1 + 0.18 * Math.sin(z * k1 * Math.PI + x * 9) * Math.cos(y * k2 * 7 + z * 5);
       pos.setXYZ(i, x * f, y * f, z);
     }
     g.computeVertexNormals();
@@ -253,13 +253,43 @@ function buildStyle(parts: Parts, look: ShipLook, rnd: () => number): void {
   switch (look.style) {
     case "organic": {
       // Costillas y pústulas que brillan.
-      for (let i = 0; i < 5; i++) {
-        const z = -0.3 + i * 0.15;
-        parts.add("dark", new THREE.TorusGeometry(Math.max(W, H) * 0.42, 0.012, 6, 20), { p: [0, 0, z], s: [W / Math.max(W, H), H / Math.max(W, H), 1] });
+      for (let i = 0; i < 6; i++) {
+        const z = -0.32 + i * 0.13;
+        const k = 1 - Math.abs(z) * 0.6;
+        parts.add("dark", new THREE.TorusGeometry(Math.max(W, H) * 0.44 * k, 0.014, 6, 22), { p: [0, 0, z], s: [W / Math.max(W, H), H / Math.max(W, H), 1] });
       }
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < 14; i++) {
         const a = rnd() * Math.PI * 2;
-        parts.add("glow", new THREE.SphereGeometry(0.018, 8, 6), { p: [Math.cos(a) * W * 0.45, Math.sin(a) * H * 0.45, -0.3 + rnd() * 0.6] });
+        const r = 0.012 + rnd() * 0.022;
+        parts.add("glow", new THREE.SphereGeometry(r, 8, 6), { p: [Math.cos(a) * W * 0.46, Math.sin(a) * H * 0.46, -0.32 + rnd() * 0.64] });
+      }
+      // Cresta de espinas por el lomo, más altas hacia el centro.
+      for (let i = 0; i < 7; i++) {
+        const z = -0.28 + i * 0.09;
+        const h = (0.05 + 0.07 * (1 - Math.abs(z) * 2.2)) * (0.8 + rnd() * 0.4);
+        parts.add("dark", new THREE.ConeGeometry(0.018, h, 6), { p: [0, H * 0.46 + h / 2 - 0.01, z], r: [0.35, 0, 0] });
+      }
+      // Venas luminosas por los costados.
+      for (const side of [1, -1]) {
+        const pts = [-0.36, -0.18, 0, 0.18, 0.34].map((z, i) => new THREE.Vector3(side * W * (0.47 + (i % 2) * 0.03), H * (0.08 - (i % 2) * 0.12), z));
+        parts.add("glow", new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.006, 5, false), {});
+      }
+      // Mandíbulas en la proa.
+      for (const side of [1, -1]) {
+        const jaw = [new THREE.Vector3(side * W * 0.25, -H * 0.1, -0.38), new THREE.Vector3(side * W * 0.32, -H * 0.18, -0.5), new THREE.Vector3(side * W * 0.18, -H * 0.22, -0.6)];
+        parts.add("dark", new THREE.TubeGeometry(new THREE.CatmullRomCurve3(jaw), 12, 0.02, 6, false), {}, true);
+      }
+      // Tentáculos a popa, ondulados.
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2 + 0.4;
+        const r0 = Math.min(W, H) * 0.3;
+        const pts = [0, 1, 2, 3].map((k) => {
+          const z = 0.4 + k * 0.1;
+          const r = r0 + k * 0.03;
+          const wob = Math.sin(k * 1.7 + i) * 0.04;
+          return new THREE.Vector3(Math.cos(a) * r + wob, Math.sin(a) * r - wob, z);
+        });
+        parts.add("dark", new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, 0.012, 5, false), {});
       }
       return;
     }
