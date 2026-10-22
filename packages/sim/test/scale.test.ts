@@ -97,7 +97,7 @@ describe("escala astronómica", () => {
     return t;
   }
 
-  it("con el pulso (1000 km/s, desde el 22-10-2026) se va de un planeta al vecino y del borde al centro, de mediana, en unos minutos (de 2 a 10)", () => {
+  it("con el pulso (1800 km/s, desde el 22-10-2026) se va de un planeta al vecino y del borde al centro, de mediana, en unos minutos (de 2 a 10)", () => {
     const hops: number[] = [];
     const crossings: number[] = [];
     for (const d of systems) {

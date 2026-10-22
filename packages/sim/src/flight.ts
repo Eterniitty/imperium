@@ -18,8 +18,8 @@ export const PILOT_BOOST = FLIGHT_MODEL.boostFactor;
  * aleja. Tras una carga de unos segundos acelera casi de golpe; frena suave.
  */
 export const PULSE_MIN_SPEED = 300;
-/** Velocidad máxima del pulso (m/s): 1000 km/s desde el 22-10-2026 (con 5000 se recorría el sistema demasiado rápido). */
-export const PULSE_MAX_SPEED = 1_000_000;
+/** Velocidad máxima del pulso (m/s): 1800 km/s desde el 22-10-2026 (con 5000 se recorría el sistema demasiado rápido; 1000 se hacía largo). */
+export const PULSE_MAX_SPEED = 1_800_000;
 /**
  * Segundos "hasta la superficie" que deja el límite al ir de frente hacia un
  * cuerpo: la velocidad máxima es la distancia entre este tiempo. Así la nave
