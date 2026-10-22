@@ -485,6 +485,7 @@ export const es = {
   "error.no_colony": "Esa colonia no existe o no es tuya.",
   "error.invalid_name": "Nombre no válido: entre {min} y {max} caracteres, letras, cifras, espacios, guiones y apóstrofos.",
   "error.unknown_item": "No se puede construir eso.",
+  "error.unknown_design": "Ese diseño de nave no existe o no es válido.",
   "error.insufficient_resources": "No hay recursos suficientes en la colonia.",
   "error.needs_shipyard": "Para construir naves hace falta un astillero.",
   "error.needs_installation": "A la colonia le falta una instalación necesaria (refinería, dique orbital…).",

@@ -483,6 +483,7 @@ export const en: Record<I18nKey, string> = {
   "error.no_colony": "That colony does not exist or is not yours.",
   "error.invalid_name": "Invalid name: {min} to {max} characters; letters, digits, spaces, hyphens and apostrophes.",
   "error.unknown_item": "That cannot be built.",
+  "error.unknown_design": "That ship design does not exist or is not valid.",
   "error.insufficient_resources": "The colony does not have enough resources.",
   "error.needs_shipyard": "Building ships requires a shipyard.",
   "error.needs_installation": "The colony lacks a required installation (refinery, orbital drydock…).",

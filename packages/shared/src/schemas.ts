@@ -4,7 +4,7 @@
  * incluya Zod en su paquete.
  */
 import { z } from "zod";
-import { EMPEROR_NAME_MAX, EMPEROR_NAME_MIN, PLANET_NAME_MAX, PLANET_NAME_MIN, VISIBILITIES, type Visibility } from "./api";
+import { EMPEROR_NAME_MAX, EMPEROR_NAME_MIN, PLANET_NAME_MAX, PLANET_NAME_MIN, SHIP_DESIGN_NAME_MAX, VISIBILITIES, type Visibility } from "./api";
 import { BASE_LOCALES, type Locale } from "./i18n";
 import { WIKI_BODY_MAX, WIKI_BYLINE_MAX, WIKI_GROUPS, WIKI_NOTE_MAX, WIKI_SLUG_MAX, WIKI_SLUG_RE, WIKI_TITLE_MAX } from "./wiki";
 
@@ -291,3 +291,12 @@ export const WikiMetaBodySchema = z
   })
   .refine((b) => b.hidden !== undefined || b.group !== undefined || b.byline !== undefined);
 export type WikiMetaBody = z.input<typeof WikiMetaBodySchema>;
+
+/** Guardar un diseño de nave (nuevo sin `id`). El servidor comprueba que el casco y las piezas existen; puede guardarse a medias. */
+export const ShipDesignSaveBodySchema = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().trim().min(1).max(SHIP_DESIGN_NAME_MAX),
+  hullId: z.string().max(40),
+  parts: z.record(z.string().max(20), z.string().max(40)).refine((p) => Object.keys(p).length <= 40),
+});
+export const ShipDesignDeleteBodySchema = z.object({ id: z.string().uuid() });

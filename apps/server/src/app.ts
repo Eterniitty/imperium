@@ -22,6 +22,7 @@ import { humanityRoutes } from "./humanity/routes";
 import { HumanityService } from "./humanity/service";
 import { ProbeService } from "./probe/service";
 import { MercenaryService } from "./fleet/mercenaries";
+import { designRoutes } from "./design/routes";
 import { gateRoutes } from "./gate/routes";
 import { MarketService } from "./market/service";
 import { inHumanCore } from "./emperor/world";
@@ -259,6 +260,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   await app.register(wikiRoutes, { config, db: deps.db, wiki });
   await app.register(accountRoutes, { config, db: deps.db, hub, space, colonies, humanity, market, sieges, lineage, wiki });
   await app.register(colonyRoutes, { config, db: deps.db, emperors, discoveries, colonies, sieges });
+  // Editor de naves: diseños guardados de cada Emperador.
+  await app.register(designRoutes, { config, db: deps.db, emperors });
   // Puerta de entrada antes de abrir al público (Caddy la consulta con forward_auth).
   await app.register(gateRoutes, { config });
 

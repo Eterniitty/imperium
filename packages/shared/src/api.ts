@@ -256,7 +256,31 @@ export type ApiErrorCode =
   | "conflict"
   | "slug_taken"
   | "unknown_article"
+  | "unknown_design"
+  | "limit_reached"
   | "internal";
+
+// --- Editor de naves (`docs/editor-naves.md`) ---
+
+/** Diseños guardados por Emperador, como mucho. */
+export const SHIP_DESIGNS_MAX = 30;
+export const SHIP_DESIGN_NAME_MAX = 40;
+
+/** Un diseño de nave guardado: casco y pieza de cada anclaje (`slotId → partId`). */
+export interface ShipDesignRecord {
+  id: string;
+  name: string;
+  hullId: string;
+  parts: Record<string, string>;
+  updatedAt: number;
+}
+
+/** Respuesta de `GET /api/designs` y de guardar o borrar uno. */
+export interface ShipDesignsResponse {
+  designs: ShipDesignRecord[];
+  /** El diseño recién guardado, si se guardó uno. */
+  saved?: ShipDesignRecord;
+}
 
 /** Respuesta de `GET /api/systems/:systemId`: detalle de un sistema descubierto (niebla de guerra). */
 export interface SystemDetailResponse {

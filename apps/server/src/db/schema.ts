@@ -195,6 +195,23 @@ export const probes = pgTable(
   (t) => [index("probes_emperor_id_idx").on(t.emperorId)],
 );
 
+/** Diseños de nave del editor (`docs/editor-naves.md`): casco y pieza de cada anclaje. */
+export const shipDesigns = pgTable(
+  "ship_designs",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    emperorId: uuid("emperor_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    hullId: text("hull_id").notNull(),
+    parts: jsonb("parts").$type<Record<string, string>>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("ship_designs_emperor_id_idx").on(t.emperorId)],
+);
+
 /** Contratos de mercenarios (`MERCENARIES`): la flota contratada y cuándo se marcha. */
 export const mercenaryContracts = pgTable(
   "mercenary_contracts",

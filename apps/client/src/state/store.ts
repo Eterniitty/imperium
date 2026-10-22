@@ -58,6 +58,8 @@ export interface GameState {
   colonyManager: string | null;
   /** Panel del linaje (Fase 10: Cunas, Herederos, muertes) abierto. */
   lineageOpen: boolean;
+  /** Editor de naves («Astillero») abierto. */
+  shipEditorOpen: boolean;
   /** Cámara al pilotar: desde la cabina (primera persona) o desde detrás de la nave (tercera). */
   cameraView: "first" | "third";
   /** Selector de destinos del salto cuántico abierto (al pilotar). */
@@ -82,6 +84,7 @@ export interface GameState {
   setEconomyOpen(tab: EconomyTab | null): void;
   setColonyManager(colonyId: string | null): void;
   setLineageOpen(open: boolean): void;
+  setShipEditorOpen(open: boolean): void;
   toggleCameraView(): void;
   setQuantumPanel(open: boolean): void;
   setCruisePanel(open: boolean): void;
@@ -136,6 +139,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   economyOpen: null,
   colonyManager: null,
   lineageOpen: false,
+  shipEditorOpen: false,
   cameraView: "third",
   quantumPanel: false,
   quantumTarget: null,
@@ -181,6 +185,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   setEconomyOpen: (economyOpen) => set({ economyOpen }),
   setColonyManager: (colonyManager) => set({ colonyManager }),
   setLineageOpen: (lineageOpen) => set({ lineageOpen }),
+  setShipEditorOpen: (shipEditorOpen) => set({ shipEditorOpen }),
   toggleCameraView: () => set({ cameraView: get().cameraView === "first" ? "third" : "first" }),
   setQuantumPanel: (quantumPanel) => set(quantumPanel ? { quantumPanel, cruisePanel: false } : { quantumPanel }),
   setCruisePanel: (cruisePanel) => set(cruisePanel ? { cruisePanel, quantumPanel: false } : { cruisePanel }),
