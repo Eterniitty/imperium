@@ -12,6 +12,7 @@
  * escudo de batalla del objetivo absorbe daño hasta agotarse en esa ronda y el
  * resto va al casco. Con el casco a 0, la nave queda destruida.
  */
+import { designBattleStats, type ShipDesign } from "./shipDesign";
 import { battleProfileOf, FLEET_BATTLE, FLEET_TACTICS, getAnyShipClass, type FleetTacticId } from "@imperium/content";
 
 /** Nave en una batalla. */
@@ -71,17 +72,19 @@ export function battleShip(
   hull: number,
   /** Multiplicador del escudo (Defensas del Núcleo). */ shieldFactor = 1,
   /** Táctica de su flota. */ tactic: FleetTacticId = "balanced",
+  /** Nave del Astillero: sus piezas mandan en vez de la clase base (fase E4). */ design?: ShipDesign | null,
 ): BattleShip {
   const cls = getAnyShipClass(classId);
   const t = FLEET_TACTICS[tactic] ?? FLEET_TACTICS.balanced;
+  const d = design ? designBattleStats(design) : null;
   return {
     id,
     classId,
-    attack: (cls?.attack ?? 0) * t.attack,
-    shield: (cls?.battleShield ?? 0) * shieldFactor * t.shield,
+    attack: (d ? d.attack : (cls?.attack ?? 0)) * t.attack,
+    shield: (d ? d.shield : (cls?.battleShield ?? 0)) * shieldFactor * t.shield,
     hull,
-    shots: cls?.battleShots ?? 1,
-    profile: cls ? battleProfileOf(cls) : 1,
+    shots: d ? d.shots : (cls?.battleShots ?? 1),
+    profile: d ? d.profile : cls ? battleProfileOf(cls) : 1,
     ...(t.focus ? { focus: true } : {}),
   };
 }

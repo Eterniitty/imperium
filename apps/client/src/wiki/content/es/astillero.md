@@ -15,7 +15,8 @@ Guarda el diseño y, abajo, elige la **colonia** y pulsa **Construir aquí**. Ha
 
 - Se construye el diseño **tal como estaba al encargarlo**: si luego lo cambias o lo borras, la nave encargada no cambia.
 - Si **cancelas** el encargo, recuperas todo si aún no había empezado y una parte si ya estaba en marcha (recursos y créditos).
-- Por ahora la nave usa el **modelo 3D, el escáner y el perfil de combate** de la clase de serie más parecida a su casco (corbeta, fragata, crucero o portanaves), pero con el **casco** y las **plazas** de sus piezas.
+- En las **batallas de flotas por rondas** mandan sus piezas: ataque = 0,4 × el daño por segundo de sus armas, escudo por ronda = la mitad de la recarga más el 1 % de la capacidad, un disparo por arma y un tamaño como blanco según el casco. Lleva el **casco** y las **plazas** de sus piezas.
+- Por ahora usa el **modelo 3D** y el **escáner** de la clase de serie más parecida a su casco (corbeta, fragata, crucero o portanaves).
 
 ## Las reglas
 

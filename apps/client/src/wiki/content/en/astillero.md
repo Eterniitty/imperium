@@ -15,7 +15,8 @@ Save the design and, below, choose the **colony** and press **Build here**. The 
 
 - The design is built **as it was when ordered**: if you change or delete it later, the ordered ship does not change.
 - If you **cancel** the order, you get everything back if it had not started and part of it if it had (resources and credits).
-- For now the ship uses the **3D model, scanner and combat profile** of the stock class closest to its hull (corvette, frigate, cruiser or carrier), but with the **hull points** and **berths** of its parts.
+- In **round-based fleet battles** its parts rule: attack = 0.4 × its weapons' damage per second, shield per round = half the recharge plus 1 % of the capacity, one shot per weapon and a target size by hull. It has the **hull points** and **berths** of its parts.
+- For now it uses the **3D model** and **scanner** of the stock class closest to its hull (corvette, frigate, cruiser or carrier).
 
 ## The rules
 

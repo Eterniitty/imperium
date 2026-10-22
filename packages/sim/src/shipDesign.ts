@@ -160,3 +160,23 @@ export function designStats(design: ShipDesign): DesignStats {
     cost,
   };
 }
+
+/** Tamaño como blanco en el combate por rondas según la clase del casco. */
+const HULL_PROFILE: Record<HullClass, number> = { S: 2, M: 3, L: 4, XL: 5 };
+
+/**
+ * Lo que aporta un diseño al combate de flotas por rondas (fase E4), en la
+ * escala de las clases de serie (calibrado con la fragata: láser + cañón ≈ 40
+ * de ataque, escudo de flota ≈ 15): ataque = 0,4 × daño por segundo, escudo
+ * por ronda = mitad de la recarga + 1 % de la capacidad, un disparo por arma.
+ */
+export function designBattleStats(design: ShipDesign): { attack: number; shield: number; shots: number; profile: number } {
+  const s = designStats(design);
+  const hull = getHull(design.hullId);
+  return {
+    attack: Math.round(s.dps * 0.4),
+    shield: Math.round(s.shieldRegen * 0.5 + s.shield * 0.01),
+    shots: Math.max(1, s.weapons.length),
+    profile: hull ? HULL_PROFILE[hull.class] : 1,
+  };
+}

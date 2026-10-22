@@ -228,7 +228,7 @@ export class WarService {
       .orderBy(asc(fleets.createdAt), asc(fleets.id));
     if (rows.length === 0) return null;
     const shipRows = await tx
-      .select({ id: ships.id, fleetId: ships.fleetId, classId: ships.classId, hull: ships.hull })
+      .select({ id: ships.id, fleetId: ships.fleetId, classId: ships.classId, hull: ships.hull, design: ships.design })
       .from(ships)
       .where(inArray(ships.fleetId, rows.map((r) => r.id)));
     const byEmperor = new Map<string, { fleetIds: string[]; ships: BattleShip[]; flagship: BattleShip | null }>();
@@ -237,7 +237,7 @@ export class WarService {
       if (own.length === 0) continue;
       const e = byEmperor.get(r.emperorId) ?? { fleetIds: [], ships: [], flagship: null };
       e.fleetIds.push(r.id);
-      e.ships.push(...own.map((s) => battleShip(s.id, s.classId, s.hull)));
+      e.ships.push(...own.map((s) => battleShip(s.id, s.classId, s.hull, 1, "balanced", s.design)));
       byEmperor.set(r.emperorId, e);
     }
     // Fase 10: la nave del Emperador presente combate con su escolta o, fuera del Núcleo, sola.
@@ -307,7 +307,7 @@ export class WarService {
       .for("update");
     const shipRows = fleetRows.length
       ? await tx
-          .select({ id: ships.id, fleetId: ships.fleetId, classId: ships.classId, hull: ships.hull, humans: ships.humans })
+          .select({ id: ships.id, fleetId: ships.fleetId, classId: ships.classId, hull: ships.hull, humans: ships.humans, design: ships.design })
           .from(ships)
           .where(inArray(ships.fleetId, fleetRows.map((f) => f.id)))
       : [];
@@ -318,7 +318,7 @@ export class WarService {
     const shield = this.shieldFactor(battle.systemId);
     for (const s of shipRows) {
       const side = sideOf.get(fleetOwner.get(s.fleetId)!);
-      if (side !== undefined) bySide[side].push(battleShip(s.id, s.classId, s.hull, shield, fleetTactic.get(s.fleetId)));
+      if (side !== undefined) bySide[side].push(battleShip(s.id, s.classId, s.hull, shield, fleetTactic.get(s.fleetId), s.design));
     }
     // Fase 10: las naves de los Emperadores de cada bando que siguen en el sistema.
     const owners = new Set(fleetRows.map((f) => f.emperorId));
