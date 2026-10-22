@@ -154,6 +154,19 @@ Plan en `docs/juego-solitario.md` y `docs/tutorial.md`. Orden:
 - [ ] Tutorial: capítulos 5–12.
 - [ ] Retos de combate, crisis de colonias y lore como recompensa.
 
+## Editor 3D de construcción de naves (petición del 22-10-2026, noche)
+
+Plan por fases en `docs/editor-naves.md` («Editor 3D de construcción»). No empezado.
+
+- [ ] E6 Datos y reglas del árbol de piezas (nodos, encaje, límites, centro de masas, eje de empuje, conversión de diseños v1).
+- [ ] E7 Servidor autoritativo con diseños v2 y nombre de diseño reportable.
+- [ ] E8 Editor 3D: cámara, catálogo por categorías, encajar en nodos, quitar ramas, deshacer y rehacer.
+- [ ] E9 Montaje fino: superficie, rotación, desplazamiento y simetría radial y en espejo.
+- [ ] E10 Estadísticas en vivo con marcadores de centro de masas y empuje.
+- [ ] E11 Guardar, cargar, duplicar, plantillas y construir desde el editor.
+- [ ] E12 Naves dibujadas con sus piezas en todo el juego.
+- [ ] E13 Capítulo del tutorial y artículo de la Wiki.
+
 ## Peticiones del 22-10-2026 (tarde)
 
 - [x] Vuelo arcade tipo No Man's Sky (W/S acelerar y frenar sin marcha atrás, A/D girar con alabeo, ratón apunta; selector en Ajustes).
