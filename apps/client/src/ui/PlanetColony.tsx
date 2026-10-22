@@ -40,7 +40,10 @@ function Cost({ cost, stock }: { cost: StockAmounts; stock: StockAmounts | null 
  * existencias, producción, instalaciones y cola de construcción. Se usa en el
  * panel de sistema (mapa) y en el de planetas (vista de sistema).
  */
-export function PlanetColony({ detail, planet }: { detail: StarSystemDetail; planet: Planet }) {
+/** Pestañas de la ventana del planeta: la ficha del planeta y las secciones de su colonia. */
+export type PlanetTab = "planet" | ColonySection;
+
+export function PlanetColony({ detail, planet, tab = "planet" }: { detail: StarSystemDetail; planet: Planet; tab?: PlanetTab }) {
   const t = useT();
   const locale = useGame((s) => s.locale);
   const systemId = detail.summary.id;
@@ -109,6 +112,8 @@ export function PlanetColony({ detail, planet }: { detail: StarSystemDetail; pla
 
   return (
     <div className="colony">
+      {tab === "planet" && (
+        <>
       <dl className="facts">
         <dt>{t("colony.owner")}</dt>
         <dd className={own ? "owner-own" : claim ? "owner-other" : "muted"}>
@@ -148,8 +153,7 @@ export function PlanetColony({ detail, planet }: { detail: StarSystemDetail; pla
       )}
 
       {own && (
-        <>
-          {renaming ? (
+          renaming ? (
             <form className="claim-form" onSubmit={(e) => void saveName(e)}>
               <label>
                 <span className="muted small">{t("colony.nameLabel")}</span>
@@ -175,12 +179,19 @@ export function PlanetColony({ detail, planet }: { detail: StarSystemDetail; pla
                 {t("colony.rename")}
               </button>
             </div>
-          )}
-          {emperorHere && flagship && <UnloadHold hold={flagship.hold} busy={busy} onUnload={() => void run(connection.command("flagship.unload", { colonyId: own.id }))} />}
-          {emperorHere && <Disembark colony={own} aboard={aboard} now={now} busy={busy} onLand={(n) => void run(connection.command("colony.disembark", { colonyId: own.id, humans: n }))} />}
-          {emperorHere && <Embark colony={own} aboard={liveHumans(humans, now)} now={now} busy={busy} onBoard={(n) => void run(connection.command("colony.embark", { colonyId: own.id, humans: n }))} />}
+          )
+      )}
+        </>
+      )}
+
+      {own && tab !== "planet" && (
+        <>
+          {tab === "people" && emperorHere && flagship && <UnloadHold hold={flagship.hold} busy={busy} onUnload={() => void run(connection.command("flagship.unload", { colonyId: own.id }))} />}
+          {tab === "people" && emperorHere && <Disembark colony={own} aboard={aboard} now={now} busy={busy} onLand={(n) => void run(connection.command("colony.disembark", { colonyId: own.id, humans: n }))} />}
+          {tab === "people" && emperorHere && <Embark colony={own} aboard={liveHumans(humans, now)} now={now} busy={busy} onBoard={(n) => void run(connection.command("colony.embark", { colonyId: own.id, humans: n }))} />}
           <ColonyDetail
             colony={own}
+            sections={[tab]}
             now={now}
             busy={busy}
             locale={locale}
@@ -279,8 +290,13 @@ function Embark({ colony, aboard, now, busy, onBoard }: { colony: Colony; aboard
   );
 }
 
+/** Secciones de la gestión de una colonia (pestañas de la ventana del planeta). */
+export type ColonySection = "people" | "resources" | "installations" | "production" | "ships";
+export const COLONY_SECTIONS: readonly ColonySection[] = ["people", "resources", "installations", "production", "ships"];
+
 export function ColonyDetail({
   colony,
+  sections = COLONY_SECTIONS,
   now,
   busy,
   locale,
@@ -289,6 +305,8 @@ export function ColonyDetail({
   onDemolish,
 }: {
   colony: Colony;
+  /** Qué secciones se muestran (por defecto, todas). */
+  sections?: readonly ColonySection[];
   now: number;
   busy: boolean;
   locale: Parameters<typeof contentText>[0];
@@ -311,8 +329,11 @@ export function ColonyDetail({
   const affordable = (cost: StockAmounts) => STOCK_IDS.every((r) => stock[r] >= cost[r]);
   const queueFull = colony.builds.length >= ECONOMY.maxQueue;
 
+  const show = (x: ColonySection) => sections.includes(x);
   return (
     <>
+      {show("people") && (
+        <>
       <dl className="facts">
         <dt>{t("colony.population")}</dt>
         <dd className="mono">
@@ -342,6 +363,11 @@ export function ColonyDetail({
         </p>
       )}
 
+        </>
+      )}
+
+      {show("resources") && (
+        <>
       <h3>{t("colony.stock")}</h3>
       <div className="deposits">
         {STOCK_IDS.map((r) => (
@@ -357,6 +383,22 @@ export function ColonyDetail({
         ))}
       </div>
 
+      {/* Componentes fabricados que guarda la colonia. */}
+      <h3>{t("craft.items")}</h3>
+      <div className="deposits">
+        {COMPONENT_IDS.filter((c) => (colony.items[c] ?? 0) > 0).map((c) => (
+          <div key={c} className="deposit">
+            <span className="deposit-name">{t(`component.${c}`)}</span>
+            <span className="mono">{fmtInt(colony.items[c] ?? 0)}</span>
+          </div>
+        ))}
+        {COMPONENT_IDS.every((c) => !(colony.items[c] ?? 0)) && <span className="muted small">{t("craft.noItems")}</span>}
+      </div>
+        </>
+      )}
+
+      {show("installations") && (
+        <>
       <h3>{t("colony.installations")}</h3>
       <ul className="emperor-list">
         {Object.entries(colony.installations).map(([id, n]) => (
@@ -378,25 +420,6 @@ export function ColonyDetail({
           </li>
         ))}
         {Object.keys(colony.installations).length === 0 && <li className="muted small">{t("colony.noInstallations")}</li>}
-      </ul>
-
-      <h3>{t("colony.queue")}</h3>
-      <ul className="emperor-list build-queue">
-        {colony.builds.map((b) => (
-          <li key={b.id}>
-            <strong>{b.design ? b.design.name : itemName(b.kind, b.itemId)}</strong>
-            <span className="muted small mono">{b.finishAt ? formatDuration(b.finishAt - now) : t("colony.waiting")}</span>
-            <button
-              className="link-btn small"
-              disabled={busy}
-              title={t(b.startedAt ? "colony.cancelStartedHint" : "colony.cancelQueuedHint")}
-              onClick={() => onCancel(b.id)}
-            >
-              {t("colony.cancelBuild")}
-            </button>
-          </li>
-        ))}
-        {colony.builds.length === 0 && <li className="muted small">{t("colony.queueEmpty")}</li>}
       </ul>
 
       <h3>{t("colony.buildInstallations")}</h3>
@@ -423,17 +446,31 @@ export function ColonyDetail({
         })}
       </ul>
 
-      {/* Fabricación: inventario de componentes y recetas de la Fábrica. */}
-      <h3>{t("craft.items")}</h3>
-      <div className="deposits">
-        {COMPONENT_IDS.filter((c) => (colony.items[c] ?? 0) > 0).map((c) => (
-          <div key={c} className="deposit">
-            <span className="deposit-name">{t(`component.${c}`)}</span>
-            <span className="mono">{fmtInt(colony.items[c] ?? 0)}</span>
-          </div>
+        </>
+      )}
+
+      {show("production") && (
+        <>
+      <h3>{t("colony.queue")}</h3>
+      <ul className="emperor-list build-queue">
+        {colony.builds.map((b) => (
+          <li key={b.id}>
+            <strong>{b.design ? b.design.name : itemName(b.kind, b.itemId)}</strong>
+            <span className="muted small mono">{b.finishAt ? formatDuration(b.finishAt - now) : t("colony.waiting")}</span>
+            <button
+              className="link-btn small"
+              disabled={busy}
+              title={t(b.startedAt ? "colony.cancelStartedHint" : "colony.cancelQueuedHint")}
+              onClick={() => onCancel(b.id)}
+            >
+              {t("colony.cancelBuild")}
+            </button>
+          </li>
         ))}
-        {COMPONENT_IDS.every((c) => !(colony.items[c] ?? 0)) && <span className="muted small">{t("craft.noItems")}</span>}
-      </div>
+        {colony.builds.length === 0 && <li className="muted small">{t("colony.queueEmpty")}</li>}
+      </ul>
+
+      {/* Fabricación: recetas de la Fábrica. */}
       {(colony.installations.factory ?? 0) > 0 ? (
         <>
           <h3>{t("craft.title")}</h3>
@@ -465,7 +502,10 @@ export function ColonyDetail({
         <p className="muted small">{t("craft.needFactory")}</p>
       )}
 
-      {(colony.installations.shipyard ?? 0) > 0 && (
+        </>
+      )}
+
+      {show("ships") && ((colony.installations.shipyard ?? 0) > 0 ? (
         <>
           <h3>{t("colony.buildShips")}</h3>
           <ul className="build-list">
@@ -493,7 +533,9 @@ export function ColonyDetail({
             })}
           </ul>
         </>
-      )}
+      ) : (
+        <p className="muted small">{t("colony.needShipyard")}</p>
+      ))}
     </>
   );
 }

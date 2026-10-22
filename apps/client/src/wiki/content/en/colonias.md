@@ -1,5 +1,14 @@
 # Claiming planets and colonies
 
+## The planet window
+
+Choosing a planet (in the system list or by clicking on it) opens its **window**, with tabs:
+
+- **Planet**: type, orbit, size, habitability, moons, deposits, owner; claim, rename or besiege it and, while piloting, cruise to it or orbit it.
+- If the colony is yours, also: **Population** (inhabitants, energy, upkeep, landing and boarding humans, unloading the hold), **Resources** (stock, hourly production and components), **Installations** (current ones and building), **Production** (build queue and crafting) and **Ships** (shipyard).
+
+The **▁** button minimises it into a tab under the top bar (click to expand it) and **×** closes it.
+
 ## Claiming a planet
 
 A **free** planet in a system **you have discovered** can be claimed in two ways:

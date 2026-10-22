@@ -14,7 +14,6 @@ import { FleetLogistics } from "./FleetLogistics";
 import { TacticPicker } from "./TacticPicker";
 import { ProbeLauncher } from "./ProbeLauncher";
 import { MercenaryHire } from "./MercenaryHire";
-import { PlanetColony } from "./PlanetColony";
 import { formatDuration, useServerNow } from "./useNow";
 import { companionsIn, useCompanionTrail } from "./companionTrail";
 
@@ -166,15 +165,6 @@ export function SystemPanel() {
             })}
             {detail.planets.length === 0 && <li className="muted">{t("system.none")}</li>}
           </ul>
-          {(() => {
-            const pl = detail.planets.find((p) => p.index === selectedPlanet);
-            return pl ? (
-              <div className="planet-detail">
-                <h3>{planetLabel(pl, claims.systemId === detail.summary.id ? claims.claims[pl.index] : undefined, ownColonyAt(colonies, detail.summary.id, pl.index))}</h3>
-                <PlanetColony detail={detail} planet={pl} />
-              </div>
-            ) : null;
-          })()}
         </>
       ) : (
         detailStatus === "unexplored" && (

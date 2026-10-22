@@ -115,6 +115,18 @@ Informe completo en Claude Docs («Aeonarch — Plan de juego»). Cinco fases, c
 - [ ] **Materiales y fabricación** (petición del usuario): ✔ F1 Fábrica, seis componentes con recetas y cadenas (`RECIPES`, `colonies.items`, encargo `craft`), las piezas avanzadas del Astillero los piden; ✔ F2 transportarlos en las bodegas (`fleet.items`, `fleet_cargo.items`); falta venderlos en el mercado.
 - [x] **Libros en la Wiki** (grupo «Libros», firma del autor; solo administradores).
 
+## Peticiones del 22-10-2026 (tarde)
+
+- [x] Vuelo arcade tipo No Man's Sky (W/S acelerar y frenar sin marcha atrás, A/D girar con alabeo, ratón apunta; selector en Ajustes).
+- [x] La nave aparcada se queda junto al planeta o luna, con orientación y motores como se dejaron; los choques la empujan.
+- [x] Ratón atrapado en el círculo de mando al pilotar con ratón.
+- [x] HUD: barra de acciones horizontal con iconos; estado y armas con iconos y números; sin casco ni escudo ajenos; marcadores del tamaño de la nave.
+- [x] Milicia que se defiende y pide refuerzos.
+- [x] Naves pequeñas más grandes; dial de crucero rehecho.
+- [x] Ventana del planeta con pestañas, minimizable bajo la barra superior.
+- [ ] Robar o remolcar naves aparcadas ajenas (abordaje).
+- [ ] Revisar velocidades de combate con el usuario (qué velocidad le parece bien).
+
 ## Antes de abrir al público (obligatorio, en paralelo)
 
 Lista de `docs/despliegue.md`: estáticos desde Cloudflare, 80/443 solo desde Cloudflare, límites por IP y cuenta, vigilante de tráfico saliente con corte automático. Además: dominio propio, HTTPS, correo real (SMTP con SPF/DKIM/DMARC) y `APP_ENV=production`.
