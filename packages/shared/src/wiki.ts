@@ -63,7 +63,7 @@ export const WIKI_SLUG_MAX = 48;
 export const WIKI_BODY_MAX = 60_000;
 export const WIKI_NOTE_MAX = 200;
 export const WIKI_TITLE_MAX = 80;
-/** Firma de un artículo (sobre todo de los libros): «Lyra Venn, Emperador Wasito Suzumiya». */
+/** Firma de un artículo (sobre todo de los libros): «Lyra Venn, Emperatriz del Velo». */
 export const WIKI_BYLINE_MAX = 120;
 
 export function isValidWikiSlug(s: string): boolean {

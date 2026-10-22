@@ -561,7 +561,7 @@ export const en: Record<I18nKey, string> = {
   "wiki.group.books": "Books",
   "wiki.byline": "Written by {name}",
   "wiki.edit.byline": "Byline (author)",
-  "wiki.edit.bylinePlaceholder": "Lyra Venn, Emperor …",
+  "wiki.edit.bylinePlaceholder": "Lyra Venn, Empress …",
   "wiki.yes": "Yes",
   "wiki.no": "No (used where it is produced)",
   "wiki.unlimited": "Unlimited",

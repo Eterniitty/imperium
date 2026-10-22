@@ -159,9 +159,9 @@ describe.skipIf(!TEST_DATABASE_URL)("Wiki editable", () => {
 
     // Libros: un artículo nuevo en «books», con su firma; texto vacío la quita.
     await post("/api/wiki/create", { slug: "cronica-del-primer-salto", group: "books", locale: "es", title: "Crónica del primer salto" }, admin);
-    const signed = (await post("/api/wiki/meta", { slug: "cronica-del-primer-salto", byline: "  Lyra Venn, Emperador  " }, admin)).json<WikiPageResponse>();
-    expect(signed.page).toMatchObject({ group: "books", byline: "Lyra Venn, Emperador" });
-    expect((await app.inject({ method: "GET", url: "/api/wiki" })).json<WikiStateResponse>().pages.find((p) => p.slug === "cronica-del-primer-salto")?.byline).toBe("Lyra Venn, Emperador");
+    const signed = (await post("/api/wiki/meta", { slug: "cronica-del-primer-salto", byline: "  Lyra Venn, Emperatriz  " }, admin)).json<WikiPageResponse>();
+    expect(signed.page).toMatchObject({ group: "books", byline: "Lyra Venn, Emperatriz" });
+    expect((await app.inject({ method: "GET", url: "/api/wiki" })).json<WikiStateResponse>().pages.find((p) => p.slug === "cronica-del-primer-salto")?.byline).toBe("Lyra Venn, Emperatriz");
     expect((await post("/api/wiki/meta", { slug: "cronica-del-primer-salto", byline: "" }, admin)).json<WikiPageResponse>().page.byline).toBeNull();
     expect((await post("/api/wiki/meta", { slug: "cronica-del-primer-salto", byline: "x".repeat(121) }, admin)).statusCode).toBe(400);
   });

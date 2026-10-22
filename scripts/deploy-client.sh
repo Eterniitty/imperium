@@ -18,6 +18,9 @@ pnpm install --frozen-lockfile
 echo "==> Compilando el cliente"
 pnpm build
 
+# Datos del responsable en las páginas legales (fuera del repositorio).
+./scripts/fill-legal.sh
+
 echo "==> Publicando en $WEB_ROOT"
 # La carpeta pertenece al usuario de despliegue, así que no hace falta sudo.
 # Preparación única: sudo mkdir -p "$WEB_ROOT" && sudo chown -R "$USER:$USER" "$WEB_ROOT"

@@ -563,7 +563,7 @@ export const es = {
   "wiki.group.books": "Libros",
   "wiki.byline": "Escrito por {name}",
   "wiki.edit.byline": "Firma (autor)",
-  "wiki.edit.bylinePlaceholder": "Lyra Venn, Emperador …",
+  "wiki.edit.bylinePlaceholder": "Lyra Venn, Emperatriz …",
   "wiki.yes": "Sí",
   "wiki.no": "No (se gasta donde se produce)",
   "wiki.unlimited": "Ilimitada",
