@@ -202,6 +202,12 @@ export function parseMarkdown(src: string): Block[] {
         parts.push(lt);
         i++;
       }
+      // Una línea que parece otro bloque pero no lo es (`::: c` a medio escribir, `{{tabla:X}}` no válido):
+      // se queda como texto (si no, el bucle no avanzaría nunca).
+      if (parts.length === 0) {
+        parts.push(lines[i]!.trim());
+        i++;
+      }
       blocks.push({ t: "p", c: parseInline(parts.join(" ")) });
     }
   }

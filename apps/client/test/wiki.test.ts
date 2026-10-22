@@ -228,3 +228,17 @@ describe("Wiki editable: diferencias", () => {
     expect(chunks).toEqual([{ t: "gap", count: 9 }, { t: "same", text: "l9" }, { t: "add", text: "nuevo" }, { t: "same", text: "l10" }, { t: "gap", count: 9 }]);
   });
 });
+
+describe("formato de la Wiki (bloques `:::`)", () => {
+  it("lo que parece un bloque pero no lo es (a medio escribir) se queda como texto, sin colgarse", () => {
+    for (const src of ["::: c", ":::", "::: centro texto", "{{tabla:X}}", "{{fichas:mal_id}}", "texto\n::: cen\nmás"]) {
+      const blocks = parseMarkdown(src);
+      expect(blocks.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("centro, verso y separador", () => {
+    const blocks = parseMarkdown("::: centro\nHola\n:::\n\n::: verso\nuno\ndos\n:::\n\n---");
+    expect(blocks.map((b) => b.t)).toEqual(["align", "verse", "hr"]);
+  });
+});
