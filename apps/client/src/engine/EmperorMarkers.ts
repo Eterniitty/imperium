@@ -11,7 +11,7 @@ const OWN_COLOR = "#c792ff";
 const OTHER_COLOR = "#ff9f5a";
 const FLEET_COLOR = "#5fd3e6";
 /** Altura del rótulo en pantalla (fracción de la altura de la vista). */
-const LABEL_HEIGHT = 0.03;
+const LABEL_HEIGHT = 0.024;
 /** Distancia en pantalla (coordenadas normalizadas) a la que dos rótulos se consideran solapados. */
 const LABEL_NEAR_X = 0.25;
 const LABEL_NEAR_Y = 0.06;
@@ -66,19 +66,33 @@ export class EmperorMarkers {
   update(camera: THREE.Camera): void {
     const now = serverNow();
     const seen = new Set<string>();
-    // Rótulos cercanos en pantalla se apilan en vez de solaparse.
-    const placed: THREE.Vector3[] = [];
-    const ndc = new THREE.Vector3();
-    for (const item of this.list()) {
+    // Rótulos que coinciden en pantalla (las IA del Núcleo, la flota junto a su Emperador…) se agrupan en uno solo,
+    // «Nombre +N»; antes se apilaban hacia arriba y tapaban el mapa. Primero el propio Emperador, luego las flotas.
+    const myId = worldStore.getState().myEmperorId ?? authStore.getState().emperor?.id;
+    const items = this.list()
+      .map((item) => ({ item, pos: this.sectors.toScene(positionAt(item.e, now)) }))
+      .sort((a, b) => Number(b.item.e.id === myId) - Number(a.item.e.id === myId));
+    const heads: Array<{ ndc: THREE.Vector3; index: number; extra: number }> = [];
+    const headOf = new Map<number, number>();
+    items.forEach(({ pos }, i) => {
+      const ndc = pos.clone().project(camera);
+      const head = heads.find((h) => Math.abs(h.ndc.x - ndc.x) < LABEL_NEAR_X && Math.abs(h.ndc.y - ndc.y) < LABEL_NEAR_Y);
+      if (head) {
+        head.extra++;
+        headOf.set(i, -1);
+      } else {
+        heads.push({ ndc, index: i, extra: 0 });
+        headOf.set(i, heads.length - 1);
+      }
+    });
+    items.forEach(({ item, pos }, i) => {
       const { e } = item;
       seen.add(e.id);
-      const m = this.marker(item);
-      const pos = this.sectors.toScene(positionAt(e, now));
-      ndc.copy(pos).project(camera);
-      let level = 0;
-      for (const p of placed) if (Math.abs(p.x - ndc.x) < LABEL_NEAR_X && Math.abs(p.y - ndc.y) < LABEL_NEAR_Y) level++;
-      placed.push(ndc.clone());
-      m.label.center.set(0.5, -1.1 - level * 1.15);
+      const h = headOf.get(i)!;
+      const extra = h >= 0 ? heads[h]!.extra : 0;
+      const m = this.marker(extra > 0 ? { ...item, name: `${item.name} +${extra}` } : item);
+      m.label.visible = h >= 0;
+      m.label.center.set(0.5, -1.1);
       m.ring.position.copy(pos);
       m.label.position.copy(pos);
       const travelling = e.travel !== null && e.travel.arriveAt > now;
@@ -91,7 +105,7 @@ export class EmperorMarkers {
         attr.needsUpdate = true;
         m.route.computeLineDistances();
       }
-    }
+    });
     for (const [id, m] of this.markers) {
       if (!seen.has(id)) this.removeMarker(id, m);
     }

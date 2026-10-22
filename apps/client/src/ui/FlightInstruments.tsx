@@ -53,7 +53,9 @@ export function FlightInstruments() {
       if (first) drawHorizon(ctx, cx, cy, h);
       drawHeading(ctx, cx, Math.max(84, h * 0.11), Math.min(420, w * 0.4), labels.current.star);
 
-      // Velocidad (izquierda) y altitud (derecha) junto a la mira.
+      // Velocidad (izquierda) y altitud (derecha) junto a la mira, solo en cabina: fuera ya está el velocímetro de abajo
+      // y los recuadros tapaban los nombres de planetas y naves.
+      if (!first) return;
       const off = Math.min(260, w * 0.22);
       const [num, unit] = speedParts(telemetry.speed);
       box(ctx, cx - off, cy, labels.current.speed, `${num} ${unit === "pilot.unitKm" ? "km/s" : "m/s"}`, "right");
