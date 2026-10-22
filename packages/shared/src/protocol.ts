@@ -65,6 +65,12 @@ export interface CommandArgs {
   /** `near`: Emperador compañero junto al que se quiere llegar (su posición actual o la última conocida en el destino). */
   "emperor.move": { systemId: string; near?: string };
   /**
+   * Salto en preparación (alineando o cargando): si se cierra la pestaña antes
+   * de dar la orden, el servidor salta solo dentro de `departIn` segundos (lo que
+   * faltaba de la preparación). `systemId` null: se canceló.
+   */
+  "emperor.jumpIntent": { systemId: string | null; near?: string; departIn: number };
+  /**
    * Sale del túnel cuántico a mitad de viaje: la nave queda en la región de
    * espacio profundo de su posición (se gasta solo el combustible recorrido).
    */

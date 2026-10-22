@@ -178,6 +178,8 @@ Vuela hasta el **borde del sistema** (unos miles de kilómetros más allá del �
 - **Memoria de posición:** el juego recuerda dónde estaba tu nave en cada sistema (al saltar fuera, al aparcarla y cada minuto mientras vuelas). Al volver a un sistema, llegas ahí y allí se abre la grieta.
 - **Junto a un compañero:** si un [compañero](/wiki/companeros) está o estuvo en un sistema, en el selector de salto ([[J]]) y en el panel del sistema en el mapa aparece **«Junto a …»**: llegas a su lado, donde está ahora o donde estuvo la última vez.
 
+Si **cierras la pestaña** mientras la nave se alinea o carga el salto, el servidor **salta igual** cuando habría salido (nunca antes: la preparación se cumple entera).
+
 La grieta de llegada **se abre en el sistema de destino unos 3 s antes** de que salga la nave: los que estén allí ven cómo se abre. En esos últimos 3 s ya no se puede salir del túnel.
 
 ### Salir del túnel a mitad de viaje

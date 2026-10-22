@@ -148,6 +148,39 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
       socket.on("pong", () => alive.set(socket, true));
       hub.add(client);
 
+      /**
+       * Salto cuántico (orden `emperor.move`, o el que se completa solo si se cerró
+       * la pestaña en plena preparación: `emperor.jumpIntent`).
+       */
+      const doMove = async (systemId: string, near: string | null) => {
+        // El salto gasta combustible: primero se guarda el que lleva la nave en memoria.
+        await space.flushSupplies(owner.emperorId);
+        // Memoria de posición: dónde está ahora la nave (y el compañero junto al que se quiere llegar), en vivo.
+        const res = await emperors.move(owner.accountId, systemId, {
+          here: space.positionOf(owner.emperorId),
+          near,
+          nearLive: near ? space.positionOf(near) : null,
+        });
+        if (res.ok) {
+          // Al saltar, la nave deja el sistema en el que volaba (y su combustible cambió en la base de datos).
+          space.leave(res.emperor.id, "jump");
+          space.suppliesChanged(res.emperor.id);
+          await hub.publish(res.emperor.id);
+          // Dónde aparecerá al llegar (borde del destino).
+          await hub.publishFlagship(res.emperor.id);
+          // Los del sistema de destino ven abrirse su grieta unos segundos antes de que llegue.
+          const travel = res.emperor.travel;
+          const status = travel ? await flagships.status(res.emperor.id) : null;
+          if (travel && status && status.systemId === travel.to.systemId) {
+            const at = parkedPosition(status.park, travel.arriveAt, flagships.layout(travel.to.systemId));
+            space.scheduleIncoming(res.emperor.id, travel.to.systemId, at, travel.arriveAt);
+          }
+        }
+        return res;
+      };
+      /** Salto en preparación (ver `emperor.jumpIntent`). */
+      let pendingJump: { systemId: string; near: string | null; at: number } | null = null;
+
       socket.on("message", (data, isBinary) => {
         let parsed: ReturnType<typeof ClientMessageSchema.safeParse> | null = null;
         try {
@@ -202,31 +235,12 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     return res;
                   }
                   case "emperor.move": {
-                    // El salto gasta combustible: primero se guarda el que lleva la nave en memoria.
-                    await space.flushSupplies(owner.emperorId);
-                    // Memoria de posición: dónde está ahora la nave (y el compañero junto al que se quiere llegar), en vivo.
-                    const near = msg.args.near ?? null;
-                    const res = await emperors.move(owner.accountId, msg.args.systemId, {
-                      here: space.positionOf(owner.emperorId),
-                      near,
-                      nearLive: near ? space.positionOf(near) : null,
-                    });
-                    if (res.ok) {
-                      // Al saltar, la nave deja el sistema en el que volaba (y su combustible cambió en la base de datos).
-                      space.leave(res.emperor.id, "jump");
-                      space.suppliesChanged(res.emperor.id);
-                      await hub.publish(res.emperor.id);
-                      // Dónde aparecerá al llegar (borde del destino).
-                      await hub.publishFlagship(res.emperor.id);
-                      // Los del sistema de destino ven abrirse su grieta unos segundos antes de que llegue.
-                      const travel = res.emperor.travel;
-                      const status = travel ? await flagships.status(res.emperor.id) : null;
-                      if (travel && status && status.systemId === travel.to.systemId) {
-                        const at = parkedPosition(status.park, travel.arriveAt, flagships.layout(travel.to.systemId));
-                        space.scheduleIncoming(res.emperor.id, travel.to.systemId, at, travel.arriveAt);
-                      }
-                    }
-                    return res;
+                    pendingJump = null;
+                    return await doMove(msg.args.systemId, msg.args.near ?? null);
+                  }
+                  case "emperor.jumpIntent": {
+                    pendingJump = msg.args.systemId ? { systemId: msg.args.systemId, near: msg.args.near ?? null, at: Date.now() + msg.args.departIn * 1000 } : null;
+                    return { ok: true } as const;
                   }
                   // Espacio profundo: salir del túnel a mitad de viaje (ver emperor/service.ts drop).
                   case "emperor.drop": {
@@ -542,6 +556,12 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
         sockets.delete(socket);
         space.leaveClient(client);
         hub.remove(client);
+        // Se cerró la pestaña en plena preparación del salto: salta solo cuando habría salido (nunca antes).
+        const jump = pendingJump;
+        pendingJump = null;
+        if (jump && jump.at > Date.now() - 60_000) {
+          setTimeout(() => void doMove(jump.systemId, jump.near).catch((err: unknown) => req.log.error(err, "Error en un salto sin piloto")), Math.max(0, jump.at - Date.now()) + 500);
+        }
       });
     },
   );

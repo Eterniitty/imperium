@@ -178,6 +178,8 @@ Fly to the **edge of the system** (a few thousand kilometres beyond the outermos
 - **Position memory:** the game remembers where your ship was in each system (when you jump away, when you park it and every minute while you fly). When you return to a system, you arrive there and the rift opens there.
 - **Next to a companion:** if a [companion](/wiki/companeros) is or was in a system, the jump selector ([[J]]) and the system panel on the map show **"Next to …"**: you arrive beside them, where they are now or where they last were.
 
+If you **close the tab** while the ship is aligning or charging the jump, the server **jumps anyway** when it would have left (never earlier: the preparation is completed in full).
+
 The arrival rift **opens in the destination system about 3 s before** the ship comes out: those there see it open. In those last 3 s you can no longer leave the tunnel.
 
 ### Dropping out halfway

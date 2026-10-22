@@ -784,6 +784,8 @@ export class SystemView implements View {
     const dir = new THREE.Vector3(target.position.x - from.x, target.position.y - from.y, target.position.z - from.z).normalize();
     this.flight.pulse = false;
     this.quantum = { target, near, dir, phase: "align", t: 0, riftSent: false, startedAt: performance.now() };
+    // Si se cierra la pestaña en plena preparación, el servidor salta solo cuando habría salido (alinear + cargar).
+    void connection.command("emperor.jumpIntent", { systemId: target.id, ...(near ? { near } : {}), departIn: QUANTUM_ALIGN_MAX_SEC + QUANTUM_CHARGE_SEC });
     gameStore.getState().setQuantumTarget(target);
   }
 
@@ -793,6 +795,7 @@ export class SystemView implements View {
     if (!q) return;
     this.quantum = null;
     stopQuantumCharge();
+    if (q.phase === "align" || q.phase === "charge") void connection.command("emperor.jumpIntent", { systemId: null, departIn: 0 });
     // Cancelado antes de saltar: la grieta se cierra (también para los demás).
     if (q.phase !== "depart") {
       this.rifts.close("self");
@@ -834,6 +837,7 @@ export class SystemView implements View {
       if (cos > Math.cos((1.5 * Math.PI) / 180)) {
         q.phase = "charge";
         q.t = 0;
+        void connection.command("emperor.jumpIntent", { systemId: q.target.id, ...(q.near ? { near: q.near } : {}), departIn: QUANTUM_CHARGE_SEC });
         telemetry.quantumAlign = null;
         playQuantumCharge(QUANTUM_CHARGE_SEC);
         // La grieta se abre delante del morro, en el mundo: la ven todos los del sistema.
