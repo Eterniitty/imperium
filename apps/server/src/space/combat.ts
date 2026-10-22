@@ -45,6 +45,8 @@ interface Reactor {
 
 /** Estado de combate de una nave. Dura aunque salga del sistema (no se cura saliendo y entrando). */
 export class Combatant {
+  /** Depósito de combustible (la nave del Emperador lo agranda con el rango, `fuelCapacityFor`). */
+  fuelMax: number = FLAGSHIP_SUPPLIES.fuelMax;
   hull: number;
   shield: number;
   lastHitAt = 0;
@@ -122,7 +124,7 @@ export class Combatant {
   fuelNow(now: number): number {
     const r = this.reactor;
     if (!r) return 0;
-    if (this.infiniteFuel) r.fuel = FLAGSHIP_SUPPLIES.fuelMax;
+    if (this.infiniteFuel) r.fuel = this.fuelMax;
     const fuel = regenFuel(r.fuel, (now - r.fuelAt) / 1000);
     if (fuel !== r.fuel) this.dirty = true;
     r.fuel = fuel;
@@ -186,7 +188,7 @@ export class Combatant {
     }
     if (this.reactor) {
       const fuel = this.fuelNow(now);
-      out.fuel = Math.max(0, Math.min(add.fuel, FLAGSHIP_SUPPLIES.fuelMax - fuel));
+      out.fuel = Math.max(0, Math.min(add.fuel, this.fuelMax - fuel));
       this.reactor.fuel = fuel + out.fuel;
     }
     for (const [kind, key] of [
@@ -212,7 +214,7 @@ export class Combatant {
       return w.def.ammo - w.ammo;
     };
     return {
-      fuel: this.reactor ? FLAGSHIP_SUPPLIES.fuelMax - this.fuelNow(now) : 0,
+      fuel: this.reactor ? this.fuelMax - this.fuelNow(now) : 0,
       cannon: ammo("cannon"),
       missiles: ammo("missile"),
       hull: this.reactor && this.hull > 0 ? this.hullMax - this.hull : 0,
@@ -236,7 +238,7 @@ export class Combatant {
   /** Energía y combustible para el piloto. */
   reactorView(now: number): { energy: number; energyMax: number; fuel: number; fuelMax: number } | null {
     if (!this.reactor) return null;
-    return { energy: this.energyNow(now), energyMax: FLAGSHIP_SUPPLIES.energyMax, fuel: this.fuelNow(now), fuelMax: FLAGSHIP_SUPPLIES.fuelMax };
+    return { energy: this.energyNow(now), energyMax: FLAGSHIP_SUPPLIES.energyMax, fuel: this.fuelNow(now), fuelMax: this.fuelMax };
   }
 
   /**
@@ -310,7 +312,7 @@ export class Combatant {
       w.ammoAt = now;
       w.readyAt = 0;
     }
-    if (this.reactor) this.reactor = { energy: FLAGSHIP_SUPPLIES.energyMax, energyAt: now, fuel: FLAGSHIP_SUPPLIES.fuelMax, fuelAt: now };
+    if (this.reactor) this.reactor = { energy: FLAGSHIP_SUPPLIES.energyMax, energyAt: now, fuel: this.fuelMax, fuelAt: now };
     this.dirty = true;
   }
 }

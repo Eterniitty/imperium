@@ -34,7 +34,7 @@ Petición del usuario (22-10-2026): «aún no se siente como un juego». Hace fa
 | # | Mecánica | Estado |
 |---|---|---|
 | 1 | Contratos | ✓ Hecho: caza, exploración, minería, rescate (restos en un sistema conocido, señal y destino del crucero) y reparto (descarga en otro sistema que el de carga); tablero diario sin repetidos, plazos, pago. |
-| 2 | Rango del Emperador | ✓ Hecho: diez rangos, experiencia de casi todo lo que se hace; mejoras de contratos (huecos, ofertas, recompensa) y de la bodega. Pendiente: combustible y misiles. |
+| 2 | Rango del Emperador | ✓ Hecho: diez rangos, experiencia de casi todo lo que se hace; mejoras de contratos (huecos, ofertas, recompensa), de la bodega y del depósito de combustible. Pendiente: misiles. |
 | 3 | Sucesos en el espacio | ✓ Hecho: restos a la deriva (también en el espacio profundo) y señales de socorro con decisión y trampa. Pendiente: más tipos. |
 | 4 | Objetivos del día y de la semana | ✓ Hecho, con racha. |
 | 5 | Retos de combate | ✓ Hecho: reto de caza por oleadas con récord personal. |

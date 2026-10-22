@@ -1838,6 +1838,7 @@ export const es = {
   "rank.noPerks": "Aún ninguna: la primera llega con el rango {title}.",
   "rank.perk.contractSlots": "Contratos en curso a la vez: +{n}",
   "rank.perk.contractOffers": "Ofertas de contrato al día: +{n}",
+  "rank.perk.fuelPct": "Depósito de combustible: +{n} %",
   "rank.perk.holdPct": "Bodega de la nave: +{n} %",
   "rank.perk.contractRewardPct": "Créditos de los contratos: +{n} %",
   "rank.list": "Rangos",

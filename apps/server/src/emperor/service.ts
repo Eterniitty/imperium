@@ -1,4 +1,4 @@
-import { COMPANION_ARRIVAL_OFFSET_M, EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, getShipClass, HUMANS, QUANTUM_RIFT, STARTING_FLEET } from "@imperium/content";
+import { COMPANION_ARRIVAL_OFFSET_M, EMPEROR_FLAGSHIP, FLAGSHIP_SUPPLIES, fuelCapacityFor, getShipClass, HUMANS, QUANTUM_RIFT, STARTING_FLEET } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import { deepRegionIdAt, distance, isDeepId, type CommandError, type Emperor, type StarSystemSummary, type Vec3, type WorldPosition } from "@imperium/shared";
 import { arrivalPark, arrivalParkAt, besidePoint, defaultPark, isTravelling, parkedPosition, positionAt, quantumFuelCost, regenFuel, sanitizePark, travelDurationMs, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
@@ -308,7 +308,7 @@ export class EmperorService {
   async drop(accountId: string): Promise<DropResult> {
     return this.db.transaction(async (tx): Promise<DropResult> => {
       const [row] = await tx
-        .select({ ...columns, fuel: emperors.fuel, fuelAt: emperors.fuelAt })
+        .select({ ...columns, fuel: emperors.fuel, fuelAt: emperors.fuelAt, xp: emperors.xp })
         .from(emperors)
         .where(eq(emperors.accountId, accountId))
         .for("update")
@@ -326,7 +326,7 @@ export class EmperorService {
       const regionId = deepRegionIdAt(at);
       // Lo que no se ha recorrido del salto vuelve al depósito.
       const cost = quantumFuelCost(distance(current.location.position, travel.to.position));
-      const fuel = Math.min(FLAGSHIP_SUPPLIES.fuelMax, regenFuel(row.fuel, (now - row.fuelAt.getTime()) / 1000) + cost * (1 - k));
+      const fuel = Math.min(fuelCapacityFor(row.xp), regenFuel(row.fuel, (now - row.fuelAt.getTime()) / 1000) + cost * (1 - k));
       const [updated] = await tx
         .update(emperors)
         .set({

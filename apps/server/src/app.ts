@@ -178,6 +178,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     await hub.publishRank(emperorId);
     // Al subir cambian las mejoras: el tablero de contratos y la bodega de la nave.
     if (up) {
+      space.refreshFuelMax(emperorId);
       await hub.publishContracts(emperorId);
       await hub.publishFlagship(emperorId);
     }

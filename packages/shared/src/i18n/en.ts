@@ -1836,6 +1836,7 @@ export const en: Record<I18nKey, string> = {
   "rank.noPerks": "None yet: the first one comes with the rank of {title}.",
   "rank.perk.contractSlots": "Contracts under way at once: +{n}",
   "rank.perk.contractOffers": "Contract offers per day: +{n}",
+  "rank.perk.fuelPct": "Fuel tank: +{n} %",
   "rank.perk.holdPct": "Ship's hold: +{n} %",
   "rank.perk.contractRewardPct": "Credits from contracts: +{n} %",
   "rank.list": "Ranks",

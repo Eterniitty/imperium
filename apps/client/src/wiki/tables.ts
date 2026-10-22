@@ -151,6 +151,7 @@ function rankPerkText(t: T, p: RankPerk): string {
   if (p.contractOffers) out.push(t("rank.perk.contractOffers", { n: p.contractOffers }));
   if (p.contractRewardPct) out.push(t("rank.perk.contractRewardPct", { n: p.contractRewardPct }));
   if (p.holdPct) out.push(t("rank.perk.holdPct", { n: p.holdPct }));
+  if (p.fuelPct) out.push(t("rank.perk.fuelPct", { n: p.fuelPct }));
   return out.join(" · ");
 }
 

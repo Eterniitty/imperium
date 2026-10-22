@@ -6,6 +6,7 @@
  * pierde (tampoco al morir: el linaje la conserva).
  */
 import { FLAGSHIP_HOLD } from "./deepspace";
+import { FLAGSHIP_SUPPLIES } from "./ships";
 
 /** Mejoras acumuladas a partir de un rango (se suman a las de los anteriores). */
 export interface RankPerk {
@@ -17,6 +18,8 @@ export interface RankPerk {
   contractRewardPct?: number;
   /** Capacidad de la bodega de la nave del Emperador, en tanto por ciento de más. */
   holdPct?: number;
+  /** Depósito de combustible de la nave del Emperador, en tanto por ciento de más. */
+  fuelPct?: number;
 }
 
 export interface RankDef {
@@ -31,13 +34,13 @@ export const RANKS: readonly RankDef[] = [
   { id: "aspirant", xp: 0 },
   { id: "captain", xp: 100, perk: { holdPct: 10 } },
   { id: "commander", xp: 250, perk: { contractSlots: 1 } },
-  { id: "commodore", xp: 500, perk: { holdPct: 10 } },
+  { id: "commodore", xp: 500, perk: { holdPct: 10, fuelPct: 10 } },
   { id: "rearAdmiral", xp: 900, perk: { contractOffers: 1 } },
-  { id: "admiral", xp: 1500, perk: { holdPct: 15 } },
+  { id: "admiral", xp: 1500, perk: { holdPct: 15, fuelPct: 10 } },
   { id: "grandAdmiral", xp: 2400, perk: { contractRewardPct: 20 } },
-  { id: "voidLord", xp: 3600, perk: { holdPct: 15 } },
+  { id: "voidLord", xp: 3600, perk: { holdPct: 15, fuelPct: 10 } },
   { id: "archon", xp: 5200, perk: { contractSlots: 1, contractOffers: 1 } },
-  { id: "aeonarch", xp: 7500, perk: { contractRewardPct: 20 } },
+  { id: "aeonarch", xp: 7500, perk: { contractRewardPct: 20, fuelPct: 20 } },
 ];
 
 /** Experiencia por cada suceso. */
@@ -61,7 +64,7 @@ export function rankOf(xp: number): { index: number; rank: RankDef; next: RankDe
 
 /** Mejoras de un rango: las suyas y las de todos los anteriores. */
 export function rankPerks(index: number): Required<RankPerk> {
-  const out: Required<RankPerk> = { contractSlots: 0, contractOffers: 0, contractRewardPct: 0, holdPct: 0 };
+  const out: Required<RankPerk> = { contractSlots: 0, contractOffers: 0, contractRewardPct: 0, holdPct: 0, fuelPct: 0 };
   for (let i = 0; i <= index && i < RANKS.length; i++) {
     const p = RANKS[i]!.perk;
     if (!p) continue;
@@ -69,6 +72,7 @@ export function rankPerks(index: number): Required<RankPerk> {
     out.contractOffers += p.contractOffers ?? 0;
     out.contractRewardPct += p.contractRewardPct ?? 0;
     out.holdPct += p.holdPct ?? 0;
+    out.fuelPct += p.fuelPct ?? 0;
   }
   return out;
 }
@@ -76,4 +80,9 @@ export function rankPerks(index: number): Required<RankPerk> {
 /** Capacidad de la bodega de la nave del Emperador con la experiencia `xp` (`FLAGSHIP_HOLD` más la mejora del rango). */
 export function holdCapacityFor(xp: number): number {
   return Math.round(FLAGSHIP_HOLD.capacity * (1 + rankPerks(rankOf(xp).index).holdPct / 100));
+}
+
+/** Depósito de combustible de la nave del Emperador con la experiencia `xp` (`FLAGSHIP_SUPPLIES` más la mejora del rango). */
+export function fuelCapacityFor(xp: number): number {
+  return Math.round(FLAGSHIP_SUPPLIES.fuelMax * (1 + rankPerks(rankOf(xp).index).fuelPct / 100));
 }

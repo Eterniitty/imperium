@@ -257,9 +257,24 @@ export class SpaceService {
    */
   private combatantOf(emperorId: string, supplies?: StoredSupplies | null): Combatant {
     let c = this.combatants.get(emperorId);
-    if (!c) this.combatants.set(emperorId, (c = new Combatant(EMPEROR_FLAGSHIP.hull, EMPEROR_FLAGSHIP.combat, this.now(), supplies ?? undefined)));
-    else if (supplies && (c.stale || !c.hasReactor)) c.load(supplies, this.now());
+    if (!c) {
+      const fresh = new Combatant(EMPEROR_FLAGSHIP.hull, EMPEROR_FLAGSHIP.combat, this.now(), supplies ?? undefined);
+      this.combatants.set(emperorId, (c = fresh));
+      // El depósito con la mejora del rango (llega enseguida; hasta entonces, el de serie).
+      this.refreshFuelMax(emperorId);
+    } else if (supplies && (c.stale || !c.hasReactor)) c.load(supplies, this.now());
     return c;
+  }
+
+  /** Vuelve a leer el depósito de la nave de un Emperador (al crearla y al subir de rango). */
+  refreshFuelMax(emperorId: string): void {
+    void this.flagships
+      .fuelCapacity(emperorId)
+      .then((n) => {
+        const c = this.combatants.get(emperorId);
+        if (c) c.fuelMax = n;
+      })
+      .catch((err: unknown) => this.log.error(err, "Error al leer el depósito de la nave"));
   }
 
   /** Energía y combustible al piloto, si han cambiado (o siempre, con `force`). */
