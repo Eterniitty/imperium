@@ -1,4 +1,4 @@
-import { AIM_ASSIST, ALIEN_LOCAL, QUANTUM_RIFT, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, SUPERMASSIVE, REPUTATION, getAlienShipClass, getShipClass, HELP_CALL, MINING, PIRATE_AI, PIRATE_AMBUSH, SCAVENGER_LAIR, type ShipClassId, type ShipCombat } from "@imperium/content";
+import { AIM_ASSIST, ALIEN_LOCAL, CONTRACTS, QUANTUM_RIFT, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, SUPERMASSIVE, REPUTATION, getAlienShipClass, getShipClass, HELP_CALL, MINING, PIRATE_AI, PIRATE_AMBUSH, SCAVENGER_LAIR, type ShipClassId, type ShipCombat } from "@imperium/content";
 import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, MOTHERSHIP_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipDesignSnapshot, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
 import { addToHold, arriveVelocity, designStats, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, parkAt, anchorCenter, PULSE_CHARGE_SEC, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
@@ -1562,6 +1562,41 @@ export class SpaceService {
 
   /** Un Emperador derriba un Carroñero / extrae mineral (contratos). */
   onPirateKill: ((emperorId: string) => void) | null = null;
+  /** Contratos de rescate: el Emperador llegó a los restos y se quedó junto a ellos (`CONTRACTS.rescue`). */
+  onRescue: ((emperorId: string, contractId: string) => void) | null = null;
+  /** Puntos de rescate activos de cada Emperador (los pone `ContractService`). */
+  private readonly rescueSpots = new Map<string, Array<{ contractId: string; systemId: string; p: Vec3 }>>();
+  /** Desde cuándo está cada nave junto a unos restos (clave `emperorId:contractId`). */
+  private readonly rescueSince = new Map<string, number>();
+  private lastRescueCheck = 0;
+
+  setRescueSpots(emperorId: string, spots: Array<{ contractId: string; systemId: string; p: Vec3 }>): void {
+    if (spots.length) this.rescueSpots.set(emperorId, spots);
+    else this.rescueSpots.delete(emperorId);
+  }
+
+  /** Naves pilotadas junto a sus restos: al cumplir el tiempo, el contrato se da por hecho. */
+  private checkRescues(now: number): void {
+    const R = CONTRACTS.rescue;
+    for (const [emperorId, spots] of this.rescueSpots) {
+      const m = this.members.get(emperorId);
+      for (const s of spots) {
+        const key = `${emperorId}:${s.contractId}`;
+        const near = !!m && m.kind === "emperor" && !m.park && m.systemId === s.systemId && Math.hypot(m.pose.p[0] - s.p[0], m.pose.p[1] - s.p[1], m.pose.p[2] - s.p[2]) <= R.radiusM;
+        if (!near) {
+          this.rescueSince.delete(key);
+          continue;
+        }
+        const since = this.rescueSince.get(key) ?? now;
+        this.rescueSince.set(key, since);
+        if (now - since >= R.holdSec * 1000) {
+          this.rescueSince.delete(key);
+          this.rescueSpots.set(emperorId, spots.filter((x) => x.contractId !== s.contractId));
+          this.onRescue?.(emperorId, s.contractId);
+        }
+      }
+    }
+  }
   onMined: ((emperorId: string, amount: number) => void) | null = null;
 
   /** Cambios de reputación (los guarda `ReputationService`). */
@@ -2217,6 +2252,10 @@ export class SpaceService {
     this.stepParked(now);
     this.collideShips(now);
     this.heatShips(now);
+    if (now - this.lastRescueCheck >= 1000) {
+      this.lastRescueCheck = now;
+      this.checkRescues(now);
+    }
     if (now - this.lastSuppliesSend >= SUPPLIES_SEND_MS) {
       this.lastSuppliesSend = now;
       for (const m of this.members.values()) if (m.kind === "emperor") this.sendSupplies(m, now);

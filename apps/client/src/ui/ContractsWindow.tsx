@@ -5,6 +5,7 @@ import { RANK_XP, RANKS, rankOf, rankPerks, type RankPerk } from "@imperium/cont
 import type { Contract, ContractOffer, I18nKey } from "@imperium/shared";
 import { connection, useWorld } from "../net/world";
 import { useT } from "../state/store";
+import { engineRef } from "../engineRef";
 import { HudIcon } from "./hudIcons";
 import { formatDuration, useServerNow } from "./useNow";
 
@@ -115,8 +116,9 @@ export function ContractsButton() {
 }
 
 /** Lo que pide un contrato, en una frase de plantilla (sin texto libre). */
-function Goal({ kind, n }: { kind: Contract["kind"]; n: number }) {
+function Goal({ kind, n, system }: { kind: Contract["kind"]; n: number; system?: string }) {
   const t = useT();
+  if (kind === "rescue" && system) return <>{t("contract.desc.rescueAt", { system })}</>;
   return <>{t(`contract.desc.${kind}` as I18nKey, { n })}</>;
 }
 
@@ -170,8 +172,9 @@ export function ContractsWindow() {
       <div className="contract-main">
         <span className="contract-kind">{t(`contract.kind.${c.kind}` as I18nKey)}</span>
         <strong>
-          <Goal kind={c.kind} n={c.target} />
+          <Goal kind={c.kind} n={c.target} system={c.systemName} />
         </strong>
+        {c.kind === "rescue" && c.status === "active" && <span className="muted small">{t("contract.rescueHint")}</span>}
         <div className="contract-progress" aria-label={`${c.progress} / ${c.target}`}>
           <span style={{ width: `${Math.min(100, (c.progress / Math.max(1, c.target)) * 100)}%` }} />
         </div>
@@ -183,6 +186,11 @@ export function ContractsWindow() {
           {c.status === "active" ? <> · {t("contract.left", { time: formatDuration(c.expiresAt - now) })}</> : <> · {t(`contract.status.${c.status}` as I18nKey)}</>}
         </span>
       </div>
+      {c.kind === "rescue" && c.status === "active" && c.systemId && (
+        <button className="btn btn-small" onClick={() => engineRef.current?.showSystem(c.systemId!)}>
+          {t("contract.showMap")}
+        </button>
+      )}
       {c.status === "active" && (
         <button className="btn btn-small" title={t("contract.abandonTitle")} disabled={busy} onClick={() => void run(connection.command("contract.abandon", { contractId: c.id }))}>
           {t("contract.abandon")}

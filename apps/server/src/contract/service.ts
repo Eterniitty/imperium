@@ -39,11 +39,20 @@ function tierOf(kind: Kind, target: number): number {
   return i >= 0 ? i + 1 : 1;
 }
 
-function toContract(r: Row): Contract {
+/** Punto de rescate de un contrato, para el espacio local. */
+export interface RescueSpot {
+  contractId: string;
+  systemId: string;
+  p: [number, number, number];
+}
+
+function toContract(r: Row, systemName: (id: string) => string | undefined): Contract {
   return {
     id: r.id,
     offerId: r.offerId,
     kind: r.kind as ContractKind,
+    ...(r.systemId ? { systemId: r.systemId, systemName: systemName(r.systemId) } : {}),
+    ...(r.point ? { point: r.point } : {}),
     target: r.target,
     progress: Math.min(r.target, Math.floor(r.progress)),
     credits: r.credits,
@@ -64,6 +73,27 @@ export class ContractService {
     private readonly rank: RankService | null = null,
     private readonly now: () => number = Date.now,
   ) {}
+
+  /** Rescate: dónde quedan los restos de un contrato recién aceptado (lo pone app.ts; null si no hay sitio). */
+  rescuePlace: ((emperorId: string, seed: string) => Promise<{ systemId: string; point: [number, number, number] } | null>) | null = null;
+  /** Rescate: los puntos activos de un Emperador cambiaron (para el espacio local). */
+  onSpots: ((emperorId: string, spots: RescueSpot[]) => void) | null = null;
+  /** Nombre de un sistema (para los contratos de rescate). */
+  systemName: (systemId: string) => string | undefined = () => undefined;
+
+  /** Avisa al espacio local de los puntos de rescate activos de un Emperador. */
+  async syncSpots(emperorId: string): Promise<void> {
+    if (!this.onSpots) return;
+    const now = this.now();
+    const rows = await this.db
+      .select({ id: contracts.id, systemId: contracts.systemId, point: contracts.point, expiresAt: contracts.expiresAt })
+      .from(contracts)
+      .where(and(eq(contracts.emperorId, emperorId), eq(contracts.kind, "rescue"), eq(contracts.status, "active")));
+    this.onSpots(
+      emperorId,
+      rows.filter((r) => r.systemId && r.point && r.expiresAt.getTime() >= now).map((r) => ({ contractId: r.id, systemId: r.systemId!, p: r.point! })),
+    );
+  }
 
   /** Mejoras del rango de un Emperador (más contratos a la vez, más ofertas, más recompensa). */
   private async perks(emperorId: string) {
@@ -111,10 +141,11 @@ export class ContractService {
     const rows = await this.db.select().from(contracts).where(eq(contracts.emperorId, emperorId)).orderBy(desc(contracts.acceptedAt)).limit(30);
     const taken = new Set(rows.map((r) => r.offerId));
     const day = this.day(now);
+    await this.syncSpots(emperorId);
     const perks = await this.perks(emperorId);
     return {
       offers: this.offers(emperorId, now, perks).filter((o) => !taken.has(o.id)),
-      list: rows.map(toContract),
+      list: rows.map((r) => toContract(r, this.systemName)),
       maxActive: CONTRACTS.maxActive + perks.contractSlots,
       refreshAt: Math.ceil(((day + 1) * DAY_MS) / this.config.TIME_SCALE),
     };
@@ -139,12 +170,25 @@ export class ContractService {
       .from(contracts)
       .where(and(eq(contracts.emperorId, emperorId), eq(contracts.status, "active")));
     if (n >= CONTRACTS.maxActive + perks.contractSlots) return { ok: false, error: "too_many_contracts" };
+    // Rescate: el sitio de los restos se elige ahora (cerca de donde está el Emperador).
+    const place = offer.kind === "rescue" ? await this.rescuePlace?.(emperorId, `${emperorId}:${offerId}`) : null;
+    if (offer.kind === "rescue" && !place) return { ok: false, error: "unknown_contract" };
     const rows = await this.db
       .insert(contracts)
-      .values({ emperorId, offerId, kind: offer.kind, target: offer.target, credits: offer.credits, reputation: offer.reputation, expiresAt: new Date(now + offer.hours * 3_600_000) })
+      .values({
+        emperorId,
+        offerId,
+        kind: offer.kind,
+        target: offer.target,
+        credits: offer.credits,
+        reputation: offer.reputation,
+        expiresAt: new Date(now + offer.hours * 3_600_000),
+        ...(place ? { systemId: place.systemId, point: place.point } : {}),
+      })
       .onConflictDoNothing()
       .returning({ id: contracts.id });
     if (rows.length === 0) return { ok: false, error: "unknown_contract" };
+    if (place) await this.syncSpots(emperorId);
     return { ok: true };
   }
 
@@ -153,7 +197,8 @@ export class ContractService {
       .update(contracts)
       .set({ status: "abandoned" })
       .where(and(eq(contracts.id, contractId), eq(contracts.emperorId, emperorId), eq(contracts.status, "active")))
-      .returning({ id: contracts.id });
+      .returning({ id: contracts.id, kind: contracts.kind });
+    if (rows[0]?.kind === "rescue") await this.syncSpots(emperorId);
     return rows.length > 0;
   }
 
@@ -161,14 +206,20 @@ export class ContractService {
    * Avanza los contratos en curso de este tipo; los que llegan a su objetivo se
    * cumplen y pagan (créditos a la cartera y reputación). Devuelve si cambió algo.
    */
-  async progress(emperorId: string, kind: ContractKind, amount: number): Promise<{ changed: boolean; completed: Contract[]; rank?: { xp: number; up: boolean } }> {
+  async progress(emperorId: string, kind: ContractKind, amount: number, contractId?: string): Promise<{ changed: boolean; completed: Contract[]; rank?: { xp: number; up: boolean } }> {
     if (!(amount > 0)) return { changed: false, completed: [] };
+    const res = await this.progressTx(emperorId, kind, amount, contractId);
+    if (kind === "rescue" && res.changed) await this.syncSpots(emperorId);
+    return res;
+  }
+
+  private async progressTx(emperorId: string, kind: ContractKind, amount: number, contractId?: string): Promise<{ changed: boolean; completed: Contract[]; rank?: { xp: number; up: boolean } }> {
     const now = this.now();
     return this.db.transaction(async (tx: Tx) => {
       const active = await tx
         .select()
         .from(contracts)
-        .where(and(eq(contracts.emperorId, emperorId), eq(contracts.kind, kind), eq(contracts.status, "active")))
+        .where(and(eq(contracts.emperorId, emperorId), eq(contracts.kind, kind), eq(contracts.status, "active"), contractId ? eq(contracts.id, contractId) : undefined))
         .for("update");
       const live = active.filter((r) => r.expiresAt.getTime() >= now);
       if (live.length === 0) return { changed: false, completed: [] };
@@ -188,7 +239,7 @@ export class ContractService {
           await this.humanity.credit(tx, emperorId, r.credits, "contract", `contract:${r.id}`);
           await this.reputation.add(emperorId, r.reputation, tx);
           xp += RANK_XP.contractPerTier * tierOf(r.kind as Kind, r.target);
-          completed.push(toContract(row));
+          completed.push(toContract(row, this.systemName));
         }
       }
       const rank = xp > 0 && this.rank ? await this.rank.add(emperorId, xp, tx) : null;

@@ -330,6 +330,13 @@
       "when": 1792702783774,
       "tag": "0047_rango",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1792703889149,
+      "tag": "0048_contrato_rescate",
+      "breakpoints": true
     }
   ]
 }

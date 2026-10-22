@@ -1107,6 +1107,9 @@ export const contracts = pgTable(
     acceptedAt: timestamp("accepted_at", { withTimezone: true }).notNull().defaultNow(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     doneAt: timestamp("done_at", { withTimezone: true }),
+    /** Rescate: sistema de los restos y su punto (m, respecto a la estrella). */
+    systemId: text("system_id"),
+    point: jsonb("point").$type<[number, number, number]>(),
   },
   (t) => [index("contracts_emperor_id_idx").on(t.emperorId), unique("contracts_emperor_offer_unique").on(t.emperorId, t.offerId)],
 );

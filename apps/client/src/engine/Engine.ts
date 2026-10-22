@@ -615,6 +615,15 @@ export class Engine {
     gameStore.getState().select(findSystemSummary((emperor.travel?.to ?? emperor.location).systemId));
   }
 
+  /** Muestra un sistema en el mapa (sale de la vista de sistema si hace falta) y lo selecciona. */
+  showSystem(systemId: string): void {
+    const s = findSystemSummary(systemId);
+    if (!s) return;
+    if (this.active !== this.galaxy) this.exitSystem();
+    this.galaxy.goTo(s.position, 30);
+    gameStore.getState().select(s);
+  }
+
   /** Centra la vista en una flota propia y selecciona su sistema (o su destino, si viaja). */
   /** Zoom del mapa galáctico: el sector alrededor del foco o la galaxia entera. */
   mapZoom(level: "sector" | "galaxy"): void {

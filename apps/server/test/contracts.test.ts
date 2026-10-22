@@ -104,6 +104,32 @@ describe.skipIf(!TEST_DATABASE_URL)("contratos y rango", () => {
     if (active[0]) expect(await app.contracts.abandon(e.id, active[0].id)).toBe(true);
   });
 
+  it("rescate: los restos van a un sistema conocido, se avisan al espacio local y se cumple el contrato concreto", async () => {
+    const e = await emperor("Rescatador");
+    const place = await app.contracts.rescuePlace!(e.id, "semilla");
+    expect(place).toBeTruthy();
+    expect(place!.point.every(Number.isFinite)).toBe(true);
+    expect(place!.point[1]).toBe(0);
+    let seen: Array<{ contractId: string }> | null = null;
+    app.contracts.onSpots = (_id, spots) => {
+      seen = spots;
+    };
+    const [row] = await db
+      .insert(contracts)
+      .values({ emperorId: e.id, offerId: "0:9", kind: "rescue", target: 1, credits: 650, reputation: 3, expiresAt: new Date(Date.now() + 3_600_000), systemId: place!.systemId, point: place!.point })
+      .returning();
+    await app.contracts.syncSpots(e.id);
+    expect(seen!.map((x) => x.contractId)).toEqual([row!.id]);
+    const view = await app.contracts.view(e.id);
+    expect(view.list.find((c) => c.id === row!.id)).toMatchObject({ kind: "rescue", systemId: place!.systemId, point: place!.point });
+    expect(view.list.find((c) => c.id === row!.id)!.systemName).toBeTruthy();
+    // Otro id no lo cumple; el suyo sí, y deja de haber restos.
+    expect((await app.contracts.progress(e.id, "rescue", 1, "00000000-0000-0000-0000-000000000000")).changed).toBe(false);
+    const r = await app.contracts.progress(e.id, "rescue", 1, row!.id);
+    expect(r.completed.map((c) => c.id)).toEqual([row!.id]);
+    expect(seen).toEqual([]);
+  });
+
   it("las mejoras del rango: más huecos, más ofertas (las primeras no cambian) y más recompensa", async () => {
     const e = await emperor("Almirante");
     const base = await app.contracts.view(e.id);

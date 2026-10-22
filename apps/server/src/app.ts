@@ -1,8 +1,11 @@
-import { RANK_XP } from "@imperium/content";
+import { CONTRACTS, RANK_XP } from "@imperium/content";
+import { universeSeedFromString } from "@imperium/procgen";
+import { eq } from "drizzle-orm";
+import { discoveries as discoveriesTable, emperors as emperorsTable } from "./db/schema";
 import cookie from "@fastify/cookie";
 import { ContractService } from "./contract/service";
 import Fastify from "fastify";
-import { GENERATOR_VERSION, type ApiError, type HealthResponse } from "@imperium/shared";
+import { GENERATOR_VERSION, isDeepId, type ApiError, type HealthResponse } from "@imperium/shared";
 import { accountRoutes } from "./account/routes";
 import { authRoutes } from "./auth/routes";
 import type { ServerConfig } from "./config";
@@ -33,7 +36,7 @@ import { RankService } from "./rank/service";
 import { CrisisService } from "./crisis/service";
 import { gateRoutes } from "./gate/routes";
 import { MarketService } from "./market/service";
-import { inHumanCore } from "./emperor/world";
+import { findSystem, inHumanCore } from "./emperor/world";
 import { FlagshipService } from "./space/flagship";
 import { SpaceService } from "./space/service";
 import { DeepSpaceService } from "./space/deep";
@@ -60,6 +63,13 @@ export interface AppDeps {
   mailer?: Mailer;
   /** Los tests pueden procesar la cola a mano (`app.eventWorker.drain()`) en vez de arrancar el trabajador. */
   startWorker?: boolean;
+}
+
+/** Número estable a partir de un texto (FNV-1a), para elegir el sitio de unos restos. */
+function hashText(text: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return h >>> 0;
 }
 
 /**
@@ -152,9 +162,9 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     await hub.publishRank(emperorId);
     if (up) await hub.publishContracts(emperorId);
   };
-  const pushContract = (emperorId: string, kind: "hunt" | "explore" | "mine", amount: number) =>
+  const pushContract = (emperorId: string, kind: "hunt" | "explore" | "mine" | "rescue", amount: number, contractId?: string) =>
     void contracts
-      .progress(emperorId, kind, amount)
+      .progress(emperorId, kind, amount, contractId)
       .then(async (r) => {
         if (!r.changed) return;
         await hub.publishContracts(emperorId);
@@ -216,6 +226,30 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   space.onReputation = (emperorId, delta) => reputation.addLater(emperorId, delta);
   space.onPirateKill = (emperorId) => deed(emperorId, "hunt", 1);
   space.onMined = (emperorId, amount) => deed(emperorId, "mine", amount);
+  // Contratos de rescate: los restos van a uno de los sistemas ya descubiertos más cercanos a la nave.
+  const universeSeed = universeSeedFromString(config.UNIVERSE_SEED);
+  contracts.systemName = (id) => findSystem(universeSeed, id)?.name;
+  contracts.onSpots = (emperorId, spots) => space.setRescueSpots(emperorId, spots);
+  space.onRescue = (emperorId, contractId) => pushContract(emperorId, "rescue", 1, contractId);
+  contracts.rescuePlace = async (emperorId, seed) => {
+    const [me] = await deps.db.select({ systemId: emperorsTable.systemId }).from(emperorsTable).where(eq(emperorsTable.id, emperorId)).limit(1);
+    const here = me ? findSystem(universeSeed, me.systemId) : null;
+    if (!here) return null;
+    const known = (await deps.db.select({ id: discoveriesTable.systemId }).from(discoveriesTable).where(eq(discoveriesTable.emperorId, emperorId)))
+      .map((r) => findSystem(universeSeed, r.id))
+      .filter((s): s is NonNullable<typeof s> => s !== null && s.id !== here.id && !isDeepId(s.id));
+    const d = (s: { position: { x: number; y: number; z: number } }) => Math.hypot(s.position.x - here.position.x, s.position.y - here.position.y, s.position.z - here.position.z);
+    const near = known.sort((a, b) => d(a) - d(b)).slice(0, CONTRACTS.rescue.nearest);
+    const h = hashText(seed);
+    const system = near.length ? near[h % near.length]! : here;
+    const layout = flagships.layout(system.id);
+    if (!layout) return null;
+    // Entre las órbitas de los planetas (o en el tercio interior del sistema si no tiene), en el plano.
+    const planet = layout.planets.length ? layout.planets[(h >>> 4) % layout.planets.length]! : null;
+    const r = planet ? planet.orbitRadius * (0.75 + ((h >>> 8) % 1000) / 2000) : layout.boundary * 0.2;
+    const a = (((h >>> 12) % 3600) / 3600) * 2 * Math.PI;
+    return { systemId: system.id, point: [r * Math.cos(a), 0, r * Math.sin(a)] };
+  };
   space.crisis = crisis;
   emperors.crisis = crisis;
   fleets.crisis = crisis;

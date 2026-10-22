@@ -19,6 +19,7 @@ Los **contratos** son encargos con recompensa: te dicen qué hacer ahora y te pa
 - **Caza de Carroñeros**: cuenta cada pirata que derribas tú (ver [Carroñeros](/wiki/carroneros)).
 - **Exploración**: cuenta cada sistema que descubres por primera vez, con tu nave, tus flotas o tus sondas (ver [Niebla de guerra](/wiki/niebla)).
 - **Minería**: cuenta el mineral que extraes con el láser en el espacio profundo (ver [Espacio profundo y minería](/wiki/espacio-profundo)).
+- **Rescate**: al aceptarlo, el contrato sitúa unos **restos a la deriva** en uno de los sistemas que ya conoces más cercanos. Una señal dorada los marca en ese sistema y salen en el [crucero](/wiki/pilotar) como destino; el botón **Ver en el mapa** lleva a su sistema. Hay que llegar pilotando y quedarse junto a ellos unos segundos.
 
 > [!dev]
-> Habrá más tipos (reparto de recursos y rescate).
+> Habrá más tipos (reparto de recursos).

@@ -157,7 +157,7 @@ export interface Probe {
 }
 
 /** Tipo de contrato (`CONTRACTS` de `@imperium/content`). */
-export type ContractKind = "hunt" | "explore" | "mine";
+export type ContractKind = "hunt" | "explore" | "mine" | "rescue";
 
 /** Oferta del tablero de contratos (se renueva cada día). */
 export interface ContractOffer {
@@ -174,6 +174,10 @@ export interface Contract {
   id: string;
   offerId: string;
   kind: ContractKind;
+  /** Rescate: sistema de los restos y su punto (m, respecto a la estrella). */
+  systemId?: string;
+  systemName?: string;
+  point?: [number, number, number];
   target: number;
   progress: number;
   credits: number;

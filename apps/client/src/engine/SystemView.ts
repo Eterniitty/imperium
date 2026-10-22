@@ -4,7 +4,7 @@ import { fleetName } from "../ui/fleetName";
 import { flightSound, playCruiseArrive } from "../audio/flightSfx";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
-import type { FlagshipStatus, Fleet, I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, ShipDesignSnapshot, WeaponKind, WorldPosition } from "@imperium/shared";
+import type { Contract, FlagshipStatus, Fleet, I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, ShipDesignSnapshot, WeaponKind, WorldPosition } from "@imperium/shared";
 import { ARRIVAL_EDGE, deepLayout, designStats, starHeatDps, insideEventHorizon, defaultPark, moonOffset, parkedPosition, parkAt, anchorCenter, PULSE_MAX_SPEED, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
 import { resetSpace, shipName, spaceStore, type SelectedWeapon } from "../net/space";
 import { TargetAssist, relationOf, type CannonAim } from "./TargetAssist";
@@ -155,6 +155,8 @@ export class SystemView implements View {
   private chase: ChaseCamera;
   private leaving = false;
   private systemId: string | null = null;
+  /** Señales de los restos de los contratos de rescate de este sistema (por contrato). */
+  private readonly rescueMarkers = new Map<string, THREE.Sprite>();
   private starName = "";
   /** La estrella del sistema: su superficie (giro), su corona y el resplandor que crece al acercarse. */
   private starFx: { surface: THREE.ShaderMaterial; corona: THREE.ShaderMaterial; radius: number; flames: THREE.Mesh | null; blackHole: THREE.Mesh | null } | null = null;
@@ -1898,6 +1900,8 @@ export class SystemView implements View {
       while (safe < this.layout.boundary && (starHeatDps(this.layout, safe) > 0 || insideEventHorizon(this.layout, safe))) safe *= 1.15;
       spots.push({ id: "star", kind: "star", name: this.layout.starClass === "BH" ? translate(locale, "cruise.blackHole") : translate(locale, "cruise.star"), center: new THREE.Vector3(), radius: R, stopRadius: safe * 1.1 });
     }
+    // Restos de un contrato de rescate en este sistema: hay que llegar y quedarse a su lado.
+    for (const c of this.rescueHere()) spots.push({ id: `wreck:${c.id}`, kind: "wreck", name: translate(locale, "cruise.wreck"), center: new THREE.Vector3(...c.point!), radius: 60, stopRadius: 1500 });
     // Cualquier flota propia parada aquí: se llega junto a su nave más grande, fuera de su casco.
     const byFleet = new Map<string, { center: THREE.Vector3; lengthM: number }>();
     for (const c of this.fleetScene.colliders()) {
@@ -1924,6 +1928,33 @@ export class SystemView implements View {
       obstacles.push({ id: `fleetship:${c.fleetId}:${obstacles.length}`, center: c.a.clone().add(c.b).multiplyScalar(0.5), radius: c.lengthM * 0.5, star: false });
     }
     return { spots, obstacles };
+  }
+
+  /** Contratos de rescate activos con sus restos en este sistema. */
+  private rescueHere(): Contract[] {
+    const list = worldStore.getState().contracts?.list ?? [];
+    return this.systemId ? list.filter((c) => c.kind === "rescue" && c.status === "active" && c.systemId === this.systemId && c.point) : [];
+  }
+
+  /** Una señal dorada (siempre visible, como la del crucero) sobre los restos de cada contrato de rescate de aquí. */
+  private updateRescueMarkers(): void {
+    const here = this.rescueHere();
+    const ids = new Set(here.map((c) => c.id));
+    for (const [id, s] of this.rescueMarkers) {
+      if (ids.has(id)) continue;
+      this.scene.remove(s);
+      s.material.dispose();
+      this.rescueMarkers.delete(id);
+    }
+    for (const c of here) {
+      if (this.rescueMarkers.has(c.id)) continue;
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: ringTexture(), color: 0xe8b64c, depthTest: false, sizeAttenuation: false, transparent: true, opacity: 0.9 }));
+      s.scale.setScalar(0.03);
+      s.renderOrder = 11;
+      s.position.set(...c.point!);
+      this.scene.add(s);
+      this.rescueMarkers.set(c.id, s);
+    }
   }
 
   /** Destinos para el panel de crucero, del más cercano al más lejano. */
@@ -2138,6 +2169,7 @@ export class SystemView implements View {
       mat.color.setHex(p.index === selected ? 0xe8b64c : 0x3fd0ff);
     }
     this.updatePlanetLabels();
+    this.updateRescueMarkers();
     const sel = this.planets.find((p) => p.index === selected);
     if (sel) {
       sel.mesh.getWorldPosition(this.selectRing.position);
