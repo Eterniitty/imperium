@@ -928,11 +928,12 @@ export class SystemView implements View {
   private placeChaseCamera(k: number): void {
     const ship = this.ship!;
     const first = gameStore.getState().cameraView === "first";
-    // En primera persona el casco taparía la vista: se oculta la nave y se ve la cabina.
-    ship.visible = !first;
-    this.cockpit.visible = first;
     if (k >= 1) this.chase.snap(ship, first);
     else this.chase.place(ship, first, k);
+    // En primera persona el casco taparía la vista: se oculta la nave y se ve la cabina (al acabar el vuelo de la cámara).
+    const moving = this.chase.transitioning;
+    ship.visible = !first || moving;
+    this.cockpit.visible = first && !moving;
   }
 
   /** Morro de la nave propia (vector unitario). */

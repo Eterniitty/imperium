@@ -31,6 +31,14 @@ export class ChaseCamera {
   private frame = new THREE.Quaternion();
   private drag: { x: number; y: number } | null = null;
   private first = false;
+  /** Cambio entre cabina y vista exterior: la cámara vuela de una a otra en `BLEND_SEC` (sin cortes). */
+  private blend: { from: THREE.Vector3; fromQ: THREE.Quaternion; start: number } | null = null;
+  static readonly BLEND_SEC = 0.45;
+
+  /** ¿Está volando entre la cabina y la vista exterior? */
+  get transitioning(): boolean {
+    return this.blend !== null;
+  }
 
   static readonly DEFAULT_DIST = DEFAULT_DIST;
   /** Altura de la cámara sobre la línea de mira (fracción de la distancia): la nave queda algo por debajo del centro, por encima de los paneles del HUD. */
@@ -119,15 +127,19 @@ export class ChaseCamera {
     this.yaw = this.wantYaw;
     this.pitch = this.wantPitch;
     this.dist = this.wantDist;
+    this.blend = null;
+    this.first = first;
     this.place(ship, first, 1);
   }
 
   /** Sigue a la nave; `k` (0–1) es cuánto se acerca este fotograma a su sitio ideal. */
   place(ship: THREE.Object3D, first: boolean, k: number): void {
     if (first !== this.first) {
-      // Al cambiar de cámara se vuelve a mirar al frente (los ángulos de la cabina y de la órbita no se mezclan).
+      // Al cambiar de cámara se vuelve a mirar al frente (los ángulos de la cabina y de la órbita no se mezclan)
+      // y la cámara vuela desde donde estaba.
       this.first = first;
       this.wantYaw = this.wantPitch = this.yaw = this.pitch = 0;
+      this.blend = { from: this.camera.position.clone(), fromQ: this.camera.quaternion.clone(), start: performance.now() };
     }
     this.yaw += (this.wantYaw - this.yaw) * Math.min(1, k * 1.4);
     this.pitch += (this.wantPitch - this.pitch) * Math.min(1, k * 1.4);
@@ -138,6 +150,7 @@ export class ChaseCamera {
       this.frame.copy(ship.quaternion);
       this.camera.position.copy(ChaseCamera.COCKPIT).applyQuaternion(ship.quaternion).add(ship.position);
       this.camera.quaternion.copy(ship.quaternion).multiply(look);
+      this.applyBlend();
       return;
     }
     // La referencia sigue la orientación de la nave con un poco de retraso: los giros se notan sin sacudidas.
@@ -147,6 +160,18 @@ export class ChaseCamera {
     const back = new THREE.Vector3(0, ChaseCamera.HEIGHT, 1).multiplyScalar(this.dist).applyQuaternion(orient);
     this.camera.position.copy(ship.position).add(back);
     this.camera.quaternion.copy(orient);
+    this.applyBlend();
+  }
+
+  /** Mezcla la pose calculada con la de antes del cambio de cámara, con una curva suave. */
+  private applyBlend(): void {
+    const b = this.blend;
+    if (!b) return;
+    const t = Math.min(1, (performance.now() - b.start) / (ChaseCamera.BLEND_SEC * 1000));
+    const e = t * t * (3 - 2 * t);
+    this.camera.position.lerpVectors(b.from, this.camera.position, e);
+    this.camera.quaternion.slerpQuaternions(b.fromQ, this.camera.quaternion.clone(), e);
+    if (t >= 1) this.blend = null;
   }
 
   dispose(): void {
