@@ -448,6 +448,15 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     space.startRemote(client, res.pilot);
                     return { ok: true } as const;
                   }
+                  case "fleet.gift": {
+                    const res = await fleets.gift(owner.emperorId, msg.args.fleetId, msg.args.to);
+                    if (!res.ok) return res;
+                    // Las escoltas del que la regaló se van; el nuevo dueño la recibe y el anterior la pierde de su lista.
+                    space.releaseFleet(msg.args.fleetId);
+                    await hub.publishFleetGone(owner.emperorId, msg.args.fleetId);
+                    await hub.publishFleet(res.to, msg.args.fleetId);
+                    return { ok: true } as const;
+                  }
                   case "fleet.rename": {
                     const raw = msg.args.name.trim();
                     const parsed = raw === "" ? null : PlanetNameSchema.safeParse(raw);

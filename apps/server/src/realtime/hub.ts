@@ -251,6 +251,13 @@ export class Hub {
     });
   }
 
+  /** La flota ya no es de este Emperador (la regaló): desaparece de su lista. */
+  publishFleetGone(emperorId: string, fleetId: string): Promise<void> {
+    return this.enqueue(async () => {
+      this.send("me", this.nextMeSeq(emperorId), [{ path: `fleets.${fleetId}`, v: null }], (c) => c.emperorId === emperorId);
+    });
+  }
+
   /** Envía a su dueño el estado actual de una colonia (null si ya no es suya). */
   publishColony(emperorId: string, colonyId: string): Promise<void> {
     return this.enqueue(async () => {

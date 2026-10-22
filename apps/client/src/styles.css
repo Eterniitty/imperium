@@ -1095,3 +1095,5 @@ button.legend-title { background: none; border: none; padding: 0; width: 100%; t
 .map-layers .action-sep { width: 24px; height: 1px; margin: 3px 0; }
 .map-layer-glyph { font-size: 15px; line-height: 1; }
 .left-col { max-height: calc(100% - var(--topbar-bottom, 62px) - 340px); }
+.fleet-gift-btn { position: absolute; top: 4px; right: 30px; width: 22px; height: 22px; font-size: 11px; opacity: 0.55; z-index: 1; }
+.fleet-item:hover .fleet-gift-btn { opacity: 1; }

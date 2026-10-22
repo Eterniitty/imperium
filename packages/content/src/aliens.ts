@@ -99,14 +99,14 @@ export const ALIEN_SHIP_CLASSES: readonly AlienShipClassDefinition[] = withHardp
     role: "swarm", hull: 70, attack: 9, battleShield: 0, speedLyPerHour: 170, scannerRangeLy: 6, cargo: 20,
     combat: { shield: 20, shieldRegenPerSec: 5, shieldDelaySec: 4, weapons: [cannon(5, 0.35, 1500, 1300)] },
     model: { lengthM: 37, hullShape: "needle", engines: 1, wings: true },
-    flight: { speedU: 280, preferredRangeU: 600 },
+    flight: { speedU: 280, preferredRangeU: 2400 },
   },
   {
     id: "scav_raider", speciesId: "scavengers", nameKey: "ship.scav_raider.name", descriptionKey: "ship.scav_raider.description",
     role: "raider", hull: 120, attack: 14, battleShield: 5, speedLyPerHour: 160, scannerRangeLy: 10, cargo: 60,
     combat: { shield: 40, shieldRegenPerSec: 6, shieldDelaySec: 4, weapons: [cannon(7, 0.45, 1800, 1300)] },
     model: { lengthM: 60, hullShape: "wedge", engines: 2 },
-    flight: { speedU: 230, preferredRangeU: 900 },
+    flight: { speedU: 230, preferredRangeU: 3600 },
   },
   {
     // Arponero: se pega a la presa con arpones magnéticos (cañón corto y pesado); lleva cápsulas de abordaje.
@@ -114,7 +114,7 @@ export const ALIEN_SHIP_CLASSES: readonly AlienShipClassDefinition[] = withHardp
     role: "boarder", hull: 190, attack: 20, battleShield: 8, speedLyPerHour: 150, scannerRangeLy: 8, cargo: 200,
     combat: { shield: 60, shieldRegenPerSec: 6, shieldDelaySec: 4, weapons: [cannon(16, 0.7, 900, 1100)] },
     model: { lengthM: 72, hullShape: "spindle", engines: 2, hangar: true },
-    flight: { speedU: 260, preferredRangeU: 350 },
+    flight: { speedU: 260, preferredRangeU: 1400 },
   },
   {
     // Bombardero: se queda lejos y lanza misiles; frágil si lo alcanzan.
@@ -122,14 +122,14 @@ export const ALIEN_SHIP_CLASSES: readonly AlienShipClassDefinition[] = withHardp
     role: "bomber", hull: 150, attack: 28, battleShield: 6, speedLyPerHour: 140, scannerRangeLy: 10, cargo: 40,
     combat: { shield: 40, shieldRegenPerSec: 5, shieldDelaySec: 4, weapons: [cannon(5, 0.5, 1500, 1300), { ...missile(60, 6), cooldownSec: 5, ammoRegenSec: 20 }] },
     model: { lengthM: 81, hullShape: "brick", engines: 2 },
-    flight: { speedU: 200, preferredRangeU: 3200 },
+    flight: { speedU: 200, preferredRangeU: 12800 },
   },
   {
     id: "scav_breaker", speciesId: "scavengers", nameKey: "ship.scav_breaker.name", descriptionKey: "ship.scav_breaker.description",
     role: "heavy", hull: 260, attack: 24, battleShield: 10, speedLyPerHour: 110, scannerRangeLy: 8, cargo: 300,
     combat: { shield: 70, shieldRegenPerSec: 6, shieldDelaySec: 5, weapons: [cannon(10, 0.5, 1800, 1300), missile(70, 4)] },
     model: { lengthM: 107, hullShape: "brick", engines: 3, turrets: 2 },
-    flight: { speedU: 170, preferredRangeU: 1200 },
+    flight: { speedU: 170, preferredRangeU: 4800 },
   },
   {
     // Nave nodriza: un casco de carguero enorme lleno de talleres y esquifes; guía la manada.
@@ -137,7 +137,7 @@ export const ALIEN_SHIP_CLASSES: readonly AlienShipClassDefinition[] = withHardp
     role: "carrier", hull: 900, attack: 48, battleShots: 4, battleShield: 25, speedLyPerHour: 90, scannerRangeLy: 14, cargo: 1200,
     combat: { shield: 220, shieldRegenPerSec: 10, shieldDelaySec: 5, weapons: [cannon(9, 0.3, 2000, 1300), missile(80, 8)] },
     model: { lengthM: 160, hullShape: "brick", engines: 4, hangar: true, turrets: 4, pods: 4 },
-    flight: { speedU: 110, preferredRangeU: 2500 },
+    flight: { speedU: 110, preferredRangeU: 10000 },
   },
   // --- VESPERI (anillo 3+): defensas extraordinarias ---
   {
@@ -313,13 +313,13 @@ export function fleetComposition(doctrine: FleetDoctrine, t: number): Array<[str
  */
 export const PIRATE_AI = {
   /** Distancia a la que detectan y persiguen a una nave pilotada. */
-  aggroRangeU: 6000,
+  aggroRangeU: 24000,
   /** Segundos hasta que reaparecen tras ser destruidos. */
   respawnSec: 300,
   /** Huyen con el casco por debajo de esta fracción si les están dando (acosan, no se suicidan). */
   fleeHullPct: 0.35,
   /** Dejan de huir a esta distancia del enemigo más cercano y se reagrupan. */
-  fleeDistanceU: 9000,
+  fleeDistanceU: 36000,
   /** Vuelven a cazar cuando el escudo se ha recargado hasta esta fracción. */
   regroupShieldPct: 0.8,
   /** Segundos que cuenta un impacto como «me están dando» (esquivar y huir). */
@@ -327,7 +327,7 @@ export const PIRATE_AI = {
   /** Fuerza de las maniobras laterales para romper la puntería (fracción de su velocidad). */
   jink: 0.45,
   /** La manada elige presa entre las naves a esta distancia de cualquiera de sus miembros. */
-  packRadiusU: 9000,
+  packRadiusU: 36000,
   /** Esquivar cuerpos: segundos de anticipación y margen sobre su superficie (m). */
   avoidLookaheadSec: 5,
   avoidMarginM: 4000,
@@ -397,11 +397,11 @@ export const PIRATE_AMBUSH = {
  */
 export const ESCORT = {
   maxShips: 6,
-  engageRangeU: 5000,
+  engageRangeU: 20000,
   speedU: 320,
-  preferredRangeU: 1500,
+  preferredRangeU: 6000,
   spacingM: 400,
-  catchUpM: 6000,
+  catchUpM: 24000,
   aimJitter: 0.03,
 } as const;
 
@@ -437,7 +437,7 @@ export const HELP_CALL = {
   /** Naves de refuerzo de la milicia. */
   militiaShips: ["frigate", "frigate", "corvette"] as readonly string[],
   /** Distancia a la que aparecen (m): llegan volando en unos segundos. */
-  militiaArriveM: 5000,
+  militiaArriveM: 20000,
   /** Segundos que se quedan antes de volver a su patrulla. */
   militiaStaySec: 240,
 } as const;

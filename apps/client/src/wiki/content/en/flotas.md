@@ -8,6 +8,8 @@ Your ships (except yours, the Emperor's) are grouped into **fleets** ("Fleet 1",
 
 You can **rename** each fleet with the ✎ pencil on its row in the fleets panel (empty: back to "Fleet N").
 
+And you can **gift** it to another player with 🎁 (type their Emperor's name): it must be stopped and out of battle; it becomes theirs where it is, without route or commander.
+
 ## Travelling
 
 1. Select a star on the galaxy map.

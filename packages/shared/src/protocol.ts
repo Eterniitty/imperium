@@ -130,6 +130,8 @@ export interface CommandArgs {
   "fleet.pilot": { fleetId: string; shipId: string };
   /** Cambia la táctica de una flota propia en las batallas por rondas (desde cualquier sitio; en plena batalla vale desde la ronda siguiente). */
   "fleet.tactic": { fleetId: string; tactic: FleetTactic };
+  /** Regalar una flota propia (parada) a otro jugador, por el nombre de su Emperador. */
+  "fleet.gift": { fleetId: string; to: string };
   /** Renombrar una flota propia (vacío: vuelve a «Flota N»). */
   "fleet.rename": { fleetId: string; name: string };
   /**
@@ -313,6 +315,7 @@ export type CommandError =
   | "nothing_to_transfer"
   | "invalid_route"
   | "in_battle"
+  | "unknown_emperor"
   /** La nave no tiene armas (no se puede pilotar a distancia). */
   | "ship_unarmed"
   /** Sonda: el destino está demasiado lejos de la nave y de todas las colonias. */

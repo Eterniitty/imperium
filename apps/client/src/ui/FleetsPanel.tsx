@@ -41,6 +41,7 @@ export function FleetsPanel() {
   const [open, setOpen] = useState(true);
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
   const [renameError, setRenameError] = useState<I18nKey | null>(null);
+  const [gifting, setGifting] = useState<{ id: string; to: string } | null>(null);
   const list = (Object.values(fleets) as Fleet[]).sort((a, b) => a.number - b.number);
   if (list.length === 0) return null;
 
@@ -71,7 +72,38 @@ export function FleetsPanel() {
                     </button>
                     {renameError && <span className="auth-error small">{t(renameError, { min: PLANET_NAME_MIN, max: PLANET_NAME_MAX })}</span>}
                   </form>
+                ) : gifting?.id === f.id ? (
+                  <form
+                    className="fleet-rename"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void connection.command("fleet.gift", { fleetId: f.id, to: gifting.to }).then((err) => {
+                        if (err) return setRenameError(err);
+                        setGifting(null);
+                        gameStore.getState().notify("fleet.giftDone");
+                      });
+                    }}
+                  >
+                    <input autoFocus maxLength={64} value={gifting.to} placeholder={t("fleet.giftTo")} onChange={(e) => setGifting({ id: f.id, to: e.target.value })} onKeyDown={(e) => e.key === "Escape" && (e.stopPropagation(), setGifting(null))} />
+                    <button className="btn btn-small" type="submit" disabled={!gifting.to.trim()}>
+                      🎁 {t("fleet.gift")}
+                    </button>
+                    {renameError && <span className="auth-error small">{t(renameError, { min: PLANET_NAME_MIN, max: PLANET_NAME_MAX })}</span>}
+                  </form>
                 ) : (
+                  <>
+                  <button
+                    type="button"
+                    className="icon-btn fleet-gift-btn"
+                    title={t("fleet.giftTitle")}
+                    aria-label={t("fleet.gift")}
+                    onClick={() => {
+                      setRenameError(null);
+                      setGifting({ id: f.id, to: "" });
+                    }}
+                  >
+                    🎁
+                  </button>
                   <button
                     type="button"
                     className="icon-btn fleet-rename-btn"
@@ -84,6 +116,7 @@ export function FleetsPanel() {
                   >
                     ✎
                   </button>
+                  </>
                 )}
                 <button className="fleet-row" onClick={() => engineRef.current?.goToFleet(f.id)}>
                   <strong>{fleetName(f, t)}</strong>

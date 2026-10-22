@@ -8,6 +8,8 @@ Tus naves (salvo la tuya, la del Emperador) se agrupan en **flotas** («Flota 1�
 
 Puedes **renombrar** cada flota con el lápiz ✎ de su fila en el panel de flotas (vacío: vuelve a «Flota N»).
 
+Y puedes **regalarla** a otro jugador con 🎁 (escribe el nombre de su Emperador): tiene que estar parada y fuera de batalla; pasa a ser suya donde está, sin ruta ni comandante.
+
 ## Viajar
 
 1. Selecciona una estrella en el mapa galáctico.

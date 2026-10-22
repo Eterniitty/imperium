@@ -163,9 +163,9 @@ describe("naves", () => {
     expect(SHIP_CLASSES.filter((s) => s.consumedOnUse).map((s) => s.id)).toEqual(["colonizer"]);
   });
 
-  it("el explorador es el más rápido y con mayor escáner", () => {
+  it("el explorador es el más rápido (salvo la nodriza, con su motor cuántico de nave capital) y con mayor escáner", () => {
     const explorer = getShipClass("explorer")!;
-    expect(Math.max(...SHIP_CLASSES.map((s) => s.speedLyPerHour))).toBe(explorer.speedLyPerHour);
+    expect(Math.max(...SHIP_CLASSES.filter((s) => !s.dockFlagship).map((s) => s.speedLyPerHour))).toBe(explorer.speedLyPerHour);
     expect(Math.max(...SHIP_CLASSES.map((s) => s.scannerRangeLy))).toBe(explorer.scannerRangeLy);
   });
 });

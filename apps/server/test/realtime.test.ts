@@ -8,6 +8,7 @@ import WebSocket from "ws";
 import { LOGIN_TOKEN_PARAM, PROTOCOL_VERSION, WS_CLOSE, type Emperor, type EmperorView, type Fleet, type ServerMessage, type Topic, type Visibility } from "@imperium/shared";
 import { generateSector, universeSeedFromString } from "@imperium/procgen";
 import { defaultPark, parkedPosition, planetPosition, quantumFuelCost } from "@imperium/sim";
+import { EMPEROR_FLAGSHIP } from "@imperium/content";
 import { buildApp } from "../src/app";
 import { colonies, emperors, fleets, resourceLedger } from "../src/db/schema";
 import { sessionCookieName } from "../src/auth/routes";
@@ -681,14 +682,15 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
     it("un cañonazo que acierta baja el escudo del enemigo; él lo ve y el atacante solo sabe que su escudo sigue activo", async () => {
       const { b, sa, sb } = await duel();
       const from = sb.messages.length;
+      const fromA = sa.messages.length;
       sa.send({ t: "fire", weapon: "cannon", dir: [0, 0, -1] });
       const shot = await sb.next(is("shot"), from);
-      expect(shot).toMatchObject({ weapon: "cannon", target: null, speed: 1500 });
+      expect(shot).toMatchObject({ weapon: "cannon", target: null, speed: EMPEROR_FLAGSHIP.combat.weapons.find((w) => w.kind === "cannon")!.speedU });
       expect(shot.hitAt).not.toBeNull();
       const hurt = await sb.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id && m.ship.shield < 200, from);
       expect(hurt.ship).toMatchObject({ shield: 186, hull: 400 });
       // El atacante (no es su compañero) no sabe cuánto escudo le queda: solo que sigue activo (22-10-2026).
-      const seen = await sa.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id, from);
+      const seen = await sa.next((m): m is Extract<ServerMessage, { t: "ship" }> => m.t === "ship" && m.ship.id === b.emperor.id, fromA);
       expect(seen.ship).toMatchObject({ shield: 200, hull: 400 });
     });
 

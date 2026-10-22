@@ -36,20 +36,24 @@ export const FLAGSHIP_HARDPOINTS: ShipHardpoints = {
   missile: [fl(0.118, 0.004, -0.112), fl(-0.118, 0.004, -0.112)],
 };
 
-/** Cañón estándar: ráfagas rápidas, sin límite de munición. */
-const CANNON: WeaponDefinition = { kind: "cannon", damage: 14, cooldownSec: 0.2, rangeU: 2000, speedU: 1500, ammo: null, ammoRegenSec: null };
+/**
+ * Cañón estándar: ráfagas rápidas, sin límite de munición. Alcances del combate
+ * en tiempo real ×4 desde el 22-10-2026 (con naves de cientos de metros y
+ * planetas a miles de km, 2 km de alcance se quedaba en nada).
+ */
+const CANNON: WeaponDefinition = { kind: "cannon", damage: 14, cooldownSec: 0.2, rangeU: 8000, speedU: 4000, ammo: null, ammoRegenSec: null };
 /** Cañón ligero de las naves que no son de combate. */
 const CANNON_LIGHT: WeaponDefinition = { ...CANNON, damage: 6, cooldownSec: 0.35 };
 /** Cañón rápido de los cazas: poco daño, mucha cadencia. */
-const CANNON_RAPID: WeaponDefinition = { ...CANNON, damage: 8, cooldownSec: 0.12, rangeU: 1600, speedU: 1700 };
+const CANNON_RAPID: WeaponDefinition = { ...CANNON, damage: 8, cooldownSec: 0.12, rangeU: 6400, speedU: 4400 };
 /** Antiaéreo de las corbetas: ráfagas cortas y muy rápidas contra naves pequeñas. */
-const FLAK: WeaponDefinition = { ...CANNON, damage: 5, cooldownSec: 0.08, rangeU: 1400, speedU: 1900 };
+const FLAK: WeaponDefinition = { ...CANNON, damage: 5, cooldownSec: 0.08, rangeU: 5600, speedU: 4800 };
 /** Cañón pesado de las torretas: lento, de largo alcance y mucho daño. */
-const CANNON_HEAVY: WeaponDefinition = { ...CANNON, damage: 34, cooldownSec: 0.6, rangeU: 2800, speedU: 1700 };
+const CANNON_HEAVY: WeaponDefinition = { ...CANNON, damage: 34, cooldownSec: 0.6, rangeU: 11200, speedU: 4400 };
 /** Misil: mucho daño, sigue al objetivo fijado; munición limitada que se repone con el tiempo. */
-const MISSILE: WeaponDefinition = { kind: "missile", damage: 90, cooldownSec: 2.5, rangeU: 5000, speedU: 700, ammo: 6, ammoRegenSec: 15 };
+const MISSILE: WeaponDefinition = { kind: "missile", damage: 90, cooldownSec: 2.5, rangeU: 20000, speedU: 1500, ammo: 6, ammoRegenSec: 15 };
 /** Torpedo de los destructores y cruceros: más daño, más lento, pocas unidades. */
-const TORPEDO: WeaponDefinition = { ...MISSILE, damage: 160, cooldownSec: 4, rangeU: 6000, speedU: 550, ammo: 4, ammoRegenSec: 25 };
+const TORPEDO: WeaponDefinition = { ...MISSILE, damage: 160, cooldownSec: 4, rangeU: 24000, speedU: 1200, ammo: 4, ammoRegenSec: 25 };
 
 const SHIPYARD = { shipyard: 1 } as const;
 const SHIPYARD_REFINERY = { shipyard: 1, refinery: 1 } as const;
@@ -253,7 +257,9 @@ export const SHIP_CLASSES: readonly ShipClassDefinition[] = withHardpoints<ShipC
     battleShots: 6,
     battleProfile: 8,
     battleShield: 60,
-    speedLyPerHour: 80,
+    // Motor cuántico de nave capital (petición del usuario, 22-10-2026): cuatro veces la nave del Emperador. Lo que
+    // a ella le lleva 40 minutos, la nodriza (y la insignia acoplada, que viaja con ella) lo hace en 10.
+    speedLyPerHour: 800,
     // Menos que el carguero: su espacio es el hangar y el taller.
     cargo: 800,
     scannerRangeLy: 25,

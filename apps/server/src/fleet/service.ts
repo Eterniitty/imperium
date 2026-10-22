@@ -3,10 +3,10 @@ import { universeSeedFromString } from "@imperium/procgen";
 import { distance, type Cargo, type CommandError, type Fleet, type FleetRoute, type FleetTactic, type ShipDesignSnapshot } from "@imperium/shared";
 import { designStats, fleetTravelSpeed, isTravelling, refuelCost, shipFuel, shipFuelMax, travelDurationMs } from "@imperium/sim";
 import type { ColonyService } from "../colony/service";
-import { and, asc, eq, inArray, isNull, lte, or } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { colonies, emperors, fleetCargo, fleetRoutes, fleets, mercenaryContracts, resourceLedger, ships } from "../db/schema";
+import { colonies, emperors, fleetCargo, fleetRoutes, fleets, heirs, mercenaryContracts, resourceLedger, ships } from "../db/schema";
 import type { RemotePilot } from "../realtime/hub";
 import { findSystem, placeFromRow } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
@@ -277,6 +277,35 @@ export class FleetService {
   }
 
   /** Orden `fleet.tactic`: cambia la táctica de una flota propia, esté donde esté (en batalla, desde la ronda siguiente). */
+  /**
+   * Regala una flota propia a otro jugador (por su nombre de Emperador): pasa a
+   * ser suya donde está, con el siguiente número de flota. Parada, sin batalla
+   * ni ruta (la ruta usa colonias del que regala: se borra) y sin comandante.
+   */
+  async gift(emperorId: string, fleetId: string, toName: string): Promise<{ ok: true; to: string } | { ok: false; error: CommandError }> {
+    return this.db.transaction(async (tx) => {
+      const [to] = await tx
+        .select({ id: emperors.id, deadAt: emperors.deadAt })
+        .from(emperors)
+        .where(and(sql`lower(${emperors.name}) = lower(${toName.trim()})`, eq(emperors.kind, "player")))
+        .limit(1);
+      if (!to) return { ok: false as const, error: "unknown_emperor" as const };
+      if (to.id === emperorId) return { ok: false as const, error: "invalid_order" as const };
+      const [f] = await tx.select().from(fleets).where(and(eq(fleets.id, fleetId), eq(fleets.emperorId, emperorId))).for("update").limit(1);
+      if (!f) return { ok: false as const, error: "no_fleet" as const };
+      const place = placeFromRow(this.seed, f, this.now());
+      if (isTravelling(place, this.now())) return { ok: false as const, error: "in_transit" as const };
+      if (f.battleId) return { ok: false as const, error: "in_battle" as const };
+      // Bloquea al que la recibe: el número de flota es único por dueño.
+      await tx.select({ id: emperors.id }).from(emperors).where(eq(emperors.id, to.id)).for("update");
+      const [{ n } = { n: 0 }] = await tx.select({ n: sql<number>`coalesce(max(${fleets.number}), 0)::int` }).from(fleets).where(eq(fleets.emperorId, to.id));
+      await tx.delete(fleetRoutes).where(eq(fleetRoutes.fleetId, fleetId));
+      await tx.update(heirs).set({ fleetId: null }).where(eq(heirs.fleetId, fleetId));
+      await tx.update(fleets).set({ emperorId: to.id, number: n + 1, name: f.name }).where(eq(fleets.id, fleetId));
+      return { ok: true as const, to: to.id };
+    });
+  }
+
   /** Renombra una flota propia (null: vuelve a «Flota N»). */
   async rename(emperorId: string, fleetId: string, name: string | null): Promise<boolean> {
     const rows = await this.db
