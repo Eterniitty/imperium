@@ -36,4 +36,4 @@ Guarda el diseño y, abajo, elige la **colonia** y pulsa **Construir aquí**. Ha
 {{tabla:piezas}}
 
 > [!dev]
-> **En desarrollo**: que sus estadísticas manden también al pilotarla y en el combate en tiempo real.
+> **En desarrollo**: que su aceleración y su giro manden al pilotarla (como escolta o pilotada a distancia ya lucha con el casco, el escudo y las armas de sus piezas).

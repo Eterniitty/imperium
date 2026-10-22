@@ -36,4 +36,4 @@ Save the design and, below, choose the **colony** and press **Build here**. The 
 {{tabla:piezas}}
 
 > [!dev]
-> **In development**: its statistics also ruling when piloting it and in real-time combat.
+> **In development**: its acceleration and turn rate ruling when piloting it (as an escort or piloted remotely it already fights with the hull, shield and weapons of its parts).
