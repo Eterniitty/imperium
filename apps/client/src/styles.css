@@ -983,3 +983,4 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .speed-dial .dial-knob { fill: #fff3d0; stroke: var(--gold); stroke-width: 2; }
 .speed-dial .dial-value { fill: var(--text); font: 600 13px var(--font-display); text-anchor: middle; dominant-baseline: middle; }
 .speed-dial .dial-label { fill: var(--muted); font: 9px var(--font-body); text-anchor: middle; letter-spacing: 0.08em; text-transform: uppercase; }
+.planet-cruise { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }

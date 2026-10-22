@@ -69,9 +69,15 @@ export function PlanetPanel() {
           <h3>{label(planet)}</h3>
           <div className="muted">{t(`planet.${planet.type}`)}</div>
           {piloting && (
-            <button className="btn small" onClick={() => engineRef.current?.cruiseTo(`planet:${planet.index}`)}>
-              {t("cruise.goHere")} <KeyHint action="cruise" />
-            </button>
+            <div className="planet-cruise">
+              <button className="btn small" onClick={() => engineRef.current?.cruiseTo(`planet:${planet.index}`)}>
+                {t("cruise.goHere")} <KeyHint action="cruise" />
+              </button>
+              {/* Orbitar el planeta: ir y quedarse dando vueltas por su ecuador. */}
+              <button className="btn small" title={t("cruise.orbitHint", { name: label(planet) })} onClick={() => engineRef.current?.cruiseTo(`planet:${planet.index}`, true)}>
+                ⟲ {t("cruise.orbit")}
+              </button>
+            </div>
           )}
           <dl className="facts">
             <dt>{t("system.orbit")}</dt>
