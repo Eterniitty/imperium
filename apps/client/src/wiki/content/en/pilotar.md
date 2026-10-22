@@ -146,6 +146,10 @@ In the **Fleets** panel (also on the command bridge during a quantum trip), stat
 
 When you disconnect or leave the controls, your ship **does not vanish**: it stays in space, where you left it. If it was next to a planet or moon (inside its sphere of influence), it moves along with it and you find it in the same spot relative to it; in open space it orbits the star like the planets. It keeps its orientation and its **engines as you left them**: leave them on and they are still on when you return; switch them off and they stay off. Others see it and can attack it; pirates only chase piloted ships.
 
+## Sound
+
+With the engines running you hear their hum, which rises in pitch with thrust, and a background rumble. The pulse drive sounds like a wind that grows with speed, with a tone that rises while it charges. The autopilot chimes twice when it arrives or enters orbit. Everything follows the effects volume in Settings.
+
 ## Cameras
 
 [[T]] switches between the **chase** camera (third person, the default) and the **cockpit** camera (first person). In both, the mouse moves the camera, not the ship; the **Recenter camera** button returns to the chase view (or to looking ahead).

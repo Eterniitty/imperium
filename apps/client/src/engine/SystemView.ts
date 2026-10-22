@@ -1,9 +1,10 @@
 import * as THREE from "three";
 import { escapeJustUnlocked, pointerXY } from "./pointerLock";
+import { flightSound, playCruiseArrive } from "../audio/flightSfx";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
 import type { FlagshipStatus, Fleet, I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, ShipDesignSnapshot, WeaponKind, WorldPosition } from "@imperium/shared";
-import { ARRIVAL_EDGE, deepLayout, designStats, starHeatDps, defaultPark, moonOffset, parkedPosition, parkAt, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
+import { ARRIVAL_EDGE, deepLayout, designStats, starHeatDps, defaultPark, moonOffset, parkedPosition, parkAt, PULSE_MAX_SPEED, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
 import { resetSpace, shipName, spaceStore, type SelectedWeapon } from "../net/space";
 import { TargetAssist, relationOf, type CannonAim } from "./TargetAssist";
 import { telemetry, type FlightTelemetry } from "./telemetry";
@@ -202,6 +203,8 @@ export class SystemView implements View {
   private impactShake = 0;
   /** Retroceso de los disparos propios (0–1): sacude y empuja la cámara un instante. */
   private fireKick = 0;
+  /** Fase del piloto automático en el fotograma anterior (para avisar al entrar en órbita). */
+  private lastCruisePhase = "";
   /**
    * Motores de la nave propia: al tomar los mandos están apagados y hay que
    * arrancarlos (tecla «engines»); `t` es el tiempo en el estado actual.
@@ -901,6 +904,7 @@ export class SystemView implements View {
     this.cancelQuantum();
     this.cancelCruise();
     this.undoShake();
+    flightSound.stop();
     this.pendingEmerge.clear();
     if (this.camera.fov !== BASE_FOV) {
       this.camera.fov = BASE_FOV;
@@ -1194,6 +1198,7 @@ export class SystemView implements View {
     telemetry.pulseCharge = flight.pulseCharging;
     telemetry.pulseLimit = flight.pulseLimit;
     telemetry.thrust = flight.thrust;
+    flightSound.update({ power: this.enginePower(), thrust: flight.thrust, speed: flight.speed, pulse: flight.pulseActive, charge: flight.pulseCharging, pulseMax: PULSE_MAX_SPEED });
     // Actitud respecto al plano orbital (y = arriba) y rumbo respecto a la estrella.
     const up = new THREE.Vector3(0, 1, 0);
     telemetry.pitch = Math.asin(Math.max(-1, Math.min(1, fwd.dot(up))));
@@ -1861,7 +1866,13 @@ export class SystemView implements View {
     }
     if (this.engines.state === "off" || this.engines.state === "stopping") this.startEngines();
     const status = ap.step(dt, { ship, velocity: flight.velocity, pulseOn: flight.pulseActive, powered: flight.powered, canPulse: !this.outOfFuel(), spot, obstacles });
-    if (status === "arrived") return this.cancelCruise("cruise.arrived");
+    if (status === "arrived") {
+      playCruiseArrive();
+      return this.cancelCruise("cruise.arrived");
+    }
+    // Entra en órbita: aviso suave.
+    if (ap.phase === "orbit" && this.lastCruisePhase !== "orbit") playCruiseArrive();
+    this.lastCruisePhase = ap.phase;
     if (status === "lost") return this.cancelCruise("cruise.lost");
     const cmd = ap.command;
     if (cmd.pulse !== flight.pulse) flight.pulse = cmd.pulse && this.engines.state === "on";

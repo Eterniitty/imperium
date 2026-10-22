@@ -146,6 +146,10 @@ En el panel de **Flotas** (también en el puente de mando, durante un viaje cuá
 
 Al desconectarte o dejar los mandos, tu nave **no desaparece**: se queda en el espacio, donde la dejaste. Si estaba junto a un planeta o una luna (dentro de su esfera de influencia), lo acompaña en su órbita y al volver la encuentras en el mismo sitio respecto a él; en el espacio abierto orbita la estrella como los planetas. Conserva su orientación y los **motores como los dejaste**: si los dejas encendidos, al volver siguen encendidos; si los apagas, apagados. Los demás la ven y pueden atacarla; los piratas solo persiguen naves pilotadas.
 
+## Sonido
+
+Con los motores en marcha se oye su zumbido, que sube de tono con el empuje, y un rumor de fondo. El pulso suena como un viento que crece con la velocidad, con un tono que sube mientras se carga. El piloto automático avisa con dos notas al llegar o al entrar en órbita. Todo va por el volumen de efectos de Ajustes.
+
 ## Cámaras
 
 [[T]] alterna entre la cámara **exterior** (tercera persona, por defecto) y la de **cabina** (primera persona). En las dos, el ratón mueve la cámara, no la nave; el botón **Recentrar cámara** vuelve a la vista de seguimiento (o a mirar al frente).
