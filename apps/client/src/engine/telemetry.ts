@@ -17,6 +17,8 @@ export interface FlightTelemetry {
   nearest: { name: string; distance: number } | null;
   /** Objetivo de navegación (planeta seleccionado, objetivo fijado o cuerpo de frente): distancia y tiempo estimado. */
   eta: { name: string; distance: number; seconds: number | null } | null;
+  /** Distancia (m) a la señal del suceso en el espacio, o null si no hay. */
+  eventDistance: number | null;
   /** Actitud respecto al plano orbital del sistema (radianes): cabeceo, alabeo y rumbo respecto a la estrella. */
   pitch: number;
   roll: number;
@@ -55,6 +57,7 @@ export const telemetry: FlightTelemetry = {
   pulseLimit: 0,
   nearest: null,
   eta: null,
+  eventDistance: null,
   pitch: 0,
   roll: 0,
   heading: 0,

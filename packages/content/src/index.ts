@@ -22,3 +22,4 @@ export * from "./tech";
 export * from "./contracts";
 export * from "./rank";
 export * from "./goals";
+export * from "./spaceEvents";

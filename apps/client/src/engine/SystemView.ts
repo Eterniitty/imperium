@@ -155,6 +155,8 @@ export class SystemView implements View {
   private chase: ChaseCamera;
   private leaving = false;
   private systemId: string | null = null;
+  /** Señal del suceso en el espacio de la nave (si hay uno en este sistema). */
+  private eventMarker: THREE.Sprite | null = null;
   /** Señales de los restos de los contratos de rescate de este sistema (por contrato). */
   private readonly rescueMarkers = new Map<string, THREE.Sprite>();
   private starName = "";
@@ -1900,6 +1902,10 @@ export class SystemView implements View {
       while (safe < this.layout.boundary && (starHeatDps(this.layout, safe) > 0 || insideEventHorizon(this.layout, safe))) safe *= 1.15;
       spots.push({ id: "star", kind: "star", name: this.layout.starClass === "BH" ? translate(locale, "cruise.blackHole") : translate(locale, "cruise.star"), center: new THREE.Vector3(), radius: R, stopRadius: safe * 1.1 });
     }
+    // Suceso en el espacio (restos o señal de socorro a la que se acude): un destino más.
+    const ev = spaceStore.getState().event;
+    if (ev && !ev.decide && this.ship && spaceStore.getState().systemId === this.systemId)
+      spots.push({ id: "event", kind: "signal", name: translate(locale, ev.kind === "distress" ? "event.name.distress" : "event.name.salvage"), center: new THREE.Vector3(...ev.at), radius: 50, stopRadius: 1000 });
     // Restos de un contrato de rescate en este sistema: hay que llegar y quedarse a su lado.
     for (const c of this.rescueHere()) spots.push({ id: `wreck:${c.id}`, kind: "wreck", name: translate(locale, "cruise.wreck"), center: new THREE.Vector3(...c.point!), radius: 60, stopRadius: 1500 });
     // Cualquier flota propia parada aquí: se llega junto a su nave más grande, fuera de su casco.
@@ -1928,6 +1934,25 @@ export class SystemView implements View {
       obstacles.push({ id: `fleetship:${c.fleetId}:${obstacles.length}`, center: c.a.clone().add(c.b).multiplyScalar(0.5), radius: c.lengthM * 0.5, star: false });
     }
     return { spots, obstacles };
+  }
+
+  /** La señal del suceso en el espacio (azul, siempre visible) y la distancia a ella para el HUD. */
+  private updateEventMarker(): void {
+    const ev = spaceStore.getState().event;
+    const show = ev && !ev.decide && this.ship ? ev : null;
+    telemetry.eventDistance = show && this.ship ? this.ship.position.distanceTo(new THREE.Vector3(...show.at)) : null;
+    if (!show) {
+      if (this.eventMarker) this.eventMarker.visible = false;
+      return;
+    }
+    if (!this.eventMarker) {
+      this.eventMarker = new THREE.Sprite(new THREE.SpriteMaterial({ map: ringTexture(), color: 0x7fd8ff, depthTest: false, sizeAttenuation: false, transparent: true, opacity: 0.95 }));
+      this.eventMarker.scale.setScalar(0.034);
+      this.eventMarker.renderOrder = 11;
+      this.scene.add(this.eventMarker);
+    }
+    this.eventMarker.position.set(...show.at);
+    this.eventMarker.visible = true;
   }
 
   /** Contratos de rescate activos con sus restos en este sistema. */
@@ -2170,6 +2195,7 @@ export class SystemView implements View {
     }
     this.updatePlanetLabels();
     this.updateRescueMarkers();
+    this.updateEventMarker();
     const sel = this.planets.find((p) => p.index === selected);
     if (sel) {
       sel.mesh.getWorldPosition(this.selectRing.position);

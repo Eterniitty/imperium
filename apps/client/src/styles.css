@@ -1195,3 +1195,10 @@ button.legend-title { background: none; border: none; padding: 0; width: 100%; t
 .contract-actions:empty { display: none; }
 /* Opaco: puede quedar encima de otro panel (el lateral del sistema) y no debe mezclarse con él. */
 .tutorial-panel, .tutorial-pill { background: rgba(9, 14, 26, 0.97); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55); }
+
+/* Suceso en el espacio: abajo en el centro, encima del velocímetro (el borde izquierdo es de la barra de acciones). */
+.space-event { position: absolute; left: 50%; bottom: 150px; transform: translateX(-50%); width: min(380px, calc(100vw - 32px)); z-index: 8; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; border-color: rgba(127, 216, 255, 0.5); box-shadow: 0 0 24px rgba(127, 216, 255, 0.12); animation: cruise-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.space-event .contract-kind { color: #7fd8ff; }
+.space-event p { margin: 0; line-height: 1.45; }
+.space-event-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.space-event-actions { display: flex; gap: 6px; }

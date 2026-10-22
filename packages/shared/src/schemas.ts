@@ -146,6 +146,7 @@ export const ClientMessageSchema = z.union([
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("emperor.drop"), args: z.object({}).strict() }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("flagship.unload"), args: z.object({ colonyId: z.uuid() }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("flagship.refine"), args: z.object({ on: z.boolean() }) }),
+  z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("event.decide"), args: z.object({ id: z.string().regex(/^ev-[a-z0-9]{6,16}$/), go: z.boolean() }) }),
   z.object({ t: z.literal("cmd"), cmdId: CmdIdSchema, op: z.literal("flagship.jettison"), args: z.object({ resource: z.enum(["volatiles", "metal", "rare_metals", "exotic"]) }) }),
   z.object({
     t: z.literal("cmd"),

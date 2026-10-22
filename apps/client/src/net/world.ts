@@ -400,6 +400,20 @@ class Connection {
       case "field":
         spaceStore.setState({ field: msg.region });
         return;
+      case "spaceEvent": {
+        const prev = spaceStore.getState().event;
+        spaceStore.setState({ event: { id: msg.id, kind: msg.kind, at: msg.at, expiresAt: msg.expiresAt, decide: msg.decide } });
+        if (!prev || prev.id !== msg.id) gameStore.getState().notify(msg.kind === "distress" ? "event.notice.distress" : "event.notice.salvage");
+        return;
+      }
+      case "spaceEventEnd": {
+        if (spaceStore.getState().event?.id === msg.id) spaceStore.setState({ event: null });
+        const notify = gameStore.getState().notify;
+        if (msg.outcome === "done") notify(msg.reward?.credits ? "event.done.distress" : "event.done.salvage", { xp: msg.reward?.xp ?? 0, credits: msg.reward?.credits ?? 0 });
+        else if (msg.outcome === "trap") notify("event.trap");
+        else if (msg.outcome === "expired") notify("event.expired");
+        return;
+      }
       case "asteroid": {
         const field = spaceStore.getState().field;
         if (!field || msg.i >= field.left.length) return;

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
-import { GOALS, RANK_XP, RANKS, rankOf, rankPerks, type RankPerk } from "@imperium/content";
+import { GOALS, RANK_XP, RANKS, rankOf, rankPerks, SPACE_EVENTS, type RankPerk } from "@imperium/content";
 import type { Contract, ContractOffer, Goal as GoalItem, I18nKey } from "@imperium/shared";
 import { connection, useWorld } from "../net/world";
 import { useT } from "../state/store";
@@ -140,6 +140,8 @@ function RankTab() {
         <li>{t("rank.src.pirate", { n: RANK_XP.pirateKill })}</li>
         <li>{t("rank.src.discovery", { n: RANK_XP.discovery })}</li>
         <li>{t("rank.src.mine", { n: RANK_XP.minedPerXp })}</li>
+        <li>{t("rank.src.event", { a: SPACE_EVENTS.salvage.xp, b: SPACE_EVENTS.distress.xp })}</li>
+        <li>{t("rank.src.goal", { a: GOALS.daily.xp, b: GOALS.weekly.xp })}</li>
       </ul>
       <p className="muted small">{t("rank.keep")}</p>
     </div>

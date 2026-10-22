@@ -8,7 +8,7 @@ import WebSocket from "ws";
 import { LOGIN_TOKEN_PARAM, PROTOCOL_VERSION, WS_CLOSE, type Emperor, type EmperorView, type Fleet, type ServerMessage, type Topic, type Visibility } from "@imperium/shared";
 import { generateSector, universeSeedFromString } from "@imperium/procgen";
 import { defaultPark, parkedPosition, planetPosition, quantumFuelCost } from "@imperium/sim";
-import { EMPEROR_FLAGSHIP } from "@imperium/content";
+import { EMPEROR_FLAGSHIP, SPACE_EVENTS } from "@imperium/content";
 import { buildApp } from "../src/app";
 import { colonies, emperors, fleets, resourceLedger } from "../src/db/schema";
 import { sessionCookieName } from "../src/auth/routes";
@@ -124,7 +124,16 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
 
   beforeEach(async () => {
     sent.length = 0;
-    await database.db.execute(sql`TRUNCATE accounts, magic_link_tokens, sessions, emperors CASCADE`);
+    // Puede chocar (bloqueo mutuo) con lo que el test anterior aún tenía en marcha en segundo plano: se reintenta.
+    for (let i = 0; ; i++) {
+      try {
+        await database.db.execute(sql`TRUNCATE accounts, magic_link_tokens, sessions, emperors CASCADE`);
+        break;
+      } catch (err) {
+        if (i >= 4 || !String((err as { cause?: { code?: string } }).cause?.code ?? (err as { code?: string }).code).includes("40P01")) throw err;
+        await new Promise((r) => setTimeout(r, 300));
+      }
+    }
     app = await buildApp(config, { db: database.db, mailer });
     const address = await app.listen({ host: "127.0.0.1", port: 0 });
     wsUrl = address.replace("http", "ws") + "/ws";
@@ -481,6 +490,33 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       sa.send({ t: "cmd", cmdId: "ayuda-0002", op: "help.call", args: {} });
       expect(await sa.next(ack("ayuda-0002"))).toMatchObject({ ok: false, error: "rate_limited" });
     });
+
+    it("sucesos en el espacio: la señal de socorro pide decidir; al acudir y quedarse junto a ella, paga", async () => {
+      const { a, sa, systemId } = await twoInOneSystem("hidden");
+      const at = near(systemId, [100, 0, 0]);
+      await parkAt(a.emperor.id, at);
+      sa.send({ t: "pose", systemId, ...pose(at) });
+      await sa.next(is("space"));
+      const id = app.space.startEvent(a.emperor.id, "distress", at)!;
+      expect(await sa.next(is("spaceEvent"))).toMatchObject({ id, kind: "distress", decide: true });
+      const ack = (cmdId: string) => (m: ServerMessage): m is Extract<ServerMessage, { t: "ack" }> => m.t === "ack" && m.cmdId === cmdId;
+      sa.send({ t: "cmd", cmdId: "suceso-0001", op: "event.decide", args: { id: "ev-otro00000", go: true } });
+      expect(await sa.next(ack("suceso-0001"))).toMatchObject({ ok: false, error: "not_present" });
+      const from = sa.messages.length;
+      sa.send({ t: "cmd", cmdId: "suceso-0002", op: "event.decide", args: { id, go: true } });
+      expect(await sa.next(ack("suceso-0002"))).toMatchObject({ ok: true });
+      expect(await sa.next(is("spaceEvent"), from)).toMatchObject({ id, decide: false });
+      // En el Núcleo nunca es trampa: rescate cumplido con su recompensa.
+      const end = await sa.next(is("spaceEventEnd"), 0, 9000);
+      expect(end).toMatchObject({ id, outcome: "done", reward: { credits: SPACE_EVENTS.distress.credits, xp: SPACE_EVENTS.distress.xp } });
+      // Ignorar otro: se acaba sin recompensa.
+      const id2 = app.space.startEvent(a.emperor.id, "distress", at)!;
+      sa.send({ t: "cmd", cmdId: "suceso-0003", op: "event.decide", args: { id: id2, go: false } });
+      expect(await sa.next(ack("suceso-0003"))).toMatchObject({ ok: true });
+      expect(await sa.next((m): m is Extract<ServerMessage, { t: "spaceEventEnd" }> => m.t === "spaceEventEnd" && m.id === id2)).toMatchObject({ outcome: "ignored" });
+      // El pago del rescate se hace aparte: se espera a que termine (si no, choca con el vaciado del siguiente test).
+      await settle(1500);
+    }, 20_000);
 
     it("dos naves en el mismo sistema se ven y se mueven, aunque estén ocultas en el mapa", async () => {
       const { a, b, sa, sb, systemId } = await twoInOneSystem("hidden");

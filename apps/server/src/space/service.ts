@@ -1,4 +1,4 @@
-import { AIM_ASSIST, ALIEN_LOCAL, CONTRACTS, QUANTUM_RIFT, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, SUPERMASSIVE, REPUTATION, getAlienShipClass, getShipClass, HELP_CALL, MINING, PIRATE_AI, PIRATE_AMBUSH, SCAVENGER_LAIR, type ShipClassId, type ShipCombat } from "@imperium/content";
+import { AIM_ASSIST, ALIEN_LOCAL, CONTRACTS, SPACE_EVENTS, type SpaceEventKind, QUANTUM_RIFT, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, SUPERMASSIVE, REPUTATION, getAlienShipClass, getShipClass, HELP_CALL, MINING, PIRATE_AI, PIRATE_AMBUSH, SCAVENGER_LAIR, type ShipClassId, type ShipCombat } from "@imperium/content";
 import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, MOTHERSHIP_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipDesignSnapshot, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
 import { addToHold, arriveVelocity, designStats, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, parkAt, anchorCenter, PULSE_CHARGE_SEC, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
@@ -1137,7 +1137,9 @@ export class SpaceService {
     if (!riftNear(notice, m.pose.p)) return;
     if (notice.phase === "arrive") {
       m.riftArrived = true;
-      this.ambush(m);
+      const ambushed = this.ambush(m);
+      // Sin emboscada, quizá un suceso al poco de llegar (cuando ya ha salido de la grieta).
+      if (!ambushed) this.eventArrival.set(m.emperorId, this.now() + 8000);
     }
     const msg: ServerMessage = { t: "rift", id: m.emperorId, phase: notice.phase, at: notice.at, q: notice.q, serverTime: this.now() };
     for (const o of this.rooms.get(m.systemId) ?? []) if (o !== m) this.sendTo(o, msg);
@@ -1344,22 +1346,29 @@ export class SpaceService {
    * Emboscada (`PIRATE_AMBUSH`): la manada de Carroñeros del sistema aparece
    * alrededor de una nave que acaba de salir de la grieta.
    */
-  private ambush(m: Member): void {
-    if (Math.random() >= PIRATE_AMBUSH.chance) return;
-    const pack = [...(this.rooms.get(m.systemId) ?? [])].filter((o) => o.kind === "pirate" && !o.ai?.anchored && o.combat.hull > 0);
+  private ambush(m: Member): boolean {
+    if (Math.random() >= PIRATE_AMBUSH.chance) return false;
+    return this.surround(m.systemId, m.pose.p);
+  }
+
+  /** La manada de Carroñeros del sistema aparece alrededor de un punto. False si no hay ninguno vivo. */
+  private surround(systemId: string, center: Vec3): boolean {
+    const pack = [...(this.rooms.get(systemId) ?? [])].filter((o) => o.kind === "pirate" && !o.ai?.anchored && o.combat.hull > 0);
+    if (pack.length === 0) return false;
     const now = this.now();
     pack.forEach((o, i) => {
       const a = (i / pack.length) * Math.PI * 2 + Math.random();
       const p: Vec3 = [
-        m.pose.p[0] + Math.cos(a) * PIRATE_AMBUSH.distanceU,
-        m.pose.p[1] + (Math.random() - 0.5) * PIRATE_AMBUSH.distanceU * 0.3,
-        m.pose.p[2] + Math.sin(a) * PIRATE_AMBUSH.distanceU,
+        center[0] + Math.cos(a) * PIRATE_AMBUSH.distanceU,
+        center[1] + (Math.random() - 0.5) * PIRATE_AMBUSH.distanceU * 0.3,
+        center[2] + Math.sin(a) * PIRATE_AMBUSH.distanceU,
       ];
       o.pose = { p, q: o.pose.q, v: [0, 0, 0] };
       o.poseAt = now;
       o.history = [{ t: now, p }];
       o.dirty = true;
     });
+    return true;
   }
 
   /** Una conexión se cierra o deja de pilotar: si era la última de su nave, la nave se queda aparcada. */
@@ -1569,6 +1578,125 @@ export class SpaceService {
   /** Desde cuándo está cada nave junto a unos restos (clave `emperorId:contractId`). */
   private readonly rescueSince = new Map<string, number>();
   private lastRescueCheck = 0;
+
+  // --- Sucesos en el espacio (`SPACE_EVENTS`; en memoria, solo mientras se pilota) ---
+
+  /** Recompensa de un suceso (créditos, reputación y experiencia; la bodega ya se llenó aquí). */
+  onEventReward: ((emperorId: string, reward: { credits?: number; reputation?: number; xp?: number }) => void) | null = null;
+  private readonly events = new Map<string, { id: string; kind: SpaceEventKind; systemId: string; p: Vec3; expiresAt: number; decide: boolean; since?: number }>();
+  /** Próxima tirada de dado pilotando, fin del descanso tras un suceso y suceso pendiente al llegar de un salto. */
+  private readonly eventNext = new Map<string, number>();
+  private readonly eventRest = new Map<string, number>();
+  private readonly eventArrival = new Map<string, number>();
+
+  private checkEvents(now: number): void {
+    const E = SPACE_EVENTS;
+    for (const [emperorId, ev] of this.events) {
+      const m = this.members.get(emperorId);
+      if (!m || m.clients.size === 0 || m.park || m.systemId !== ev.systemId) this.endEvent(emperorId, "left", now);
+      else if (now > ev.expiresAt) this.endEvent(emperorId, "expired", now);
+      else if (!ev.decide) {
+        const near = Math.hypot(m.pose.p[0] - ev.p[0], m.pose.p[1] - ev.p[1], m.pose.p[2] - ev.p[2]) <= E.reachM;
+        if (!near) ev.since = undefined;
+        else if (ev.since === undefined) ev.since = now;
+        else if (now - ev.since >= E.holdSec * 1000) this.resolveEvent(m, ev, now);
+      }
+    }
+    for (const m of this.members.values()) {
+      if (m.kind !== "emperor" || m.clients.size === 0 || m.park || isDeepId(m.systemId) || this.events.has(m.emperorId)) continue;
+      if ((this.eventRest.get(m.emperorId) ?? 0) > now) continue;
+      const arrival = this.eventArrival.get(m.emperorId);
+      if (arrival !== undefined && now >= arrival) {
+        this.eventArrival.delete(m.emperorId);
+        if (Math.random() < E.chanceOnArrival) {
+          this.spawnEvent(m, now);
+          continue;
+        }
+      }
+      const next = this.eventNext.get(m.emperorId);
+      if (next === undefined) this.eventNext.set(m.emperorId, now + E.checkEveryMin * 60_000);
+      else if (now >= next) {
+        this.eventNext.set(m.emperorId, now + E.checkEveryMin * 60_000);
+        if (Math.random() < E.chancePerCheck) this.spawnEvent(m, now);
+      }
+    }
+  }
+
+  private spawnEvent(m: Member, now: number): void {
+    const E = SPACE_EVENTS;
+    const kinds = Object.keys(E.weights) as SpaceEventKind[];
+    let roll = Math.random() * kinds.reduce((n, k) => n + E.weights[k], 0);
+    const kind = kinds.find((k) => (roll -= E.weights[k]) <= 0) ?? kinds[0]!;
+    // Una señal a cierta distancia, cerca del plano del sistema y sin salirse de él.
+    const boundary = this.layout(m.systemId)?.boundary ?? Infinity;
+    const a = Math.random() * Math.PI * 2;
+    const d = E.distanceM[0] + Math.random() * (E.distanceM[1] - E.distanceM[0]);
+    let p: Vec3 = [m.pose.p[0] + Math.cos(a) * d, m.pose.p[1] + (Math.random() - 0.5) * d * 0.1, m.pose.p[2] + Math.sin(a) * d];
+    if (Math.hypot(p[0], p[1], p[2]) > boundary * 0.95) p = [m.pose.p[0] - Math.cos(a) * d, p[1], m.pose.p[2] - Math.sin(a) * d];
+    const ev = { id: `ev-${Math.random().toString(36).slice(2, 12).padEnd(8, "0")}`, kind, systemId: m.systemId, p, expiresAt: now + E.expiresMin * 60_000, decide: kind === "distress" };
+    this.events.set(m.emperorId, ev);
+    this.sendTo(m, { t: "spaceEvent", id: ev.id, kind, at: p, expiresAt: ev.expiresAt, decide: ev.decide });
+  }
+
+  /** Crea un suceso de este tipo en `at` para una nave pilotada (para tests y diagnóstico). */
+  startEvent(emperorId: string, kind: SpaceEventKind, at: Vec3): string | null {
+    const m = this.members.get(emperorId);
+    if (!m || m.kind !== "emperor" || m.clients.size === 0) return null;
+    const now = this.now();
+    const ev = { id: `ev-${Math.random().toString(36).slice(2, 12).padEnd(8, "0")}`, kind, systemId: m.systemId, p: at, expiresAt: now + SPACE_EVENTS.expiresMin * 60_000, decide: kind === "distress" };
+    this.events.set(emperorId, ev);
+    this.sendTo(m, { t: "spaceEvent", id: ev.id, kind, at, expiresAt: ev.expiresAt, decide: ev.decide });
+    return ev.id;
+  }
+
+  /** Señal de socorro: acudir (aparece la señal a la que ir) o no. */
+  decideEvent(emperorId: string, id: string, go: boolean): { ok: true } | { ok: false; error: CommandError } {
+    const ev = this.events.get(emperorId);
+    const m = this.members.get(emperorId);
+    if (!ev || ev.id !== id || !ev.decide || !m) return { ok: false, error: "not_present" };
+    if (!go) {
+      this.endEvent(emperorId, "ignored", this.now());
+      return { ok: true };
+    }
+    ev.decide = false;
+    this.sendTo(m, { t: "spaceEvent", id: ev.id, kind: ev.kind, at: ev.p, expiresAt: ev.expiresAt, decide: false });
+    return { ok: true };
+  }
+
+  private endEvent(emperorId: string, outcome: "done" | "trap" | "ignored" | "expired" | "left", now: number, reward?: { credits?: number; xp?: number; units?: number }): void {
+    const ev = this.events.get(emperorId);
+    if (!ev) return;
+    this.events.delete(emperorId);
+    this.eventRest.set(emperorId, now + SPACE_EVENTS.cooldownMin * 60_000);
+    const m = this.members.get(emperorId);
+    if (m && outcome !== "left") this.sendTo(m, { t: "spaceEventEnd", id: ev.id, outcome, ...(reward ? { reward } : {}) });
+  }
+
+  private resolveEvent(m: Member, ev: { id: string; kind: SpaceEventKind; systemId: string; p: Vec3 }, now: number): void {
+    const E = SPACE_EVENTS;
+    if (ev.kind === "distress") {
+      // Fuera del Núcleo, a veces era una trampa: la manada del sistema aparece alrededor.
+      if (!inHumanCore(ev.systemId) && Math.random() < E.distress.trapChance && this.surround(ev.systemId, ev.p)) return this.endEvent(m.emperorId, "trap", now);
+      this.onEventReward?.(m.emperorId, { credits: E.distress.credits, reputation: E.distress.reputation, xp: E.distress.xp });
+      return this.endEvent(m.emperorId, "done", now, { credits: E.distress.credits, xp: E.distress.xp });
+    }
+    // Restos: mineral a la bodega (lo que quepa) repartido entre tres recursos.
+    this.endEvent(m.emperorId, "done", now, { xp: E.salvage.xp });
+    const units = E.salvage.units[0] + Math.random() * (E.salvage.units[1] - E.salvage.units[0]);
+    const split = [Math.random(), Math.random(), Math.random() * 0.4];
+    const sum = split[0]! + split[1]! + split[2]!;
+    const loot: Hold = { metal: (units * split[0]!) / sum, volatiles: (units * split[1]!) / sum, rare_metals: (units * split[2]!) / sum };
+    this.onEventReward?.(m.emperorId, { xp: E.salvage.xp });
+    void this.flagships
+      .updateHold(m.emperorId, (hold) => {
+        const { hold: next, added } = addToHold(hold, loot);
+        return added > 1e-6 ? { hold: next, result: { hold: next, added } } : null;
+      })
+      .then((stored) => {
+        if (stored) void this.sendHold(m, stored.hold);
+      })
+      .catch((err: unknown) => this.log.error(err, "Error al guardar los restos de un suceso"));
+  }
 
   setRescueSpots(emperorId: string, spots: Array<{ contractId: string; systemId: string; p: Vec3 }>): void {
     if (spots.length) this.rescueSpots.set(emperorId, spots);
@@ -2255,6 +2383,7 @@ export class SpaceService {
     if (now - this.lastRescueCheck >= 1000) {
       this.lastRescueCheck = now;
       this.checkRescues(now);
+      this.checkEvents(now);
     }
     if (now - this.lastSuppliesSend >= SUPPLIES_SEND_MS) {
       this.lastSuppliesSend = now;

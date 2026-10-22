@@ -16,6 +16,7 @@ import {
   RANK_XP,
   GOALS,
   type GoalKind,
+  SPACE_EVENTS,
   type RankPerk,
   AI_PERSONALITIES,
   type AiPersonality,
@@ -300,6 +301,19 @@ export const GEN_TABLES: Record<string, Builder> = {
     numeric: [1],
   }),
 
+  sucesos: (t, locale) =>
+    kv(t, [
+      ["wiki.k.eventArrival", `${num(locale, SPACE_EVENTS.chanceOnArrival * 100)} %`],
+      ["wiki.k.eventPeriodic", t("wiki.v.eventPeriodic", { pct: num(locale, SPACE_EVENTS.chancePerCheck * 100), min: SPACE_EVENTS.checkEveryMin })],
+      ["wiki.k.eventRest", t("wiki.v.minutes", { n: SPACE_EVENTS.cooldownMin })],
+      ["wiki.k.eventDistance", `${num(locale, SPACE_EVENTS.distanceM[0] / 1000)}–${num(locale, SPACE_EVENTS.distanceM[1] / 1000)} km`],
+      ["wiki.k.eventReach", t("wiki.v.eventReach", { km: num(locale, SPACE_EVENTS.reachM / 1000), s: SPACE_EVENTS.holdSec })],
+      ["wiki.k.eventExpires", t("wiki.v.minutes", { n: SPACE_EVENTS.expiresMin })],
+      ["wiki.k.eventSalvage", t("wiki.v.eventSalvage", { min: SPACE_EVENTS.salvage.units[0], max: SPACE_EVENTS.salvage.units[1], xp: SPACE_EVENTS.salvage.xp })],
+      ["wiki.k.eventDistress", t("wiki.v.eventDistress", { credits: num(locale, SPACE_EVENTS.distress.credits), rep: SPACE_EVENTS.distress.reputation, xp: SPACE_EVENTS.distress.xp })],
+      ["wiki.k.eventTrap", `${num(locale, SPACE_EVENTS.distress.trapChance * 100)} %`],
+    ]),
+
   "objetivos-diarios": (t, locale) => {
     const goal = (k: GoalKind, n: string) => (k === "contract" ? t("goal.desc.contract", { n }) : t(`contract.desc.${k}` as I18nKey, { n }));
     const list = (d: { kinds: Record<GoalKind, readonly number[]> }) =>
@@ -321,6 +335,8 @@ export const GEN_TABLES: Record<string, Builder> = {
       [t("rank.src.pirate", { n: RANK_XP.pirateKill })],
       [t("rank.src.discovery", { n: RANK_XP.discovery })],
       [t("rank.src.mine", { n: RANK_XP.minedPerXp })],
+      [t("rank.src.event", { a: SPACE_EVENTS.salvage.xp, b: SPACE_EVENTS.distress.xp })],
+      [t("rank.src.goal", { a: GOALS.daily.xp, b: GOALS.weekly.xp })],
     ],
   }),
 

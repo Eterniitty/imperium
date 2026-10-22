@@ -79,6 +79,8 @@ export interface CommandArgs {
   "flagship.unload": { colonyId: string };
   /** Enciende o apaga la refinería de a bordo (volátiles de la bodega → combustible, despacio). */
   "flagship.refine": { on: boolean };
+  /** Suceso en el espacio con decisión (señal de socorro): acudir o no. */
+  "event.decide": { id: string; go: boolean };
   /** Tira por la borda todo un recurso de la bodega (para hacer sitio). */
   "flagship.jettison": { resource: StockId };
   "fleet.move": { fleetId: string; systemId: string };
@@ -439,6 +441,13 @@ export type ServerMessage =
   | { t: "field"; region: DeepRegionView }
   /** Un asteroide de la región cambió (lo están minando): unidades que le quedan. */
   | { t: "asteroid"; i: number; left: number }
+  /**
+   * Suceso en el espacio de tu nave (`SPACE_EVENTS`): una señal en `at` (m, en el sistema) hasta `expiresAt`.
+   * `decide`: falta elegir si se acude (señal de socorro).
+   */
+  | { t: "spaceEvent"; id: string; kind: "salvage" | "distress"; at: [number, number, number]; expiresAt: number; decide: boolean }
+  /** El suceso terminó: cumplido (con su recompensa), trampa, ignorado, perdido o porque la nave se fue. */
+  | { t: "spaceEventEnd"; id: string; outcome: "done" | "trap" | "ignored" | "expired" | "left"; reward?: { credits?: number; xp?: number; units?: number } }
   /** Láser de minería de una nave de la región (para dibujarlo): el asteroide, o null si se apaga. */
   | { t: "beam"; id: string; asteroid: number | null }
   /** Tu bodega y tu refinería de a bordo (al minar, refinar o descargar). */

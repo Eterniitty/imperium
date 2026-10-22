@@ -30,6 +30,7 @@ import { DamageAlert } from "./DamageAlert";
 import { EmpireWindow } from "./EmpireWindow";
 import { ContractsWindow } from "./ContractsWindow";
 import { TutorialPanel } from "../tutorial/TutorialPanel";
+import { SpaceEventPanel } from "./SpaceEventPanel";
 import { QuantumHud } from "./QuantumHud";
 import { QuantumPanel } from "./QuantumPanel";
 import { CruiseHud, CruisePanel } from "./CruisePanel";
@@ -131,6 +132,7 @@ export function App() {
             <MiningHud />
             <QuantumHud />
             <CruiseHud />
+            <SpaceEventPanel />
             {quantumPanel ? <QuantumPanel /> : cruisePanel ? <CruisePanel /> : <PlanetPanel />}
           </>
         )}

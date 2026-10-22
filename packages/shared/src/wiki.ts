@@ -33,6 +33,7 @@ export const WIKI_ARTICLES = [
   { slug: "combate", group: "ship" },
   { slug: "linaje", group: "ship" },
   { slug: "espacio-profundo", group: "ship" },
+  { slug: "sucesos", group: "ship" },
   { slug: "humanos", group: "empire" },
   { slug: "colonias", group: "empire" },
   { slug: "economia", group: "empire" },

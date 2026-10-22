@@ -249,6 +249,24 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   contracts.systemName = (id) => findSystem(universeSeed, id)?.name;
   contracts.onSpots = (emperorId, spots) => space.setRescueSpots(emperorId, spots);
   space.onRescue = (emperorId, contractId) => pushContract(emperorId, "rescue", 1, contractId);
+  // Sucesos en el espacio: lo que pagan (la bodega la llena el espacio local).
+  space.onEventReward = (emperorId, r) =>
+    void (async () => {
+      if (r.credits || r.reputation) {
+        await deps.db.transaction(async (tx) => {
+          if (r.credits) {
+            await humanity.recompute(tx, emperorId, Date.now());
+            await humanity.credit(tx, emperorId, r.credits, "space_event", null);
+          }
+          if (r.reputation) await reputation.add(emperorId, r.reputation, tx);
+        });
+        if (r.credits) await hub.publishWallet(emperorId);
+      }
+      if (r.xp) {
+        const up = await rank.add(emperorId, r.xp);
+        if (up) await publishRank(emperorId, up.up);
+      }
+    })().catch((err: unknown) => app.log.error(err, "Error al pagar un suceso en el espacio"));
   contracts.rescuePlace = async (emperorId, seed) => {
     const [me] = await deps.db.select({ systemId: emperorsTable.systemId }).from(emperorsTable).where(eq(emperorsTable.id, emperorId)).limit(1);
     const here = me ? findSystem(universeSeed, me.systemId) : null;
