@@ -1314,10 +1314,13 @@ export class SystemView implements View {
 
   /** Rueda: cambia de arma (con Mayús, la distancia de la cámara; lo hace ChaseCamera). */
   private onCombatWheel = (e: WheelEvent) => {
-    if (e.shiftKey || !this.weaponsArmed() || e.deltaY === 0) return;
+    // Mayús + rueda cambia de arma (la rueda sola es el zoom de la cámara).
+    // Con Mayús, algunos navegadores convierten la rueda en desplazamiento horizontal (deltaX).
+    const delta = e.deltaY || e.deltaX;
+    if (!e.shiftKey || !this.weaponsArmed() || delta === 0) return;
     const list = this.weaponList();
     const i = Math.max(0, list.indexOf(spaceStore.getState().weapon));
-    spaceStore.setState({ weapon: list[(i + (e.deltaY > 0 ? 1 : -1) + list.length) % list.length]! });
+    spaceStore.setState({ weapon: list[(i + (delta > 0 ? 1 : -1) + list.length) % list.length]! });
   };
 
   /** Tras fijar un blanco: aviso si es un compañero (hay fuego amigo). */

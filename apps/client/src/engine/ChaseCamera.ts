@@ -102,7 +102,8 @@ export class ChaseCamera {
   };
 
   private onWheel = (e: WheelEvent) => {
-    if (this.first || (this.armed && !e.shiftKey)) return;
+    // La rueda siempre acerca o aleja (petición del usuario); Mayús + rueda cambia de arma.
+    if (this.first || e.shiftKey) return;
     // Con Mayús, algunos navegadores convierten la rueda en desplazamiento horizontal (deltaX).
     const delta = e.deltaY || e.deltaX;
     this.wantDist = Math.max(ChaseCamera.MIN_DIST, Math.min(ChaseCamera.MAX_DIST, this.wantDist * Math.exp(delta * 0.001)));

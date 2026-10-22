@@ -14,7 +14,7 @@ Only the actions used constantly with your hands on the controls have a default 
 
 **The camera and the ship are separate.** The mouse has two modes, switched with the **Mouse** button in the action bar (it shows which one is active):
 
-- **Free camera** (default): dragging with the mouse **moves the camera around the ship** (above, below, to the sides, in front) without turning it; the wheel zooms (with engines on, left click and the wheel are for weapons: then drag with the right button and zoom with Shift + wheel; see [Combat](/wiki/combate#aim-assist)) and [[B]] puts the camera back behind the ship. You fly with the keyboard: arrow keys (pitch and yaw) and [[Q]]/[[E]] (roll).
+- **Free camera** (default): dragging with the mouse **moves the camera around the ship** (above, below, to the sides, in front) without turning it; the wheel zooms (with engines on, left click fires and Shift + wheel switches weapon: then drag with the right button; see [Combat](/wiki/combate#aim-assist)) and [[B]] puts the camera back behind the ship. You fly with the keyboard: arrow keys (pitch and yaw) and [[Q]]/[[E]] (roll).
 - **Mouse flight**: a **virtual reticle** in the centre of the screen. The ship turns towards where the cursor points relative to the centre, without dragging: the further from the centre, the faster (up to the outer circle); inside the small circle (dead zone) it does not turn. The camera follows behind the ship; hold the right button to look around for a moment. Arrow keys and [[Q]]/[[E]] still work.
 
 In **Settings → Controls** you can change the mouse flight sensitivity and dead zone and invert its vertical axis. In the cockpit, in free camera mode, the mouse looks around.
