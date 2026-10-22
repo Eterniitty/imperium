@@ -4,7 +4,7 @@ import { flightSound, playCruiseArrive } from "../audio/flightSfx";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Rng, STAR_CLASSES, hashString } from "@imperium/procgen";
 import type { FlagshipStatus, Fleet, I18nKey, ServerMessage, StarSystemDetail, StarSystemSummary, ShipDesignSnapshot, WeaponKind, WorldPosition } from "@imperium/shared";
-import { ARRIVAL_EDGE, deepLayout, designStats, starHeatDps, defaultPark, moonOffset, parkedPosition, parkAt, PULSE_MAX_SPEED, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
+import { ARRIVAL_EDGE, deepLayout, designStats, starHeatDps, defaultPark, moonOffset, parkedPosition, parkAt, anchorCenter, PULSE_MAX_SPEED, planetAngle, planetSpinAngle, pulseLimitAt, sanitizePark, gravityAt, type GravitySource, systemLayout, type CelestialBody, type MoonLayout, type ParkedOrbit, type PlanetLayout, type SystemLayout } from "@imperium/sim";
 import { resetSpace, shipName, spaceStore, type SelectedWeapon } from "../net/space";
 import { TargetAssist, relationOf, type CannonAim } from "./TargetAssist";
 import { telemetry, type FlightTelemetry } from "./telemetry";
@@ -717,6 +717,12 @@ export class SystemView implements View {
       const moon = travel.anchor.moon !== undefined ? pl?.moons[travel.anchor.moon] : undefined;
       const id = moon && pl ? `moon:${pl.index}:${moon.index}` : pl ? `planet:${pl.index}` : null;
       if (id) window.setTimeout(() => this.ship && this.cruiseTo(id), 0);
+    } else if (travel?.spin && travel.anchor) {
+      // Orbitaba sin piloto: se vuelve a poner en órbita del mismo cuerpo.
+      const pl = this.layout.planets[travel.anchor.planet];
+      const moon = travel.anchor.moon !== undefined ? pl?.moons[travel.anchor.moon] : undefined;
+      const id = moon && pl ? `moon:${pl.index}:${moon.index}` : pl ? `planet:${pl.index}` : null;
+      if (id) window.setTimeout(() => this.ship && this.cruiseTo(id, undefined, true), 0);
     }
   }
 
@@ -1722,7 +1728,23 @@ export class SystemView implements View {
     const stop = spot ? spot.stopRadius : (moon !== undefined ? pl.moons[moon]!.body.radius : pl.size) * 3;
     const tel = telemetry.cruise;
     const eta = tel?.seconds ?? this.autopilot.distance / Math.max(1, PULSE_MAX_SPEED * 0.5) + 10;
-    return { c: { planet, ...(moon !== undefined ? { moon } : {}), stop, eta: Math.min(86_400, Math.max(0, eta)) } };
+    // Ya en órbita: su giro alrededor del cuerpo (sobre +Y), para que siga orbitando con la pestaña cerrada.
+    let orbitW: number | undefined;
+    if (this.autopilot.phase === "orbit" && this.ship && this.flight) {
+      const anchor = { planet, ...(moon !== undefined ? { moon } : {}) };
+      const now = serverNow();
+      const c0 = anchorCenter({ anchor }, now, this.layout);
+      const c1 = anchorCenter({ anchor }, now + 1000, this.layout);
+      if (c0 && c1) {
+        const x = this.ship.position.x - c0[0];
+        const z = this.ship.position.z - c0[2];
+        const vx = this.flight.velocity.x - (c1[0] - c0[0]);
+        const vz = this.flight.velocity.z - (c1[2] - c0[2]);
+        const r2 = x * x + z * z;
+        if (r2 > 1) orbitW = Math.max(-1, Math.min(1, (z * vx - x * vz) / r2));
+      }
+    }
+    return { c: { planet, ...(moon !== undefined ? { moon } : {}), stop, eta: Math.min(86_400, Math.max(0, eta)), ...(orbitW !== undefined ? { orbitW } : {}) } };
   }
 
   /**

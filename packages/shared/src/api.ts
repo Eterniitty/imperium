@@ -389,6 +389,8 @@ export interface FlagshipStatus {
     engines?: boolean;
     /** Crucero sin piloto: de `from` hasta su sitio junto al cuerpo anclado, adonde llega a la hora `until`. */
     travel?: { from: [number, number, number]; until: number };
+    /** En órbita sin piloto: giro (rad/s) alrededor del eje vertical del cuerpo anclado. */
+    spin?: number;
   };
   /**
    * Combustible y munición guardados (lo que se gasta al pilotar llega aparte, en

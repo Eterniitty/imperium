@@ -128,7 +128,7 @@ export const emperors = pgTable("emperors", {
    * el desplazamiento desde su centro), orientación y si se dejó con los motores
    * encendidos (`ParkedOrbit` de `@imperium/sim`). Null: orbita la estrella.
    */
-  parkExtra: jsonb("park_extra").$type<{ anchor?: { planet: number; moon?: number }; q?: [number, number, number, number]; engines?: boolean; travel?: { from: [number, number, number]; until: number } }>(),
+  parkExtra: jsonb("park_extra").$type<{ anchor?: { planet: number; moon?: number }; q?: [number, number, number, number]; engines?: boolean; travel?: { from: [number, number, number]; until: number }; spin?: number }>(),
   /**
    * Recursos de la nave (ver FLAGSHIP_SUPPLIES en content): combustible a la hora
    * `fuelAt` (la reserva de emergencia se regenera sola desde ahí) y munición a la

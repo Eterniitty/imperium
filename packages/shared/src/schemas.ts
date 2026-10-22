@@ -268,7 +268,7 @@ export const ClientMessageSchema = z.union([
     q: QuatSchema,
     v: Vec3Schema,
     e: z.boolean().optional(),
-    c: z.object({ planet: z.number().int().min(0).max(64), moon: z.number().int().min(0).max(64).optional(), stop: z.number().finite().min(0).max(1e10), eta: z.number().finite().min(0).max(86_400) }).optional(),
+    c: z.object({ planet: z.number().int().min(0).max(64), moon: z.number().int().min(0).max(64).optional(), stop: z.number().finite().min(0).max(1e10), eta: z.number().finite().min(0).max(86_400), orbitW: z.number().finite().min(-1).max(1).optional() }).optional(),
   }),
   z.object({ t: z.literal("leave") }),
   z.object({ t: z.literal("fire"), weapon: z.enum(["cannon", "missile"]), dir: Vec3Schema, target: z.string().max(64).optional() }),

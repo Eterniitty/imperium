@@ -9,6 +9,10 @@ IMPERIUM es un MMO espacial 3D para navegador. Cada jugador es un **Emperador in
 - La muerte no termina la partida: el Emperador renace. Lo que se pierde es tiempo, posición y recursos.
 - La guerra no tiene final: no hay "ganador" del servidor, solo imperios que crecen, caen y se reconstruyen.
 
+## Principio: el juego sigue sin el jugador (22-10-2026, petición del usuario)
+
+Cerrar la pestaña no detiene nada. Lo que la nave estaba haciendo (crucero, salto cuántico y su preparación, órbita, escolta, embarques y desembarcos, viajes de flotas, combates, regeneración…) continúa: el **servidor** lo calcula de forma determinista según el tiempo y lo valida. El cliente solo muestra y manda órdenes. En cada función nueva hay que preguntarse qué pasa si se cierra la pestaña a mitad y guardar en el servidor la intención y su tiempo. Nunca hay que fiarse de tiempos ni distancias que diga el cliente, para que no sirva de atajo. Hecho: crucero (`ParkedOrbit.travel`), salto (`emperor.jumpIntent`) y órbita (`ParkedOrbit.spin`).
+
 ## 2. Bucle de juego
 
 1. **Explorar**: enviar exploradores, levantar la niebla de guerra, descubrir sistemas, recursos y anomalías.

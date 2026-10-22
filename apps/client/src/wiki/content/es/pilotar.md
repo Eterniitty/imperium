@@ -78,7 +78,7 @@ El aviso del crucero se minimiza con **▁** en una pastilla («→ destino · l
 
 El crucero **sigue con el mapa galáctico abierto** (M): la nave sigue volando hacia su destino y, al volver (M o «Pilotar»), la encuentras donde va, con el aviso del crucero. Ver otro sistema desde el mapa sí lo deja (la nave queda aparcada).
 
-Y si **cierras la pestaña** en pleno crucero hacia un planeta o una luna, la nave **sigue hasta allí sin ti**: en línea recta, como mucho a la velocidad del pulso (el servidor calcula el tiempo; no puede ser menos de lo que tardaría volando) y gastando el combustible del pulso de todo el trayecto (si no alcanza, se queda donde estaba). Al volver, la encuentras de camino o ya allí; si aún no había llegado, el crucero se reanuda solo.
+Y si **cierras la pestaña** en pleno crucero hacia un planeta o una luna, la nave **sigue hasta allí sin ti**: en línea recta, como mucho a la velocidad del pulso (el servidor calcula el tiempo; no puede ser menos de lo que tardaría volando) y gastando el combustible del pulso de todo el trayecto (si no alcanza, se queda donde estaba). Al volver, la encuentras de camino o ya allí; si aún no había llegado, el crucero se reanuda solo. Si estaba **orbitando**, sigue en órbita alrededor del cuerpo a la velocidad que llevaba y, al volver, retoma la órbita.
 
 Dentro de un sistema (o de una región de espacio profundo) la nave puede ir sola a un sitio o seguir a otra nave. Mueve los mismos mandos que tú —giros, propulsores, impulso y pulso—, así que va a las mismas velocidades y los demás la ven volar con normalidad.
 

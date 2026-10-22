@@ -20,7 +20,7 @@ export interface ParkRow {
   parkY: number | null;
   parkZ: number | null;
   parkAt: Date | null;
-  parkExtra?: { anchor?: { planet: number; moon?: number }; q?: [number, number, number, number]; engines?: boolean; travel?: { from: [number, number, number]; until: number } } | null;
+  parkExtra?: { anchor?: { planet: number; moon?: number }; q?: [number, number, number, number]; engines?: boolean; travel?: { from: [number, number, number]; until: number }; spin?: number } | null;
 }
 
 /** Columnas de los recursos de la nave. */
@@ -37,13 +37,13 @@ interface SuppliesRow {
 export function parkFromRow(row: ParkRow): ParkedOrbit | null {
   if (row.parkX === null || row.parkY === null || row.parkZ === null || row.parkAt === null) return null;
   const x = row.parkExtra ?? {};
-  return { p: [row.parkX, row.parkY, row.parkZ], at: row.parkAt.getTime(), ...(x.anchor ? { anchor: x.anchor } : {}), ...(x.q ? { q: x.q } : {}), ...(x.engines !== undefined ? { engines: x.engines } : {}), ...(x.travel ? { travel: x.travel } : {}) };
+  return { p: [row.parkX, row.parkY, row.parkZ], at: row.parkAt.getTime(), ...(x.anchor ? { anchor: x.anchor } : {}), ...(x.q ? { q: x.q } : {}), ...(x.engines !== undefined ? { engines: x.engines } : {}), ...(x.travel ? { travel: x.travel } : {}), ...(x.spin ? { spin: x.spin } : {}) };
 }
 
 /** Columnas para guardar una órbita de aparcamiento (null: la de por defecto). */
 export function parkColumns(park: ParkedOrbit | null): ParkRow {
   return park
-    ? { parkX: park.p[0], parkY: park.p[1], parkZ: park.p[2], parkAt: new Date(park.at), parkExtra: park.anchor || park.q || park.engines !== undefined || park.travel ? { anchor: park.anchor, q: park.q ? [park.q[0], park.q[1], park.q[2], park.q[3]] : undefined, engines: park.engines, travel: park.travel ? { from: [park.travel.from[0], park.travel.from[1], park.travel.from[2]], until: park.travel.until } : undefined } : null }
+    ? { parkX: park.p[0], parkY: park.p[1], parkZ: park.p[2], parkAt: new Date(park.at), parkExtra: park.anchor || park.q || park.engines !== undefined || park.travel || park.spin ? { anchor: park.anchor, q: park.q ? [park.q[0], park.q[1], park.q[2], park.q[3]] : undefined, engines: park.engines, travel: park.travel ? { from: [park.travel.from[0], park.travel.from[1], park.travel.from[2]], until: park.travel.until } : undefined, spin: park.spin } : null }
     : { parkX: null, parkY: null, parkZ: null, parkAt: null, parkExtra: null };
 }
 
@@ -140,6 +140,7 @@ export class FlagshipService {
         q: park.q ? [park.q[0], park.q[1], park.q[2], park.q[3]] : undefined,
         engines: park.engines,
         travel: park.travel ? { from: [park.travel.from[0], park.travel.from[1], park.travel.from[2]], until: park.travel.until } : undefined,
+        spin: park.spin,
       },
       supplies: {
         fuel: regenFuel(row.fuel, (now - row.fuelAt.getTime()) / 1000),

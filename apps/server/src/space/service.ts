@@ -56,7 +56,7 @@ interface Member {
    */
   park: ParkedOrbit | null;
   /** Crucero en curso que dice el piloto (con su hora): si se desconecta, la nave sigue hasta allí sin él. */
-  cruise?: { planet: number; moon?: number; stop: number; eta: number; at: number };
+  cruise?: { planet: number; moon?: number; stop: number; eta: number; orbitW?: number; at: number };
   /** Aparcada y empujada por otra nave: falta guardar su nueva posición. */
   parkUnsaved?: boolean;
   /** Solo Emperadores pilotados: si el piloto lleva los motores encendidos (se guarda al aparcar). */
@@ -343,7 +343,7 @@ export class SpaceService {
   }
 
   /** Posición recibida de un cliente que pilota en `systemId`. */
-  async pose(client: Client, systemId: string, raw: ShipPose & { e?: boolean; c?: { planet: number; moon?: number; stop: number; eta: number } }): Promise<void> {
+  async pose(client: Client, systemId: string, raw: ShipPose & { e?: boolean; c?: { planet: number; moon?: number; stop: number; eta: number; orbitW?: number } }): Promise<void> {
     // Orientación unitaria (un cuaternión más largo ensancharía el cono de los cañones) y sin campos de más.
     const ql = Math.hypot(...raw.q) || 1;
     const pose: ShipPose & { e?: boolean } = { p: raw.p, q: [raw.q[0] / ql, raw.q[1] / ql, raw.q[2] / ql, raw.q[3] / ql], v: raw.v, e: raw.e };
@@ -1159,6 +1159,16 @@ export class SpaceService {
     const anchor = c.moon !== undefined ? { planet: c.planet, moon: c.moon } : { planet: c.planet };
     const center = anchorCenter({ anchor }, now, layout);
     if (!center) return null;
+    // Ya en órbita: sigue girando alrededor del cuerpo desde donde está (sin gastar pulso: es una órbita).
+    if (c.orbitW !== undefined) {
+      const off: Vec3 = [p[0] - center[0], p[1] - center[1], p[2] - center[2]];
+      // El giro no se fía del cliente: como mucho el doble del de una órbita circular a esa distancia.
+      const planet = layout.planets[c.planet]!;
+      const body = c.moon !== undefined ? (planet.moons[c.moon]?.body ?? planet.body) : planet.body;
+      const r = Math.max(body.radius, Math.hypot(off[0], off[2]));
+      const wMax = 2 * Math.sqrt(body.mu / (r * r * r)) + 1e-4;
+      return { p: off, at: now, anchor, q: m.pose.q, engines: m.engines ?? false, spin: Math.max(-wMax, Math.min(wMax, c.orbitW)) };
+    }
     const d = [p[0] - center[0], p[1] - center[1], p[2] - center[2]] as const;
     const len = Math.hypot(...d) || 1;
     const stop = Math.max(c.stop, 1);

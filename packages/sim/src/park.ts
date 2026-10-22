@@ -30,6 +30,12 @@ export interface ParkedOrbit {
    * anclado, adonde llega a la hora `until`; después, aparcada allí.
    */
   travel?: { from: Vec3Like; until: number };
+  /**
+   * En órbita sin piloto: el desplazamiento `p` gira alrededor del eje vertical
+   * del cuerpo anclado a `spin` rad/s (positivo: según la regla de la mano
+   * derecha sobre +Y), desde la hora `at` (o desde la llegada, si va de camino).
+   */
+  spin?: number;
 }
 
 /** Centro del cuerpo al que está anclada la nave a la hora `t`, o null si no lo está (o no existe). */
@@ -60,6 +66,12 @@ export function parkedPosition(park: ParkedOrbit, t: number, layout?: SystemLayo
     const k = Math.max(0, Math.min(1, (t - park.at) / Math.max(1, park.travel.until - park.at)));
     const f = park.travel.from;
     return [f[0] + (c[0] + park.p[0] - f[0]) * k, f[1] + (c[1] + park.p[1] - f[1]) * k, f[2] + (c[2] + park.p[2] - f[2]) * k];
+  }
+  if (c && park.spin) {
+    const since = (t - (park.travel ? park.travel.until : park.at)) / 1000;
+    const a = park.spin * since;
+    const [x, y, z] = park.p;
+    return [c[0] + x * Math.cos(a) + z * Math.sin(a), c[1] + y, c[2] - x * Math.sin(a) + z * Math.cos(a)];
   }
   if (c) return [c[0] + park.p[0], c[1] + park.p[1], c[2] + park.p[2]];
   const [x, y, z] = park.p;

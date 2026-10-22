@@ -233,7 +233,7 @@ export type ClientMessage =
        * pestaña, la nave sigue hasta allí sin piloto (`stop`: distancia al centro
        * a la que se detiene; `eta`: segundos que faltan).
        */
-      c?: { planet: number; moon?: number; stop: number; eta: number };
+      c?: { planet: number; moon?: number; stop: number; eta: number; /** Ya en órbita: giro alrededor del cuerpo (rad/s, sobre +Y). */ orbitW?: number };
     } & ShipPose)
   /** Deja de pilotar en el sistema (vuelve al mapa o sale al espacio interestelar). */
   | { t: "leave" }
