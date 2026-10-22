@@ -1,4 +1,5 @@
 import { SpeedDial } from "./SpeedDial";
+import { fmtSpeedMs } from "./SettingsPanel";
 import { useEffect, useState } from "react";
 import { engineRef } from "../engineRef";
 import { useTelemetry } from "../engine/telemetry";
@@ -90,11 +91,21 @@ export function CruiseHud() {
       <div className="stat-label">
         {t("cruise.title")} · {t(`cruise.phase.${c.phase}`)}
       </div>
-      <div>
-        {t(c.mode === "follow" ? "cruise.hud.follow" : c.mode === "orbit" ? "cruise.hud.orbit" : "cruise.hud.goto")} <strong>{c.name}</strong> · <span className="mono">{formatDistance(c.distance)}</span>
-        {c.seconds !== null && <span className="mono"> · {formatDuration(c.seconds * 1000)}</span>}
-      </div>
-      <SpeedDial size={64} />
+      {c.phase === "orbit" ? (
+        // En órbita: la velocidad orbital real y la altitud sobre el cuerpo (la distancia al punto que persigue no dice nada).
+        <div>
+          {t("cruise.hud.orbit")} <strong>{c.name}</strong> ·{" "}
+          <span className="mono">{t("cruise.hud.orbitStats", { speed: fmtSpeedMs(tel.speed), altitude: formatDistance(tel.nearest?.distance ?? 0) })}</span>
+        </div>
+      ) : (
+        <>
+          <div>
+            {t(c.mode === "follow" ? "cruise.hud.follow" : c.mode === "orbit" ? "cruise.hud.orbit" : "cruise.hud.goto")} <strong>{c.name}</strong> · <span className="mono">{formatDistance(c.distance)}</span>
+            {c.seconds !== null && <span className="mono"> · {formatDuration(c.seconds * 1000)}</span>}
+          </div>
+          <SpeedDial size={64} />
+        </>
+      )}
       <div className="muted small">
         {t("cruise.hud.cancel")}
         <button className="link-btn" onClick={() => engineRef.current?.cancelCruise()}>
