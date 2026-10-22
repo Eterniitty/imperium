@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { fleetName } from "./fleetName";
 import { getShipClass, type ShipClassId } from "@imperium/content";
-import type { Colony, Fleet } from "@imperium/shared";
+import { PLANET_NAME_MAX, PLANET_NAME_MIN, type Colony, type Fleet, type I18nKey } from "@imperium/shared";
 import { engineRef } from "../engineRef";
 import { connection, useWorld } from "../net/world";
 import { useAliens } from "../state/aliens";
@@ -38,6 +39,8 @@ export function FleetsPanel() {
   const territory = useAliens((s) => s.territory);
   const now = useServerNow();
   const [open, setOpen] = useState(true);
+  const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
+  const [renameError, setRenameError] = useState<I18nKey | null>(null);
   const list = (Object.values(fleets) as Fleet[]).sort((a, b) => a.number - b.number);
   if (list.length === 0) return null;
 
@@ -52,9 +55,38 @@ export function FleetsPanel() {
             const moving = f.travel && f.travel.arriveAt > now ? f.travel : null;
             const at = f.travel && !moving ? f.travel.to : f.location;
             return (
-              <li key={f.id}>
+              <li key={f.id} className="fleet-item">
+                {/* Renombrar la flota: un nombre propio en vez de «Flota N» (vacío: vuelve al número). */}
+                {renaming?.id === f.id ? (
+                  <form
+                    className="fleet-rename"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void connection.command("fleet.rename", { fleetId: f.id, name: renaming.name }).then((err) => (err ? setRenameError(err) : setRenaming(null)));
+                    }}
+                  >
+                    <input autoFocus maxLength={PLANET_NAME_MAX} value={renaming.name} placeholder={t("fleet.name", { n: f.number })} onChange={(e) => setRenaming({ id: f.id, name: e.target.value })} onKeyDown={(e) => e.key === "Escape" && (e.stopPropagation(), setRenaming(null))} />
+                    <button className="btn btn-small" type="submit">
+                      {t("colony.save")}
+                    </button>
+                    {renameError && <span className="auth-error small">{t(renameError, { min: PLANET_NAME_MIN, max: PLANET_NAME_MAX })}</span>}
+                  </form>
+                ) : (
+                  <button
+                    type="button"
+                    className="icon-btn fleet-rename-btn"
+                    title={t("fleet.rename")}
+                    aria-label={t("fleet.rename")}
+                    onClick={() => {
+                      setRenameError(null);
+                      setRenaming({ id: f.id, name: f.name ?? "" });
+                    }}
+                  >
+                    ✎
+                  </button>
+                )}
                 <button className="fleet-row" onClick={() => engineRef.current?.goToFleet(f.id)}>
-                  <strong>{t("fleet.name", { n: f.number })}</strong>
+                  <strong>{fleetName(f, t)}</strong>
                   <span className="muted small">
                     {moving
                       ? t("fleet.travelling", { system: moving.to.systemName, time: formatDuration(moving.arriveAt - now) })

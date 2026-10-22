@@ -1082,3 +1082,16 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .legend.collapsed ul { display: none; }
 button.legend-title { background: none; border: none; padding: 0; width: 100%; text-align: left; }
 .legend.collapsed .legend-title { margin-bottom: 0; }
+
+/* Renombrar flotas: lápiz en la esquina de cada fila y formulario corto. */
+.fleet-item { position: relative; }
+.fleet-rename-btn { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; font-size: 12px; opacity: 0.55; z-index: 1; }
+.fleet-item:hover .fleet-rename-btn { opacity: 1; }
+.fleet-rename { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 4px 0; }
+.fleet-rename input { flex: 1; min-width: 120px; padding: 4px 8px; background: rgba(0, 0, 0, 0.35); border: 1px solid var(--panel-border); border-radius: 4px; color: var(--text); font: inherit; font-size: 13px; }
+
+/* Mapa galáctico: barra vertical de capas y zoom, abajo a la izquierda. */
+.map-layers { position: absolute; left: 12px; bottom: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 5px; animation: hud-rise 0.35s ease-out; }
+.map-layers .action-sep { width: 24px; height: 1px; margin: 3px 0; }
+.map-layer-glyph { font-size: 15px; line-height: 1; }
+.left-col { max-height: calc(100% - var(--topbar-bottom, 62px) - 340px); }

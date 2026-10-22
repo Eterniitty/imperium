@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { fleetName } from "./fleetName";
 import { COMPONENT_IDS, ECONOMY, getRecipe, HUMANS, INSTALLATIONS, RECIPES, SHIP_CLASSES, STOCK_IDS, type StockAmounts, type StockId } from "@imperium/content";
 
 const ZERO_STOCK: StockAmounts = { metal: 0, volatiles: 0, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 };
@@ -145,7 +146,7 @@ export function PlanetColony({ detail, planet, tab = "planet" }: { detail: StarS
               disabled={busy || n < need}
               onClick={() => void run(connection.command("colony.claim", { systemId, planetIndex: planet.index, fleetId: f.id }))}
             >
-              {t("colony.claimWithFleet", { name: t("fleet.name", { n: f.number }), n })}
+              {t("colony.claimWithFleet", { name: fleetName(f, t), n })}
             </button>
           ))}
           {!emperorHere && colonizerFleets.length === 0 && <p className="muted small">{t("colony.claimHint", { n: need })}</p>}

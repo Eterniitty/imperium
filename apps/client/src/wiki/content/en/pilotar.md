@@ -48,6 +48,8 @@ The ship moves with thrusters: the main one pushes forward, weaker ones brake an
 
 {{tabla:teclas-mapa}}
 
+At the bottom left, the map bar: **⊡** zooms to the sector around the focus and **◎** shows the whole galaxy; below, the layers switch on and off (Emperors, fleets, names, faction territories and the distant galaxy), and your choice is remembered. Your fleets stopped in the same system show as a single mark ("Fleet 1 +2"), and names that overlap on screen are grouped ("Name +N"). The star class legend folds with a click.
+
 ### At any time
 
 {{tabla:teclas-general}}

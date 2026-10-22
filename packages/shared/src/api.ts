@@ -122,6 +122,8 @@ export interface Fleet {
   id: string;
   /** Número de la flota dentro del imperio (Flota 1, Flota 2…). */
   number: number;
+  /** Nombre que le ha puesto su dueño; sin él, «Flota N». */
+  name?: string | null;
   location: SystemLocation;
   travel: Travel | null;
   ships: FleetShip[];

@@ -10,6 +10,7 @@
  * El combate es el del servidor (rondas cada 30 s de juego); lo de entre
  * rondas es solo una puesta en escena.
  */
+import { fleetName } from "../ui/fleetName";
 import * as THREE from "three";
 import { contentDictionaries, getFaction, getShipClass, type ShipClassId } from "@imperium/content";
 import type { Battle, Colony, Fleet, Locale, ShipCounts, ShipDesignSnapshot } from "@imperium/shared";
@@ -230,7 +231,7 @@ export class FleetScene {
         g = this.makeGroup(key, expand(counts), OWN_ACCENT);
         this.fleets.set(f.id, g);
       }
-      this.setLabel(g, translate(locale, "fleet.name", { n: f.number }), "#5fd3e6");
+      this.setLabel(g, fleetName(f, (k, p) => translate(locale, k, p)), "#5fd3e6");
       // Cada flota, a un lado del punto de reunión, mirando hacia la estrella.
       g.root.position.set(...fleetSlotPosition([base.x, base.y, base.z], i));
       g.root.lookAt(0, g.root.position.y, 0);

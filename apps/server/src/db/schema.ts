@@ -269,6 +269,8 @@ export const fleets = pgTable(
       .references(() => emperors.id, { onDelete: "cascade" }),
     /** Número dentro del imperio: Flota 1, Flota 2… */
     number: integer("number").notNull(),
+    /** Nombre que le ha puesto su dueño (null: «Flota N»). */
+    name: text("name"),
     systemId: text("system_id").notNull(),
     destSystemId: text("dest_system_id"),
     departAt: timestamp("depart_at", { withTimezone: true }),

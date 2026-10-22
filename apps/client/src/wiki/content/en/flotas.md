@@ -6,6 +6,8 @@ Your ships (except yours, the Emperor's) are grouped into **fleets** ("Fleet 1",
 
 > [!nota] Fleets are **only visible to their owner**. Other Emperors can only detect them in transit with their sensors (see [War](/wiki/guerra#contacts-and-interception)).
 
+You can **rename** each fleet with the ✎ pencil on its row in the fleets panel (empty: back to "Fleet N").
+
 ## Travelling
 
 1. Select a star on the galaxy map.

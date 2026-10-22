@@ -6,6 +6,8 @@ Tus naves (salvo la tuya, la del Emperador) se agrupan en **flotas** («Flota 1�
 
 > [!nota] Las flotas **solo las ve su dueño**. Otros Emperadores solo pueden detectarlas en tránsito con sus sensores (ver [Guerra](/wiki/guerra#contactos-e-interceptacion)).
 
+Puedes **renombrar** cada flota con el lápiz ✎ de su fila en el panel de flotas (vacío: vuelve a «Flota N»).
+
 ## Viajar
 
 1. Selecciona una estrella en el mapa galáctico.

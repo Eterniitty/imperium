@@ -15,6 +15,7 @@ const columns = {
   id: fleets.id,
   emperorId: fleets.emperorId,
   number: fleets.number,
+  name: fleets.name,
   systemId: fleets.systemId,
   destSystemId: fleets.destSystemId,
   departAt: fleets.departAt,
@@ -26,6 +27,7 @@ type Row = {
   id: string;
   emperorId: string;
   number: number;
+  name?: string | null;
   systemId: string;
   destSystemId: string | null;
   departAt: Date | null;
@@ -103,6 +105,7 @@ export class FleetService {
       return {
         id: r.id,
         number: r.number,
+        name: r.name ?? null,
         ...placeFromRow(this.seed, r, now),
         ships: fleetShips,
         cargo: c ? { metal: c.metal, volatiles: c.volatiles, crystal: c.crystal, alloys: c.alloys, humans: c.humans } : { ...EMPTY_CARGO },
@@ -274,6 +277,16 @@ export class FleetService {
   }
 
   /** Orden `fleet.tactic`: cambia la táctica de una flota propia, esté donde esté (en batalla, desde la ronda siguiente). */
+  /** Renombra una flota propia (null: vuelve a «Flota N»). */
+  async rename(emperorId: string, fleetId: string, name: string | null): Promise<boolean> {
+    const rows = await this.db
+      .update(fleets)
+      .set({ name })
+      .where(and(eq(fleets.id, fleetId), eq(fleets.emperorId, emperorId)))
+      .returning({ id: fleets.id });
+    return rows.length > 0;
+  }
+
   async setTactic(emperorId: string, fleetId: string, tactic: FleetTactic): Promise<boolean> {
     const rows = await this.db
       .update(fleets)

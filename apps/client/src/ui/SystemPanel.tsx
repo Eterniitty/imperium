@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { fleetName } from "./fleetName";
 import { distance, type Colony, type Fleet, type I18nKey } from "@imperium/shared";
 import { engineRef } from "../engineRef";
 import { connection, useWorld } from "../net/world";
@@ -214,7 +215,7 @@ export function SystemPanel() {
           <ul className="emperor-list">
             {fleetsHere.map((f) => (
               <li key={f.id} className="fleet">
-                <strong>{t("fleet.name", { n: f.number })}</strong>
+                <strong>{fleetName(f, t)}</strong>
                 <span className="muted small">
                   {t("fleet.ships", { count: f.ships.length })}
                   {f.mercenaryUntil !== null && <> · {t("mercenary.until", { time: formatDuration(f.mercenaryUntil - now) })}</>}
@@ -229,7 +230,7 @@ export function SystemPanel() {
               .filter((f) => f.capacity.resources + f.capacity.humans > 0)
               .map((f) => (
                 <div key={f.id}>
-                  <h4 className="logistics-title">{t("logistics.title", { name: t("fleet.name", { n: f.number }) })}</h4>
+                  <h4 className="logistics-title">{t("logistics.title", { name: fleetName(f, t) })}</h4>
                   <FleetLogistics fleet={f} colony={colonyHere} />
                 </div>
               ))}
@@ -260,7 +261,7 @@ export function SystemPanel() {
         <div className="actions">
           {sendable.map((f) => (
             <button key={f.id} className="btn" onClick={() => void sendFleet(f.id, selected.id)} disabled={moving}>
-              {t("fleet.send", { name: t("fleet.name", { n: f.number }) })}
+              {t("fleet.send", { name: fleetName(f, t) })}
             </button>
           ))}
         </div>

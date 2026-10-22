@@ -600,6 +600,11 @@ export class Engine {
   }
 
   /** Centra la vista en una flota propia y selecciona su sistema (o su destino, si viaja). */
+  /** Zoom del mapa galáctico: el sector alrededor del foco o la galaxia entera. */
+  mapZoom(level: "sector" | "galaxy"): void {
+    if (this.active === this.galaxy) this.galaxy.zoomTo(level);
+  }
+
   goToFleet(fleetId: string): void {
     const fleet = worldStore.getState().fleets[fleetId];
     if (!fleet) return;

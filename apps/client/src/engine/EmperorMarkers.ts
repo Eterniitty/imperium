@@ -1,9 +1,11 @@
 import * as THREE from "three";
-import { translate, type Emperor, type EmperorView, type Fleet } from "@imperium/shared";
+import { fleetName } from "../ui/fleetName";
+import { translate, type Emperor, type EmperorView, type Fleet, type Locale } from "@imperium/shared";
 import { positionAt } from "@imperium/sim";
 import { serverNow, worldStore } from "../net/world";
 import { authStore } from "../state/auth";
 import { gameStore } from "../state/store";
+import { mapLayersStore } from "../state/mapLayers";
 import type { SectorManager } from "./SectorManager";
 import { labelTexture, ringTexture } from "./textures";
 
@@ -53,14 +55,37 @@ export class EmperorMarkers {
         const name = e.name;
         return { e, name, color: mine ? OWN_COLOR : OTHER_COLOR, size: mine ? 0.075 : 0.06, online };
       }),
-      ...(Object.values(fleets) as Fleet[]).map((f) => ({
-        e: f,
-        name: translate(locale, "fleet.name", { n: f.number }),
-        color: FLEET_COLOR,
-        size: 0.045,
-        online: true,
-      })),
+      ...this.fleetItems(Object.values(fleets) as Fleet[], locale),
     ];
+  }
+
+  /**
+   * Flotas propias: las paradas en un mismo sistema van en un solo marcador
+   * («Flota 1 +2»: el sistema queda marcado); las que viajan, cada una con su línea.
+   */
+  private fleetItems(list: Fleet[], locale: Locale): Array<{ e: Pick<Emperor, "id" | "location" | "travel">; name: string; color: string; size: number; online: boolean }> {
+    const now = serverNow();
+    const bySystem = new Map<string, Fleet[]>();
+    const out: Array<{ e: Pick<Emperor, "id" | "location" | "travel">; name: string; color: string; size: number; online: boolean }> = [];
+    const name = (f: Fleet) => fleetName(f, (k, p) => translate(locale, k, p));
+    for (const f of list.sort((a, b) => a.number - b.number)) {
+      if (f.travel && f.travel.arriveAt > now) out.push({ e: f, name: name(f), color: FLEET_COLOR, size: 0.045, online: true });
+      else {
+        const at = f.travel ? f.travel.to.systemId : f.location.systemId;
+        bySystem.set(at, [...(bySystem.get(at) ?? []), f]);
+      }
+    }
+    for (const [systemId, here] of bySystem) {
+      const first = here[0]!;
+      out.push({
+        e: { id: `fleets:${systemId}`, location: first.travel ? first.travel.to : first.location, travel: null },
+        name: here.length > 1 ? `${name(first)} +${here.length - 1}` : name(first),
+        color: FLEET_COLOR,
+        size: 0.05,
+        online: true,
+      });
+    }
+    return out;
   }
 
   update(camera: THREE.Camera): void {
@@ -69,7 +94,9 @@ export class EmperorMarkers {
     // Rótulos que coinciden en pantalla (las IA del Núcleo, la flota junto a su Emperador…) se agrupan en uno solo,
     // «Nombre +N»; antes se apilaban hacia arriba y tapaban el mapa. Primero el propio Emperador, luego las flotas.
     const myId = worldStore.getState().myEmperorId ?? authStore.getState().emperor?.id;
+    const layers = mapLayersStore.getState();
     const items = this.list()
+      .filter(({ color }) => (color === FLEET_COLOR ? layers.fleets : layers.emperors))
       .map((item) => ({ item, pos: this.sectors.toScene(positionAt(item.e, now)) }))
       .sort((a, b) => Number(b.item.e.id === myId) - Number(a.item.e.id === myId));
     const heads: Array<{ ndc: THREE.Vector3; index: number; extra: number }> = [];
@@ -91,7 +118,7 @@ export class EmperorMarkers {
       const h = headOf.get(i)!;
       const extra = h >= 0 ? heads[h]!.extra : 0;
       const m = this.marker(extra > 0 ? { ...item, name: `${item.name} +${extra}` } : item);
-      m.label.visible = h >= 0;
+      m.label.visible = h >= 0 && layers.labels;
       m.label.center.set(0.5, -1.1);
       m.ring.position.copy(pos);
       m.label.position.copy(pos);

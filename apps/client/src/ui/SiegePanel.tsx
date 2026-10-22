@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { fleetName } from "./fleetName";
 import type { Fleet, I18nKey, PlanetClaim, Siege } from "@imperium/shared";
 import { INSTALLATIONS, SIEGE } from "@imperium/content";
 import { siegePower } from "@imperium/sim";
@@ -66,7 +67,7 @@ export function SiegeCard({ siege }: { siege: Siege }) {
   const aboard = Math.floor(liveHumans(humans, now));
   const flagshipHere = !travel && emperorAt === siege.systemId && aboard >= 1;
   const options: Array<{ id: string; label: string }> = [
-    ...troopFleets.map((f) => ({ id: f.id, label: t("siege.fleetTroops", { fleet: t("fleet.name", { n: f.number }), n: fmtInt(troopsOf(f)) }) })),
+    ...troopFleets.map((f) => ({ id: f.id, label: t("siege.fleetTroops", { fleet: fleetName(f, t), n: fmtInt(troopsOf(f)) }) })),
     ...(flagshipHere ? [{ id: "flagship", label: t("siege.flagship", { n: fmtInt(aboard) }) }] : []),
   ];
   const chosen = options.find((o) => o.id === source)?.id ?? options[0]?.id;

@@ -1,4 +1,5 @@
 import { engineRef } from "../engineRef";
+import { fleetName } from "./fleetName";
 import { TacticPicker } from "./TacticPicker";
 import { useCallback, useEffect, useState } from "react";
 import { ALIEN_AI } from "@imperium/content";
@@ -155,7 +156,7 @@ export function WarPanel() {
                         >
                           {idle.map((f) => (
                             <option key={f.id} value={f.id}>
-                              {t("fleet.name", { n: f.number })}
+                              {fleetName(f, t)}
                             </option>
                           ))}
                         </select>{" "}

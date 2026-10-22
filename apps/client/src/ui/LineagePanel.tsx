@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { fleetName } from "./fleetName";
 import { COMMANDER_BONUS, HEIR_DOCTRINES, HEIRS, STOCK_IDS } from "@imperium/content";
 import type { Colony, Fleet, HeirDoctrineId, HeirView, I18nKey, LineageStatus } from "@imperium/shared";
 import { connection, useWorld } from "../net/world";
@@ -209,7 +210,7 @@ function HeirRow({ heir, lineage, colonies, now, busy, run }: { heir: HeirView; 
             <option value="">{t("lineage.commandNone")}</option>
             {fleetList.map((f) => (
               <option key={f.id} value={f.id}>
-                {t("fleet.name", { n: f.number })}
+                {fleetName(f, t)}
               </option>
             ))}
           </select>

@@ -25,6 +25,7 @@ import { EconomyPanel } from "./EconomyPanel";
 import { Legend } from "./Legend";
 import { PlanetPanel } from "./PlanetPanel";
 import { PlanetWindow } from "./PlanetWindow";
+import { MapLayersPanel } from "./MapLayersPanel";
 import { QuantumHud } from "./QuantumHud";
 import { QuantumPanel } from "./QuantumPanel";
 import { CruiseHud, CruisePanel } from "./CruisePanel";
@@ -119,6 +120,7 @@ export function App() {
               <ColoniesPanel />
             </div>
             <SystemPanel />
+            <MapLayersPanel />
             {!hasSelection && <Legend />}
           </>
         ) : (

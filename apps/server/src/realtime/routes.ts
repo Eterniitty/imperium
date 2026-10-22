@@ -9,7 +9,7 @@ import {
   type ServerMessage,
   type WsTicketResponse,
 } from "@imperium/shared";
-import { ClientMessageSchema } from "@imperium/shared/schemas";
+import { ClientMessageSchema, PlanetNameSchema } from "@imperium/shared/schemas";
 import { eq } from "drizzle-orm";
 import { emperors as emperorsTable } from "../db/schema";
 import { accountFromRequest, sessionCookieName } from "../auth/routes";
@@ -438,6 +438,15 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     const res = await fleets.pilotable(owner.emperorId, msg.args.fleetId, msg.args.shipId);
                     if (!res.ok) return res;
                     space.startRemote(client, res.pilot);
+                    return { ok: true } as const;
+                  }
+                  case "fleet.rename": {
+                    const raw = msg.args.name.trim();
+                    const parsed = raw === "" ? null : PlanetNameSchema.safeParse(raw);
+                    if (parsed && !parsed.success) return { ok: false, error: "invalid_name" } as const;
+                    const ok = await fleets.rename(owner.emperorId, msg.args.fleetId, parsed ? parsed.data : null);
+                    if (!ok) return { ok: false, error: "no_fleet" } as const;
+                    await hub.publishFleet(owner.emperorId, msg.args.fleetId);
                     return { ok: true } as const;
                   }
                   case "fleet.tactic": {

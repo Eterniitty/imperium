@@ -130,6 +130,8 @@ export interface CommandArgs {
   "fleet.pilot": { fleetId: string; shipId: string };
   /** Cambia la táctica de una flota propia en las batallas por rondas (desde cualquier sitio; en plena batalla vale desde la ronda siguiente). */
   "fleet.tactic": { fleetId: string; tactic: FleetTactic };
+  /** Renombrar una flota propia (vacío: vuelve a «Flota N»). */
+  "fleet.rename": { fleetId: string; name: string };
   /**
    * Intercepta una flota enemiga visible en tránsito: la flota propia viaja al
    * destino de la otra y combaten allí al coincidir.

@@ -48,6 +48,8 @@ La nave se mueve con propulsores: el principal empuja hacia delante, otros más 
 
 {{tabla:teclas-mapa}}
 
+Abajo a la izquierda, la barra del mapa: **⊡** acerca al sector alrededor del foco y **◎** muestra la galaxia entera; debajo se encienden o apagan las capas (Emperadores, flotas, nombres, territorios de las facciones y la galaxia lejana), y se recuerda lo elegido. Tus flotas paradas en un mismo sistema salen en una sola marca («Flota 1 +2»), y los nombres que coinciden en pantalla se agrupan («Nombre +N»). La leyenda de las clases estelares se pliega con un clic.
+
 ### En cualquier momento
 
 {{tabla:teclas-general}}

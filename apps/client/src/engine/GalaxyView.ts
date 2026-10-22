@@ -1,6 +1,8 @@
 import * as THREE from "three";
+import { mapLayersStore } from "../state/mapLayers";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import {
+  GALAXY,
   SECTOR_SIZE,
   sectorOrigin,
   worldToSector,
@@ -252,6 +254,14 @@ export class GalaxyView implements View {
     return true;
   }
 
+  /** Zoom del mapa: «sector» (unos cientos de años luz alrededor del foco) o la galaxia entera desde su centro. */
+  zoomTo(level: "sector" | "galaxy"): void {
+    this.setFlightMode(false);
+    this.follow(null);
+    if (level === "sector") this.flyTo(this.focusWorld(), 140);
+    else this.goTo(GALAXY.center, 26_000);
+  }
+
   focusSelected(): void {
     const sel = gameStore.getState().selected;
     if (!sel) return;
@@ -311,6 +321,9 @@ export class GalaxyView implements View {
 
     this.updateMarkers();
     this.cloud.update(this.origin, this.camera.position.distanceTo(this.controls.target));
+    const layers = mapLayersStore.getState();
+    if (!layers.galaxy) this.cloud.object.visible = false;
+    this.territory.group.visible = layers.territory;
     this.backdrop.follow(this.camera);
   }
 
