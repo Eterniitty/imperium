@@ -1,7 +1,7 @@
 import { anyFleetSpeedLyPerHour, techBonus, type TechLevels, FLEET_TACTICS, getAnyShipClass, getShipClass, MOTHERSHIP_HANGAR, MOTHERSHIP_WORKSHOP, SHIP_CLASSES, SHIP_PASSENGERS, type ShipClassId } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import { distance, type Cargo, type CommandError, type Fleet, type FleetRoute, type FleetTactic } from "@imperium/shared";
-import { isTravelling, refuelCost, shipFuel, shipFuelMax, travelDurationMs } from "@imperium/sim";
+import { fleetTravelSpeed, isTravelling, refuelCost, shipFuel, shipFuelMax, travelDurationMs } from "@imperium/sim";
 import type { ColonyService } from "../colony/service";
 import { and, asc, eq, inArray, isNull, lte, or } from "drizzle-orm";
 import type { ServerConfig } from "../config";
@@ -326,7 +326,7 @@ export class FleetService {
         for (const s of current.ships) await tx.update(ships).set({ fuel: Math.max(0, s.fuel - ly) }).where(eq(ships.id, s.id));
       }
 
-      const speed = anyFleetSpeedLyPerHour(current.ships.map((s) => s.classId)) * techBonus(tech, "propulsion") * this.config.TIME_SCALE;
+      const speed = fleetTravelSpeed(current.ships) * techBonus(tech, "propulsion") * this.config.TIME_SCALE;
       const arriveAt = now + travelDurationMs(current.location.position, dest.position, speed);
       // Salir de un sistema donde combate es huir: deja la batalla.
       const updated = await tx

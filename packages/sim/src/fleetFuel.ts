@@ -3,7 +3,7 @@
  * `@imperium/content`). El combustible de cada nave se mide en años luz de
  * alcance; `null` en la base de datos es «depósito lleno».
  */
-import { FLEET_FUEL, fleetFuelMax, getShipClass, type ShipClassId } from "@imperium/content";
+import { anyFleetSpeedLyPerHour, FLEET_FUEL, fleetFuelMax, getShipClass, TRAVEL_SPEED_SCALE, type ShipClassId } from "@imperium/content";
 import { designStats, type ShipDesign } from "./shipDesign";
 
 export interface FuelShip {
@@ -35,4 +35,18 @@ export function refuelCost(s: FuelShip): number {
   const missing = shipFuelMax(s) - shipFuel(s);
   const hull = s.design ? designStats(s.design).hull : (getShipClass(s.classId as ShipClassId)?.hull ?? 100);
   return Math.ceil(missing * FLEET_FUEL.volatilesPerLy * (hull / 100));
+}
+
+/**
+ * Velocidad entre estrellas de una flota (a.l./h, sin la tecnología): la de su
+ * nave más lenta. Las del Astillero van a la de su motor cuántico (sin él no
+ * viajan, pero el combustible ya lo impide); las de serie, a la de su clase.
+ */
+export function fleetTravelSpeed(ships: ReadonlyArray<{ classId: string; design?: ShipDesign | null }>): number {
+  let speed = Infinity;
+  for (const s of ships) {
+    const v = s.design ? (designStats(s.design).riftLyPerHour ?? 0) * TRAVEL_SPEED_SCALE : anyFleetSpeedLyPerHour([s.classId]);
+    speed = Math.min(speed, v > 0 ? v : Infinity);
+  }
+  return Number.isFinite(speed) ? speed : anyFleetSpeedLyPerHour(ships.map((s) => s.classId));
 }

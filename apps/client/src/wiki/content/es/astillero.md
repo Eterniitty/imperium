@@ -16,7 +16,8 @@ Guarda el diseño y, abajo, elige la **colonia** y pulsa **Construir aquí**. Ha
 - Se construye el diseño **tal como estaba al encargarlo**: si luego lo cambias o lo borras, la nave encargada no cambia.
 - Si **cancelas** el encargo, recuperas todo si aún no había empezado y una parte si ya estaba en marcha (recursos y créditos).
 - En las **batallas de flotas por rondas** mandan sus piezas: ataque = 0,4 × el daño por segundo de sus armas, escudo por ronda = la mitad de la recarga más el 1 % de la capacidad, un disparo por arma y un tamaño como blanco según el casco. Lleva el **casco** y las **plazas** de sus piezas.
-- Por ahora usa el **modelo 3D** y el **escáner** de la clase de serie más parecida a su casco (corbeta, fragata, crucero o portanaves).
+- Entre estrellas viaja a la **velocidad de su motor cuántico** y con el **alcance de sus depósitos** (ver [Flotas](/wiki/flotas#combustible)).
+- Su **modelo 3D** sale de sus piezas (motores, torretas, bodegas, hangar…) sobre la forma de la clase de serie más parecida a su casco; por ahora usa el **escáner** de esa clase.
 
 ## Las reglas
 
@@ -35,4 +36,4 @@ Guarda el diseño y, abajo, elige la **colonia** y pulsa **Construir aquí**. Ha
 {{tabla:piezas}}
 
 > [!dev]
-> **En desarrollo**: que todas las estadísticas del diseño manden en el vuelo, el salto y el combate, y el modelo 3D de la nave según sus piezas.
+> **En desarrollo**: que sus estadísticas manden también al pilotarla y en el combate en tiempo real.

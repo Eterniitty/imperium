@@ -16,7 +16,8 @@ Save the design and, below, choose the **colony** and press **Build here**. The 
 - The design is built **as it was when ordered**: if you change or delete it later, the ordered ship does not change.
 - If you **cancel** the order, you get everything back if it had not started and part of it if it had (resources and credits).
 - In **round-based fleet battles** its parts rule: attack = 0.4 × its weapons' damage per second, shield per round = half the recharge plus 1 % of the capacity, one shot per weapon and a target size by hull. It has the **hull points** and **berths** of its parts.
-- For now it uses the **3D model** and **scanner** of the stock class closest to its hull (corvette, frigate, cruiser or carrier).
+- Between stars it travels at its **quantum drive's speed** and with the **range of its tanks** (see [Fleets](/wiki/flotas#fuel)).
+- Its **3D model** comes from its parts (engines, turrets, holds, hangar…) on the shape of the stock class closest to its hull; for now it uses that class's **scanner**.
 
 ## The rules
 
@@ -35,4 +36,4 @@ Save the design and, below, choose the **colony** and press **Build here**. The 
 {{tabla:piezas}}
 
 > [!dev]
-> **In development**: all of the design's statistics ruling flight, jumps and combat, and the ship's 3D model built from its parts.
+> **In development**: its statistics also ruling when piloting it and in real-time combat.
