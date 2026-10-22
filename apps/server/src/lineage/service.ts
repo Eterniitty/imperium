@@ -32,7 +32,7 @@ import type { FastifyBaseLogger } from "fastify";
 import type { ColonyService } from "../colony/service";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { battles, battleSides, colonies, emperorDeaths, emperors, heirs, installations, resourceLedger } from "../db/schema";
+import { battles, battleSides, colonies, emperorDeaths, emperors, fleets, heirs, installations, resourceLedger } from "../db/schema";
 import { discoverAround } from "../discovery/service";
 import { findSystem, pickSpawnSystem, placeFromRow, spawnCandidates } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
@@ -316,6 +316,7 @@ export class LineageService {
       builds: heir.builds,
       state: heir.state as HeirView["state"],
       readyAt: heir.readyAt?.getTime() ?? null,
+      fleetId: heir.fleetId ?? null,
     }));
     const deaths: DeathRecord[] = deathRows.map((d) => ({
       id: d.id,
@@ -452,6 +453,23 @@ export class LineageService {
   }
 
   /** Orden `heir.assign`: el Heredero nacido pasa a gobernar otra colonia propia sin Heredero. */
+  /** Orden `heir.command`: el Heredero manda una flota propia (una por Heredero y un comandante por flota). */
+  async command(emperorId: string, heirId: string, fleetId: string | null): Promise<Result> {
+    return this.db.transaction(async (tx): Promise<Result> => {
+      const [heir] = await tx.select().from(heirs).where(and(eq(heirs.id, heirId), eq(heirs.emperorId, emperorId))).for("update").limit(1);
+      if (!heir) return { ok: false, error: "no_heir" };
+      if (heir.state !== "active") return { ok: false, error: "heir_not_ready" };
+      if (fleetId) {
+        const [fleet] = await tx.select({ id: fleets.id }).from(fleets).where(and(eq(fleets.id, fleetId), eq(fleets.emperorId, emperorId))).limit(1);
+        if (!fleet) return { ok: false, error: "no_fleet" };
+        // Un comandante por flota: el que hubiera la deja.
+        await tx.update(heirs).set({ fleetId: null }).where(and(eq(heirs.fleetId, fleetId), eq(heirs.emperorId, emperorId)));
+      }
+      await tx.update(heirs).set({ fleetId }).where(eq(heirs.id, heirId));
+      return { ok: true, fx: { emperorId, colonies: [], rebirth: null } };
+    });
+  }
+
   async assign(emperorId: string, heirId: string, colonyId: string): Promise<Result> {
     return this.db.transaction(async (tx): Promise<Result> => {
       const [heir] = await tx.select().from(heirs).where(and(eq(heirs.id, heirId), eq(heirs.emperorId, emperorId))).for("update").limit(1);

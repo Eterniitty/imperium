@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { HEIR_DOCTRINES, HEIRS, STOCK_IDS } from "@imperium/content";
-import type { Colony, HeirDoctrineId, HeirView, I18nKey, LineageStatus } from "@imperium/shared";
+import { COMMANDER_BONUS, HEIR_DOCTRINES, HEIRS, STOCK_IDS } from "@imperium/content";
+import type { Colony, Fleet, HeirDoctrineId, HeirView, I18nKey, LineageStatus } from "@imperium/shared";
 import { connection, useWorld } from "../net/world";
 import { gameStore, useGame, useT } from "../state/store";
 import { fmtInt } from "./colonies";
@@ -175,6 +175,9 @@ function HeirRow({ heir, lineage, colonies, now, busy, run }: { heir: HeirView; 
   const chosen = free.find((c) => c.id === target)?.id ?? free[0]?.id;
   const cooldown = lineage.incarnateReadyAt - now;
   const active = heir.state === "active";
+  const fleets = useWorld((s) => s.fleets);
+  const fleetList = (Object.values(fleets) as Fleet[]).sort((a, b) => a.number - b.number);
+  const bonus = COMMANDER_BONUS[heir.doctrine];
   return (
     <li className="lineage-heir">
       <div>
@@ -198,6 +201,20 @@ function HeirRow({ heir, lineage, colonies, now, busy, run }: { heir: HeirView; 
         </label>
       </div>
       <p className="muted small">{t(`doctrine.${heir.doctrine}.desc`)}</p>
+      {/* Comandante: manda una flota (bonificación en las batallas según su doctrina). */}
+      {active && fleetList.length > 0 && (
+        <label className="small" title={t("lineage.commandTitle", { attack: Math.round((bonus.attack - 1) * 100), shield: Math.round((bonus.shield - 1) * 100) })}>
+          {t("lineage.command")}{" "}
+          <select value={heir.fleetId ?? ""} disabled={busy} onChange={(e) => run(connection.command("heir.command", { heirId: heir.id, fleetId: e.target.value || null }))}>
+            <option value="">{t("lineage.commandNone")}</option>
+            {fleetList.map((f) => (
+              <option key={f.id} value={f.id}>
+                {t("fleet.name", { n: f.number })}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       {active && (
         <div className="lineage-actions">
           {free.length > 0 && (

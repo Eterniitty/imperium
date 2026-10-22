@@ -57,6 +57,7 @@ import {
   TECH,
   TECH_TREES,
   CRISES,
+  COMMANDER_BONUS,
 
   type MetaStat,
   type PartCost,
@@ -255,6 +256,15 @@ export const GEN_TABLES: Record<string, Builder> = {
         ])
         .filter((r) => r[2]),
     ),
+  }),
+
+  comandantes: (t) => ({
+    head: [t("wiki.col.concept"), t("wiki.col.attack"), t("shipEditor.stat.shield")],
+    rows: (Object.keys(COMMANDER_BONUS) as Array<keyof typeof COMMANDER_BONUS>).map((d) => [
+      t(`doctrine.${d}`),
+      `+${Math.round((COMMANDER_BONUS[d].attack - 1) * 100)} %`,
+      `+${Math.round((COMMANDER_BONUS[d].shield - 1) * 100)} %`,
+    ]),
   }),
 
   crisis: (t, locale) => ({

@@ -1,0 +1,2 @@
+ALTER TABLE "heirs" ADD COLUMN "fleet_id" uuid;--> statement-breakpoint
+ALTER TABLE "heirs" ADD CONSTRAINT "heirs_fleet_id_fleets_id_fk" FOREIGN KEY ("fleet_id") REFERENCES "public"."fleets"("id") ON DELETE set null ON UPDATE no action;

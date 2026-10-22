@@ -55,6 +55,12 @@ Hay **un Heredero por colonia**. Para gestar otro en la misma Cuna, envía el qu
 
 Si la colonia de un Heredero **cambia de manos** (conquista u ocupación), el Heredero **muere** con ella.
 
+### Comandantes
+
+Un Heredero nacido puede, además de gobernar su colonia, **mandar una flota** (en el panel de Linaje, «Manda:»). Cada flota tiene como mucho un comandante. En las **batallas de flotas por rondas**, la flota que manda gana según la doctrina del Heredero:
+
+{{tabla:comandantes}}
+
 ## Encarnarse
 
 Puedes **encarnarte** en un Heredero nacido: tu Emperador despierta en él, **en su colonia**, con su nave junto al planeta. El Heredero **se consume** y la colonia se queda sin gobernador.

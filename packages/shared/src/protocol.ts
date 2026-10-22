@@ -166,6 +166,8 @@ export interface CommandArgs {
    * su nave) y el Heredero se consume. Estando muerto, en vez de esperar la gestación.
    */
   "heir.incarnate": { heirId: string };
+  /** Comandante: el Heredero manda una flota propia (null: deja de mandarla). */
+  "heir.command": { heirId: string; fleetId: string | null };
 }
 export type CommandOp = keyof CommandArgs;
 

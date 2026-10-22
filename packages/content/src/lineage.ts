@@ -11,6 +11,7 @@
  *
  * Los tiempos son de juego (el servidor los divide por `TIME_SCALE`).
  */
+import type { HeirDoctrineId } from "@imperium/shared";
 import type { InstallationId, StockAmounts } from "./economy";
 import type { AiPersonality } from "./aiEmperors";
 
@@ -87,6 +88,17 @@ export const HEIR_DOCTRINES: readonly HeirDoctrineDefinition[] = [
   { id: "bastion", nameKey: "doctrine.bastion", extraction: 1, defense: 1.3, buildPriority: ["defense_platform", "power_plant", "mine"] },
   { id: "balanced", nameKey: "doctrine.balanced", extraction: 1.05, defense: 1.1, buildPriority: ["mine", "power_plant", "defense_platform", "refinery"] },
 ];
+
+/**
+ * Comandantes («la guerra que evoluciona»): un Heredero nacido puede mandar una
+ * flota además de gobernar su colonia. En las batallas por rondas, la flota
+ * gana ataque y escudo según su doctrina.
+ */
+export const COMMANDER_BONUS: Record<HeirDoctrineId, { attack: number; shield: number }> = {
+  prosperity: { attack: 1.15, shield: 1 },
+  bastion: { attack: 1, shield: 1.2 },
+  balanced: { attack: 1.1, shield: 1.1 },
+};
 
 export function getDoctrine(id: string | null | undefined): HeirDoctrineDefinition | undefined {
   return HEIR_DOCTRINES.find((d) => d.id === id);

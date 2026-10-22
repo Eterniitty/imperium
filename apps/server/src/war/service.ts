@@ -1,5 +1,5 @@
 import { randomInt } from "node:crypto";
-import { CONTACT_SENSORS, EMPEROR_FLAGSHIP, FLAGSHIP_BATTLE, FLEET_BATTLE, CARGO_STOCK_IDS, getShipClass, techBonus, type ShipClassId, type TechLevels } from "@imperium/content";
+import { COMMANDER_BONUS, CONTACT_SENSORS, EMPEROR_FLAGSHIP, FLAGSHIP_BATTLE, FLEET_BATTLE, CARGO_STOCK_IDS, getShipClass, techBonus, type ShipClassId, type TechLevels } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import {
   distance,
@@ -8,6 +8,7 @@ import {
   type BattleRoundReport,
   type Cargo,
   type FleetContact,
+  type HeirDoctrineId,
   type ShipCounts,
   type WorldPosition,
 } from "@imperium/shared";
@@ -16,7 +17,7 @@ import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, ne, or, sql } from 
 import type { ColonyService } from "../colony/service";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
-import { battleRounds, battles, battleSides, colonies, emperorAllies, emperors, fleetCargo, fleets, resourceLedger, ships } from "../db/schema";
+import { battleRounds, battles, battleSides, colonies, emperorAllies, emperors, fleetCargo, fleets, heirs, resourceLedger, ships } from "../db/schema";
 import { fleetScannerRangeLy } from "../discovery/service";
 import { findSystem, inHumanCore, placeFromRow } from "../emperor/world";
 import { schedule, type Tx } from "../events/queue";
@@ -53,6 +54,18 @@ async function techOf(tx: Tx, ids: string[]): Promise<Map<string, TechLevels>> {
   if (ids.length === 0) return new Map();
   const rows = await tx.select({ id: emperors.id, tech: emperors.tech }).from(emperors).where(inArray(emperors.id, ids));
   return new Map(rows.map((r) => [r.id, r.tech as TechLevels]));
+}
+
+/** Comandantes de unas flotas: el multiplicador de su doctrina (`COMMANDER_BONUS`). */
+async function commandersOf(tx: Tx, fleetIds: string[]): Promise<Map<string, { attack: number; shield: number }>> {
+  if (fleetIds.length === 0) return new Map();
+  const rows = await tx.select({ fleetId: heirs.fleetId, doctrine: heirs.doctrine }).from(heirs).where(and(inArray(heirs.fleetId, fleetIds), eq(heirs.state, "active")));
+  return new Map(rows.filter((r) => r.fleetId).map((r) => [r.fleetId!, COMMANDER_BONUS[r.doctrine as HeirDoctrineId] ?? { attack: 1, shield: 1 }]));
+}
+
+/** Aplica el comandante de su flota a una nave de batalla. */
+function withCommander(ship: BattleShip, bonus: { attack: number; shield: number } | undefined): BattleShip {
+  return bonus ? { ...ship, attack: ship.attack * bonus.attack, shield: ship.shield * bonus.shield } : ship;
 }
 
 /** Aplica la tecnología del dueño a una nave de batalla. */
@@ -245,13 +258,14 @@ export class WarService {
       .from(ships)
       .where(inArray(ships.fleetId, rows.map((r) => r.id)));
     const techs = await techOf(tx, [...new Set(rows.map((r) => r.emperorId))]);
+    const commanders = await commandersOf(tx, rows.map((r) => r.id));
     const byEmperor = new Map<string, { fleetIds: string[]; ships: BattleShip[]; flagship: BattleShip | null }>();
     for (const r of rows) {
       const own = shipRows.filter((s) => s.fleetId === r.id);
       if (own.length === 0) continue;
       const e = byEmperor.get(r.emperorId) ?? { fleetIds: [], ships: [], flagship: null };
       e.fleetIds.push(r.id);
-      e.ships.push(...own.map((s) => withTech(battleShip(s.id, s.classId, s.hull, 1, "balanced", s.design), techs.get(r.emperorId))));
+      e.ships.push(...own.map((s) => withCommander(withTech(battleShip(s.id, s.classId, s.hull, 1, "balanced", s.design), techs.get(r.emperorId)), commanders.get(r.id))));
       byEmperor.set(r.emperorId, e);
     }
     // Fase 10: la nave del Emperador presente combate con su escolta o, fuera del Núcleo, sola.
@@ -331,9 +345,10 @@ export class WarService {
     const bySide: [BattleShip[], BattleShip[]] = [[], []];
     const shield = this.shieldFactor(battle.systemId);
     const techs = await techOf(tx, [...new Set(fleetRows.map((f) => f.emperorId))]);
+    const commanders = await commandersOf(tx, fleetRows.map((f) => f.id));
     for (const s of shipRows) {
       const side = sideOf.get(fleetOwner.get(s.fleetId)!);
-      if (side !== undefined) bySide[side].push(withTech(battleShip(s.id, s.classId, s.hull, shield, fleetTactic.get(s.fleetId), s.design), techs.get(fleetOwner.get(s.fleetId)!)));
+      if (side !== undefined) bySide[side].push(withCommander(withTech(battleShip(s.id, s.classId, s.hull, shield, fleetTactic.get(s.fleetId), s.design), techs.get(fleetOwner.get(s.fleetId)!)), commanders.get(s.fleetId)));
     }
     // Fase 10: las naves de los Emperadores de cada bando que siguen en el sistema.
     const owners = new Set(fleetRows.map((f) => f.emperorId));

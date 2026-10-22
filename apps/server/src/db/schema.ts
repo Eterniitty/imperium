@@ -921,6 +921,8 @@ export const heirs = pgTable(
     state: text("state").notNull().default("gestating"),
     /** Cuándo nace (mientras se gesta). */
     readyAt: timestamp("ready_at", { withTimezone: true }),
+    /** Flota que manda como comandante (`COMMANDER_BONUS`), o null. */
+    fleetId: uuid("fleet_id").references(() => fleets.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

@@ -336,6 +336,7 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                   case "heir.gestate":
                   case "heir.doctrine":
                   case "heir.assign":
+                  case "heir.command":
                   case "heir.incarnate": {
                     if (!lineage) return { ok: false, error: "invalid_command" } as const;
                     const id = owner.emperorId;
@@ -344,6 +345,7 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     else if (msg.op === "heir.gestate") res = await lineage.gestate(id, msg.args.colonyId, msg.args.doctrine);
                     else if (msg.op === "heir.doctrine") res = await lineage.setDoctrine(id, msg.args.heirId, msg.args.doctrine, msg.args.builds);
                     else if (msg.op === "heir.assign") res = await lineage.assign(id, msg.args.heirId, msg.args.colonyId);
+                    else if (msg.op === "heir.command") res = await lineage.command(id, msg.args.heirId, msg.args.fleetId);
                     else {
                       // Lo que lleva la nave en memoria se guarda antes: viaja con el Emperador.
                       await space.flushSupplies(id);

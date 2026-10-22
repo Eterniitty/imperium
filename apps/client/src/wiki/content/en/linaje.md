@@ -55,6 +55,12 @@ There is **one Heir per colony**. To gestate another in the same Cradle, send th
 
 If an Heir's colony **changes hands** (conquest or occupation), the Heir **dies** with it.
 
+### Commanders
+
+A born Heir can, besides governing their colony, **command a fleet** (in the Lineage panel, "Commands:"). Each fleet has at most one commander. In **round-based fleet battles**, the commanded fleet gains according to the Heir's doctrine:
+
+{{tabla:comandantes}}
+
 ## Incarnating
 
 You can **incarnate** in a born Heir: your Emperor wakes up in them, **in their colony**, with their ship next to the planet. The Heir **is consumed** and the colony is left without a governor.

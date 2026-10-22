@@ -807,6 +807,8 @@ export interface HeirView {
   state: "gestating" | "active";
   /** Hora del servidor a la que nace (si se gesta). */
   readyAt: number | null;
+  /** Flota que manda como comandante, o null. */
+  fleetId: string | null;
 }
 
 /** Una muerte del Emperador (historial del linaje). */
