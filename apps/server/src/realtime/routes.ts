@@ -26,6 +26,7 @@ import type { WarService } from "../war/service";
 import type { HumanityService } from "../humanity/service";
 import type { ProbeService } from "../probe/service";
 import type { MercenaryService } from "../fleet/mercenaries";
+import type { ContractService } from "../contract/service";
 import { FLAGSHIP_DOCK, REPUTATION } from "@imperium/content";
 import { fleetRallyPoint, fleetSlotPosition, parkedPosition } from "@imperium/sim";
 import type { MarketService } from "../market/service";
@@ -59,6 +60,7 @@ export interface RealtimeDeps {
   /** Sondas de exploración. */
   probes?: ProbeService;
   mercenaries?: MercenaryService;
+  contracts?: ContractService;
 }
 
 const MINUTE = 60_000;
@@ -67,7 +69,7 @@ const HEARTBEAT_MS = 30_000;
 const MAX_CONNECTIONS_PER_ACCOUNT = 5;
 const MAX_CONNECTIONS = 1_000;
 
-export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage, probes , mercenaries }: RealtimeDeps) {
+export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage, probes, mercenaries, contracts }: RealtimeDeps) {
   /** Reputación ante la humanidad (la milicia no acude a quien la tiene muy mala). */
   const reputationOf = async (emperorId: string): Promise<number> =>
     (await db.select({ r: emperorsTable.reputation }).from(emperorsTable).where(eq(emperorsTable.id, emperorId)).limit(1))[0]?.r ?? 0;
@@ -471,6 +473,19 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     const res = await fleets.pilotable(owner.emperorId, msg.args.fleetId, msg.args.shipId);
                     if (!res.ok) return res;
                     space.startRemote(client, res.pilot);
+                    return { ok: true } as const;
+                  }
+                  case "contract.accept": {
+                    if (!contracts) return { ok: false, error: "invalid_command" } as const;
+                    const res = await contracts.accept(owner.emperorId, msg.args.offerId);
+                    if (res.ok) await hub.publishContracts(owner.emperorId);
+                    return res;
+                  }
+                  case "contract.abandon": {
+                    if (!contracts) return { ok: false, error: "invalid_command" } as const;
+                    const ok = await contracts.abandon(owner.emperorId, msg.args.contractId);
+                    if (!ok) return { ok: false, error: "unknown_contract" } as const;
+                    await hub.publishContracts(owner.emperorId);
                     return { ok: true } as const;
                   }
                   case "fleet.gift": {

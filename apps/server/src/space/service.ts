@@ -1025,6 +1025,7 @@ export class SpaceService {
       const res = await deep.mine(regionId, asteroid, stored.added);
       for (const o of this.rooms.get(regionId) ?? []) this.sendTo(o, { t: "asteroid", i: asteroid, left: Math.round(res.left * 10) / 10 });
       void this.sendHold(m, stored.hold);
+      this.onMined?.(m.emperorId, stored.added);
     })()
       .catch((err: unknown) => this.log.error(err, "Error al minar"))
       .finally(() => (m.minePending = false));
@@ -1550,6 +1551,7 @@ export class SpaceService {
       // Reputación: derribar a un Carroñero (mucho más si es una guarida).
       if (v.kind === "pirate" && attackerOwner && !attackerOwner.startsWith("pirate:") && !attackerOwner.startsWith("militia:")) {
         this.onReputation?.(attackerOwner, v.ai?.anchored ? REPUTATION.lairKill : REPUTATION.pirateKill);
+        this.onPirateKill?.(attackerOwner);
       }
       void this.destroy(v, attackerName);
     }
@@ -1557,6 +1559,10 @@ export class SpaceService {
 
   /** Crisis galácticas (oleada carroñera, lluvia de mineral). */
   crisis: { factor(effect: "pirateRespawn" | "miningYield"): number } | null = null;
+
+  /** Un Emperador derriba un Carroñero / extrae mineral (contratos). */
+  onPirateKill: ((emperorId: string) => void) | null = null;
+  onMined: ((emperorId: string, amount: number) => void) | null = null;
 
   /** Cambios de reputación (los guarda `ReputationService`). */
   onReputation: ((emperorId: string, delta: number) => void) | null = null;

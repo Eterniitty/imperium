@@ -8,6 +8,7 @@ import { formatDuration, useServerNow } from "./useNow";
 import { useGame, useT } from "../state/store";
 import { ServerStatus } from "./ServerStatus";
 import { EmpireButton } from "./EmpireWindow";
+import { ContractsButton } from "./ContractsWindow";
 import { HudIcon } from "./hudIcons";
 import { useWorld } from "../net/world";
 import { fmtCredits, fmtInt, fmtRate, liveCredits, liveHumans } from "./colonies";
@@ -105,6 +106,7 @@ export function TopBar() {
 
       {/* Imperio: flotas y colonias en una ventana con pestañas. */}
       {emperor && <EmpireButton />}
+      {emperor && <ContractsButton />}
       {emperor && (
         <button className="btn" onClick={() => engineRef.current?.toggleMap()} title={t("action.toggleMap")}>
           {t((view === "system" && flight) || view === "tunnel" ? "pilot.map" : "pilot.pilot")} <kbd>{keys.toggleMap}</kbd>

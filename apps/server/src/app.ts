@@ -1,4 +1,5 @@
 import cookie from "@fastify/cookie";
+import { ContractService } from "./contract/service";
 import Fastify from "fastify";
 import { GENERATOR_VERSION, type ApiError, type HealthResponse } from "@imperium/shared";
 import { accountRoutes } from "./account/routes";
@@ -131,6 +132,17 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   const research = new ResearchService(deps.db, config);
   research.setWallet(humanity);
   const reputation = new ReputationService(deps.db, app.log);
+  // Contratos: el progreso lo empujan descubrimientos, derribos de Carroñeros y minería; al cumplirse, pagan.
+  const contracts = new ContractService(deps.db, config, humanity, reputation);
+  const pushContract = (emperorId: string, kind: "hunt" | "explore" | "mine", amount: number) =>
+    void contracts
+      .progress(emperorId, kind, amount)
+      .then(async (r) => {
+        if (!r.changed) return;
+        await hub.publishContracts(emperorId);
+        if (r.completed.length) await hub.publishWallet(emperorId);
+      })
+      .catch((err: unknown) => app.log.error(err, "Error en el progreso de un contrato"));
   humanity.reputation = reputation;
   const crisis = new CrisisService(deps.db);
   colonies.crisis = crisis;
@@ -156,6 +168,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   aliens.sieges = sieges;
   aiEmperors.sieges = sieges;
   const hub = new Hub(emperors, fleets, social, discoveries, colonies, wars, humanity, app.log, config.TIME_SCALE);
+  hub.contracts = contracts;
+  hub.onDiscovered = (emperorId, n) => pushContract(emperorId, "explore", n);
   // Nave del Emperador fuera del pilotaje (aparcada) y disposición de los sistemas, que
   // depende de su detalle secreto.
   const flagships = new FlagshipService(deps.db, config, (summary) => discoveries.detail(summary), colonies);
@@ -164,6 +178,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   fleets.layoutOf = (systemId) => flagships.layout(systemId);
   const space = new SpaceService(flagships, emperors, social, app.log);
   space.onReputation = (emperorId, delta) => reputation.addLater(emperorId, delta);
+  space.onPirateKill = (emperorId) => pushContract(emperorId, "hunt", 1);
+  space.onMined = (emperorId, amount) => pushContract(emperorId, "mine", amount);
   space.crisis = crisis;
   emperors.crisis = crisis;
   fleets.crisis = crisis;
@@ -272,7 +288,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     for (const s of fx.sieges) hub.publishSiegeFx(s);
   };
   aliens.onSiege = (fx) => hub.publishSiegeFx(fx);
-  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage: announceLineage, probes, mercenaries });
+  await app.register(realtimeRoutes, { config, db: deps.db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage: announceLineage, probes, mercenaries, contracts });
   await app.register(humanityRoutes, { config, db: deps.db, emperors, humanity, market });
   await app.register(warRoutes, { config, db: deps.db, emperors, wars, aliens });
   await app.register(alienRoutes, { config, db: deps.db, emperors, discoveries, wars, aliens });

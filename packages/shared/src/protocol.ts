@@ -3,7 +3,7 @@
  * docs/arquitectura.md §8. Los esquemas Zod de lo que envía el cliente están en
  * `schemas.ts`.
  */
-import type { Battle, Cargo, Colony, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, FleetTactic, Probe, HeirDoctrineId, LineageStatus, OrderSide, Siege, Stock, StockId, Wallet } from "./api";
+import type { Battle, Cargo, Colony, ContractsView, Emperor, EmperorHumans, FlagshipStatus, Fleet, FleetRoute, FleetTactic, Probe, HeirDoctrineId, LineageStatus, OrderSide, Siege, Stock, StockId, Wallet } from "./api";
 import type { DeepRegionView } from "./deepspace";
 
 /** Sube si cambia el protocolo de forma incompatible; el servidor rechaza versiones distintas. */
@@ -39,7 +39,7 @@ export interface TopicData {
   /** `wallet`: la cartera de créditos (economía de la humanidad). */
   /** `sieges`: asedios propios y a colonias propias (Fase 9b), en curso y acabados hace poco. */
   /** `lineage`: muerte, gestación, Cunas y Herederos (Fase 10). */
-  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans; battles: Battle[]; wallet: Wallet; flagship: FlagshipStatus | null; sieges: Siege[]; lineage: LineageStatus | null; probes: Probe[] };
+  me: { fleets: Fleet[]; discovered: string[]; colonies: Colony[]; humans: EmperorHumans; battles: Battle[]; wallet: Wallet; flagship: FlagshipStatus | null; sieges: Siege[]; lineage: LineageStatus | null; probes: Probe[]; contracts?: ContractsView | null };
 }
 
 /** Emperador visto por los demás jugadores: añade si está conectado. */
@@ -136,6 +136,10 @@ export interface CommandArgs {
   "fleet.pilot": { fleetId: string; shipId: string };
   /** Cambia la táctica de una flota propia en las batallas por rondas (desde cualquier sitio; en plena batalla vale desde la ronda siguiente). */
   "fleet.tactic": { fleetId: string; tactic: FleetTactic };
+  /** Aceptar una oferta del tablero de contratos. */
+  "contract.accept": { offerId: string };
+  /** Abandonar un contrato en curso (sin recompensa). */
+  "contract.abandon": { contractId: string };
   /** Regalar una flota propia (parada) a otro jugador, por el nombre de su Emperador. */
   "fleet.gift": { fleetId: string; to: string };
   /** Renombrar una flota propia (vacío: vuelve a «Flota N»). */
@@ -321,6 +325,8 @@ export type CommandError =
   | "nothing_to_transfer"
   | "invalid_route"
   | "in_battle"
+  | "unknown_contract"
+  | "too_many_contracts"
   | "unknown_emperor"
   /** La nave no tiene armas (no se puede pilotar a distancia). */
   | "ship_unarmed"
@@ -376,7 +382,8 @@ export type DeltaOp =
   | { path: `sieges.${string}`; v: Siege | null }
   /** Linaje del Emperador propio (Fase 10): muerte y gestación, Cunas, Herederos (el id es el suyo). */
   | { path: `lineage.${string}`; v: LineageStatus }
-  | { path: `probes.${string}`; v: Probe | null };
+  | { path: `probes.${string}`; v: Probe | null }
+  | { path: "contracts.all"; v: ContractsView };
 
 export type ServerMessage =
   /**

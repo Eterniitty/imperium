@@ -10,6 +10,8 @@ import { rockyBody, starBody } from "@imperium/sim";
 const PLANET_RADIUS_RANGE: Record<string, [number, number]> = { gas_giant: [6, 12], ice_giant: [3, 5], lava: [0.2, 1.2], barren: [0.2, 1.2], rocky: [0.4, 1.8], desert: [0.4, 1.8], ocean: [0.4, 1.8], toxic: [0.4, 1.8], ice: [0.4, 1.8] };
 import {
   AI_EMPERORS,
+  CONTRACTS,
+  type ContractKind,
   AI_PERSONALITIES,
   type AiPersonality,
   ALIEN_AI,
@@ -276,6 +278,25 @@ export const GEN_TABLES: Record<string, Builder> = {
     head: [t("wiki.col.concept"), t("wiki.col.value")],
     rows: (Object.keys(PRESTIGE) as MetaStat[]).map((k) => [t(`ranking.stat.${k}`, { n: num(locale, PRESTIGE[k]) }), num(locale, PRESTIGE[k])]),
     numeric: [1],
+  }),
+
+  "contratos-reglas": (t, locale) =>
+    kv(t, [
+      ["wiki.k.contractOffers", num(locale, CONTRACTS.offersPerDay)],
+      ["wiki.k.contractMax", num(locale, CONTRACTS.maxActive)],
+    ]),
+
+  contratos: (t, locale) => ({
+    head: [t("wiki.col.concept"), t("wiki.col.goal"), t("wiki.col.reward"), t("wiki.col.time")],
+    rows: (Object.keys(CONTRACTS.kinds) as ContractKind[]).map((k) => {
+      const d = CONTRACTS.kinds[k];
+      return [
+        t(`contract.kind.${k}` as I18nKey),
+        t(`contract.desc.${k}` as I18nKey, { n: d.targets.map((n) => num(locale, n)).join(" / ") }),
+        d.targets.map((n, i) => t("contract.reward", { credits: num(locale, Math.round(n * d.creditsPer)), rep: d.reputationPerTier * (i + 1) })).join(" · "),
+        t("contract.hours", { h: d.hours }),
+      ];
+    }),
   }),
 
   objetivos: (t) => ({

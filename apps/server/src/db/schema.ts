@@ -1082,3 +1082,29 @@ export const asteroidDepletion = pgTable(
   },
   (t) => [primaryKey({ columns: [t.regionId, t.asteroid] }), check("asteroid_depletion_mined", sql`${t.mined} >= 0`)],
 );
+
+/**
+ * Contratos aceptados (`docs/juego-solitario.md`): tipo, objetivo y progreso,
+ * recompensa, estado y plazo. Las ofertas no se guardan (se generan cada día);
+ * `offer_id` (día:índice) impide aceptar dos veces la misma.
+ */
+export const contracts = pgTable(
+  "contracts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    emperorId: uuid("emperor_id")
+      .notNull()
+      .references(() => emperors.id, { onDelete: "cascade" }),
+    offerId: text("offer_id").notNull(),
+    kind: text("kind").notNull(),
+    target: integer("target").notNull(),
+    progress: doublePrecision("progress").notNull().default(0),
+    credits: integer("credits").notNull(),
+    reputation: integer("reputation").notNull().default(0),
+    status: text("status").notNull().default("active"),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    doneAt: timestamp("done_at", { withTimezone: true }),
+  },
+  (t) => [index("contracts_emperor_id_idx").on(t.emperorId), unique("contracts_emperor_offer_unique").on(t.emperorId, t.offerId)],
+);

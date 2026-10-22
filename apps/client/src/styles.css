@@ -1139,3 +1139,15 @@ button.legend-title { background: none; border: none; padding: 0; width: 100%; t
 .empire-btn.on { color: var(--gold); border-color: var(--gold); }
 .empire-short { color: #ff8a6a; }
 .inline-icon { vertical-align: -2px; }
+
+/* Contratos: misma ventana que la del imperio (a la derecha), con filas, progreso y punto de ofertas nuevas. */
+.contracts-win { z-index: 5; }
+.contract-dot { display: inline-block; width: 6px; height: 6px; margin-left: 4px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 6px var(--gold); vertical-align: 2px; }
+.contract-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.contract-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid rgba(143, 220, 255, 0.14); border-radius: 6px; background: rgba(8, 14, 26, 0.4); }
+.contract-row.done { border-color: rgba(126, 240, 176, 0.35); }
+.contract-row.expired, .contract-row.abandoned { opacity: 0.6; }
+.contract-main { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.contract-kind { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+.contract-progress { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.contract-progress span { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--gold)); transition: width 0.3s; }

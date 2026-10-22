@@ -44,6 +44,7 @@ export const WIKI_ARTICLES = [
   { slug: "fabricacion", group: "empire" },
   { slug: "tecnologia", group: "empire" },
   { slug: "metas", group: "empire" },
+  { slug: "contratos", group: "empire" },
   { slug: "guerra", group: "war" },
   { slug: "conquista", group: "war" },
   { slug: "carroneros", group: "war" },

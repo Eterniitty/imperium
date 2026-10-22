@@ -21,6 +21,7 @@ import {
   type Topic,
   type Wallet,
   type WsTicketResponse,
+  type ContractsView,
 } from "@imperium/shared";
 import { api, authStore } from "../state/auth";
 import { gameStore } from "../state/store";
@@ -56,6 +57,8 @@ export interface WorldState {
   sieges: Record<string, Siege>;
   /** Sondas de exploración propias en vuelo, por id. */
   probes: Record<string, Probe>;
+  /** Tablero de contratos (ofertas, en curso e historial), o null si aún no llegó. */
+  contracts: ContractsView | null;
   /** Linaje propio (Fase 10): muerte y gestación, Cunas, Herederos. */
   lineage: LineageStatus | null;
   /** Escala del tiempo de juego del servidor (para estimar duraciones de viaje). */
@@ -77,6 +80,7 @@ export const worldStore = createStore<WorldState>()(() => ({
   flagship: null,
   sieges: {},
   probes: {},
+  contracts: null,
   lineage: null,
   timeScale: 1,
   myEmperorId: null,
@@ -123,7 +127,7 @@ class Connection {
     this.ws?.close(1000, "bye");
     this.ws = null;
     this.failPending();
-    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, battles: {}, wallet: null, flagship: null, sieges: {}, probes: {}, lineage: null, myEmperorId: null });
+    worldStore.setState({ status: "idle", emperors: {}, fleets: {}, discovered: {}, colonies: {}, humans: null, battles: {}, wallet: null, flagship: null, sieges: {}, probes: {}, contracts: null, lineage: null, myEmperorId: null });
     resetSpace();
   }
 
@@ -223,7 +227,7 @@ class Connection {
           for (const x of msg.data.sieges) sieges[x.id] = x;
           const probes: Record<string, Probe> = {};
           for (const p of msg.data.probes ?? []) probes[p.id] = p;
-          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans, battles, wallet: msg.data.wallet, flagship: msg.data.flagship, sieges, lineage: msg.data.lineage, probes });
+          worldStore.setState({ fleets, discovered, colonies, humans: msg.data.humans, battles, wallet: msg.data.wallet, flagship: msg.data.flagship, sieges, lineage: msg.data.lineage, probes, contracts: msg.data.contracts ?? null });
         }
         return;
       }
@@ -246,11 +250,15 @@ class Connection {
         let sieges = state.sieges;
         let lineage = state.lineage;
         let probes = state.probes;
+        let contracts = state.contracts;
         for (const op of msg.ops) {
           const dot = op.path.indexOf(".");
-          const kind = op.path.slice(0, dot) as "emperors" | "fleets" | "discovered" | "colonies" | "humans" | "battles" | "wallet" | "flagship" | "sieges" | "lineage" | "probes";
+          const kind = op.path.slice(0, dot) as "emperors" | "fleets" | "discovered" | "colonies" | "humans" | "battles" | "wallet" | "flagship" | "sieges" | "lineage" | "probes" | "contracts";
           const id = op.path.slice(dot + 1);
-          if (kind === "probes") {
+          if (kind === "contracts") {
+            noticeContracts(contracts, op.v as ContractsView);
+            contracts = op.v as ContractsView;
+          } else if (kind === "probes") {
             probes = { ...probes };
             if (op.v) probes[id] = op.v as Probe;
             else delete probes[id];
@@ -287,7 +295,7 @@ class Connection {
             else delete fleets[id];
           }
         }
-        worldStore.setState({ emperors, fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes });
+        worldStore.setState({ emperors, fleets, discovered, colonies, humans, battles, wallet, flagship, sieges, lineage, probes, contracts });
         this.syncOwn();
         return;
       }
@@ -422,6 +430,15 @@ export const connection = new Connection();
  * colonia y cuando la pierde; al atacante, cuando puede desembarcar y cuando
  * toma el planeta o se rompe el asedio.
  */
+/** Aviso al cumplirse un contrato (llega con su recompensa ya pagada). */
+function noticeContracts(prev: ContractsView | null, next: ContractsView): void {
+  if (!prev) return;
+  const before = new Map(prev.list.map((c) => [c.id, c.status]));
+  for (const c of next.list) {
+    if (c.status === "done" && before.get(c.id) === "active") gameStore.getState().notify("contract.done", { credits: c.credits, rep: c.reputation });
+  }
+}
+
 function noticeSiege(prev: Siege | undefined, next: Siege): void {
   const planet = next.colonyName ?? next.planetName;
   const enemy = next.attackerFactionId ? factionName(gameStore.getState().locale, next.attackerFactionId) : next.attackerName;

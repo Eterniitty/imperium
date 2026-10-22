@@ -156,6 +156,43 @@ export interface Probe {
   arriveAt: number;
 }
 
+/** Tipo de contrato (`CONTRACTS` de `@imperium/content`). */
+export type ContractKind = "hunt" | "explore" | "mine";
+
+/** Oferta del tablero de contratos (se renueva cada día). */
+export interface ContractOffer {
+  id: string;
+  kind: ContractKind;
+  target: number;
+  credits: number;
+  reputation: number;
+  hours: number;
+}
+
+/** Contrato aceptado. */
+export interface Contract {
+  id: string;
+  offerId: string;
+  kind: ContractKind;
+  target: number;
+  progress: number;
+  credits: number;
+  reputation: number;
+  status: "active" | "done" | "expired" | "abandoned";
+  acceptedAt: number;
+  expiresAt: number;
+  doneAt: number | null;
+}
+
+/** Tablero de contratos de un Emperador (tema `me`, `contracts.all`). */
+export interface ContractsView {
+  offers: ContractOffer[];
+  list: Contract[];
+  maxActive: number;
+  /** Cuándo llegan las ofertas nuevas (ms). */
+  refreshAt: number;
+}
+
 /** Táctica de una flota en las batallas por rondas (efectos en `FLEET_TACTICS` de `@imperium/content`). */
 export type FleetTactic = "balanced" | "aggressive" | "defensive" | "focus";
 

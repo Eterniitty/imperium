@@ -28,6 +28,7 @@ import { PlanetWindow } from "./PlanetWindow";
 import { MapLayersPanel } from "./MapLayersPanel";
 import { DamageAlert } from "./DamageAlert";
 import { EmpireWindow } from "./EmpireWindow";
+import { ContractsWindow } from "./ContractsWindow";
 import { QuantumHud } from "./QuantumHud";
 import { QuantumPanel } from "./QuantumPanel";
 import { CruiseHud, CruisePanel } from "./CruisePanel";
@@ -140,6 +141,7 @@ export function App() {
         <EconomyPanel />
         <ColonyManager />
         <PlanetWindow />
+        <ContractsWindow />
         <LineagePanel />
         <ShipEditor />
         <PhotosensitivityNotice />

@@ -14,6 +14,7 @@ const PATHS = {
   gearFast: "M4 15a8 8 0 0 1 16 0M12 15l5-4",
   cruise: "M4 18L12 4l8 14-8-4z",
   gear: "M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1",
+  contract: "M6 3h9l4 4v14H6zM15 3v4h4M9 12h7M9 16h5",
   gift: "M4 10h16v10H4zM3 7h18v3H3zM12 7v13M12 7c-2-4-6-3-5 0M12 7c2-4 6-3 5 0",
   edit: "M4 20h4l11-11-4-4L4 16zM14 6l4 4",
   fleet: "M5 20V4M5 5h11l-2 4 2 4H5",
