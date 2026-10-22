@@ -115,6 +115,18 @@ Informe completo en Claude Docs («Aeonarch — Plan de juego»). Cinco fases, c
 - [ ] **Materiales y fabricación** (petición del usuario): ✔ F1 Fábrica, seis componentes con recetas y cadenas (`RECIPES`, `colonies.items`, encargo `craft`), las piezas avanzadas del Astillero los piden; ✔ F2 transportarlos en las bodegas (`fleet.items`, `fleet_cargo.items`); falta venderlos en el mercado.
 - [x] **Libros en la Wiki** (grupo «Libros», firma del autor; solo administradores).
 
+## Siguiente: que se sienta como un juego (22-10-2026)
+
+Plan en `docs/juego-solitario.md` y `docs/tutorial.md`. Orden:
+
+- [ ] Contratos (fase 1: caza de Carroñeros, exploración, reparto y rescate), con tablero y recompensas.
+- [ ] Rango del Emperador (experiencia, títulos y mejoras).
+- [ ] Tutorial: motor, menú y capítulos 1–4.
+- [ ] Eventos en el espacio con decisiones.
+- [ ] Objetivos diarios y semanales.
+- [ ] Tutorial: capítulos 5–12.
+- [ ] Retos de combate, crisis de colonias y lore como recompensa.
+
 ## Peticiones del 22-10-2026 (tarde)
 
 - [x] Vuelo arcade tipo No Man's Sky (W/S acelerar y frenar sin marcha atrás, A/D girar con alabeo, ratón apunta; selector en Ajustes).
