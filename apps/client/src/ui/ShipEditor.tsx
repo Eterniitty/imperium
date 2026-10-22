@@ -6,6 +6,7 @@ import { connection, useWorld } from "../net/world";
 import { api } from "../state/auth";
 import { gameStore, useGame, useT } from "../state/store";
 import { fmtInt } from "./colonies";
+import { ShipThumb } from "./ShipThumb";
 
 interface Draft {
   id?: string;
@@ -267,6 +268,9 @@ export function ShipEditor() {
           </section>
 
           <aside className="ship-editor-stats">
+            <div className="ship-editor-preview">
+              <ShipThumb classId={hull.baseClass} size={260} />
+            </div>
             <h3>{t("shipEditor.stats")}</h3>
             <dl>
               {statRows.map(([k, v]) => (

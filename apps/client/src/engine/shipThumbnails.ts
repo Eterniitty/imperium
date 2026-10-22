@@ -7,8 +7,8 @@
 import * as THREE from "three";
 import { createShipModel, shipLength } from "./shipFactory";
 
-const WIDTH = 160;
-const HEIGHT = 96;
+const WIDTH = 320;
+const HEIGHT = 192;
 
 let renderer: THREE.WebGLRenderer | null | undefined;
 const cache = new Map<string, string | null>();

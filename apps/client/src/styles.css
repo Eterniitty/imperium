@@ -957,3 +957,5 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .ranking-table td:last-child { text-align: right; width: 110px; }
 .ranking-table tr.me th, .ranking-table tr.me td { color: var(--gold); }
 .ranking-table .tag { margin-left: 8px; }
+.ship-editor-preview { display: flex; justify-content: center; padding: 6px 0 10px; border-bottom: 1px solid var(--line); margin-bottom: 8px; background: radial-gradient(60% 70% at 50% 50%, rgba(63, 208, 255, 0.08), transparent 70%); }
+.ship-editor-preview .ship-thumb img { width: 100%; height: 100%; object-fit: contain; }
