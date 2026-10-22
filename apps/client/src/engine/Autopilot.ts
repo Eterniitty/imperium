@@ -164,11 +164,13 @@ export class Autopilot {
     let orbiting = false;
     const orbitGoal = new THREE.Vector3();
     const orbitVel = new THREE.Vector3();
+    // Dirección por el ecuador hacia la nave: ahí se llega para empezar a orbitar (no por encima de un polo).
+    const u = new THREE.Vector3();
     if (tg.mode === "orbit") {
       const rel = pos.clone().sub(spot.center);
-      const flat = new THREE.Vector3(rel.x, 0, rel.z);
-      if (flat.lengthSq() < 1) flat.set(1, 0, 0);
-      const u = flat.normalize();
+      u.set(rel.x, 0, rel.z);
+      if (u.lengthSq() < 1) u.set(1, 0, 0);
+      u.normalize();
       if (Math.abs(rel.length() - R0) < Math.max(ORBIT_CAPTURE_M, R0 * 0.25)) {
         orbiting = true;
         const vOrb = M.maxSpeed * prefs.maxSpeed * M.boostFactor * ORBIT_SPEED_FACTOR;
@@ -201,6 +203,8 @@ export class Autopilot {
     } else if (follow) {
       const q = spot.quaternion ?? new THREE.Quaternion();
       goal.copy(FORMATION).applyQuaternion(q).add(spot.center).addScaledVector(goalVel, REMOTE_DELAY_S);
+    } else if (tg.mode === "orbit") {
+      goal.copy(spot.center).addScaledVector(u, R0);
     } else {
       const away = pos.clone().sub(spot.center);
       if (away.lengthSq() < 1) away.set(0, 1, 0);
