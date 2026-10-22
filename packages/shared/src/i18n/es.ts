@@ -1506,6 +1506,7 @@ export const es = {
   "part.hull_skiff": "Casco de lancha (S)",
   "part.hull_frigate": "Casco de fragata (M)",
   "part.hull_cruiser": "Casco de crucero (L)",
+  "part.hull_mothership": "Casco de nave nodriza",
   "part.hull_capital": "Armazón capital (XL)",
   "part.bridge_s": "Cabina de piloto",
   "part.bridge_m": "Puente de mando",

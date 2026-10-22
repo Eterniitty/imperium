@@ -1504,6 +1504,7 @@ export const en: Record<I18nKey, string> = {
   "part.hull_skiff": "Skiff hull (S)",
   "part.hull_frigate": "Frigate hull (M)",
   "part.hull_cruiser": "Cruiser hull (L)",
+  "part.hull_mothership": "Mothership hull",
   "part.hull_capital": "Capital frame (XL)",
   "part.bridge_s": "Pilot cockpit",
   "part.bridge_m": "Command bridge",

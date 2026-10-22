@@ -102,6 +102,8 @@ When you take the controls in a system where you have stationary fleets (not in 
 
 The **mothership** is the biggest ship you can build (1600 m, in an orbital drydock; see [Human ships](/wiki/naves)). When one of your fleets with a mothership is stationary in the system where you are flying, get close to it and press [[Enter]] (dock): your ship enters its hangar and **resupplies from the fleet's hold** as it would next to one of your colonies (volatiles → fuel, metal → ammunition, alloys → missiles and hull). Fill the fleet's hold at a colony first (see [Fleets](/wiki/flotas)).
 
+**Designing it with its modules:** the [Shipyard](/wiki/astillero) has a **mothership hull** (it needs Industry 5 and is built in an orbital drydock): you choose its reactors, drives, shields, weapons and bays (holds, hangar, armour…) and it keeps the docking, the fighter wing and the workshop.
+
 **Where it is:** next to your colony in that system, between the planet and the star (without a colony there, in the parking orbit next to the first planet). To get there without searching, open cruise ([[N]]): it is listed as “Mothership · fleet N” and the autopilot leaves you beside it, within docking range.
 
 - While docked your ship does not move on its own; press [[Enter]] again to leave.
