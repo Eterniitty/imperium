@@ -124,6 +124,8 @@ export interface Fleet {
   number: number;
   /** Nombre que le ha puesto su dueño; sin él, «Flota N». */
   name?: string | null;
+  /** Dónde está dentro de su sistema (m); null: en el punto de reunión. */
+  localP?: [number, number, number] | null;
   location: SystemLocation;
   travel: Travel | null;
   ships: FleetShip[];
@@ -392,7 +394,7 @@ export interface FlagshipStatus {
     /** En órbita sin piloto: giro (rad/s) alrededor del eje vertical del cuerpo anclado. */
     spin?: number;
     /** Acoplada en el hangar de una nodriza de esta flota (o llegando así). */
-    dock?: { fleetId: string; slot: number; colonyPlanet: number | null };
+    dock?: { fleetId: string; slot: number; colonyPlanet: number | null; at?: [number, number, number] | null };
   };
   /**
    * Combustible y munición guardados (lo que se gasta al pilotar llega aparte, en

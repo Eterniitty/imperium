@@ -19,6 +19,8 @@ And you can **gift** it to another player with 🎁 (type their Emperor's name):
 - While travelling it cannot be given another travel order.
 - On arrival, its best scanner [discovers](/wiki/niebla) the system and those nearby. If there are stopped fleets of another Emperor who is not your companion, a [battle](/wiki/guerra) may start.
 
+When it arrives from a jump, the fleet **comes out at the edge of the system, on the side it comes from** (like your ship) and stays there; the server keeps its spot. Newly built ones appear at the rally point next to your colony.
+
 ## Fuel
 
 Each ship carries its own **tank**, measured in **light years of range**. A trip spends the distance on **every ship**, and the fleet **does not leave** if any of them cannot make it. The fleet's range (⛽ in the fleet list, orange if any ship has less than a quarter left) is that of the ship with the least fuel.

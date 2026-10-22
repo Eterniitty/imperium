@@ -255,7 +255,9 @@ export class FleetScene {
       // Acoplada en ella, su rótulo quedaría justo encima de la nave propia (y parecería su nombre): se oculta.
       g.label.visible = f.id !== spaceStore.getState().docked?.fleetId;
       // Cada flota, a un lado del punto de reunión, mirando hacia la estrella.
-      g.root.position.set(...fleetSlotPosition([base.x, base.y, base.z], i));
+      // Su sitio propio (donde llegó de un salto o la dejaron) o, si no tiene, a un lado del punto de reunión.
+      if (f.localP) g.root.position.set(...f.localP);
+      else g.root.position.set(...fleetSlotPosition([base.x, base.y, base.z], i));
       g.root.lookAt(0, g.root.position.y, 0);
       g.root.rotateY(Math.PI);
       for (const s of g.ships) {

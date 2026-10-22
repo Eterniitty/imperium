@@ -20,7 +20,7 @@ export interface ParkRow {
   parkY: number | null;
   parkZ: number | null;
   parkAt: Date | null;
-  parkExtra?: { anchor?: { planet: number; moon?: number }; q?: [number, number, number, number]; engines?: boolean; travel?: { from: [number, number, number]; until: number }; spin?: number; dock?: { fleetId: string; slot: number; colonyPlanet: number | null } } | null;
+  parkExtra?: { anchor?: { planet: number; moon?: number }; q?: [number, number, number, number]; engines?: boolean; travel?: { from: [number, number, number]; until: number }; spin?: number; dock?: { fleetId: string; slot: number; colonyPlanet: number | null; at?: [number, number, number] | null } } | null;
 }
 
 /** Columnas de los recursos de la nave. */
@@ -244,7 +244,7 @@ export class FlagshipService {
 
   /** Guarda dónde queda aparcada la nave (al dejar de pilotarla). */
   /** Llegará acoplada en el hangar de esta flota (viaje con ella): se apunta en su aparcamiento de llegada. */
-  async setArrivalDock(emperorId: string, dock: { fleetId: string; slot: number; colonyPlanet: number | null }): Promise<void> {
+  async setArrivalDock(emperorId: string, dock: { fleetId: string; slot: number; colonyPlanet: number | null; at?: [number, number, number] | null }): Promise<void> {
     await this.db
       .update(emperors)
       .set({ parkExtra: sql`coalesce(${emperors.parkExtra}, '{}'::jsonb) || jsonb_build_object('dock', ${JSON.stringify(dock)}::jsonb)` })

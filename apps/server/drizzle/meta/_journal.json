@@ -302,6 +302,13 @@
       "when": 1792687549604,
       "tag": "0043_casco_por_defecto",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1792689695459,
+      "tag": "0044_posicion_flota",
+      "breakpoints": true
     }
   ]
 }

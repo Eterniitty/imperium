@@ -1,7 +1,7 @@
 import { anyFleetSpeedLyPerHour, techBonus, type TechLevels, FLEET_TACTICS, getAnyShipClass, getShipClass, MOTHERSHIP_HANGAR, MOTHERSHIP_WORKSHOP, SHIP_CLASSES, SHIP_PASSENGERS, type ShipClassId } from "@imperium/content";
 import { universeSeedFromString } from "@imperium/procgen";
 import { distance, type Cargo, type CommandError, type Fleet, type FleetRoute, type FleetTactic, type ShipDesignSnapshot } from "@imperium/shared";
-import { designStats, fleetTravelSpeed, isTravelling, refuelCost, shipFuel, shipFuelMax, travelDurationMs } from "@imperium/sim";
+import { arrivalPark, designStats, fleetSlotPosition, fleetTravelSpeed, isTravelling, refuelCost, shipFuel, shipFuelMax, travelDurationMs, type SystemLayout } from "@imperium/sim";
 import type { ColonyService } from "../colony/service";
 import { and, asc, eq, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import type { ServerConfig } from "../config";
@@ -16,6 +16,7 @@ const columns = {
   emperorId: fleets.emperorId,
   number: fleets.number,
   name: fleets.name,
+  localP: fleets.localP,
   systemId: fleets.systemId,
   destSystemId: fleets.destSystemId,
   departAt: fleets.departAt,
@@ -28,6 +29,7 @@ type Row = {
   emperorId: string;
   number: number;
   name?: string | null;
+  localP?: [number, number, number] | null;
   systemId: string;
   destSystemId: string | null;
   departAt: Date | null;
@@ -66,6 +68,9 @@ export class FleetService {
   crisis: { factor(effect: "quantumFuel"): number } | null = null;
 
   private readonly seed: number;
+
+  /** Disposición de un sistema (la pone app.ts; depende del detalle secreto): para el punto de llegada. */
+  layoutOf: ((systemId: string) => SystemLayout | null) | null = null;
 
   constructor(
     private readonly db: Database,
@@ -106,6 +111,7 @@ export class FleetService {
         id: r.id,
         number: r.number,
         name: r.name ?? null,
+        localP: r.localP ?? null,
         ...placeFromRow(this.seed, r, now),
         ships: fleetShips,
         cargo: c ? { metal: c.metal, volatiles: c.volatiles, crystal: c.crystal, alloys: c.alloys, humans: c.humans } : { ...EMPTY_CARGO },
@@ -149,7 +155,7 @@ export class FleetService {
    * entre las flotas paradas del sistema (el mismo orden que dibuja el
    * cliente) y la colonia propia de menor índice del sistema (punto de reunión).
    */
-  async dockInfo(emperorId: string, fleetId: string, systemId: string): Promise<{ ok: true; slot: number; colonyPlanet: number | null; lengthM: number } | { ok: false; error: CommandError }> {
+  async dockInfo(emperorId: string, fleetId: string, systemId: string): Promise<{ ok: true; slot: number; colonyPlanet: number | null; lengthM: number; at: [number, number, number] | null } | { ok: false; error: CommandError }> {
     const all = await this.byEmperor(emperorId);
     const parked = all.filter((f) => !f.travel && !f.battleId && f.location.systemId === systemId).sort((a, b) => a.number - b.number);
     const slot = parked.findIndex((f) => f.id === fleetId);
@@ -161,7 +167,7 @@ export class FleetService {
     if (!mother) return { ok: false, error: "no_mothership" };
     const own = await this.db.select({ planetIndex: colonies.planetIndex }).from(colonies).where(and(eq(colonies.emperorId, emperorId), eq(colonies.systemId, systemId)));
     const colonyPlanet = own.length ? Math.min(...own.map((c) => c.planetIndex)) : null;
-    return { ok: true, slot, colonyPlanet, lengthM: mother.model.lengthM };
+    return { ok: true, slot, colonyPlanet, lengthM: mother.model.lengthM, at: fleet.localP ?? null };
   }
 
   /**
@@ -374,10 +380,15 @@ export class FleetService {
 
       const speed = fleetTravelSpeed(current.ships) * techBonus(tech, "propulsion") * this.config.TIME_SCALE;
       const arriveAt = now + travelDurationMs(current.location.position, dest.position, speed);
+      // Llega por el borde del sistema, del lado por el que viene (como una nave), y se queda allí.
+      const layout = this.layoutOf?.(dest.id) ?? null;
+      const from = current.location.position;
+      const edge = layout ? arrivalPark(layout, [from.x - dest.position.x, from.y - dest.position.y, from.z - dest.position.z], arriveAt).p : null;
+      const localP = edge ? fleetSlotPosition([edge[0], edge[1], edge[2]], current.number % 8) : null;
       // Salir de un sistema donde combate es huir: deja la batalla.
       const updated = await tx
         .update(fleets)
-        .set({ systemId: current.location.systemId, destSystemId: dest.id, departAt: new Date(now), arriveAt: new Date(arriveAt), battleId: null })
+        .set({ systemId: current.location.systemId, destSystemId: dest.id, departAt: new Date(now), arriveAt: new Date(arriveAt), battleId: null, localP })
         .where(eq(fleets.id, fleetId))
         .returning(columns);
       await schedule(tx, "fleet.arrive", new Date(arriveAt), { fleetId });

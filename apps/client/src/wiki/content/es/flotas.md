@@ -19,6 +19,8 @@ Y puedes **regalarla** a otro jugador con 🎁 (escribe el nombre de su Emperado
 - Mientras viaja no se le pueden dar otras órdenes de viaje.
 - Al llegar, su mejor escáner [descubre](/wiki/niebla) el sistema y los cercanos. Si allí hay flotas paradas de otro Emperador que no es tu compañero, puede empezar una [batalla](/wiki/guerra).
 
+Al llegar de un salto, la flota **sale por el borde del sistema, del lado por el que viene** (como tu nave) y se queda allí; el servidor guarda su sitio. Las recién construidas salen en el punto de reunión junto a tu colonia.
+
 ## Combustible
 
 Cada nave lleva su **depósito**, medido en **años luz de alcance**. Un viaje gasta la distancia en **cada nave**, y la flota **no sale** si a alguna no le llega. El alcance de la flota (⛽ en la lista de flotas, en naranja si a alguna le queda menos de un cuarto) es el de la nave con menos combustible.

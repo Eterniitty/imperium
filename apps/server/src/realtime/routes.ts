@@ -309,12 +309,14 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                       const arriveAt = res.fleet.travel.arriveAt;
                       const slot = await fleets.arrivalSlot(owner.emperorId, res.fleet.id, dest);
                       const layout = flagships.layout(dest);
-                      const at = layout ? fleetSlotPosition(fleetRallyPoint(layout, slot.colonyPlanet, arriveAt), slot.slot) : null;
+                      // Llega donde llega su flota (por el borde, como una nave), dentro de su hangar.
+                      const at = res.fleet.localP ?? (layout ? fleetSlotPosition(fleetRallyPoint(layout, slot.colonyPlanet, arriveAt), slot.slot) : null);
                       const ride = await emperors.move(owner.accountId, dest, { here, withFleet: { arriveAt, at } });
                       if (ride.ok) {
-                        space.expectDock(ride.emperor.id, { systemId: dest, fleetId: res.fleet.id, slot: slot.slot, colonyPlanet: slot.colonyPlanet });
+                        const dockAt = res.fleet.localP ?? null;
+                        space.expectDock(ride.emperor.id, { systemId: dest, fleetId: res.fleet.id, slot: slot.slot, colonyPlanet: slot.colonyPlanet, at: dockAt });
                         // También en la base: si el servidor se reinicia durante el viaje, llega igualmente acoplada.
-                        await flagships.setArrivalDock(ride.emperor.id, { fleetId: res.fleet.id, slot: slot.slot, colonyPlanet: slot.colonyPlanet });
+                        await flagships.setArrivalDock(ride.emperor.id, { fleetId: res.fleet.id, slot: slot.slot, colonyPlanet: slot.colonyPlanet, at: dockAt });
                         space.leave(ride.emperor.id, "jump");
                         space.suppliesChanged(ride.emperor.id);
                         await hub.publish(ride.emperor.id);
@@ -423,7 +425,7 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     if (!systemId) return { ok: false, error: "too_far" } as const;
                     const info = await fleets.dockInfo(owner.emperorId, msg.args.fleetId, systemId);
                     if (!info.ok) return info;
-                    const error = space.dock(client, msg.args.fleetId, info.slot, info.colonyPlanet, FLAGSHIP_DOCK.rangeM + info.lengthM);
+                    const error = space.dock(client, msg.args.fleetId, info.slot, info.colonyPlanet, FLAGSHIP_DOCK.rangeM + info.lengthM, info.at);
                     return error ? ({ ok: false, error } as const) : ({ ok: true } as const);
                   }
                   case "help.call": {

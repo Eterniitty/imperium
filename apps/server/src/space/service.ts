@@ -83,7 +83,7 @@ interface Member {
   /** Solo la nave del Emperador: orden a sus escoltas (por defecto, seguir) y su blanco si es «atacar». */
   escortOrder?: { order: EscortOrder; targetId: string | null };
   /** Solo la nave del Emperador: acoplada en la nave nodriza de esta flota, que espera en `at` (punto del sistema). */
-  dock?: { fleetId: string; slot: number; colonyPlanet: number | null; reach: number } | null;
+  dock?: { fleetId: string; slot: number; colonyPlanet: number | null; reach: number; at?: [number, number, number] | null } | null;
 }
 
 /** Clave (e id de la nave en el espacio) de una nave de flota pilotada a distancia. */
@@ -474,25 +474,27 @@ export class SpaceService {
    * una flota (ya validada): la flota espera en su sitio (`slot`) junto al punto
    * de reunión del sistema, y la nave tiene que estar a menos de `reach`.
    */
-  dock(client: Client, fleetId: string, slot: number, colonyPlanet: number | null, reach: number): CommandError | null {
+  dock(client: Client, fleetId: string, slot: number, colonyPlanet: number | null, reach: number, fleetAt: [number, number, number] | null = null): CommandError | null {
     const m = this.members.get(client.emperorId);
     if (client.piloting || !m || m.park || !m.clients.has(client)) return "too_far";
-    const at = this.dockPoint(m.systemId, slot, colonyPlanet, this.now());
+    const at = this.dockPoint(m.systemId, slot, colonyPlanet, this.now(), fleetAt);
     if (!at || distance(m.pose.p, at) > reach) return "too_far";
-    m.dock = { fleetId, slot, colonyPlanet, reach };
+    m.dock = { fleetId, slot, colonyPlanet, reach, at: fleetAt };
     return null;
   }
 
   /** Dónde espera ahora la flota en la que se acopla (se mueve con su planeta). */
-  private dockPoint(systemId: string, slot: number, colonyPlanet: number | null, now: number): Vec3 | null {
+  private dockPoint(systemId: string, slot: number, colonyPlanet: number | null, now: number, at: [number, number, number] | null = null): Vec3 | null {
+    // La flota tiene su sitio propio (donde llegó o la dejaron): ahí; si no, en el punto de reunión.
+    if (at) return at;
     const layout = this.layout(systemId);
     return layout ? fleetSlotPosition(fleetRallyPoint(layout, colonyPlanet, now), slot) : null;
   }
 
   /** Viajes acoplados en curso: al tomar los mandos en el destino, la nave sigue en el hangar de su flota. */
-  private expectedDocks = new Map<string, { systemId: string; fleetId: string; slot: number; colonyPlanet: number | null }>();
+  private expectedDocks = new Map<string, { systemId: string; fleetId: string; slot: number; colonyPlanet: number | null; at?: [number, number, number] | null }>();
 
-  expectDock(emperorId: string, dock: { systemId: string; fleetId: string; slot: number; colonyPlanet: number | null }): void {
+  expectDock(emperorId: string, dock: { systemId: string; fleetId: string; slot: number; colonyPlanet: number | null; at?: [number, number, number] | null }): void {
     this.expectedDocks.set(emperorId, dock);
   }
 
@@ -904,7 +906,7 @@ export class SpaceService {
     if (carried) {
       this.expectedDocks.delete(m.emperorId);
       if (carried.systemId === m.systemId) {
-        m.dock = { fleetId: carried.fleetId, slot: carried.slot, colonyPlanet: carried.colonyPlanet, reach: FLAGSHIP_DOCK.rangeM + 1600 };
+        m.dock = { fleetId: carried.fleetId, slot: carried.slot, colonyPlanet: carried.colonyPlanet, reach: FLAGSHIP_DOCK.rangeM + 1600, at: carried.at ?? null };
         client.send({ t: "docked", fleetId: carried.fleetId });
       }
     }
@@ -1137,7 +1139,7 @@ export class SpaceService {
     const layout = isDeepId(m.systemId) ? null : this.layout(m.systemId);
     m.park = this.cruisePark(m, layout, p, now) ?? parkAt(layout, p, now, { q: m.pose.q, engines: m.engines ?? false });
     // Acoplada: se guarda con el aparcamiento (si el servidor se reinicia, sigue acoplada al volver).
-    if (m.dock) m.park = { ...m.park, dock: { fleetId: m.dock.fleetId, slot: m.dock.slot, colonyPlanet: m.dock.colonyPlanet } };
+    if (m.dock) m.park = { ...m.park, dock: { fleetId: m.dock.fleetId, slot: m.dock.slot, colonyPlanet: m.dock.colonyPlanet, at: m.dock.at ?? null } };
     // Acoplada en una nodriza, sigue acoplada aunque se deje de pilotar (para viajar con su flota).
     this.dismissEscorts(m.emperorId);
     m.pose = { p, q: m.pose.q, v: parkedVelocity(m.park, now, layout) };
@@ -2021,7 +2023,7 @@ export class SpaceService {
   /** Acoplada en una nave nodriza: se repone de la bodega de su flota; si se aleja, se desacopla. */
   private resupplyDocked(m: Member, now: number): void {
     const dock = m.dock!;
-    const at = this.dockPoint(m.systemId, dock.slot, dock.colonyPlanet, now);
+    const at = this.dockPoint(m.systemId, dock.slot, dock.colonyPlanet, now, dock.at ?? null);
     // Aparcada dentro del hangar no se aleja; pilotada, si se aleja, se desacopla.
     if (!at || (!m.park && distance(m.pose.p, at) > dock.reach * 2)) {
       m.dock = null;

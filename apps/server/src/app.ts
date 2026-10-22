@@ -161,6 +161,7 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
   const flagships = new FlagshipService(deps.db, config, (summary) => discoveries.detail(summary), colonies);
   hub.flagships = flagships;
   emperors.layoutOf = (systemId) => flagships.layout(systemId);
+  fleets.layoutOf = (systemId) => flagships.layout(systemId);
   const space = new SpaceService(flagships, emperors, social, app.log);
   space.onReputation = (emperorId, delta) => reputation.addLater(emperorId, delta);
   space.crisis = crisis;

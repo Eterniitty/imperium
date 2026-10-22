@@ -128,7 +128,7 @@ export const emperors = pgTable("emperors", {
    * el desplazamiento desde su centro), orientación y si se dejó con los motores
    * encendidos (`ParkedOrbit` de `@imperium/sim`). Null: orbita la estrella.
    */
-  parkExtra: jsonb("park_extra").$type<{ anchor?: { planet: number; moon?: number }; q?: [number, number, number, number]; engines?: boolean; travel?: { from: [number, number, number]; until: number }; spin?: number; dock?: { fleetId: string; slot: number; colonyPlanet: number | null } }>(),
+  parkExtra: jsonb("park_extra").$type<{ anchor?: { planet: number; moon?: number }; q?: [number, number, number, number]; engines?: boolean; travel?: { from: [number, number, number]; until: number }; spin?: number; dock?: { fleetId: string; slot: number; colonyPlanet: number | null; at?: [number, number, number] | null } }>(),
   /**
    * Recursos de la nave (ver FLAGSHIP_SUPPLIES en content): combustible a la hora
    * `fuelAt` (la reserva de emergencia se regenera sola desde ahí) y munición a la
@@ -271,6 +271,11 @@ export const fleets = pgTable(
     number: integer("number").notNull(),
     /** Nombre que le ha puesto su dueño (null: «Flota N»). */
     name: text("name"),
+    /**
+     * Dónde está dentro de su sistema (m): donde llegó de un salto (por el borde,
+     * como una nave) o donde la dejaron. Null: en el punto de reunión (`rally.ts`).
+     */
+    localP: jsonb("local_p").$type<[number, number, number]>(),
     systemId: text("system_id").notNull(),
     destSystemId: text("dest_system_id"),
     departAt: timestamp("depart_at", { withTimezone: true }),
