@@ -18,7 +18,7 @@ export interface TechRequirement {
 export const TECH = {
   maxLevel: 5,
   /** Créditos y horas (de juego) para pasar al nivel 1, 2… 5. */
-  credits: [600, 1800, 4500, 10_000, 20_000],
+  credits: [400, 1800, 4500, 10_000, 20_000],
   hours: [1, 3, 6, 12, 24],
   /** Mejora por nivel de cada rama (fracción). */
   perLevel: {
