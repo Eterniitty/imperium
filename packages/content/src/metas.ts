@@ -48,6 +48,8 @@ export const REPUTATION = {
   perThousandCredits: 4,
   /** Atacar a otro humano en el Núcleo (una vez por incidente). */
   attackHuman: -8,
+  /** Por debajo, la milicia del Núcleo no acude a la petición de ayuda. */
+  militiaMin: -30,
   /** Reputación mínima para que un Emperador de la IA acepte un pacto, por personalidad. */
   aiPact: { merchant: -20, expansionist: 0, militarist: 40 } as Record<string, number>,
 } as const;

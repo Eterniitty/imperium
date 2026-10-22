@@ -10,6 +10,8 @@ import {
   type WsTicketResponse,
 } from "@imperium/shared";
 import { ClientMessageSchema } from "@imperium/shared/schemas";
+import { eq } from "drizzle-orm";
+import { emperors as emperorsTable } from "../db/schema";
 import { accountFromRequest, sessionCookieName } from "../auth/routes";
 import { RateLimiter } from "../auth/rateLimit";
 import type { ServerConfig } from "../config";
@@ -24,7 +26,7 @@ import type { WarService } from "../war/service";
 import type { HumanityService } from "../humanity/service";
 import type { ProbeService } from "../probe/service";
 import type { MercenaryService } from "../fleet/mercenaries";
-import { FLAGSHIP_DOCK } from "@imperium/content";
+import { FLAGSHIP_DOCK, REPUTATION } from "@imperium/content";
 import { fleetRallyPoint, fleetSlotPosition } from "@imperium/sim";
 import type { MarketService } from "../market/service";
 import type { AlienService } from "../ai/service";
@@ -66,6 +68,10 @@ const MAX_CONNECTIONS_PER_ACCOUNT = 5;
 const MAX_CONNECTIONS = 1_000;
 
 export async function realtimeRoutes(app: FastifyInstance, { config, db, emperors, fleets, flagships, colonies, logistics, wars, space, hub, humanity, market, aliens, sieges, lineage, onLineage, probes , mercenaries }: RealtimeDeps) {
+  /** Reputación ante la humanidad (la milicia no acude a quien la tiene muy mala). */
+  const reputationOf = async (emperorId: string): Promise<number> =>
+    (await db.select({ r: emperorsTable.reputation }).from(emperorsTable).where(eq(emperorsTable.id, emperorId)).limit(1))[0]?.r ?? 0;
+
   const cookieName = sessionCookieName(config);
   const tickets = new TicketStore();
   const ticketsPerAccount = new RateLimiter(30, MINUTE);
@@ -390,7 +396,7 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     return error ? ({ ok: false, error } as const) : ({ ok: true } as const);
                   }
                   case "help.call": {
-                    const res = space.callHelp(client);
+                    const res = space.callHelp(client, (await reputationOf(owner.emperorId)) >= REPUTATION.militiaMin);
                     if (!res.ok) return res;
                     hub.sendToEmperors(res.allies, { t: "helpCall", from: owner.emperorId, name: res.name, systemId: res.systemId, serverTime: Date.now() });
                     return { ok: true } as const;

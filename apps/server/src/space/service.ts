@@ -1604,7 +1604,7 @@ export class SpaceService {
    * Cerca del Núcleo, la milicia manda refuerzos junto a él. Devuelve a quién
    * avisar (sus compañeros) o el error.
    */
-  callHelp(client: Client): { ok: true; systemId: string; name: string; allies: Set<string>; militia: number } | { ok: false; error: CommandError } {
+  callHelp(client: Client, militiaWilling = true): { ok: true; systemId: string; name: string; allies: Set<string>; militia: number } | { ok: false; error: CommandError } {
     if (client.piloting) return { ok: false, error: "invalid_order" };
     const m = this.members.get(client.emperorId);
     if (!m || m.park || !m.clients.has(client) || isDeepId(m.systemId)) return { ok: false, error: "too_far" };
@@ -1614,7 +1614,8 @@ export class SpaceService {
     let militia = 0;
     const room = this.rooms.get(m.systemId);
     const layout = this.layout(m.systemId);
-    if (room && layout && systemRing(m.systemId) <= HELP_CALL.militiaMaxRing) {
+    // Con muy mala reputación ante la humanidad (`REPUTATION.militiaMin`), la milicia no acude.
+    if (militiaWilling && room && layout && systemRing(m.systemId) <= HELP_CALL.militiaMaxRing) {
       HELP_CALL.militiaShips.forEach((classId, i) => {
         const id = `militia:${m.systemId}:help:${m.emperorId}:${i}`;
         const cls = getShipClass(classId as ShipClassId);

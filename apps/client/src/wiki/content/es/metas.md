@@ -18,6 +18,7 @@ Tu **reputación ante la humanidad** va de −100 a 100 y sale en la pestaña Cl
 
 - **Sube** al derribar Carroñeros (mucho más si es una **guarida**) y al aportar **créditos** a los proyectos comunes de la [humanidad](/wiki/humanidad).
 - **Baja** al atacar a otros humanos en el **Núcleo Humano**.
+- Con reputación **muy mala**, la **milicia del Núcleo** no acude cuando pides ayuda.
 - Con buena reputación, los Emperadores de la IA **aceptan pactos** (ser [compañeros](/wiki/companeros)): los comerciantes casi siempre, los expansionistas si no es negativa y los **militaristas** solo si es muy buena.
 
 ## Privacidad
