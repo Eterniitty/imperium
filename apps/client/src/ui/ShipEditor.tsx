@@ -269,7 +269,7 @@ export function ShipEditor() {
 
           <aside className="ship-editor-stats">
             <div className="ship-editor-preview">
-              <ShipThumb classId={hull.baseClass} size={260} />
+              <ShipThumb classId={hull.baseClass} size={260} design={draft} />
             </div>
             <h3>{t("shipEditor.stats")}</h3>
             <dl>

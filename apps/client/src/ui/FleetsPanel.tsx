@@ -63,7 +63,7 @@ export function FleetsPanel() {
                   <span className="small fleet-ships">
                     {shipCounts(f).map(({ key, classId, design, n }) => (
                       <span key={key}>
-                        <ShipThumb classId={classId} size={34} />
+                        <ShipThumb classId={classId} size={34} design={f.ships.find((s) => s.design?.name === design)?.design} />
                         {t("ship.count", { count: n, name: design ?? contentText(locale, `ship.${classId}.name`) })}
                       </span>
                     ))}

@@ -5,7 +5,8 @@
  * pequeño para todas; si el navegador no tiene WebGL, no hay miniaturas.
  */
 import * as THREE from "three";
-import { createShipModel, shipLength } from "./shipFactory";
+import type { ShipDesignSnapshot } from "@imperium/shared";
+import { createDesignModel, createShipModel, designLook, shipLength } from "./shipFactory";
 
 const WIDTH = 320;
 const HEIGHT = 192;
@@ -29,10 +30,20 @@ function getRenderer(): THREE.WebGLRenderer | null {
 
 /** Imagen (data URL) de una clase de nave vista de tres cuartos, o null si no se puede dibujar. */
 export function shipThumbnail(classId: string): string | null {
+  return thumbnail(classId, shipLength(classId), () => createShipModel(classId, { noLod: true }));
+}
+
+/** Miniatura de una nave del Astillero (con el aspecto de sus piezas). */
+export function designThumbnail(design: Pick<ShipDesignSnapshot, "hullId" | "parts">): string | null {
+  const look = designLook(design);
+  return look ? thumbnail(look.classId, look.model.lengthM, () => createDesignModel(design, { noLod: true })) : null;
+}
+
+function thumbnail(key: string, L: number | null, make: () => THREE.Group | null): string | null {
+  const classId = key;
   if (cache.has(classId)) return cache.get(classId)!;
   const r = getRenderer();
-  const L = shipLength(classId);
-  const ship = r && L ? createShipModel(classId, { noLod: true }) : null;
+  const ship = r && L ? make() : null;
   if (!r || !L || !ship) {
     cache.set(classId, null);
     return null;

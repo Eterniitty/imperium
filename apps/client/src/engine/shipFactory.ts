@@ -17,7 +17,8 @@
  * mínima con su halo.
  */
 import * as THREE from "three";
-import type { ShipArchetype } from "@imperium/content";
+import { getHull, getPart, type PartKind, type ShipArchetype } from "@imperium/content";
+import type { ShipDesignSnapshot } from "@imperium/shared";
 import { lookOf, type ShipLook } from "./ship/look";
 import { assembleShip, templateFor } from "./ship/rig";
 
@@ -67,4 +68,43 @@ export function createArchetypeModel(archetype: ShipArchetype, lengthM: number, 
 /** Eslora (m) de una clase de nave, o null si no existe. */
 export function shipLength(classId: string): number | null {
   return lookOf(classId)?.model.lengthM ?? null;
+}
+
+/**
+ * Aspecto de una nave del Astillero (fase E5): el de la clase base de su casco
+ * con lo que dicen sus piezas: motores (propulsión y cuántico), torretas (sus
+ * armas, en cascos grandes), contenedores (bodegas), hangar, anillo de hábitat
+ * y plato de sensores. Null si el casco no existe.
+ */
+export function designLook(design: Pick<ShipDesignSnapshot, "hullId" | "parts">): ShipLook | null {
+  const hull = getHull(design.hullId);
+  const base = hull ? lookOf(hull.baseClass) : null;
+  if (!hull || !base) return null;
+  const parts = Object.values(design.parts).map((id) => getPart(id)).filter((p) => p !== undefined);
+  const count = (k: PartKind) => parts.filter((p) => p.kind === k).length;
+  const has = (id: string) => parts.some((p) => p.id === id);
+  const big = hull.class === "L" || hull.class === "XL";
+  const key = Object.entries(design.parts)
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([slot, part]) => `${slot}=${part}`)
+    .join(",");
+  return {
+    ...base,
+    classId: `design:${hull.id}:${key}`,
+    model: {
+      ...base.model,
+      engines: Math.max(1, count("thruster") + (count("quantum") > 0 ? 1 : 0)),
+      ...(big ? { turrets: count("weapon") } : {}),
+      pods: count("cargo") * 2 || undefined,
+      hangar: count("hangar") > 0 || undefined,
+      habitat: has("life_m") || undefined,
+      dish: has("sensor_m") || undefined,
+    },
+  };
+}
+
+/** Modelo 3D de una nave del Astillero (ver `designLook`). */
+export function createDesignModel(design: Pick<ShipDesignSnapshot, "hullId" | "parts">, opts: ShipModelOptions = {}): THREE.Group | null {
+  const look = designLook(design);
+  return look ? create(look, opts) : null;
 }
