@@ -24,10 +24,16 @@ export interface ParkedOrbit {
   q?: readonly [number, number, number, number];
   /** Si se dejó con los motores encendidos. */
   engines?: boolean;
+  /**
+   * Crucero sin piloto (se cerró la pestaña en pleno crucero): desde `from` (a
+   * la hora `at`) la nave va en línea recta hasta su sitio junto al cuerpo
+   * anclado, adonde llega a la hora `until`; después, aparcada allí.
+   */
+  travel?: { from: Vec3Like; until: number };
 }
 
 /** Centro del cuerpo al que está anclada la nave a la hora `t`, o null si no lo está (o no existe). */
-function anchorCenter(park: ParkedOrbit, t: number, layout: SystemLayout | null | undefined): [number, number, number] | null {
+export function anchorCenter(park: Pick<ParkedOrbit, "anchor">, t: number, layout: SystemLayout | null | undefined): [number, number, number] | null {
   if (!park.anchor || !layout) return null;
   const planet = layout.planets[park.anchor.planet];
   if (!planet) return null;
@@ -49,6 +55,12 @@ function anchorCenter(park: ParkedOrbit, t: number, layout: SystemLayout | null 
  */
 export function parkedPosition(park: ParkedOrbit, t: number, layout?: SystemLayout | null): [number, number, number] {
   const c = anchorCenter(park, t, layout);
+  if (c && park.travel && t < park.travel.until) {
+    // De camino (crucero sin piloto): en línea recta hasta su sitio junto al cuerpo, que se mueve con él.
+    const k = Math.max(0, Math.min(1, (t - park.at) / Math.max(1, park.travel.until - park.at)));
+    const f = park.travel.from;
+    return [f[0] + (c[0] + park.p[0] - f[0]) * k, f[1] + (c[1] + park.p[1] - f[1]) * k, f[2] + (c[2] + park.p[2] - f[2]) * k];
+  }
   if (c) return [c[0] + park.p[0], c[1] + park.p[1], c[2] + park.p[2]];
   const [x, y, z] = park.p;
   const r = Math.hypot(x, z);
@@ -121,7 +133,7 @@ export function defaultPark(layout: SystemLayout): ParkedOrbit {
 export function sanitizePark(layout: SystemLayout, park: ParkedOrbit): ParkedOrbit {
   // Anclada a un cuerpo que existe: se queda donde se dejó.
   if (anchorCenter(park, park.at, layout)) return park;
-  if (park.anchor) park = { p: park.p, at: park.at, q: park.q, engines: park.engines };
+  if (park.anchor) park = { p: park.travel ? park.travel.from : park.p, at: park.at, q: park.q, engines: park.engines };
   const [x, y, z] = park.p;
   const d = Math.hypot(x, y, z);
   const min = layout.parkMinRadius * 1.05;

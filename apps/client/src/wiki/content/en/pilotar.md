@@ -76,6 +76,8 @@ The pulse drive ([[P]], on and off) is a **supercruise** to cross the system fro
 
 Cruise **keeps going with the galaxy map open** (M): the ship keeps flying to its destination and, when you come back (M or "Pilot"), you find it where it is, with the cruise notice. Viewing another system from the map does stop it (the ship stays parked).
 
+And if you **close the tab** mid-cruise towards a planet or moon, the ship **keeps going there without you**: in a straight line, at most at pulse speed (the server works out the time; never less than flying would take) and spending the pulse fuel for the whole trip (if there is not enough, it stays where it was). When you come back you find it on its way or already there; if it had not arrived, cruise resumes by itself.
+
 Inside a system (or a deep-space region) the ship can fly itself to a place or follow another ship. It works the same controls you do —turning, thrusters, boost and pulse drive—, so it flies at the same speeds and other players see it fly normally.
 
 - **Choose a destination**: the **Cruise** button opens the list of planets, moons, asteroid belts, the system's anomaly and, in deep space, the nearest asteroids, plus the ships in sight (your [companions](/wiki/companeros) first). You can also press **Cruise here** in the panel of the selected planet, or **double-click** a planet, moon, ship or an empty point of the system plane (a marked point) in the view (with engines on, **Alt + double-click**, since left click fires).

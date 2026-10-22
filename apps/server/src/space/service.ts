@@ -1,6 +1,6 @@
 import { AIM_ASSIST, ALIEN_LOCAL, QUANTUM_RIFT, BODY_COLLISION, CORE_MILITIA, MOTHERSHIP_HANGAR, EMPEROR_FLAGSHIP, ESCORT, FLAGSHIP_DOCK, SHIP_COLLISION, FLAGSHIP_HIT_RADIUS_M, FLAGSHIP_LENGTH_M, FLAGSHIP_HOLD, FLAGSHIP_REPAIR, FLAGSHIP_SUPPLIES, LINEAGE, STAR_HEAT, SUPERMASSIVE, REPUTATION, getAlienShipClass, getShipClass, HELP_CALL, MINING, PIRATE_AI, PIRATE_AMBUSH, SCAVENGER_LAIR, type ShipClassId, type ShipCombat } from "@imperium/content";
 import { HEAT_CAUSE, HORIZON_CAUSE, IMPACT_CAUSE, MOTHERSHIP_CAUSE, isDeepId, type CommandError, type EscortOrder, type ServerMessage, type ShipDesignSnapshot, type ShipPose, type Quat, type ShipState, type Vec3, type WeaponKind } from "@imperium/shared";
-import { addToHold, arriveVelocity, designStats, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, parkAt, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
+import { addToHold, arriveVelocity, designStats, avoidObstacles, escortSlot, flankOffset, bodiesAt, fleetRallyPoint, fleetSlotPosition, friendInLine, jinkVector, nextPirateMode, packTarget, type PirateMode, type PirateObstacle, insideEventHorizon, starHeatDps, gravitySpeedBound, isTravelling, miningYield, parkedPosition, planetPosition, parkedVelocity, parkAt, anchorCenter, PULSE_CHARGE_SEC, PILOT_BOOST, PILOT_MAX_SPEED, PILOT_SPEED, plausibleMove, pulseLimitAt, leadPoint, projectileSpeed, sweepHit, type Hold, type ParkedOrbit, type SystemLayout } from "@imperium/sim";
 import type { FastifyBaseLogger } from "fastify";
 import type { EmperorService } from "../emperor/service";
 import { inHumanCore } from "../emperor/world";
@@ -55,6 +55,8 @@ interface Member {
    * puede disparar). Null mientras alguien la pilota.
    */
   park: ParkedOrbit | null;
+  /** Crucero en curso que dice el piloto (con su hora): si se desconecta, la nave sigue hasta allí sin él. */
+  cruise?: { planet: number; moon?: number; stop: number; eta: number; at: number };
   /** Aparcada y empujada por otra nave: falta guardar su nueva posición. */
   parkUnsaved?: boolean;
   /** Solo Emperadores pilotados: si el piloto lleva los motores encendidos (se guarda al aparcar). */
@@ -341,7 +343,7 @@ export class SpaceService {
   }
 
   /** Posición recibida de un cliente que pilota en `systemId`. */
-  async pose(client: Client, systemId: string, raw: ShipPose & { e?: boolean }): Promise<void> {
+  async pose(client: Client, systemId: string, raw: ShipPose & { e?: boolean; c?: { planet: number; moon?: number; stop: number; eta: number } }): Promise<void> {
     // Orientación unitaria (un cuaternión más largo ensancharía el cono de los cañones) y sin campos de más.
     const ql = Math.hypot(...raw.q) || 1;
     const pose: ShipPose & { e?: boolean } = { p: raw.p, q: [raw.q[0] / ql, raw.q[1] / ql, raw.q[2] / ql, raw.q[3] / ql], v: raw.v, e: raw.e };
@@ -372,6 +374,7 @@ export class SpaceService {
     if (this.members.get(m.emperorId) !== m) return;
     m.pose = { p: pose.p, q: pose.q, v: pose.v };
     if (pose.e !== undefined) m.engines = pose.e;
+    m.cruise = raw.c ? { ...raw.c, at: t } : undefined;
     m.poseAt = t;
     m.history.push({ t, p: pose.p });
     if (m.history.length > HISTORY_SIZE) m.history.shift();
@@ -1130,7 +1133,7 @@ export class SpaceService {
     const p: Vec3 = [m.pose.p[0] + m.pose.v[0] * ahead, m.pose.p[1] + m.pose.v[1] * ahead, m.pose.p[2] + m.pose.v[2] * ahead];
     // Se queda donde se dejó: junto al planeta o luna en cuya esfera está (y lo acompaña), con su orientación y sus motores.
     const layout = isDeepId(m.systemId) ? null : this.layout(m.systemId);
-    m.park = parkAt(layout, p, now, { q: m.pose.q, engines: m.engines ?? false });
+    m.park = this.cruisePark(m, layout, p, now) ?? parkAt(layout, p, now, { q: m.pose.q, engines: m.engines ?? false });
     // Acoplada en una nodriza, sigue acoplada aunque se deje de pilotar (para viajar con su flota).
     this.dismissEscorts(m.emperorId);
     m.pose = { p, q: m.pose.q, v: parkedVelocity(m.park, now, layout) };
@@ -1145,13 +1148,46 @@ export class SpaceService {
       .catch((err: unknown) => this.log.error(err, "Error al guardar la nave aparcada"));
   }
 
+  /**
+   * Se deja la nave en pleno crucero hacia un planeta o una luna (se cerró la
+   * pestaña): sigue sin piloto, en línea recta, hasta su sitio junto al cuerpo,
+   * en el tiempo que le quedaba (con un margen). Null si no iba en crucero.
+   */
+  private cruisePark(m: Member, layout: SystemLayout | null, p: Vec3, now: number): ParkedOrbit | null {
+    const c = m.cruise;
+    if (!c || !layout || now - c.at > 3000 || isDeepId(m.systemId)) return null;
+    const anchor = c.moon !== undefined ? { planet: c.planet, moon: c.moon } : { planet: c.planet };
+    const center = anchorCenter({ anchor }, now, layout);
+    if (!center) return null;
+    const d = [p[0] - center[0], p[1] - center[1], p[2] - center[2]] as const;
+    const len = Math.hypot(...d) || 1;
+    const stop = Math.max(c.stop, 1);
+    // El tiempo no se fía del cliente: como poco, el trayecto a la velocidad máxima del pulso más su carga y aceleración.
+    const minEta = Math.max(0, len - stop) / PILOT_MAX_SPEED + PULSE_CHARGE_SEC + 5;
+    const eta = Math.max(minEta, Math.min(c.eta, 6 * 3600) * 1.1 + 5);
+    // Y gasta el combustible del pulso de todo el trayecto; si no alcanza, se queda donde estaba.
+    if (!m.combat.spendPulse(eta, now)) return null;
+    return {
+      p: [(d[0] / len) * stop, (d[1] / len) * stop, (d[2] / len) * stop],
+      at: now,
+      anchor,
+      q: m.pose.q,
+      engines: m.engines ?? false,
+      travel: { from: p, until: now + eta * 1000 },
+    };
+  }
+
   /** Guarda dónde están las naves pilotadas, como si se aparcasen (al apagar el servidor). */
   async flushParks(): Promise<void> {
     const now = this.now();
     await Promise.all(
       [...this.members.values()]
         .filter((m) => m.kind === "emperor" && !m.park)
-        .map((m) => this.flagships.savePark(m.emperorId, parkAt(isDeepId(m.systemId) ? null : this.layout(m.systemId), m.pose.p, now, { q: m.pose.q, engines: m.engines ?? false })).catch((err: unknown) => this.log.error(err, "Error al guardar la nave aparcada"))),
+        .map((m) => {
+          const layout = isDeepId(m.systemId) ? null : this.layout(m.systemId);
+          return this.flagships.savePark(m.emperorId, this.cruisePark(m, layout, m.pose.p, now) ?? parkAt(layout, m.pose.p, now, { q: m.pose.q, engines: m.engines ?? false }));
+        })
+        .map((save) => save.catch((err: unknown) => this.log.error(err, "Error al guardar la nave aparcada"))),
     );
     await this.rememberPiloted();
     await Promise.all([...this.combatants].filter(([id]) => !id.startsWith("pirate:")).map(([id, c]) => this.saveSupplies(id, c)));

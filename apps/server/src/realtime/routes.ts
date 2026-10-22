@@ -162,7 +162,7 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
         if (!limiter.consume(owner.accountId)) return socket.close(WS_CLOSE.rateLimited, "rate limited");
         switch (msg.t) {
           case "pose":
-            void space.pose(client, msg.systemId, { p: msg.p, q: msg.q, v: msg.v, e: msg.e }).catch((err: unknown) => req.log.error(err, "Error en una posición"));
+            void space.pose(client, msg.systemId, { p: msg.p, q: msg.q, v: msg.v, e: msg.e, c: msg.c }).catch((err: unknown) => req.log.error(err, "Error en una posición"));
             return;
           case "leave":
             space.leaveClient(client);

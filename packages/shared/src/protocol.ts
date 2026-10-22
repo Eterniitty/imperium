@@ -215,7 +215,18 @@ export type ClientMessage =
   | { [Op in CommandOp]: { t: "cmd"; cmdId: string; op: Op; args: CommandArgs[Op] } }[CommandOp]
   | { t: "sub"; topic: Topic }
   /** Pilotando dentro de `systemId`: posición actual (unas 8 veces por segundo). */
-  | ({ t: "pose"; systemId: string; /** Motores encendidos (se guarda al aparcar la nave). */ e?: boolean } & ShipPose)
+  | ({
+      t: "pose";
+      systemId: string;
+      /** Motores encendidos (se guarda al aparcar la nave). */
+      e?: boolean;
+      /**
+       * Crucero en curso hacia un planeta (o una de sus lunas): si se cierra la
+       * pestaña, la nave sigue hasta allí sin piloto (`stop`: distancia al centro
+       * a la que se detiene; `eta`: segundos que faltan).
+       */
+      c?: { planet: number; moon?: number; stop: number; eta: number };
+    } & ShipPose)
   /** Deja de pilotar en el sistema (vuelve al mapa o sale al espacio interestelar). */
   | { t: "leave" }
   /**

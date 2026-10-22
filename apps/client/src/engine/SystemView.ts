@@ -710,6 +710,14 @@ export class SystemView implements View {
     if (this.arrival) this.placeArrival();
     this.placeChaseCamera(1);
     gameStore.getState().setFlight(true, 0);
+    // Iba en crucero sin piloto (se cerró la pestaña) y aún no ha llegado: se reanuda hacia el mismo sitio.
+    const travel = remote ? undefined : this.parkHere();
+    if (travel?.travel && travel.anchor && serverNow() < travel.travel.until) {
+      const pl = this.layout.planets[travel.anchor.planet];
+      const moon = travel.anchor.moon !== undefined ? pl?.moons[travel.anchor.moon] : undefined;
+      const id = moon && pl ? `moon:${pl.index}:${moon.index}` : pl ? `planet:${pl.index}` : null;
+      if (id) window.setTimeout(() => this.ship && this.cruiseTo(id), 0);
+    }
   }
 
   /**
@@ -1690,7 +1698,27 @@ export class SystemView implements View {
     const { position: p, quaternion: q } = this.ship;
     const v = this.flight.velocity;
     const r = (n: number) => Math.round(n * 1000) / 1000;
-    connection.send({ t: "pose", systemId: this.systemId, p: [r(p.x), r(p.y), r(p.z)], q: [r(q.x), r(q.y), r(q.z), r(q.w)], v: [r(v.x), r(v.y), r(v.z)], e: this.engines.state === "on" || this.engines.state === "starting" });
+    connection.send({ t: "pose", systemId: this.systemId, p: [r(p.x), r(p.y), r(p.z)], q: [r(q.x), r(q.y), r(q.z), r(q.w)], v: [r(v.x), r(v.y), r(v.z)], e: this.engines.state === "on" || this.engines.state === "starting", ...this.cruiseIntent() });
+  }
+
+  /**
+   * Crucero en curso hacia un planeta o una luna, para el servidor: si se cierra
+   * la pestaña, la nave sigue hasta allí sin piloto (`c` de `pose`).
+   */
+  private cruiseIntent(): { c?: { planet: number; moon?: number; stop: number; eta: number } } {
+    const target = this.autopilot.target;
+    if (!target || this.remotePiloting || !this.layout || (target.mode !== "goto" && target.mode !== "orbit")) return {};
+    const [kind, a, b] = target.id.split(":");
+    const planet = Number(a);
+    const pl = this.layout.planets[planet];
+    if (!pl || (kind !== "planet" && kind !== "moon")) return {};
+    const moon = kind === "moon" ? pl.moons.findIndex((m) => m.index === Number(b)) : undefined;
+    if (moon === -1) return {};
+    const spot = this.cruiseWorld().spots.find((s) => s.id === target.id);
+    const stop = spot ? spot.stopRadius : (moon !== undefined ? pl.moons[moon]!.body.radius : pl.size) * 3;
+    const tel = telemetry.cruise;
+    const eta = tel?.seconds ?? this.autopilot.distance / Math.max(1, PULSE_MAX_SPEED * 0.5) + 10;
+    return { c: { planet, ...(moon !== undefined ? { moon } : {}), stop, eta: Math.min(86_400, Math.max(0, eta)) } };
   }
 
   /**

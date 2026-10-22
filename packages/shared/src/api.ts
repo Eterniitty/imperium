@@ -381,7 +381,15 @@ export interface EmperorHumans {
  */
 export interface FlagshipStatus {
   systemId: string;
-  park: { p: [number, number, number]; at: number; anchor?: { planet: number; moon?: number }; q?: [number, number, number, number]; engines?: boolean };
+  park: {
+    p: [number, number, number];
+    at: number;
+    anchor?: { planet: number; moon?: number };
+    q?: [number, number, number, number];
+    engines?: boolean;
+    /** Crucero sin piloto: de `from` hasta su sitio junto al cuerpo anclado, adonde llega a la hora `until`. */
+    travel?: { from: [number, number, number]; until: number };
+  };
   /**
    * Combustible y munición guardados (lo que se gasta al pilotar llega aparte, en
    * tiempo real). El combustible es el de la hora `fuelAt`: por debajo de la
