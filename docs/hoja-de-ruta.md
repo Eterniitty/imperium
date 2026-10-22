@@ -119,7 +119,8 @@ Informe completo en Claude Docs («Aeonarch — Plan de juego»). Cinco fases, c
 
 Plan en `docs/juego-solitario.md` y `docs/tutorial.md`. Orden:
 
-- [ ] Contratos (fase 1: caza de Carroñeros, exploración, reparto y rescate), con tablero y recompensas.
+- [x] Contratos (fase 1, 22-10-2026): caza de Carroñeros, exploración y minería, con tablero diario, plazos y pago en créditos y reputación (`ContractService`, migración 0046, Wiki «Contratos»).
+- [ ] Contratos (fase 2): reparto de recursos y rescate; objetivo marcado en el mapa y en el crucero.
 - [ ] Rango del Emperador (experiencia, títulos y mejoras).
 - [ ] Tutorial: motor, menú y capítulos 1–4.
 - [ ] Eventos en el espacio con decisiones.

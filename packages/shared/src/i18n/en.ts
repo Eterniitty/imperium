@@ -1795,7 +1795,7 @@ export const en: Record<I18nKey, string> = {
   "contract.kind.explore": "Exploration",
   "contract.kind.mine": "Mining",
   "contract.desc.hunt": "Shoot down Scavengers: {n}",
-  "contract.desc.explore": "Discover new systems (with your ship, fleets or probes): {n}",
+  "contract.desc.explore": "Discover new systems: {n}",
   "contract.desc.mine": "Extract ore in deep space: {n} units",
   "contract.reward": "{credits} ₢ · +{rep} reputation",
   "contract.hours": "Deadline: {h} h",

@@ -1797,7 +1797,7 @@ export const es = {
   "contract.kind.explore": "Exploración",
   "contract.kind.mine": "Minería",
   "contract.desc.hunt": "Derriba Carroñeros: {n}",
-  "contract.desc.explore": "Descubre sistemas nuevos (con tu nave, flotas o sondas): {n}",
+  "contract.desc.explore": "Descubre sistemas nuevos: {n}",
   "contract.desc.mine": "Extrae mineral en el espacio profundo: {n} unidades",
   "contract.reward": "{credits} ₢ · +{rep} de reputación",
   "contract.hours": "Plazo: {h} h",
