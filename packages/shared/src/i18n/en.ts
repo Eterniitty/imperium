@@ -1676,6 +1676,8 @@ export const en: Record<I18nKey, string> = {
   "settings.flight.model.arcadeHint": "The ship always flies where it points. W speeds up, S brakes to a stop (no reverse), A/D turn and the ship banks by itself; the mouse aims. Hands off, it keeps cruise speed (30 %).",
   "settings.flight.model.newtonianHint": "Real inertia: engines push and the ship keeps drifting; strafe, up/down and reverse with the manoeuvring thrusters.",
   "help.keysArcade": "Arcade flight (Settings → Piloting): {forward} speed up · {back} brake · {strafeLeft}/{strafeRight} turn · mouse: aim · {boost} boost · {rollLeft}/{rollRight} roll",
+  "cruise.hud.distance": "Distance",
+  "cruise.hud.eta": "Arrival",
   "shipEditor.open": "Shipyard",
   "shipEditor.openTitle": "Design your ships part by part",
   "shipEditor.title": "Shipyard · ship design",

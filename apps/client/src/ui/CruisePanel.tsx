@@ -88,29 +88,46 @@ export function CruiseHud() {
   if (!flight || !c) return null;
   return (
     <div className="cruise-hud panel" role="status">
-      <div className="stat-label">
-        {t("cruise.title")} · {t(`cruise.phase.${c.phase}`)}
-      </div>
-      {c.phase === "orbit" ? (
-        // En órbita: la velocidad orbital real y la altitud sobre el cuerpo (la distancia al punto que persigue no dice nada).
-        <div>
-          {t("cruise.hud.orbit")} <strong>{c.name}</strong> ·{" "}
-          <span className="mono">{t("cruise.hud.orbitStats", { speed: fmtSpeedMs(tel.speed), altitude: formatDistance(tel.nearest?.distance ?? 0) })}</span>
+      {c.phase !== "orbit" && <SpeedDial size={112} speed={tel.speed} />}
+      <div className="cruise-info">
+        <div className="stat-label">
+          {t("cruise.title")} · {t(`cruise.phase.${c.phase}`)}
         </div>
-      ) : (
-        <>
-          <div>
-            {t(c.mode === "follow" ? "cruise.hud.follow" : c.mode === "orbit" ? "cruise.hud.orbit" : "cruise.hud.goto")} <strong>{c.name}</strong> · <span className="mono">{formatDistance(c.distance)}</span>
-            {c.seconds !== null && <span className="mono"> · {formatDuration(c.seconds * 1000)}</span>}
-          </div>
-          <SpeedDial size={64} />
-        </>
-      )}
-      <div className="muted small">
-        {t("cruise.hud.cancel")}
-        <button className="link-btn" onClick={() => engineRef.current?.cancelCruise()}>
-          {t("cruise.cancel")}
-        </button>
+        {c.phase === "orbit" ? (
+          // En órbita: la velocidad orbital real y la altitud sobre el cuerpo (la distancia al punto que persigue no dice nada).
+          <>
+            <div className="cruise-target">
+              {t("cruise.hud.orbit")} <strong>{c.name}</strong>
+            </div>
+            <div className="mono">{t("cruise.hud.orbitStats", { speed: fmtSpeedMs(tel.speed), altitude: formatDistance(tel.nearest?.distance ?? 0) })}</div>
+          </>
+        ) : (
+          <>
+            <div className="cruise-target">
+              {t(c.mode === "follow" ? "cruise.hud.follow" : c.mode === "orbit" ? "cruise.hud.orbit" : "cruise.hud.goto")} <strong>{c.name}</strong>
+            </div>
+            <div className="cruise-figures">
+              <span>
+                <small>{t("cruise.hud.distance")}</small>
+                <b className="mono">{formatDistance(c.distance)}</b>
+              </span>
+              <span>
+                <small>{t("cruise.hud.eta")}</small>
+                <b className="mono">{c.seconds !== null ? formatDuration(c.seconds * 1000) : "—"}</b>
+              </span>
+              <span>
+                <small>{t("flight.speed")}</small>
+                <b className="mono">{fmtSpeedMs(tel.speed)}</b>
+              </span>
+            </div>
+          </>
+        )}
+        <div className="cruise-cancel">
+          <span className="muted small">{t("cruise.hud.cancel")}</span>
+          <button className="btn small" onClick={() => engineRef.current?.cancelCruise()}>
+            {t("cruise.cancel")}
+          </button>
+        </div>
       </div>
     </div>
   );

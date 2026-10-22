@@ -20,7 +20,15 @@ const fromPos = (p: number) => (p >= FREE_FROM ? 0 : Math.round(MIN * (CRUISE_LI
  * alrededor o se gira con la rueda del ratón. Del todo a la derecha, «máx.»: sin
  * límite (el pulso entero). Guarda `prefs.flight.cruiseLimit`.
  */
-export function SpeedDial({ size = 92 }: { size?: number }) {
+/** Marcas de la escala (m/s), con su rótulo en km/s. */
+const TICKS: ReadonlyArray<readonly [number, string]> = [
+  [1_000, "1"],
+  [10_000, "10"],
+  [100_000, "100"],
+  [1_000_000, "1000"],
+];
+
+export function SpeedDial({ size = 150, speed }: { size?: number; /** Velocidad actual (m/s): aguja fina sobre el arco. */ speed?: number }) {
   const t = useT();
   const limit = useSettings((s) => s.prefs.flight.cruiseLimit);
   const ref = useRef<SVGSVGElement>(null);
@@ -35,10 +43,10 @@ export function SpeedDial({ size = 92 }: { size?: number }) {
     set(fromPos(p));
   };
   const p = toPos(limit);
-  const R = 38;
-  const point = (q: number) => {
+  const R = 40;
+  const point = (q: number, r = R) => {
     const a = START + q * SWEEP;
-    return [50 + Math.sin(a) * R, 50 - Math.cos(a) * R] as const;
+    return [50 + Math.sin(a) * r, 50 - Math.cos(a) * r] as const;
   };
   const arc = (q: number) => {
     const [x0, y0] = point(0);
@@ -46,6 +54,10 @@ export function SpeedDial({ size = 92 }: { size?: number }) {
     return `M ${x0} ${y0} A ${R} ${R} 0 ${q * SWEEP > Math.PI ? 1 : 0} 1 ${x1} ${y1}`;
   };
   const [kx, ky] = point(p);
+  const value = limit > 0 ? fmtSpeedMs(limit) : t("cruise.speedFree");
+  const [num, unit] = value.split(" ");
+  // Aguja de la velocidad real (escala logarítmica, por debajo de 1 km/s se queda en el principio).
+  const needle = speed !== undefined && speed > 0 ? Math.min(1, Math.max(0, (Math.log(Math.max(MIN, speed) / MIN) / Math.log(CRUISE_LIMIT_MAX / MIN)) * FREE_FROM)) : null;
   return (
     <div className="speed-dial" title={t("cruise.speedHint")}>
       <svg
@@ -55,7 +67,7 @@ export function SpeedDial({ size = 92 }: { size?: number }) {
         height={size}
         role="slider"
         aria-label={t("cruise.speed")}
-        aria-valuetext={limit > 0 ? fmtSpeedMs(limit) : t("cruise.speedFree")}
+        aria-valuetext={value}
         onPointerDown={(e) => {
           (e.target as Element).setPointerCapture?.(e.pointerId);
           fromEvent(e);
@@ -68,13 +80,43 @@ export function SpeedDial({ size = 92 }: { size?: number }) {
           set(fromPos(Math.max(0, Math.min(1, p + (e.deltaY < 0 ? 0.03 : -0.03)))));
         }}
       >
+        <defs>
+          <linearGradient id="dial-grad" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0" stopColor="#5fd3e6" />
+            <stop offset="1" stopColor="#e8b64c" />
+          </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="47" className="dial-face" />
         <path d={arc(1)} className="dial-track" />
         <path d={arc(Math.max(0.001, p))} className="dial-fill" />
-        <circle cx={kx} cy={ky} r={5} className="dial-knob" />
-        <text x="50" y="50" className="dial-value">
-          {limit > 0 ? fmtSpeedMs(limit) : t("cruise.speedFree")}
+        {/* Escala: marcas mayores con rótulo (km/s) y menores entre ellas. */}
+        {Array.from({ length: 31 }, (_, i) => {
+          const q = (i / 30) * FREE_FROM;
+          const [x0, y0] = point(q, R - 6);
+          const [x1, y1] = point(q, R - (i % 10 === 0 ? 10 : 8));
+          return <line key={i} x1={x0} y1={y0} x2={x1} y2={y1} className={i % 10 === 0 ? "dial-tick major" : "dial-tick"} />;
+        })}
+        {TICKS.map(([v, label]) => {
+          const [x, y] = point(toPos(v), R - 15);
+          return (
+            <text key={v} x={x} y={y} className="dial-scale">
+              {label}
+            </text>
+          );
+        })}
+        {needle !== null && (() => {
+          const [x0, y0] = point(needle, R - 4);
+          const [x1, y1] = point(needle, R + 4);
+          return <line x1={x0} y1={y0} x2={x1} y2={y1} className="dial-needle" />;
+        })()}
+        <circle cx={kx} cy={ky} r={4.2} className="dial-knob" />
+        <text x="50" y="52" className="dial-value">
+          {num}
         </text>
-        <text x="50" y="64" className="dial-label">
+        <text x="50" y="63" className="dial-unit">
+          {unit ?? ""}
+        </text>
+        <text x="50" y="80" className="dial-label">
           {t("cruise.speed")}
         </text>
       </svg>

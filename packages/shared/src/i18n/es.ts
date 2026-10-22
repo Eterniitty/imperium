@@ -1678,6 +1678,8 @@ export const es = {
   "settings.flight.model.arcadeHint": "La nave va siempre hacia donde apunta. W acelera, S frena hasta pararse (sin marcha atrás), A/D giran y la nave se inclina sola; el ratón apunta. Sin tocar nada sigue a velocidad de crucero (30 %).",
   "settings.flight.model.newtonianHint": "Inercia real: los motores empujan y la nave sigue derivando; lateral, subir/bajar y marcha atrás con los propulsores de maniobra.",
   "help.keysArcade": "Vuelo arcade (Ajustes → Pilotaje): {forward} acelerar · {back} frenar · {strafeLeft}/{strafeRight} girar · ratón: apuntar · {boost} impulso · {rollLeft}/{rollRight} alabeo",
+  "cruise.hud.distance": "Distancia",
+  "cruise.hud.eta": "Llegada",
   "shipEditor.open": "Astillero",
   "shipEditor.openTitle": "Diseña tus naves pieza a pieza",
   "shipEditor.title": "Astillero · diseño de naves",

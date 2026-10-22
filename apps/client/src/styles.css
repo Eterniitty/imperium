@@ -795,9 +795,6 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .photo-notice a { color: var(--cyan); }
 .photo-notice .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
 /* Piloto automático de crucero. */
-.cruise-hud { position: absolute; top: 150px; left: 50%; transform: translateX(-50%); padding: 8px 16px; text-align: center; font-size: 12.5px; min-width: 260px; border-color: rgba(95, 211, 230, 0.55); }
-.cruise-hud strong { color: #5fd3e6; }
-.cruise-hud .link-btn { margin-left: 8px; }
 .quantum-dest.active { border-color: rgba(95, 211, 230, 0.8); }
 .tag.ally { background: rgba(95, 211, 230, 0.14); color: #5fd3e6; border: 1px solid rgba(95, 211, 230, 0.45); }
 .tag.warn { background: rgba(255, 90, 90, 0.14); color: #ff8a6a; border: 1px solid rgba(255, 90, 90, 0.45); }
@@ -967,13 +964,6 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .quantum-list li:has(.cruise-orbit) { display: flex; gap: 6px; align-items: stretch; } .quantum-list li:has(.cruise-orbit) > .quantum-dest { flex: 1; } .cruise-orbit { white-space: nowrap; padding: 4px 10px; font-size: 12px; }
 
 /* Dial de velocidad del crucero. */
-.speed-dial { display: flex; justify-content: center; margin: 4px 0; }
-.speed-dial svg { cursor: grab; touch-action: none; user-select: none; }
-.speed-dial .dial-track { fill: none; stroke: rgba(255, 255, 255, 0.12); stroke-width: 6; stroke-linecap: round; }
-.speed-dial .dial-fill { fill: none; stroke: var(--gold); stroke-width: 6; stroke-linecap: round; }
-.speed-dial .dial-knob { fill: #fff3d0; stroke: var(--gold); stroke-width: 2; }
-.speed-dial .dial-value { fill: var(--text); font: 600 13px var(--font-display); text-anchor: middle; dominant-baseline: middle; }
-.speed-dial .dial-label { fill: var(--muted); font: 9px var(--font-body); text-anchor: middle; letter-spacing: 0.08em; text-transform: uppercase; }
 .planet-cruise { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
 
 /* Cursor virtual del vuelo con ratón (ratón atrapado: no sale del círculo de mando). */
@@ -1007,3 +997,30 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); margin
 .hud-stat.warn { animation: hud-blink 0.9s ease-in-out infinite alternate; }
 .hud-weapon.ready .hud-icon { color: #8fe9ff; }
 .hud-weapon.selected { outline: 1px solid rgba(232, 182, 76, 0.8); outline-offset: 3px; border-radius: 4px; }
+
+/* Crucero: tarjeta con el dial grande a la izquierda y el destino a la derecha. */
+.cruise-hud { position: absolute; top: 140px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 14px; padding: 10px 18px 10px 10px; font-size: 13px; border-color: rgba(95, 211, 230, 0.45); box-shadow: 0 0 24px rgba(95, 211, 230, 0.12); animation: cruise-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes cruise-in { from { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.97); } to { opacity: 1; transform: translateX(-50%); } }
+.cruise-info { display: flex; flex-direction: column; gap: 6px; min-width: 240px; }
+.cruise-target { font-size: 15px; }
+.cruise-target strong { color: #5fd3e6; font-family: var(--font-display); }
+.cruise-figures { display: flex; gap: 18px; }
+.cruise-figures span { display: flex; flex-direction: column; }
+.cruise-figures small { font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.cruise-figures b { font-size: 14px; color: var(--text); }
+.cruise-cancel { display: flex; align-items: center; gap: 8px; }
+.speed-dial { display: flex; justify-content: center; }
+.speed-dial svg { cursor: grab; touch-action: none; user-select: none; overflow: visible; }
+.speed-dial svg:active { cursor: grabbing; }
+.speed-dial .dial-face { fill: rgba(4, 10, 20, 0.55); stroke: rgba(143, 220, 255, 0.14); stroke-width: 1; }
+.speed-dial .dial-track { fill: none; stroke: rgba(255, 255, 255, 0.08); stroke-width: 5; stroke-linecap: round; }
+.speed-dial .dial-fill { fill: none; stroke: url(#dial-grad); stroke-width: 5; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(232, 182, 76, 0.5)); transition: d 0.15s; }
+.speed-dial .dial-tick { stroke: rgba(255, 255, 255, 0.22); stroke-width: 0.6; }
+.speed-dial .dial-tick.major { stroke: rgba(255, 255, 255, 0.55); stroke-width: 1; }
+.speed-dial .dial-scale { fill: var(--muted); font: 5.5px var(--font-body); text-anchor: middle; dominant-baseline: middle; }
+.speed-dial .dial-needle { stroke: #5fd3e6; stroke-width: 1.6; stroke-linecap: round; filter: drop-shadow(0 0 2px #5fd3e6); }
+.speed-dial .dial-knob { fill: #fff3d0; stroke: var(--gold); stroke-width: 1.5; filter: drop-shadow(0 0 3px rgba(232, 182, 76, 0.8)); }
+.speed-dial svg:hover .dial-knob { r: 5; }
+.speed-dial .dial-value { fill: var(--text); font: 700 15px var(--font-display); text-anchor: middle; dominant-baseline: middle; }
+.speed-dial .dial-unit { fill: var(--muted); font: 6.5px var(--font-body); text-anchor: middle; letter-spacing: 0.06em; }
+.speed-dial .dial-label { fill: var(--gold); font: 5.5px var(--font-body); text-anchor: middle; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.8; }
