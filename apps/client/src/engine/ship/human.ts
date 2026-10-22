@@ -398,7 +398,7 @@ function flagship(b: Builder): void {
   pipe(parts, v(0.024, b.top(-0.06) + 0.003, -0.06), v(0.024, b.top(0.35) + 0.004, 0.36), 0.004);
   pipe(parts, v(-0.024, b.top(-0.06) + 0.003, -0.06), v(-0.024, b.top(0.35) + 0.004, 0.36), 0.004);
   antenna(parts, v(0.018, b.top(-0.05) + 0.004, -0.05), 0.06, 0.02);
-  antenna(parts, v(-0.025, b.top(0.2) + 0.006, 0.2), 0.04);
+  antenna(parts, v(-0.025, b.top(0.3) + 0.006, 0.3), 0.04);
   dish(parts, v(-0.02, b.top(0.06) + 0.025, 0.06), 0.02, v(0.3, 1, -0.8));
   parts.beam("dark", v(-0.02, b.top(0.06), 0.06), v(-0.02, b.top(0.06) + 0.025, 0.06), 0.005);
   sensorDome(parts, v(0, b.bottom(-0.3) + 0.002, -0.3), 0.018, true);
@@ -408,7 +408,72 @@ function flagship(b: Builder): void {
   b.weapons(0.12, undefined, { gun: 0.011, launcher: 0.028 });
   b.rcs(-0.34, 0.35, 0.02);
   b.navLights(portTip, 0.33);
-  b.greebles(-0.3, 0.38, 48);
+
+  // Silueta (petición del usuario: «las naves son un poco simples»): volúmenes grandes que se leen de lejos.
+  // Superestructura escalonada sobre la sección de ingeniería, con ventanas y su propio mástil.
+  const deck = b.top(0.17) + 0.012;
+  b.section(
+    [
+      { z: 0.1, w: 0.03, h: 0.012, y: deck, t: 0.7 },
+      { z: 0.125, w: 0.062, h: 0.03, y: deck + 0.008, t: 0.75 },
+      { z: 0.22, w: 0.062, h: 0.03, y: deck + 0.008, t: 0.75 },
+      { z: 0.245, w: 0.045, h: 0.02, y: deck + 0.004, t: 0.8 },
+    ],
+    "plate",
+  );
+  b.section(
+    [
+      { z: 0.14, w: 0.02, h: 0.01, y: deck + 0.026, t: 0.7 },
+      { z: 0.155, w: 0.036, h: 0.018, y: deck + 0.03, t: 0.7 },
+      { z: 0.2, w: 0.036, h: 0.018, y: deck + 0.03, t: 0.7 },
+      { z: 0.21, w: 0.028, h: 0.012, y: deck + 0.028 },
+    ],
+    "hull",
+  );
+  b.sym((side) => {
+    for (let z = 0.135; z < 0.215; z += 0.02) windows(parts, v(side * 0.0312, deck + 0.012, z), 0.0022, 0.0028, 0.014);
+    for (let z = 0.16; z < 0.2; z += 0.014) windows(parts, v(side * 0.0182, deck + 0.032, z), 0.002, 0.0024, 0.01);
+  });
+  antenna(parts, v(0, deck + 0.039, 0.18), 0.05, 0.016);
+  parts.light(v(0, deck + 0.089, 0.18), RED, "beacon");
+
+  // Faldones de blindaje por los costados, bajo las cubiertas: placas superpuestas con juntas.
+  b.sym((side) => {
+    for (const [z0, z1] of [
+      [-0.36, -0.29],
+      [-0.285, -0.215],
+      [-0.21, -0.15],
+      [0.17, 0.24],
+      [0.245, 0.31],
+      [0.315, 0.375],
+    ] as const) {
+      const zc = (z0 + z1) / 2;
+      const x = b.half(zc) + 0.002;
+      parts.add("plate", block(0.006, 0.016, z1 - z0, 0.4), { p: [side * x, b.at(zc).y - b.at(zc).h * 0.32, zc] });
+    }
+  });
+
+  // Quilla bajo la proa: una aleta fina que alarga la silueta.
+  b.section(
+    [
+      { z: -0.29, w: 0.004, h: 0.004, y: b.bottom(-0.29) - 0.002, c: 0.1 },
+      { z: -0.22, w: 0.008, h: 0.03, y: b.bottom(-0.22) - 0.012, c: 0.1 },
+      { z: -0.12, w: 0.008, h: 0.026, y: b.bottom(-0.12) - 0.01, c: 0.1 },
+      { z: -0.09, w: 0.004, h: 0.004, y: b.bottom(-0.09) - 0.002, c: 0.1 },
+    ],
+    "dark",
+  );
+
+  // Anillos en las toberas principales.
+  for (const [x, y, r] of [
+    [-0.042, -0.022, 0.034],
+    [0.042, -0.022, 0.034],
+    [0, 0.028, 0.03],
+  ] as const) {
+    parts.add("metal", new THREE.TorusGeometry(r * 1.12, r * 0.1, 8, 28), { p: [x, y, 0.415] });
+    parts.add("trim", new THREE.TorusGeometry(r * 1.02, r * 0.035, 6, 28), { p: [x, y, 0.43] });
+  }
+  b.greebles(-0.3, 0.38, 110);
 }
 
 /** Exploradores: módulo de sensores, celosía central, hábitat y bloque de motores; gran plato. */
