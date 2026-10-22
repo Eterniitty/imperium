@@ -1892,7 +1892,7 @@ export const en: Record<I18nKey, string> = {
   "tut.cruise.dial": "This dial limits cruise speed. All the way to the right (“max”) there is no limit and it uses the full pulse.",
   "tut.cruise.go": "Pick a planet from the list with “Go”. The autopilot aligns the ship, starts the pulse and brakes in time.",
   "tut.cruise.hud": "While it lasts, this notice shows the destination, distance and arrival. It can be collapsed. If you close the tab, the ship carries on to its destination on its own.",
-  "tut.cruise.orbit": "Now open cruise again and press “Orbit” next to a planet: the ship will go into orbit around it.",
+  "tut.cruise.orbit": "Now put your ship in orbit: press “Cruise” (while cruising, this stops it) and again to open the list, then press “Orbit” next to a planet.",
   "tut.cruise.cancel": "Stop cruise with the same button, with Esc or with any flight control.",
   "tut.pulse.title": "Pulse and jump",
   "tut.pulse.summary": "Travelling fast inside a system and jumping between stars.",

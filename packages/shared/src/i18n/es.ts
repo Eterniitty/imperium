@@ -1894,7 +1894,7 @@ export const es = {
   "tut.cruise.dial": "Este dial limita la velocidad del crucero. Del todo a la derecha («máx.») no hay límite y usa el pulso entero.",
   "tut.cruise.go": "Elige un planeta de la lista con «Ir». El piloto alinea la nave, enciende el pulso y frena a tiempo.",
   "tut.cruise.hud": "Mientras dura, este aviso muestra el destino, la distancia y la llegada. Se puede plegar. Si cierras la pestaña, la nave sigue sola hasta su destino.",
-  "tut.cruise.orbit": "Ahora abre otra vez el crucero y pulsa «Orbitar» junto a un planeta: la nave se pondrá en órbita a su alrededor.",
+  "tut.cruise.orbit": "Ahora pon tu nave en órbita: pulsa «Crucero» (con el crucero en marcha, esto lo para) y otra vez para abrir la lista, y pulsa «Orbitar» junto a un planeta.",
   "tut.cruise.cancel": "Para el crucero con el mismo botón, con Esc o con cualquier mando de pilotaje.",
   "tut.pulse.title": "Pulso y salto",
   "tut.pulse.summary": "Viajar rápido dentro de un sistema y saltar entre estrellas.",
