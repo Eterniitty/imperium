@@ -56,6 +56,8 @@ export function SystemPanel() {
   };
 
   if (!selected) {
+    // Sin nada seleccionado, el inspector no ocupa sitio: solo aparece al pasar sobre una estrella.
+    if (!hovered) return null;
     return (
       <aside className="side panel side-empty">
         {hovered ? (
@@ -64,9 +66,7 @@ export function SystemPanel() {
             <strong>{hovered.name}</strong>
             <span className="muted">{t(`star.${hovered.starClass}`)}</span>
           </div>
-        ) : (
-          <p className="muted">{t("system.selectHint")}</p>
-        )}
+        ) : null}
       </aside>
     );
   }

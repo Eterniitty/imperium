@@ -1,5 +1,5 @@
 import { CrisisBanner } from "./CrisisBanner";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { engineRef } from "../engineRef";
 import { useAuth } from "../state/auth";
 import { gameStore } from "../state/store";
@@ -30,6 +30,17 @@ export function TopBar() {
   const now = useServerNow();
   const travel = emperor?.travel && emperor.travel.arriveAt > now ? emperor.travel : null;
   const [target, setTarget] = useState({ x: "0", y: "0", z: "0" });
+  // Alto real de la barra (puede pasar a dos líneas si no cabe): los paneles se colocan debajo con `--topbar-bottom`.
+  const bar = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = bar.current;
+    if (!el) return;
+    const apply = () => document.documentElement.style.setProperty("--topbar-bottom", `${Math.round(el.getBoundingClientRect().bottom)}px`);
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const go = (e: FormEvent) => {
     e.preventDefault();
@@ -39,7 +50,7 @@ export function TopBar() {
   };
 
   return (
-    <header className="topbar panel">
+    <header ref={bar} className="topbar panel">
       <div className="brand">
         <span className="brand-mark">✦</span> {t("app.title")}
       </div>
@@ -122,7 +133,7 @@ export function TopBar() {
               {fmt(focus.x)}, {fmt(focus.y)}, {fmt(focus.z)} {t("unit.ly")}
             </span>
           </div>
-          <div className="stat hide-sm hide-lg">
+          <div className="stat hide-sm hide-md">
             <span className="stat-label">{t("hud.systems")}</span>
             <span className="stat-value mono">{loaded.toLocaleString()}</span>
           </div>
@@ -163,7 +174,7 @@ export function TopBar() {
         <button className="icon-btn" onClick={() => gameStore.getState().setSettingsOpen(true)} aria-label={t("settings.open")} title={t("settings.title")}>
           ⚙
         </button>
-        <span className="fps mono">
+        <span className="fps mono hide-md">
           {fps} {t("hud.fps")}
         </span>
       </div>
