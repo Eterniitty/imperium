@@ -13,6 +13,12 @@ IMPERIUM es un MMO espacial 3D para navegador. Cada jugador es un **Emperador in
 
 Cerrar la pestaña no detiene nada. Lo que la nave estaba haciendo (crucero, salto cuántico y su preparación, órbita, escolta, embarques y desembarcos, viajes de flotas, combates, regeneración…) continúa: el **servidor** lo calcula de forma determinista según el tiempo y lo valida. El cliente solo muestra y manda órdenes. En cada función nueva hay que preguntarse qué pasa si se cierra la pestaña a mitad y guardar en el servidor la intención y su tiempo. Nunca hay que fiarse de tiempos ni distancias que diga el cliente, para que no sirva de atajo. Hecho: crucero (`ParkedOrbit.travel`), salto (`emperor.jumpIntent`) y órbita (`ParkedOrbit.spin`).
 
+## Principio: sin chat ni texto libre público; reportes con motivos fijos (22-10-2026, petición del usuario)
+
+- **Nada de chat** de ningún tipo por ahora (global, privado, de flota, comentarios): obligaría a moderar. Lo mismo para cualquier campo de texto libre que vean otros jugadores. El único texto público son los **nombres** (Emperador, flotas, planetas renombrados), y por eso son lo que se puede reportar.
+- **Reportes con motivos fijos**, elegidos de una lista y sin texto del que reporta: nombre ofensivo u odioso, suplantación de identidad, contenido sexual o inapropiado en nombres, trampas o uso de errores, acoso o persecución en el juego, spam o cuentas múltiples. Se puede reportar un perfil, una flota o un planeta renombrado. Un reporte por motivo, jugador y objetivo, con límite de frecuencia. Cola solo para el administrador, con acciones: forzar renombrado, aviso y suspensión. Los términos recogen las normas y sanciones, y la privacidad qué se guarda de un reporte y cuánto tiempo.
+- **El administrador no ve datos personales** (correo, IP, sesiones) ni puede exportar datos de jugadores: solo juego y moderación. La exportación del RGPD (art. 15 y 20) la pide y la recibe solo el propio jugador, en su panel de cuenta.
+
 ## 2. Bucle de juego
 
 1. **Explorar**: enviar exploradores, levantar la niebla de guerra, descubrir sistemas, recursos y anomalías.
