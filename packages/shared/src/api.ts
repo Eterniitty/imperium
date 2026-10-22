@@ -127,6 +127,8 @@ export interface Fleet {
   ships: FleetShip[];
   /** Lo que lleva en la bodega: recursos y pasajeros. */
   cargo: Cargo;
+  /** Componentes fabricados en la bodega. */
+  items: Record<string, number>;
   /** Capacidad: bodega (todos los recursos juntos) y plazas de pasajeros. */
   capacity: { resources: number; humans: number };
   /** Ruta de transporte automática, si la tiene. */

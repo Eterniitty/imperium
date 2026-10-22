@@ -1651,6 +1651,7 @@ export const es = {
   "crisis.industrial_boom.hint": "Crisis galáctica: todo lo que encargues en tus colonias tarda un 25 % menos.",
   "crisis.ore_rain": "Lluvia de mineral",
   "crisis.ore_rain.hint": "Crisis galáctica: la minería de asteroides rinde el doble.",
+  "logistics.itemsHere": "colonia {colony} \u00b7 bodega {fleet}",
   "shipEditor.open": "Astillero",
   "shipEditor.openTitle": "Diseña tus naves pieza a pieza",
   "shipEditor.title": "Astillero · diseño de naves",

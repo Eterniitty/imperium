@@ -106,6 +106,7 @@ export class FleetService {
         ...placeFromRow(this.seed, r, now),
         ships: fleetShips,
         cargo: c ? { metal: c.metal, volatiles: c.volatiles, crystal: c.crystal, alloys: c.alloys, humans: c.humans } : { ...EMPTY_CARGO },
+        items: c?.items ?? {},
         capacity: fleetCapacity(fleetShips.map((s) => s.classId)),
         route: route
           ? { fromColonyId: route.fromColonyId, toColonyId: route.toColonyId, carry: route.carry as FleetRoute["carry"], humans: route.humans }

@@ -147,6 +147,17 @@ export const ClientMessageSchema = z.union([
   z.object({
     t: z.literal("cmd"),
     cmdId: CmdIdSchema,
+    op: z.literal("fleet.items"),
+    args: z.object({
+      fleetId: z.uuid(),
+      colonyId: z.uuid(),
+      direction: z.enum(["load", "unload"]),
+      items: z.record(z.enum(["hull_plates", "circuits", "power_cells", "optics", "superconductors", "exotic_cores"]), z.number().int().min(0).max(1_000_000)),
+    }),
+  }),
+  z.object({
+    t: z.literal("cmd"),
+    cmdId: CmdIdSchema,
     op: z.literal("colony.claim"),
     args: z.object({
       systemId: SystemIdSchema,

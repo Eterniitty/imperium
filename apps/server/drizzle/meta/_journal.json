@@ -253,6 +253,13 @@
       "when": 1792652532714,
       "tag": "0036_crisis",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792652795112,
+      "tag": "0037_componentes_en_bodega",
+      "breakpoints": true
     }
   ]
 }

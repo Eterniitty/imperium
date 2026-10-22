@@ -19,5 +19,9 @@ Si cancelas una tanda recuperas los recursos y componentes (una parte, si ya est
 
 Al **construir un diseño** del Astillero, los componentes salen del inventario de la colonia donde se construye: en el Astillero se ven en verde si esa colonia los tiene y en rojo si no. Las piezas pequeñas no piden componentes, así que se puede empezar sin Fábrica. La lista completa está en las tablas de cascos y piezas del [Astillero](/wiki/astillero).
 
+## Llevarlos a otra colonia
+
+Si fabricas en una colonia y construyes en otra, lleva los componentes en la **bodega de una flota**: en la logística de la flota, junto a una colonia propia del mismo sistema, cada componente tiene **Cargar** y **Descargar** (todo lo que haya de ese tipo). Ocupan sitio en la bodega como los recursos.
+
 > [!dev]
-> **En desarrollo**: transportar componentes en las bodegas de las flotas y venderlos en el mercado.
+> **En desarrollo**: venderlos en el mercado.

@@ -99,6 +99,8 @@ export interface CommandArgs {
   "colony.embark": { colonyId: string; humans: number };
   /** Carga o descarga recursos y pasajeros entre una flota y una colonia propia del mismo sistema. */
   "fleet.transfer": { fleetId: string; colonyId: string; direction: "load" | "unload"; amounts: Partial<Cargo> };
+  /** Cargar o descargar componentes fabricados (`COMPONENT_IDS` → unidades). */
+  "fleet.items": { fleetId: string; colonyId: string; direction: "load" | "unload"; items: Record<string, number> };
   /** Pone a una flota en una ruta de transporte automática entre dos colonias propias. */
   "fleet.route": FleetRoute & { fleetId: string };
   /** Quita la ruta automática de una flota (se queda donde esté). */

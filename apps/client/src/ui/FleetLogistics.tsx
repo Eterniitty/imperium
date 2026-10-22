@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CARGO_STOCK_IDS } from "@imperium/content";
+import { CARGO_STOCK_IDS, COMPONENT_IDS } from "@imperium/content";
 import type { Cargo, Colony, Fleet, I18nKey } from "@imperium/shared";
 import { connection, useWorld } from "../net/world";
 import { useT } from "../state/store";
@@ -69,6 +69,25 @@ export function FleetLogistics({ fleet, colony }: { fleet: Fleet; colony: Colony
               {t("logistics.unload")}
             </button>
           </div>
+
+          {/* Componentes fabricados: todo de un tipo, de la colonia a la bodega o al revés. */}
+          {COMPONENT_IDS.some((c) => (colony.items[c] ?? 0) > 0 || (fleet.items[c] ?? 0) > 0) && (
+            <ul className="emperor-list logistics-items">
+              {COMPONENT_IDS.filter((c) => (colony.items[c] ?? 0) > 0 || (fleet.items[c] ?? 0) > 0).map((c) => (
+                <li key={c}>
+                  <span className="small">
+                    {t(`component.${c}`)} <span className="muted mono">{t("logistics.itemsHere", { colony: fmtInt(colony.items[c] ?? 0), fleet: fmtInt(fleet.items[c] ?? 0) })}</span>
+                  </span>
+                  <button className="link-btn small" disabled={busy || !(colony.items[c] ?? 0)} onClick={() => void run(connection.command("fleet.items", { fleetId: fleet.id, colonyId: colony.id, direction: "load", items: { [c]: colony.items[c] ?? 0 } }))}>
+                    {t("logistics.load")}
+                  </button>
+                  <button className="link-btn small" disabled={busy || !(fleet.items[c] ?? 0)} onClick={() => void run(connection.command("fleet.items", { fleetId: fleet.id, colonyId: colony.id, direction: "unload", items: { [c]: fleet.items[c] ?? 0 } }))}>
+                    {t("logistics.unload")}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
 
           {fleet.route ? (
             <p className="small">

@@ -1,0 +1,1 @@
+ALTER TABLE "fleet_cargo" ADD COLUMN "items" jsonb DEFAULT '{}'::jsonb NOT NULL;

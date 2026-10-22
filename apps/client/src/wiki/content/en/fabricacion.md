@@ -19,5 +19,9 @@ If you cancel a batch you get the resources and components back (part of them, i
 
 When you **build a design** from the Shipyard, the components come from the inventory of the colony where it is built: the Shipyard shows them in green if that colony has them and in red if not. Small parts need no components, so you can start without a Factory. The full list is in the hull and part tables of the [Shipyard](/wiki/astillero).
 
+## Taking them to another colony
+
+If you manufacture in one colony and build in another, carry the components in a **fleet's hold**: in the fleet's logistics, next to one of your colonies in the same system, each component has **Load** and **Unload** (everything of that type). They take up hold space like resources.
+
 > [!dev]
-> **In development**: carrying components in fleet holds and selling them on the market.
+> **In development**: selling them on the market.

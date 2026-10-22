@@ -249,6 +249,13 @@ export async function realtimeRoutes(app: FastifyInstance, { config, db, emperor
                     await space.setRefining(owner.emperorId, msg.args.on);
                     return { ok: true } as const;
                   }
+                  case "fleet.items": {
+                    const res = await logistics.transferItems(owner.emperorId, msg.args.fleetId, msg.args.colonyId, msg.args.direction, msg.args.items);
+                    if (!res.ok) return res;
+                    await hub.publishFleet(owner.emperorId, msg.args.fleetId);
+                    await hub.publishColony(owner.emperorId, msg.args.colonyId);
+                    return { ok: true } as const;
+                  }
                   case "fleet.refuel": {
                     const res = await db.transaction((tx) => fleets.refuel(tx, owner.emperorId, msg.args.fleetId, colonies));
                     if (!res.ok) return res;

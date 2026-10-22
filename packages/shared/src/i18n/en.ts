@@ -1649,6 +1649,7 @@ export const en: Record<I18nKey, string> = {
   "crisis.industrial_boom.hint": "Galactic crisis: everything you order in your colonies takes 25 % less time.",
   "crisis.ore_rain": "Ore rain",
   "crisis.ore_rain.hint": "Galactic crisis: asteroid mining yields double.",
+  "logistics.itemsHere": "colony {colony} \u00b7 hold {fleet}",
   "shipEditor.open": "Shipyard",
   "shipEditor.openTitle": "Design your ships part by part",
   "shipEditor.title": "Shipyard · ship design",
