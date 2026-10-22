@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ERA_GOALS, PRESTIGE, type MetaStat } from "@imperium/content";
+import { ERA_GOALS, LEGENDS, PRESTIGE, type MetaStat } from "@imperium/content";
 import type { I18nKey, RankingResponse } from "@imperium/shared";
 import { api } from "../state/auth";
 import { useT } from "../state/store";
@@ -64,6 +64,18 @@ export function RankingTab() {
           </p>
         </>
       )}
+      <h3>{t("ranking.legends")}</h3>
+      <ul className="goals legends">
+        {LEGENDS.map((l) => {
+          const got = data.legends.find((x) => x.id === l.id);
+          return (
+            <li key={l.id} className={got ? "done" : ""}>
+              <span>{t(`legend.${l.id}` as I18nKey)}</span>
+              <span className="small">{got ? (got.name || t("ranking.hidden")) : <span className="muted">{t("ranking.legendOpen", { n: fmtInt(l.prestige) })}</span>}</span>
+            </li>
+          );
+        })}
+      </ul>
       <h3>{t("ranking.title")}</h3>
       <table className="keys-table ranking-table">
         <tbody>

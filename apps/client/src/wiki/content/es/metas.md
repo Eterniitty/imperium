@@ -30,5 +30,6 @@ De vez en cuando la galaxia entera vive una **crisis** de unas horas, anunciada 
 
 {{tabla:crisis}}
 
-> [!dev]
-> **En desarrollo**: victoria y derrota con legado.
+## Leyendas de la era
+
+El **primer** Emperador que logra cada gran hazaña queda inscrito para siempre en la pestaña Clasificación y gana **prestigio de legado**: llegar a Ónfalo, un imperio de diez colonias, una armada de cincuenta naves o cartografiar dos mil sistemas. Solo cuentan los jugadores.

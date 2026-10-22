@@ -302,8 +302,16 @@ export interface RankingEntry {
   core: boolean;
 }
 
+/** Una leyenda de la era: quién logró primero una hazaña. */
+export interface LegendEntry {
+  id: string;
+  name: string;
+  at: number;
+}
+
 /** Respuesta de `GET /api/ranking`. */
 export interface RankingResponse {
+  legends: LegendEntry[];
   top: RankingEntry[];
   me: (RankingEntry & { stats: Record<"colonies" | "population" | "discoveries" | "ships" | "core", number>; reputation: number }) | null;
   total: number;

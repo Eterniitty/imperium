@@ -267,6 +267,13 @@
       "when": 1792653245340,
       "tag": "0038_comandantes",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1792653480187,
+      "tag": "0039_leyendas",
+      "breakpoints": true
     }
   ]
 }

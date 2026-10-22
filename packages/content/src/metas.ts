@@ -75,3 +75,14 @@ export const CRISIS = {
   buildTime: 0.75,
   miningYield: 2,
 } as const;
+
+/**
+ * Leyendas de la era (victoria con legado): el primer Emperador en lograr
+ * cada hazaña queda inscrito para siempre y gana `prestige` de legado.
+ */
+export const LEGENDS: ReadonlyArray<{ id: string; stat: MetaStat; target: number; prestige: number }> = [
+  { id: "first_core", stat: "core", target: 1, prestige: 3000 },
+  { id: "first_empire", stat: "colonies", target: 10, prestige: 1000 },
+  { id: "first_armada", stat: "ships", target: 50, prestige: 800 },
+  { id: "first_cartographer", stat: "discoveries", target: 2000, prestige: 600 },
+];

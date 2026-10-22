@@ -1,9 +1,9 @@
 import type { FastifyInstance } from "fastify";
-import { prestigeOf, type MetaStat } from "@imperium/content";
+import { LEGENDS, prestigeOf, type MetaStat } from "@imperium/content";
 import { GALAXY_CENTER_SECTOR } from "@imperium/procgen";
 import { systemId, type ApiError, type RankingEntry, type RankingResponse } from "@imperium/shared";
 import { eq, sql } from "drizzle-orm";
-import { emperors as emperorsTable } from "../db/schema";
+import { emperors as emperorsTable, legends } from "../db/schema";
 import { accountFromRequest, sessionCookieName } from "../auth/routes";
 import type { ServerConfig } from "../config";
 import type { Database } from "../db/client";
@@ -37,6 +37,7 @@ export async function rankingRoutes(app: FastifyInstance, { config, db, emperors
   const cookieName = sessionCookieName(config);
   const coreId = systemId(GALAXY_CENTER_SECTOR, 0);
   let cache: { at: number; rows: Row[] } | null = null;
+  let legendRows: Array<typeof legends.$inferSelect> = [];
 
   async function load(): Promise<Row[]> {
     if (cache && Date.now() - cache.at < CACHE_MS) return cache.rows;
@@ -49,10 +50,22 @@ export async function rankingRoutes(app: FastifyInstance, { config, db, emperors
         (select count(*)::int from system_parks p where p.emperor_id = e.id and p.system_id = ${coreId}) as core
       from emperors e
       where e.kind in ('player', 'ai')`);
+    // Leyendas: la primera vez que alguien cumple una hazaña, queda inscrito (y gana prestigio de legado).
+    const held = new Map((await db.select().from(legends)).map((l) => [l.id, l]));
+    for (const def of LEGENDS) {
+      if (held.has(def.id)) continue;
+      const first = [...res].filter((r) => r.kind === "player" && (def.stat === "core" ? (r.core > 0 ? 1 : 0) : def.stat === "population" ? r.population : r[def.stat]) >= def.target)[0];
+      if (!first) continue;
+      const [row] = await db.insert(legends).values({ id: def.id, emperorId: first.id, emperorName: first.name }).onConflictDoNothing().returning();
+      if (row) held.set(def.id, row);
+    }
+    legendRows = [...held.values()];
+    const bonus = new Map<string, number>();
+    for (const l of legendRows) if (l.emperorId) bonus.set(l.emperorId, (bonus.get(l.emperorId) ?? 0) + (LEGENDS.find((d) => d.id === l.id)?.prestige ?? 0));
     const rows = [...res]
       .map((r) => {
         const stats: Record<MetaStat, number> = { colonies: r.colonies, population: Math.round(r.population), discoveries: r.discoveries, ships: r.ships, core: r.core > 0 ? 1 : 0 };
-        return { id: r.id, name: r.name, kind: r.kind, visibility: r.visibility, stats, prestige: prestigeOf(stats) };
+        return { id: r.id, name: r.name, kind: r.kind, visibility: r.visibility, stats, prestige: prestigeOf(stats) + (bonus.get(r.id) ?? 0) };
       })
       .sort((a, b) => b.prestige - a.prestige || a.name.localeCompare(b.name));
     cache = { at: Date.now(), rows };
@@ -83,6 +96,12 @@ export async function rankingRoutes(app: FastifyInstance, { config, db, emperors
     const myIndex = me ? rows.findIndex((r) => r.id === me.id) : -1;
     const [mine] = me ? await db.select({ r: emperorsTable.reputation }).from(emperorsTable).where(eq(emperorsTable.id, me.id)).limit(1) : [];
     return {
+      // Las leyendas son historia pública: se ven con nombre (de los que eran públicos o de la IA; si no, sin él).
+      legends: legendRows.map((l) => {
+        const r = rows.find((x) => x.id === l.emperorId);
+        const visible = !r || r.kind === "ai" || r.visibility === "public" || r.id === me?.id || allies.has(r.id);
+        return { id: l.id, name: visible ? l.emperorName : "", at: l.at.getTime() };
+      }),
       top: rows.slice(0, 50).map(entry),
       me: myIndex >= 0 ? { ...entry(rows[myIndex]!, myIndex), stats: rows[myIndex]!.stats, reputation: Math.round(mine?.r ?? 0) } : null,
       total: rows.length,

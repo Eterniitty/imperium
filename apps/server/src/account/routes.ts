@@ -32,6 +32,7 @@ import {
   probes,
   mercenaryContracts,
   shipDesigns,
+  legends,
 } from "../db/schema";
 import type { ColonyService } from "../colony/service";
 import type { HumanityService } from "../humanity/service";
@@ -113,6 +114,7 @@ export async function accountRoutes(app: FastifyInstance, { config, db, hub, spa
         probes: await db.select().from(probes).where(eq(probes.emperorId, emperor.id)),
         mercenaryContracts: await db.select().from(mercenaryContracts).where(eq(mercenaryContracts.emperorId, emperor.id)),
         shipDesigns: await db.select().from(shipDesigns).where(eq(shipDesigns.emperorId, emperor.id)),
+        legends: await db.select().from(legends).where(eq(legends.emperorId, emperor.id)),
         resourceLedger: await db.select().from(resourceLedger).where(eq(resourceLedger.emperorId, emperor.id)),
         // Batallas en las que ha combatido (bando, resultado y la batalla).
         battles: await db

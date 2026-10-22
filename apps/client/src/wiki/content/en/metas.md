@@ -30,5 +30,6 @@ From time to time the whole galaxy goes through a **crisis** lasting a few hours
 
 {{tabla:crisis}}
 
-> [!dev]
-> **In development**: victory and defeat with legacy.
+## Legends of the era
+
+The **first** Emperor to achieve each great feat is inscribed forever in the Ranking tab and earns **legacy prestige**: reaching Omphalos, an empire of ten colonies, an armada of fifty ships or charting two thousand systems. Only players count.

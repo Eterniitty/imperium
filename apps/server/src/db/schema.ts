@@ -319,6 +319,16 @@ export const scheduledEvents = pgTable(
   (t) => [index("scheduled_events_due_at_idx").on(t.dueAt)],
 );
 
+/** Leyendas de la era (`LEGENDS`): quién logró primero cada hazaña. Se borra con su Emperador (RGPD). */
+export const legends = pgTable("legends", {
+  id: text("id").primaryKey(),
+  emperorId: uuid("emperor_id")
+    .notNull()
+    .references(() => emperors.id, { onDelete: "cascade" }),
+  emperorName: text("emperor_name").notNull(),
+  at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 /** Crisis galácticas (`CRISES`): cada fila es una, con su principio y su fin. */
 export const crises = pgTable("crises", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
