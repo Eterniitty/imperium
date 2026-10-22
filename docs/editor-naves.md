@@ -64,8 +64,10 @@ asedio exige reactor L; el motor cuántico D, casco L o XL).
 
 ## Fases
 
-1. **E1** Datos de piezas y reglas puras con pruebas; las clases actuales como diseños de serie.
-2. **E2** Servidor: diseños, validación, compra y construcción.
-3. **E3** Editor (catálogo, anclajes, estadísticas, problemas).
-4. **E4** Las estadísticas mandan en el vuelo, el salto y el combate.
-5. **E5** Modelos 3D generados de las piezas.
+1. ✔ **E1** Datos de piezas y reglas puras con pruebas. (Las clases de serie siguen siendo clases: las naves del Astillero usan la clase base de su casco, `HullDef.baseClass`.)
+2. ✔ **E2** Servidor: diseños (`/api/designs`, tabla `ship_designs`), validación, construcción en la cola de la colonia (encargo `design` con la foto del diseño; recursos, créditos y componentes de la Fábrica; dique orbital para L y XL) y tecnología necesaria (`PartDef.tech`).
+3. ✔ **E3** Editor «Astillero» (casco, una pieza por anclaje, estadísticas, problemas, coste, componentes, candados de tecnología, vista de la nave, construir).
+4. ✔ **E4** Las estadísticas mandan: combate por rondas (`designBattleStats`), combate en tiempo real de escoltas y naves pilotadas (`designCombat`), viajes (`fleetTravelSpeed`), combustible (`shipFuelMax`), escáner (`shipsScannerRangeLy`) y aceleración y giro al pilotarla.
+5. ✔ (parcial) **E5** Modelo 3D según las piezas sobre la forma de la clase base (`designLook`: motores, torretas, contenedores, hangar, hábitat, plato); falta un dibujo propio de cada pieza.
+
+Además: casco de nave nodriza (`hull_mothership`) para diseñarla con sus módulos.
