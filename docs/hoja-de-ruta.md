@@ -127,6 +127,12 @@ Informe completo en Claude Docs («Aeonarch — Plan de juego»). Cinco fases, c
 - [ ] Robar o remolcar naves aparcadas ajenas (abordaje).
 - [x] Velocidades: marchas cercanía/normal/rápida y pulso a 1800 km/s; alcances de combate ×4.
 - [ ] **Passkeys (opcional)** para entrar al juego: cada jugador decide si registra una (Windows Hello, Touch ID, gestor del navegador o llave FIDO2) en Ajustes → Cuenta, varias por cuenta y borrables; el enlace por correo sigue siendo la entrada por defecto. WebAuthn con rpId `aeonarch.de`. **Al desplegarlo**, actualizar la política de privacidad (es/en; y términos si hace falta, subiendo `LEGAL_VERSION`): se guardan la clave pública, el ID de la credencial, el contador de firmas, la etiqueta y las fechas de alta y último uso; la biometría y la clave privada nunca salen del dispositivo; base legal: ejecución del contrato y seguridad de la cuenta; se borran al eliminar la passkey o la cuenta (y entran en la exportación de datos).
+  Requisitos aprobados por el usuario (técnica y RGPD):
+  1. Registro con `attestation: "none"`: no pedir ni guardar modelo ni fabricante del autenticador (AAGUID, certificados). Minimización de datos.
+  2. Nada de user agent, IP ni dispositivo por cada uso (más allá del registro de seguridad que ya exista): solo la fecha del último uso.
+  3. Seguridad (art. 32): solo HTTPS; comprobar rpId (`aeonarch.de`) y origen; challenge nuevo, de un solo uso y con caducidad corta por intento; comprobar el contador de firmas; librería probada (`@simplewebauthn/server`), no hecho a mano.
+  4. Borrado real al eliminar la passkey o la cuenta; incluidas en la exportación de datos.
+  5. En la política: base legal art. 6.1.b RGPD; no hay datos biométricos (art. 9), la verificación es local en el dispositivo; la sesión sigue siendo una cookie técnica necesaria, sin banner.
 
 ## Antes de abrir al público (obligatorio, en paralelo)
 
