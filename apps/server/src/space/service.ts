@@ -2009,7 +2009,8 @@ export class SpaceService {
           const closing = -((b.pose.v[0] - a.pose.v[0]) * n[0] + (b.pose.v[1] - a.pose.v[1]) * n[1] + (b.pose.v[2] - a.pose.v[2]) * n[2]);
           // Los piratas (los mueve el servidor) se apartan; las naves aparcadas, sin piloto, se dejan empujar (y se quedan donde acaben).
           for (const [m, sign] of [[a, -1], [b, 1]] as const) {
-            if (m.kind !== "pirate" && !m.park) continue;
+            // Una aparcada solo se mueve si la empujan (la otra va hacia ella), no por estar al lado.
+            if (m.kind !== "pirate" && (!m.park || closing <= 0)) continue;
             const other = m === a ? b : a;
             const push = (reach - d) * ((other.kind === "pirate" || other.park) ? 0.5 : 1);
             const p: Vec3 = [m.pose.p[0] + n[0] * push * sign, m.pose.p[1] + n[1] * push * sign, m.pose.p[2] + n[2] * push * sign];

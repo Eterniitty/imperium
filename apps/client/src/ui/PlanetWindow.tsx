@@ -88,11 +88,11 @@ export function PlanetWindow() {
           <>
             {piloting && (
               <div className="planet-cruise">
-                <button className="btn small" onClick={() => engineRef.current?.cruiseTo(`planet:${planet.index}`)}>
+                <button className="btn btn-small" onClick={() => engineRef.current?.cruiseTo(`planet:${planet.index}`)}>
                   {t("cruise.goHere")} <KeyHint action="cruise" />
                 </button>
                 {/* Orbitar el planeta: ir y quedarse dando vueltas por su ecuador. */}
-                <button className="btn small" title={t("cruise.orbitHint", { name })} onClick={() => engineRef.current?.cruiseTo(`planet:${planet.index}`, true)}>
+                <button className="btn btn-small" title={t("cruise.orbitHint", { name })} onClick={() => engineRef.current?.cruiseTo(`planet:${planet.index}`, true)}>
                   ⟲ {t("cruise.orbit")}
                 </button>
               </div>

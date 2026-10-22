@@ -5,6 +5,7 @@
  * independientes, protecciones (gracia, Núcleo Humano), ocupación alienígena
  * y los Emperadores de la IA que conquistan. Usan TEST_DATABASE_URL, que se vacía.
  */
+import { populationCap } from "@imperium/sim";
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import WebSocket from "ws";
@@ -206,7 +207,9 @@ describe.skipIf(!TEST_DATABASE_URL)("conquista de planetas (Fase 9b)", () => {
     // Población: la de antes menos la milicia, menos la parte de la captura, más los supervivientes.
     const militia = Math.round(before.population * SIEGE.militiaShare);
     // (sin pasar del tope de población del planeta)
-    expect(after.population).toBeGreaterThan(Math.min(800, (before.population - militia) * (1 - SIEGE.capture.populationLoss)));
+    // (el tope del planeta depende de su habitabilidad: la galaxia, y con ella este planeta, cambió el 22-10-2026)
+    const cap = populationCap(details.detail(sysA).planets.find((p) => p.index === 0)!.habitability);
+    expect(after.population).toBeGreaterThanOrEqual(Math.min(cap, (before.population - militia) * (1 - SIEGE.capture.populationLoss)));
     expect(after.population).toBeLessThanOrEqual((before.population - militia) * (1 - SIEGE.capture.populationLoss) + 200 - report.attackerLosses + 1);
     // Lo que dependía de ella: obras perdidas, orden del mercado cancelada (lo retenido vuelve a la colonia), ruta acabada.
     expect(await db.select().from(colonyBuilds).where(eq(colonyBuilds.colonyId, target.id))).toEqual([]);

@@ -7,7 +7,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import WebSocket from "ws";
 import { LOGIN_TOKEN_PARAM, PROTOCOL_VERSION, WS_CLOSE, type Emperor, type EmperorView, type Fleet, type ServerMessage, type Topic, type Visibility } from "@imperium/shared";
 import { generateSector, universeSeedFromString } from "@imperium/procgen";
-import { defaultPark, planetPosition, quantumFuelCost } from "@imperium/sim";
+import { defaultPark, parkedPosition, planetPosition, quantumFuelCost } from "@imperium/sim";
 import { buildApp } from "../src/app";
 import { colonies, emperors, fleets, resourceLedger } from "../src/db/schema";
 import { sessionCookieName } from "../src/auth/routes";
@@ -509,7 +509,9 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       expect(app.space.shipsIn(systemId)).toContain(b.emperor.id);
       const status = await app.flagships.status(b.emperor.id);
       const at = near(systemId, [112, 0, 0]);
-      expect(Math.hypot(status!.park.p[0] - at[0], status!.park.p[1] - at[1], status!.park.p[2] - at[2])).toBeLessThan(1);
+      // Junto a un planeta, la órbita guardada es relativa a él: se compara la posición absoluta al aparcar.
+      const parked = parkedPosition(status!.park, status!.park.at, app.flagships.layout(systemId));
+      expect(Math.hypot(parked[0] - at[0], parked[1] - at[1], parked[2] - at[2])).toBeLessThan(1);
     });
 
     it("una nave aparcada orbita la estrella; para pilotarla hay que salir de donde está", async () => {

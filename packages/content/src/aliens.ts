@@ -288,7 +288,8 @@ export function getAnyShipClass(id: string): ShipStats | undefined {
 export function battleProfileOf(s: Pick<ShipStats, "battleProfile" | "model">): number {
   if (s.battleProfile) return s.battleProfile;
   const l = s.model.lengthM;
-  return l <= 30 ? 1 : l <= 70 ? 2 : l <= 130 ? 3 : l <= 250 ? 4 : 5;
+  // Umbrales de 30, 70, 130 y 250 m antes de agrandar las naves pequeñas (22-10-2026): mismos perfiles que entonces.
+  return l <= 54 ? 1 : l <= 107 ? 2 : l <= 147 ? 3 : l <= 250 ? 4 : 5;
 }
 
 /**
@@ -520,8 +521,13 @@ export const ALIEN_AI = {
   reinforceHours: 6,
   /** Las patrullas van a sistemas de su territorio a esta distancia como mucho (a.l.). */
   patrolRangeLy: 35,
-  /** Las flotas que responden a un intruso salen de esta distancia como mucho (a.l.). */
-  responseRangeLy: 60,
+  /**
+   * Las flotas que responden a un intruso salen de esta distancia como mucho
+   * (a.l.): toda su región (2 × 2 × 2 sectores de 100 a.l., ~350 a.l. en
+   * diagonal). Con 60 a.l., tras ampliar la galaxia el 22-10-2026, las
+   * guarniciones casi nunca llegaban a responder.
+   */
+  responseRangeLy: 360,
   /** La expansión suma sistemas a esta distancia de su territorio como mucho (a.l.). */
   expansionRangeLy: 20,
   /**

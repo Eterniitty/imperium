@@ -341,7 +341,7 @@ describe.skipIf(!TEST_DATABASE_URL)("colonias y economía", () => {
     const boarded = fleet.ships[0]!.humans;
     expect(boarded).toBeLessThanOrEqual(Math.min(SHIP_HUMAN_CAPACITY.colonizer!, 900 - HUMANS.colonyKeep));
     expect(boarded).toBeGreaterThan(800);
-    expect(fleet.ships).toEqual([{ id: expect.any(String), classId: "colonizer", hull: getShipClass("colonizer")!.hull, humans: boarded }]);
+    expect(fleet.ships).toEqual([{ id: expect.any(String), classId: "colonizer", hull: getShipClass("colonizer")!.hull, humans: boarded, fuel: expect.any(Number), fuelMax: expect.any(Number) }]);
     const colony = await s.op<Colony>(`colonies.${id}`, from);
     expect(colony.population).toBeGreaterThanOrEqual(HUMANS.colonyKeep);
     // Los embarcados son enteros y la población sigue creciendo un instante: margen de un par de humanos.

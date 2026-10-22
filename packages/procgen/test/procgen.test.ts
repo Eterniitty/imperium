@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SECTOR_SIZE, MAX_SYSTEMS_PER_SECTOR, MIN_SYSTEMS_PER_SECTOR, worldToSector } from "@imperium/shared";
+import { MAX_SYSTEMS_PER_SECTOR, MIN_SYSTEMS_PER_SECTOR, worldToSector } from "@imperium/shared";
 import {
   Rng,
   generateSector,
@@ -74,10 +74,10 @@ describe("generateSector", () => {
     expect(Math.max(...densities) - Math.min(...densities)).toBeGreaterThan(0.3);
   });
 
-  it("funciona lejos del origen", () => {
+  it("fuera de la galaxia (muy lejos del origen) no hay estrellas, sin errores", () => {
+    // La galaxia es finita (GALAXY, 22-10-2026): más allá de su disco los sectores están vacíos.
     const far = generateSector(SEED, { x: 1_000_000, y: -500_000, z: 250_000 });
-    expect(far.systems.length).toBeGreaterThan(0);
-    expect(far.systems[0]!.position.x).toBeGreaterThanOrEqual(1_000_000 * SECTOR_SIZE);
+    expect(far.systems).toEqual([]);
   });
 });
 

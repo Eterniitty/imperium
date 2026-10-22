@@ -167,16 +167,16 @@ export function PlanetColony({ detail, planet, tab = "planet" }: { detail: StarS
               </button>
             </form>
           ) : (
-            <div className="actions">
+            <div className="actions compact">
               <button
-                className="btn"
+                className="btn btn-small"
                 onClick={() => {
                   setName(planetLabel(planet, claim, own));
                   setError(null);
                   setRenaming(true);
                 }}
               >
-                {t("colony.rename")}
+                ✎ {t("colony.rename")}
               </button>
             </div>
           )

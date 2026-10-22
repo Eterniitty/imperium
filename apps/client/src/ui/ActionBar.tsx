@@ -41,7 +41,7 @@ export function ActionBar() {
   const mothership = !remote && (Object.values(fleets) as Fleet[]).some((f) => !f.travel && f.location.systemId === systemId && f.ships.some((s) => getShipClass(s.classId as ShipClassId)?.dockFlagship));
   const engines = tel.engines;
   return (
-    <nav className="action-bar panel" aria-label={t("actions.title")}>
+    <nav className={docked ? "action-bar panel docked" : "action-bar panel"} aria-label={t("actions.title")}>
       <ActionButton action="engines" icon="engines" on={engines === "on" || engines === "starting"} label={t(engines === "off" || engines === "stopping" ? "actions.enginesStart" : "actions.enginesStop")} />
       <ActionButton action="pulse" icon="pulse" on={tel.pulse || tel.pulseCharge !== null} label={t("actions.pulse")} />
       <ActionButton action="flightAssist" icon="assist" on={prefs.assist} label={t("actions.assist")} title={t("actions.assistTitle")} />

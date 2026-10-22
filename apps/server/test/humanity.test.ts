@@ -218,7 +218,7 @@ describe.skipIf(!TEST_DATABASE_URL)("economía de la humanidad y mercado", () =>
     // Recursos del proyecto: se dan a la colonia de sobra para poder aportarlo todo.
     await db
       .update(colonies)
-      .set({ metal: ECONOMY.storage.metal, volatiles: ECONOMY.storage.volatiles, crystal: ECONOMY.storage.crystal, alloys: ECONOMY.storage.alloys, rare_metals: 0, exotic: 0 })
+      .set({ metal: ECONOMY.storage.metal, volatiles: ECONOMY.storage.volatiles, crystal: ECONOMY.storage.crystal, alloys: ECONOMY.storage.alloys, rare_metals: 0, exotic: 0, resolvedAt: new Date() })
       .where(eq(colonies.id, p.colony.id));
     const chunks = [
       { metal: Math.min(cost.metal, 3000), volatiles: Math.min(cost.volatiles, 1500), crystal: cost.crystal, alloys: cost.alloys },
