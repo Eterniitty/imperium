@@ -24,6 +24,8 @@ app.addHook("onClose", () => database.close());
 for (const signal of ["SIGTERM", "SIGINT"] as const) {
   process.once(signal, () => {
     app.log.info({ signal }, "Cerrando el servidor");
+    // Si algo se queda colgado al cerrar, se sale igual: un reinicio no puede dejar el juego caído.
+    setTimeout(() => process.exit(1), 5000).unref();
     app.close().then(
       () => process.exit(0),
       (err: unknown) => {

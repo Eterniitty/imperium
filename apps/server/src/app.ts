@@ -65,6 +65,8 @@ export async function buildApp(config: ServerConfig, deps: AppDeps) {
     trustProxy: "127.0.0.1",
     // Las órdenes son pequeñas; un cuerpo grande es un error o un abuso.
     bodyLimit: 64 * 1024,
+    // Al cerrar, corta las conexiones abiertas (los WebSocket de los jugadores no se cierran solos).
+    forceCloseConnections: true,
   });
 
   // Solo se aceptan cuerpos JSON. text/plain se puede enviar desde un formulario
