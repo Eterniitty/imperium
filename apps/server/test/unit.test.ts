@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { GENERATOR_VERSION } from "@imperium/shared";
 import { buildApp } from "../src/app";
-import { emailRateKey, ipRateKey, RateLimiter } from "../src/auth/rateLimit";
+import { anonIp, emailRateKey, ipRateKey, RateLimiter } from "../src/auth/rateLimit";
 import { maskEmail, sessionCookieName } from "../src/auth/routes";
 import { generateToken, hashToken, normalizeEmail } from "../src/auth/tokens";
 import { DEV_DETAIL_SEED, loadConfig } from "../src/config";
@@ -98,6 +98,13 @@ describe("RateLimiter", () => {
 });
 
 describe("claves de límite", () => {
+  it("recorta las IP de los registros a /24 (IPv4) y /48 (IPv6)", () => {
+    expect(anonIp("203.0.113.77")).toBe("203.0.113.0/24");
+    expect(anonIp("::ffff:198.51.100.9")).toBe("198.51.100.0/24");
+    expect(anonIp("2a01:04f8:0001:0002:aaaa:bbbb:cccc:dddd")).toBe("2a01:4f8:1::/48");
+    expect(anonIp(undefined)).toBe("");
+  });
+
   it("agrupa IPv6 por /64 y deja IPv4 como están", () => {
     expect(ipRateKey("1.2.3.4")).toBe("1.2.3.4");
     expect(ipRateKey("::ffff:1.2.3.4")).toBe("1.2.3.4");

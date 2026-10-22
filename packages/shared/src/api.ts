@@ -32,7 +32,7 @@ export const LOGIN_TOKEN_PARAM = "login";
  * páginas de `apps/client/public/legal/`). Al pedir un enlace hay que aceptarla;
  * la cuenta guarda cuál aceptó y cuándo. Súbela al cambiar esos textos.
  */
-export const LEGAL_VERSION = "2026-10-21b";
+export const LEGAL_VERSION = "2026-10-22";
 
 /** Páginas legales estáticas (servidas junto al cliente, sin iniciar sesión). */
 export const LEGAL_PAGES = {

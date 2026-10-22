@@ -3,7 +3,7 @@ import { appendFileSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
-import { ipRateKey, RateLimiter } from "../auth/rateLimit";
+import { anonIp, ipRateKey, RateLimiter } from "../auth/rateLimit";
 import type { ServerConfig } from "../config";
 import { GATE_PAGE } from "./page";
 
@@ -132,8 +132,11 @@ export async function gateRoutes(app: FastifyInstance, { config }: { config: Ser
   const secret = config.GATE_SECRET;
   const fileUsers = usersFile(config.GATE_USERS_FILE);
   const log = accessLog(config.GATE_LOG_FILE ?? (config.GATE_USERS_FILE ? join(dirname(config.GATE_USERS_FILE), "gate-access.log") : undefined));
-  /** IP real del jugador (Cloudflare la pone en CF-Connecting-IP; Caddy la pasa en X-Forwarded-For). */
-  const ipOf = (req: FastifyRequest) => (typeof req.headers["cf-connecting-ip"] === "string" ? req.headers["cf-connecting-ip"] : req.ip);
+  /**
+   * Red del jugador para el registro, recortada (/24 o /48: sin datos personales). La IP real la pone Cloudflare en
+   * CF-Connecting-IP; Caddy la pasa en X-Forwarded-For. El agente de usuario no se guarda.
+   */
+  const ipOf = (req: FastifyRequest) => anonIp(typeof req.headers["cf-connecting-ip"] === "string" ? req.headers["cf-connecting-ip"] : req.ip);
   /** Hash de la contraseña de un usuario (el del .env o los del archivo). */
   const hashOf = (name: string): string | null => {
     if (config.GATE_USER && config.GATE_PASSWORD_HASH && sameText(name, config.GATE_USER)) return config.GATE_PASSWORD_HASH;
@@ -176,15 +179,15 @@ export async function gateRoutes(app: FastifyInstance, { config }: { config: Ser
     const name = parsed.data.user.trim();
     const ua = req.headers["user-agent"] ?? "";
     if (!isDesktop(ua)) {
-      log({ user: name.slice(0, 60), ok: false, reason: "device", ip: ipOf(req), ua: ua.slice(0, 300) });
+      log({ user: name.slice(0, 60), ok: false, reason: "device", ip: ipOf(req) });
       return reply.code(403).send({ error: "device" });
     }
     const hash = secret ? hashOf(name) : null;
     if (!hash || !checkPassword(parsed.data.password, hash)) {
-      log({ user: name.slice(0, 60), ok: false, reason: "wrong", ip: ipOf(req), ua: ua.slice(0, 300) });
+      log({ user: name.slice(0, 60), ok: false, reason: "wrong", ip: ipOf(req) });
       return reply.code(401).send({ error: "wrong" });
     }
-    log({ user: name, ok: true, ip: ipOf(req), ua: ua.slice(0, 300) });
+    log({ user: name, ok: true, ip: ipOf(req) });
     const until = Date.now() + COOKIE_DAYS * 24 * 3600_000;
     reply.setCookie(COOKIE, cookieValue(secret!, name, until), {
       path: "/",

@@ -15,3 +15,5 @@ a { color: #7fd8ff; }
 table { border-collapse: collapse; width: 100%; font-size: 14px; }
 td, th { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
 footer { margin-top: 48px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 12px; }
+.summary { border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 6px; padding: 4px 16px; margin: 16px 0 8px; background: rgba(232, 182, 76, 0.05); }
+.summary ul { margin: 0 0 12px; padding-left: 20px; }

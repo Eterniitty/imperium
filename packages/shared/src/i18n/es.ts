@@ -6,6 +6,7 @@
 export const es = {
   "app.title": "AEONARCH",
   "app.subtitle": "La guerra no termina. La humanidad tampoco.",
+  "legal.nonprofit": "Proyecto privado, gratuito y sin ánimo de lucro. No se piden ni se aceptan donaciones, dinero ni ayudas de ningún tipo.",
   "app.prototype": "Alfa · en desarrollo",
 
   "start.enter": "Despertar",

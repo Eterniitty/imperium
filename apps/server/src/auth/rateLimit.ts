@@ -58,6 +58,19 @@ export function ipRateKey(ip: string): string {
 }
 
 /**
+ * IP recortada para los registros (sin datos personales): la red /24 en IPv4 y
+ * /48 en IPv6. Basta para ver de dónde viene un abuso sin guardar quién es.
+ */
+export function anonIp(ip: string | undefined): string {
+  if (!ip) return "";
+  const key = ipRateKey(ip);
+  const v4 = /^(\d+)\.(\d+)\.(\d+)\.\d+$/.exec(key);
+  if (v4) return `${v4[1]}.${v4[2]}.${v4[3]}.0/24`;
+  if (key.endsWith("::/64")) return `${key.slice(0, -5).split(":").slice(0, 3).join(":")}::/48`;
+  return "?";
+}
+
+/**
  * Clave de límite para un correo: quita la etiqueta `+algo` y, en Gmail, los
  * puntos, que llevan al mismo buzón. Solo para limitar, no como identidad.
  */

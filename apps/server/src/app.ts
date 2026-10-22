@@ -44,7 +44,7 @@ import { WarService } from "./war/service";
 import { SiegeService } from "./war/siege";
 import { LineageService, type LineageEffects, type RebirthInfo } from "./lineage/service";
 import { createMailer, type Mailer } from "./mail";
-import { ipRateKey, RateLimiter } from "./auth/rateLimit";
+import { anonIp, ipRateKey, RateLimiter } from "./auth/rateLimit";
 import { wikiRoutes } from "./wiki/routes";
 import { WikiService } from "./wiki/service";
 
@@ -66,7 +66,17 @@ export interface AppDeps {
  */
 export async function buildApp(config: ServerConfig, deps: AppDeps) {
   const app = Fastify({
-    logger: { level: config.LOG_LEVEL },
+    // Registros sin datos personales: IP recortada (/24 o /48), sin agente de usuario y sin la consulta de la URL.
+    logger: {
+      level: config.LOG_LEVEL,
+      serializers: {
+        req: (req: { method?: string; url?: string; ip?: string; socket?: { remoteAddress?: string } }) => ({
+          method: req.method,
+          url: (req.url ?? "").split("?")[0],
+          remoteAddress: anonIp(req.ip ?? req.socket?.remoteAddress),
+        }),
+      },
+    },
     // Solo Caddy, en la misma máquina, puede indicar la IP real del cliente.
     trustProxy: "127.0.0.1",
     // Las órdenes son pequeñas; un cuerpo grande es un error o un abuso.

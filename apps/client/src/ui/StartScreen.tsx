@@ -308,7 +308,10 @@ export function StartScreen() {
       <CookieNotice />
       <PhotosensitivityNotice />
       <div className="start-footer">
-        <span>{t("app.prototype")}</span>
+        <span>
+          {t("app.prototype")}
+          <span className="nonprofit">{t("legal.nonprofit")}</span>
+        </span>
         <LegalLinks />
         <LanguageToggle />
       </div>
