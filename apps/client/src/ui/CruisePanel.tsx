@@ -76,15 +76,47 @@ export function CruisePanel() {
   );
 }
 
+/** El aviso del crucero, minimizado o no (se recuerda en este navegador). */
+function readMini(): boolean {
+  try {
+    return localStorage.getItem("aeon.cruiseHudMini") === "1";
+  } catch {
+    return false;
+  }
+}
+
 /** Aviso en el HUD mientras el piloto automático está puesto: modo, destino, fase, distancia y cómo cancelarlo. */
 export function CruiseHud() {
   const t = useT();
   const flight = useGame((s) => s.flight);
   const tel = useTelemetry(200);
   const c = tel.cruise;
+  const [mini, setMini] = useState(readMini);
+  const toggle = () => {
+    setMini(!mini);
+    try {
+      localStorage.setItem("aeon.cruiseHudMini", mini ? "0" : "1");
+    } catch {
+      // Sin almacenamiento: solo dura esta sesión.
+    }
+  };
   if (!flight || !c) return null;
+  if (mini) {
+    // Minimizado: una pastilla con el destino y la llegada (clic: desplegar).
+    return (
+      <button type="button" className="cruise-pill panel" role="status" title={t("cruise.hud.expand")} onClick={toggle}>
+        <span className="cruise-pill-arrow">{c.phase === "orbit" ? "⟲" : "→"}</span>
+        <strong>{c.name}</strong>
+        {c.phase !== "orbit" && c.seconds !== null && <span className="mono">{formatDuration(c.seconds * 1000)}</span>}
+        <span className="mono muted">{fmtSpeedMs(tel.speed)}</span>
+      </button>
+    );
+  }
   return (
     <div className="cruise-hud panel" role="status">
+      <button type="button" className="icon-btn cruise-hud-min" aria-label={t("cruise.hud.minimize")} title={t("cruise.hud.minimize")} onClick={toggle}>
+        ▁
+      </button>
       {c.phase !== "orbit" && <SpeedDial size={112} speed={tel.speed} />}
       <div className="cruise-info">
         <div className="stat-label">

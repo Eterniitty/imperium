@@ -26,6 +26,7 @@ const TICKS: ReadonlyArray<readonly [number, string]> = [
   [10_000, "10"],
   [100_000, "100"],
   [1_000_000, "1000"],
+  [CRUISE_LIMIT_MAX, String(Math.round(CRUISE_LIMIT_MAX / 1000))],
 ];
 
 export function SpeedDial({ size = 150, speed }: { size?: number; /** Velocidad actual (m/s): aguja fina sobre el arco. */ speed?: number }) {

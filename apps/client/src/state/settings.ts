@@ -264,10 +264,12 @@ export interface Preferences {
   engineVolume: number;
   /** Accesibilidad: efectos visuales suaves, sin destellos fuertes ni sacudidas. */
   reduceEffects: boolean;
+  /** Permitir seleccionar texto del juego (apagado: no se resalta al arrastrar, por la inmersión). */
+  allowTextSelect: boolean;
   flight: FlightPrefs;
 }
 
-const DEFAULT_PREFERENCES: Preferences = { quality: "auto", uiScale: "auto", musicVolume: 0.5, sfxVolume: 0.6, engineVolume: 0.7, reduceEffects: false, flight: DEFAULT_FLIGHT_PREFS };
+const DEFAULT_PREFERENCES: Preferences = { quality: "auto", uiScale: "auto", musicVolume: 0.5, sfxVolume: 0.6, engineVolume: 0.7, reduceEffects: false, allowTextSelect: false, flight: DEFAULT_FLIGHT_PREFS };
 const PREFS_KEY = "imperium.prefs";
 
 function loadPrefs(): Preferences {
@@ -284,6 +286,7 @@ function loadPrefs(): Preferences {
       sfxVolume: typeof sfx === "number" && sfx >= 0 && sfx <= 1 ? sfx : DEFAULT_PREFERENCES.sfxVolume,
       engineVolume: typeof engine === "number" && engine >= 0 && engine <= 1 ? engine : DEFAULT_PREFERENCES.engineVolume,
       reduceEffects: saved?.reduceEffects === true,
+      allowTextSelect: saved?.allowTextSelect === true,
       flight: loadFlightPrefs(saved?.flight),
     };
   } catch {

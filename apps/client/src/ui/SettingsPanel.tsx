@@ -136,6 +136,9 @@ function GraphicsSection() {
       }>
         <Toggle id="pref-reduce-fx" checked={prefs.reduceEffects} onChange={(reduceEffects) => set({ reduceEffects })} />
       </Row>
+      <Row label={t("settings.textSelect")} htmlFor="pref-text-select" hint={t("settings.textSelectHint")}>
+        <Toggle id="pref-text-select" checked={prefs.allowTextSelect} onChange={(allowTextSelect) => set({ allowTextSelect })} />
+      </Row>
     </>
   );
 }

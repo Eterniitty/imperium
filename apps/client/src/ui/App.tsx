@@ -53,6 +53,7 @@ function useUiScale(): number {
 export function App() {
   // «Reducir efectos» también quita las animaciones de la interfaz (clase en la raíz para el CSS).
   const reduceFx = useSettings((s) => s.prefs.reduceEffects);
+  const allowTextSelect = useSettings((s) => s.prefs.allowTextSelect);
   useEffect(() => {
     document.documentElement.classList.toggle("reduce-fx", reduceFx);
   }, [reduceFx]);
@@ -96,7 +97,7 @@ export function App() {
   if (!started) return <StartScreen />;
 
   return (
-    <div className="game">
+    <div className={allowTextSelect ? "game" : "game no-select"}>
       <div className="viewport" ref={containerRef} />
       <div className="hud" style={{ zoom: uiScale }}>
         <TopBar />

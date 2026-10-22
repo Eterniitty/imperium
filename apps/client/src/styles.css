@@ -1097,3 +1097,16 @@ button.legend-title { background: none; border: none; padding: 0; width: 100%; t
 .left-col { max-height: calc(100% - var(--topbar-bottom, 62px) - 340px); }
 .fleet-gift-btn { position: absolute; top: 4px; right: 30px; width: 22px; height: 22px; font-size: 11px; opacity: 0.55; z-index: 1; }
 .fleet-item:hover .fleet-gift-btn { opacity: 1; }
+
+/* Sin selección de texto en el juego (inmersión), salvo en campos de texto; se activa en Ajustes → Pantalla. */
+.game.no-select, .game.no-select * { -webkit-user-select: none; user-select: none; }
+.game.no-select input, .game.no-select textarea, .game.no-select [contenteditable="true"] { -webkit-user-select: text; user-select: text; }
+
+/* Aviso del crucero: botón de minimizar y pastilla compacta. */
+.cruise-hud { position: absolute; }
+.cruise-hud-min { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; font-size: 11px; opacity: 0.6; }
+.cruise-hud-min:hover { opacity: 1; }
+.cruise-pill { position: absolute; top: calc(var(--topbar-bottom, 62px) + 12px); left: 50%; transform: translateX(-50%); z-index: 8; display: inline-flex; align-items: center; gap: 10px; padding: 5px 14px; font: inherit; font-size: 13px; color: var(--text); cursor: pointer; border-color: rgba(95, 211, 230, 0.45); animation: cruise-pill-in 0.25s ease-out; }
+@keyframes cruise-pill-in { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translateX(-50%); } }
+.cruise-pill strong { color: #5fd3e6; }
+.cruise-pill-arrow { color: #5fd3e6; }
