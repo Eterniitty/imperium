@@ -1,4 +1,5 @@
 import { KeyHint } from "./common";
+import { HudIcon, type HudIconName } from "./hudIcons";
 import { useStore } from "zustand";
 import { FLAGSHIP_SUPPLIES } from "@imperium/content";
 import { shipName, spaceStore } from "../net/space";
@@ -9,21 +10,25 @@ import { useSettings } from "../state/settings";
 import { useServerNow } from "./useNow";
 import { useTelemetry } from "../engine/telemetry";
 
-type BarKind = "hull" | "shield" | "energy" | "fuel";
-
-function Bar({ value, max, kind, mark }: { value: number; max: number; kind: BarKind; mark?: number }) {
+/** Un valor de la nave: icono del color de su recurso y el número (sin barra). */
+function Stat({ icon, value, label, kind, warn, max }: { icon: HudIconName; value: number | string; label: string; kind: string; warn?: boolean; max?: number }) {
   return (
-    <div className={`combat-bar ${kind}`}>
-      <span style={{ width: `${max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0}%` }} />
-      {mark !== undefined && max > 0 && <i className="bar-mark" style={{ left: `${(mark / max) * 100}%` }} />}
+    <div className={`hud-stat ${kind}${warn ? " warn" : ""}`} title={label}>
+      <HudIcon name={icon} size={16} />
+      <span className="hud-stat-value">
+        {value}
+        {max !== undefined && <small>/{max}</small>}
+      </span>
+      <span className="sr-only">{label}</span>
     </div>
   );
 }
 
 /**
- * Instrumentos de la nave al pilotar, al estilo de un avión de Battlefield:
- * a la izquierda, escudo, casco, energía y combustible (todo del servidor); a
- * la derecha, munición del cañón y misiles, y el objetivo fijado con su distancia.
+ * Instrumentos de la nave al pilotar: abajo a la izquierda, en una fila de
+ * iconos con su número, escudo, casco, energía, combustible y las armas con su
+ * munición (todo del servidor); a la derecha, el objetivo fijado con su
+ * distancia (de una nave ajena no se sabe ni el casco ni el escudo).
  */
 export function CombatHud() {
   const t = useT();
@@ -54,77 +59,44 @@ export function CombatHud() {
   return (
     <>
       <div className="combat-self panel" aria-label={t("combat.hull")}>
-        <div className="combat-row">
-          <span className="stat-label">{t("combat.shield")}</span>
-          <Bar value={self.shield} max={self.shieldMax} kind="shield" />
-          <span className="mono small">{self.shield}</span>
+        <div className="hud-stats">
+          <Stat icon="shield" kind="shield" label={t("combat.shield")} value={self.shield} />
+          <Stat icon="hull" kind="hull" label={t("combat.hull")} value={self.hull} warn={self.hull < self.hullMax * 0.25} />
+          {supplies && <Stat icon="energy" kind="energy" label={t("hud.energy")} value={Math.round(supplies.energy)} warn={noEnergy} />}
+          {supplies && <Stat icon="fuel" kind="fuel" label={t("hud.fuel")} value={Math.floor(supplies.fuel)} warn={lowFuel} />}
+          <i className="action-sep" />
+          {cannon && (
+            <div className={`hud-weapon${now >= cannon.readyAt && cannon.ammo !== 0 && !noEnergy ? " ready" : ""}${selected === "cannon" ? " selected" : ""}`} aria-current={selected === "cannon" || undefined} title={`${t("combat.cannon")} (${keys.fireCannon})`}>
+              <HudIcon name="cannon" size={16} />
+              <span className={cannon.ammo !== null && cannon.ammoMax !== null && cannon.ammo < cannon.ammoMax * 0.15 ? "hud-stat-value low" : "hud-stat-value"}>{cannon.ammo ?? "∞"}</span>
+              <span className="sr-only">{t("combat.cannon")}</span>
+            </div>
+          )}
+          {missile && (
+            <div className={`hud-weapon${missile.ammo && now >= missile.readyAt ? " ready" : ""}${selected === "missile" ? " selected" : ""}`} aria-current={selected === "missile" || undefined} title={`${t("combat.missiles")} (${keys.fireMissile})`}>
+              <HudIcon name="missile" size={16} />
+              <span className={missile.ammo === 0 ? "hud-stat-value low" : "hud-stat-value"}>{missile.ammo}</span>
+              <span className="sr-only">{t("combat.missiles")}</span>
+            </div>
+          )}
+          {deep && (
+            <div className={`hud-weapon${mining ? " ready" : ""}${selected === "laser" ? " selected" : ""}`} aria-current={selected === "laser" || undefined} title={`${t("combat.laser")} (${keys.weaponLaser})`}>
+              <HudIcon name="laser" size={16} />
+              <span className="sr-only">{t("combat.laser")}</span>
+            </div>
+          )}
         </div>
-        <div className="combat-row">
-          <span className="stat-label">{t("combat.hull")}</span>
-          <Bar value={self.hull} max={self.hullMax} kind="hull" />
-          <span className="mono small">{self.hull}</span>
-        </div>
-        {heat.dps > 0 && (
+        {(heat.dps > 0 || (supplies && (docked || supplies.resupplying || lowFuel || noEnergy))) && (
           <div className="combat-alerts" role="status">
-            <span className={heat.lethal ? "hud-tag warn" : "hud-tag"}>
-              {t(heat.lethal ? (heat.blackHole ? "hud.heatLethalBlackHole" : "hud.heatLethal") : "hud.heat", { dps: Math.round(heat.dps) })}
-            </span>
-          </div>
-        )}
-        {supplies && (
-          <>
-            <div className={noEnergy ? "combat-row warn" : "combat-row"}>
-              <span className="stat-label">{t("hud.energy")}</span>
-              <Bar value={supplies.energy} max={supplies.energyMax} kind="energy" />
-              <span className="mono small">{Math.round(supplies.energy)}</span>
-            </div>
-            <div className={lowFuel ? "combat-row warn" : "combat-row"}>
-              <span className="stat-label">{t("hud.fuel")}</span>
-              <Bar value={supplies.fuel} max={supplies.fuelMax} kind="fuel" mark={FLAGSHIP_SUPPLIES.emergencyFuelMax} />
-              <span className="mono small">{Math.floor(supplies.fuel)}</span>
-            </div>
-            {(docked || supplies.resupplying || lowFuel || noEnergy) && (
-              <div className="combat-alerts">
-                {docked && <span className="hud-tag ok">{t("hud.docked", { n: docked.number })}</span>}
-                {supplies.resupplying && <span className="hud-tag ok">{t("hud.resupplying")}</span>}
-                {lowFuel && !supplies.resupplying && <span className="hud-tag warn">{t("hud.lowFuel")}</span>}
-                {noEnergy && <span className="hud-tag warn">{t("hud.noEnergy")}</span>}
-              </div>
+            {heat.dps > 0 && (
+              <span className={heat.lethal ? "hud-tag warn" : "hud-tag"}>
+                {t(heat.lethal ? (heat.blackHole ? "hud.heatLethalBlackHole" : "hud.heatLethal") : "hud.heat", { dps: Math.round(heat.dps) })}
+              </span>
             )}
-          </>
-        )}
-      </div>
-      <div className="combat-weapons panel">
-        {cannon && (
-          <div className={`${now >= cannon.readyAt && cannon.ammo !== 0 && !noEnergy ? "weapon-slot ready" : "weapon-slot"}${selected === "cannon" ? " selected" : ""}`} aria-current={selected === "cannon" || undefined}>
-            <span className="stat-label">
-              {t("combat.cannon")} <kbd>{keys.fireCannon}</kbd>
-            </span>
-            <span className={cannon.ammo !== null && cannon.ammoMax !== null && cannon.ammo < cannon.ammoMax * 0.15 ? "ammo low" : "ammo"}>
-              {cannon.ammo ?? "∞"}
-              {cannon.ammoMax !== null && <small>/{cannon.ammoMax}</small>}
-            </span>
-          </div>
-        )}
-        {missile && (
-          <div className={`${missile.ammo && now >= missile.readyAt ? "weapon-slot ready" : "weapon-slot"}${selected === "missile" ? " selected" : ""}`} aria-current={selected === "missile" || undefined}>
-            <span className="stat-label">
-              {t("combat.missiles")} <kbd>{keys.fireMissile}</kbd>
-            </span>
-            <span className={missile.ammo === 0 ? "ammo low" : "ammo"}>
-              {missile.ammo}
-              <small>/{missile.ammoMax}</small>
-            </span>
-            <span className="sr-only">
-              {t("combat.missiles")} {missile.ammo}/{missile.ammoMax}
-            </span>
-          </div>
-        )}
-        {deep && (
-          <div className={`weapon-slot${mining ? " ready" : ""}${selected === "laser" ? " selected" : ""}`} aria-current={selected === "laser" || undefined}>
-            <span className="stat-label">
-              {t("combat.laser")} <kbd>{keys.weaponLaser}</kbd>
-            </span>
+            {docked && <span className="hud-tag ok">{t("hud.docked", { n: docked.number })}</span>}
+            {supplies?.resupplying && <span className="hud-tag ok">{t("hud.resupplying")}</span>}
+            {lowFuel && !supplies?.resupplying && <span className="hud-tag warn">{t("hud.lowFuel")}</span>}
+            {noEnergy && <span className="hud-tag warn">{t("hud.noEnergy")}</span>}
           </div>
         )}
       </div>
@@ -134,8 +106,6 @@ export function CombatHud() {
             <div className="stat-label">{t("combat.target")}</div>
             <strong className={target.ally ? "ally" : "enemy"}>{shipName(target, locale)}</strong>
             <span className="mono small"> · {formatDistance(dist)}</span>
-            <Bar value={target.shield} max={target.shieldMax} kind="shield" />
-            <Bar value={target.hull} max={target.hullMax} kind="hull" />
             {target.ally && <div className="combat-assist"><span className="hud-tag warn">{t("combat.ally")}</span></div>}
           </>
         ) : (

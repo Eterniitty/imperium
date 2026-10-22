@@ -169,6 +169,11 @@ export class RemoteShips {
   }
 
   /** El modelo de una nave ajena, si se dibuja. */
+  /** Eslora (m) con que se dibuja una nave remota, o null si no se dibuja. */
+  lengthOf(id: string): number | null {
+    return this.visuals.get(id)?.lengthM ?? null;
+  }
+
   shipOf(id: string): THREE.Group | null {
     return this.visuals.get(id)?.ship ?? null;
   }

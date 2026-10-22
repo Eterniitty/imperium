@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { HudIcon } from "./hudIcons";
 import { useStore } from "zustand";
 import { HELP_CALL } from "@imperium/content";
 import type { I18nKey } from "@imperium/shared";
@@ -35,8 +36,9 @@ export function HelpButton() {
   };
   return (
     <>
-      <button type="button" className="action-btn help-btn" disabled={busy || wait > 0} title={t("help.hint")} onClick={() => void call()}>
-        <span>{wait > 0 ? t("help.wait", { s: wait }) : t("help.call")}</span>
+      <button type="button" className="action-btn help-btn" disabled={busy || wait > 0} aria-label={t("help.call")} title={`${wait > 0 ? t("help.wait", { s: wait }) : t("help.call")} — ${t("help.hint")}`} onClick={() => void call()}>
+        <HudIcon name="help" />
+        {wait > 0 && <small className="action-wait">{wait}</small>}
       </button>
       {error && <span className="auth-error small">{t(error)}</span>}
     </>

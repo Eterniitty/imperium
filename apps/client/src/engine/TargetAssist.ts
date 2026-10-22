@@ -56,6 +56,8 @@ interface Marker {
   label: HTMLSpanElement;
   bars: HTMLDivElement;
   key: string;
+  /** Lado de las esquinas en píxeles (el de la nave en pantalla, con un mínimo). */
+  size: number;
 }
 
 const tmp = new THREE.Vector3();
@@ -210,11 +212,21 @@ export class TargetAssist {
       if (m.key !== key) {
         m.key = key;
         m.el.className = `tgt-marker ${rel}${locked ? " locked" : ""}`;
+        m.bars.style.display = locked && rel === "ally" ? "" : "none";
       }
       m.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+      // Esquinas del tamaño de la nave en pantalla (con un mínimo), para no taparla.
+      const fov = camera instanceof THREE.PerspectiveCamera ? camera.fov : 50;
+      const px = ((remote.lengthOf(id) ?? 40) / Math.max(1, dist)) * (h / 2) / Math.tan((fov * Math.PI) / 360);
+      const size = Math.round(Math.max(locked ? 16 : 10, Math.min(400, px * 1.25)));
+      if (m.size !== size) {
+        m.size = size;
+        m.el.style.setProperty("--s", `${size}px`);
+      }
       const text = locked ? `${shipName(s, locale)} · ${formatDistance(dist)}` : formatDistance(dist);
       if (m.label.textContent !== text) m.label.textContent = text;
-      if (locked) {
+      // Casco y escudo solo de las naves amigas: de las demás no se sabe.
+      if (locked && rel === "ally") {
         const hull = s.hullMax > 0 ? Math.max(0, Math.min(1, s.hull / s.hullMax)) : 0;
         const shield = s.shieldMax > 0 ? Math.max(0, Math.min(1, s.shield / s.shieldMax)) : 0;
         m.bars.style.setProperty("--hull", `${(hull * 100).toFixed(0)}%`);
@@ -272,7 +284,7 @@ export class TargetAssist {
     bars.innerHTML = '<b class="tgt-shield"></b><b class="tgt-hull"></b>';
     el.append(shape, label, bars);
     this.root.appendChild(el);
-    m = { el, label, bars, key: "" };
+    m = { el, label, bars, key: "", size: 0 };
     this.markers.set(id, m);
     return m;
   }
