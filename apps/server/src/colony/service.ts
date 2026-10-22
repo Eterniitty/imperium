@@ -1,6 +1,8 @@
 import {
   ECONOMY,
   getHull,
+  getRecipe,
+  type ComponentAmounts,
   getInstallation,
   getShipClass,
   HUMANS,
@@ -14,8 +16,10 @@ import { universeSeedFromString } from "@imperium/procgen";
 import { distance, type Colony, type ColonyBuild, type CommandError, type EmperorHumans, type Planet, type PlanetClaim, type ShipDesignSnapshot, type StarSystemDetail, type StarSystemSummary } from "@imperium/shared";
 import { PlanetNameSchema } from "@imperium/shared/schemas";
 import {
+  addComponents,
   canAfford,
   captureLosses,
+  hasComponents,
   designStats,
   isBuildable,
   colonyEnergy,
@@ -83,8 +87,21 @@ function designCost(design: ShipDesignSnapshot): { stock: StockAmounts; credits:
   return { stock: { metal: c.metal, volatiles: 0, crystal: c.crystal, alloys: c.alloys, rare_metals: c.rare_metals, exotic: c.exotic }, credits: c.credits };
 }
 
-/** Horas de construcción de un encargo (instalación, nave de serie o diseño). */
+/** Recursos de una receta de la Fábrica (por tanda). */
+function recipeStock(id: string): StockAmounts {
+  return { ...ZERO_STOCK, ...(getRecipe(id)?.inputs ?? {}) };
+}
+
+/** Componentes que gasta un encargo (receta o diseño). */
+function buildComponents(build: { kind: string; itemId: string; design?: ShipDesignSnapshot | null }): ComponentAmounts | undefined {
+  if (build.kind === "craft") return getRecipe(build.itemId)?.components;
+  if (build.kind === "design" && build.design) return designStats(build.design).components;
+  return undefined;
+}
+
+/** Horas de construcción de un encargo (instalación, nave de serie, diseño o tanda de la Fábrica). */
 function buildHours(build: { kind: string; itemId: string; design?: ShipDesignSnapshot | null }): number {
+  if (build.kind === "craft") return getRecipe(build.itemId)?.hours ?? 1;
   if (build.kind === "design") return (build.design && getHull(build.design.hullId)?.buildTimeHours) || 8;
   const def = build.kind === "installation" ? getInstallation(build.itemId) : getShipClass(build.itemId as ShipClassId);
   return def?.buildTimeHours ?? 1;
@@ -92,6 +109,7 @@ function buildHours(build: { kind: string; itemId: string; design?: ShipDesignSn
 
 function refundOf(build: { kind: string; itemId: string; startedAt: Date | null; design?: ShipDesignSnapshot | null }): StockAmounts {
   if (build.kind === "design") return scaled(build.design ? designCost(build.design).stock : scaled(ZERO_STOCK, 0), build.startedAt ? ECONOMY.cancelRefundStarted : 1);
+  if (build.kind === "craft") return scaled(recipeStock(build.itemId), build.startedAt ? ECONOMY.cancelRefundStarted : 1);
   const def = build.kind === "installation" ? getInstallation(build.itemId) : getShipClass(build.itemId as ShipClassId);
   const cost: StockAmounts = def ? { ...{ metal: 0, volatiles: 0, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 }, ...def.cost } : { metal: 0, volatiles: 0, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 };
   return scaled(cost, build.startedAt ? ECONOMY.cancelRefundStarted : 1);
@@ -347,6 +365,7 @@ export class ColonyService {
       shortage: upkeepShortage(state.stock, flows),
       isolated: this.isIsolated(row),
       installations: installed,
+      items: { ...row.items },
       builds: builds.map(
         (b): ColonyBuild => ({
           id: b.id,
@@ -548,13 +567,20 @@ export class ColonyService {
    * existencias resueltas a esta hora) y va a la cola; si la cola estaba
    * vacía, empieza ya y se programa su fin.
    */
-  async build(emperorId: string, colonyId: string, kind: "installation" | "ship" | "design", itemId: string): Promise<ColonyResult> {
+  async build(emperorId: string, colonyId: string, kind: "installation" | "ship" | "design" | "craft", itemId: string): Promise<ColonyResult> {
     let cost: StockAmounts;
     let hours: number;
     let requires: Partial<Record<InstallationId, number>> | undefined;
     let credits = 0;
     let design: ShipDesignSnapshot | null = null;
-    if (kind === "design") {
+    if (kind === "craft") {
+      // Tanda de la Fábrica: recursos y, en las cadenas, componentes.
+      const recipe = getRecipe(itemId);
+      if (!recipe) return { ok: false, error: "unknown_item" };
+      cost = recipeStock(itemId);
+      hours = recipe.hours;
+      requires = recipe.requires;
+    } else if (kind === "design") {
       // Diseño del Astillero: se construye la foto de ahora; tiene que poder construirse.
       const [d] = await this.db.select().from(shipDesigns).where(and(eq(shipDesigns.id, itemId), eq(shipDesigns.emperorId, emperorId))).limit(1);
       if (!d) return { ok: false, error: "unknown_design" };
@@ -594,7 +620,7 @@ export class ColonyService {
       if (kind === "installation") {
         const queued = queue.filter((b) => b.kind === "installation" && b.itemId === itemId).length;
         if (!installationAllowed(itemId as InstallationId, counts, queued)) return { ok: false, error: "limit_reached" };
-      } else if (!counts.shipyard) {
+      } else if (kind !== "craft" && !counts.shipyard) {
         return { ok: false, error: "needs_shipyard" };
       }
       // Instalaciones que pide (refinería, dique orbital…): tienen que estar ya construidas.
@@ -604,11 +630,13 @@ export class ColonyService {
       const now = this.now();
       const state = this.resolve(row, site, now);
       if (!canAfford(state.stock, cost)) return { ok: false, error: "insufficient_resources" };
+      const needComponents = buildComponents({ kind, itemId, design });
+      if (!hasComponents(row.items, needComponents)) return { ok: false, error: "insufficient_components" };
       if (credits > 0 && !(await this.wallet?.spend(tx, emperorId, credits, "build", `design:${itemId}`, now))) return { ok: false, error: "insufficient_credits" };
 
       await tx
         .update(colonies)
-        .set({ population: state.population, ...pay(state.stock, cost), resolvedAt: new Date(now) })
+        .set({ population: state.population, ...pay(state.stock, cost), items: addComponents(row.items, needComponents, -1), resolvedAt: new Date(now) })
         .where(eq(colonies.id, row.id));
       const start = queue.length === 0;
       const finishAt = now + realDurationMs(hours, this.timeScale);
@@ -651,8 +679,13 @@ export class ColonyService {
     let discovered: Discovered | null = null;
     let capitalId: string | null = null;
 
+    let items = row.items;
     if (build.kind === "installation") {
       await tx.insert(installations).values({ colonyId: row.id, kind: build.itemId, builtAt: new Date(at) });
+    } else if (build.kind === "craft") {
+      // Tanda de la Fábrica: los componentes van al inventario de la colonia.
+      const recipe = getRecipe(build.itemId);
+      if (recipe) items = addComponents(items, { [recipe.id]: recipe.output });
     } else {
       // Nave de serie, o diseño del Astillero (clase base de su casco, con el casco y las plazas de sus piezas).
       const hullDef = build.kind === "design" && build.design ? getHull(build.design.hullId) : undefined;
@@ -684,7 +717,7 @@ export class ColonyService {
     }
     await tx
       .update(colonies)
-      .set({ population, ...state.stock, resolvedAt: new Date(at) })
+      .set({ population, ...state.stock, items, resolvedAt: new Date(at) })
       .where(eq(colonies.id, row.id));
     await tx.delete(colonyBuilds).where(eq(colonyBuilds.id, build.id));
 
@@ -730,7 +763,9 @@ export class ColonyService {
       const state = this.resolve(row, site, now);
       const stock = { ...state.stock };
       for (const k of Object.keys(stock) as Array<keyof StockAmounts>) stock[k] = Math.min(ECONOMY.storage[k], stock[k] + refund[k]);
-      await tx.update(colonies).set({ population: state.population, ...stock, resolvedAt: new Date(now) }).where(eq(colonies.id, row.id));
+      // Los componentes vuelven al inventario (una parte si ya estaba en marcha).
+      const items = addComponents(row.items, buildComponents(build), 1, build.startedAt ? ECONOMY.cancelRefundStarted : 1);
+      await tx.update(colonies).set({ population: state.population, ...stock, items, resolvedAt: new Date(now) }).where(eq(colonies.id, row.id));
       await tx.delete(colonyBuilds).where(eq(colonyBuilds.id, build.id));
       await tx.insert(resourceLedger).values({ emperorId, colonyId: row.id, reason: "cancel", ref: `${build.kind}:${build.itemId}`, ...refund });
       // Los diseños devuelven también sus créditos (una parte si ya estaba en marcha).

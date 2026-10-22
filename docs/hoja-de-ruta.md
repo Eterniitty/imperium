@@ -112,7 +112,7 @@ Informe completo en Claude Docs («Aeonarch — Plan de juego»). Cinco fases, c
 - [x] ✔ **La galaxia** (22-10-2026, `GENERATOR_VERSION` 2, mundo reiniciado): disco espiral de 30 000 a.l. con cuatro brazos y Ónfalo, el agujero negro supermasivo, en el centro (`GALAXY`, `packages/procgen` galaxy.ts); el Núcleo Humano en un brazo a ~9000 a.l. del centro. Pendiente: que Ónfalo sea un sistema especial (tamaño, peligro, objetivo final).
 - [x] ✔ **Escolta en crucero** (petición del usuario, 22-10-2026; orden `escort.cruise`): opción de que las naves propias viajen en crucero (y con el pulso) junto al Emperador, en formación, en vez de reunirse de un salto.
 - [x] ✔ **Cada nave reposta** (petición del usuario; `FLEET_FUEL`, `ships.fuel`, `fleet.refuel`, repostaje al llegar a colonia propia; la nodriza aún no reposta a su flota): combustible (y munición) por nave de flota, no solo la del Emperador; hay que vigilarlo y reponerlo en colonias, nodrizas o con cargueros.
-- [ ] **Materiales y fabricación** (petición del usuario): más materiales y recetas (refinar, componentes, piezas del editor), con cadenas de producción en las colonias.
+- [ ] **Materiales y fabricación** (petición del usuario): ✔ F1 Fábrica, seis componentes con recetas y cadenas (`RECIPES`, `colonies.items`, encargo `craft`), las piezas avanzadas del Astillero los piden; falta transportarlos en bodegas y venderlos en el mercado.
 - [x] **Libros en la Wiki** (grupo «Libros», firma del autor; solo administradores).
 
 ## Antes de abrir al público (obligatorio, en paralelo)

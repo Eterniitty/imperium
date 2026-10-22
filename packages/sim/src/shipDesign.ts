@@ -4,7 +4,7 @@
  * funciona (y qué le falta) y qué estadísticas salen de sus piezas. Funciones
  * puras: las usan el editor (en vivo) y el servidor (que nunca se fía del cliente).
  */
-import { fitsSlot, getHull, getPart, hullAtLeast, type HullClass, type PartCost, type PartDef, type PartKind } from "@imperium/content";
+import { fitsSlot, getHull, getPart, hullAtLeast, type ComponentAmounts, type HullClass, type PartCost, type PartDef, type PartKind } from "@imperium/content";
 
 /** Un diseño: casco y pieza de cada anclaje ocupado (`slotId → partId`). */
 export interface ShipDesign {
@@ -57,6 +57,8 @@ export interface DesignStats {
   fighters: number;
   scanLy: number;
   cost: Required<PartCost>;
+  /** Componentes fabricados que pide (Fábrica). */
+  components: ComponentAmounts;
 }
 
 /** Aceleración de referencia: con ella el pulso llega al máximo. */
@@ -133,6 +135,11 @@ export function designStats(design: ShipDesign): DesignStats {
     if (!c) continue;
     for (const k of Object.keys(cost) as Array<keyof PartCost>) cost[k] += c[k] ?? 0;
   }
+  const components: ComponentAmounts = {};
+  for (const c of [hull?.components, ...parts.map((p) => p.part.components)]) {
+    if (!c) continue;
+    for (const [k, n] of Object.entries(c) as Array<[keyof ComponentAmounts, number]>) components[k] = (components[k] ?? 0) + n;
+  }
   return {
     massT,
     powerGenMW: sum((p) => p.stats.powerMW),
@@ -158,6 +165,7 @@ export function designStats(design: ShipDesign): DesignStats {
     fighters: sum((p) => p.stats.fighters),
     scanLy: parts.reduce((a, { part }) => Math.max(a, part.stats.scanLy ?? 0), 0),
     cost,
+    components,
   };
 }
 

@@ -225,6 +225,13 @@
       "when": 1792650030825,
       "tag": "0032_combustible_de_flota",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792650449189,
+      "tag": "0033_fabricacion",
+      "breakpoints": true
     }
   ]
 }

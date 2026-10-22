@@ -88,7 +88,7 @@ export interface CommandArgs {
   /** Renombra un planeta propio. */
   "colony.rename": { colonyId: string; name: string };
   /** Encarga una instalación o una nave (en el astillero); se paga al encargarla. */
-  "colony.build": { colonyId: string; kind: "installation" | "ship" | "design"; itemId: string };
+  "colony.build": { colonyId: string; kind: "installation" | "ship" | "design" | "craft"; itemId: string };
   /** Cancela un encargo: se devuelve todo si aún no había empezado, la mitad si estaba en construcción. */
   "colony.cancel": { colonyId: string; buildId: string };
   /** Derriba una instalación de una colonia propia (la más reciente de ese tipo): devuelve `ECONOMY.demolishRefund` de su coste. */
@@ -245,6 +245,7 @@ export type CommandError =
   | "insufficient_credits"
   | "unknown_design"
   | "no_fuel_fleet"
+  | "insufficient_components"
   | "no_colony_here"
   | "design_not_buildable"
   | "invalid_order"

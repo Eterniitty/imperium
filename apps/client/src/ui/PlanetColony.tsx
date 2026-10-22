@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { ECONOMY, HUMANS, INSTALLATIONS, SHIP_CLASSES, STOCK_IDS, type StockAmounts, type StockId } from "@imperium/content";
+import { COMPONENT_IDS, ECONOMY, getRecipe, HUMANS, INSTALLATIONS, RECIPES, SHIP_CLASSES, STOCK_IDS, type StockAmounts, type StockId } from "@imperium/content";
+
+const ZERO_STOCK: StockAmounts = { metal: 0, volatiles: 0, crystal: 0, alloys: 0, rare_metals: 0, exotic: 0 };
 import { PLANET_NAME_MAX, PLANET_NAME_MIN, type Colony, type Fleet, type I18nKey, type Planet, type StarSystemDetail } from "@imperium/shared";
 import { minColonists, missingInstallations } from "@imperium/sim";
 import { connection, useWorld } from "../net/world";
@@ -290,7 +292,7 @@ export function ColonyDetail({
   now: number;
   busy: boolean;
   locale: Parameters<typeof contentText>[0];
-  onBuild: (kind: "installation" | "ship", itemId: string) => void;
+  onBuild: (kind: "installation" | "ship" | "craft", itemId: string) => void;
   onCancel: (buildId: string) => void;
   onDemolish: (installationId: string) => void;
 }) {
@@ -300,7 +302,12 @@ export function ColonyDetail({
   const stock = liveStock(colony, now);
   const population = livePopulation(colony, now);
   const queued = (id: string) => colony.builds.filter((b) => b.kind === "installation" && b.itemId === id).length;
-  const itemName = (kind: string, id: string) => (kind === "installation" ? t(`installation.${id}` as I18nKey) : contentText(locale, `ship.${id}.name`));
+  const itemName = (kind: string, id: string) =>
+    kind === "installation"
+      ? t(`installation.${id}` as I18nKey)
+      : kind === "craft"
+        ? t("craft.batch", { n: getRecipe(id)?.output ?? 1, name: t(`component.${id}` as I18nKey) })
+        : contentText(locale, `ship.${id}.name`);
   const affordable = (cost: StockAmounts) => STOCK_IDS.every((r) => stock[r] >= cost[r]);
   const queueFull = colony.builds.length >= ECONOMY.maxQueue;
 
@@ -415,6 +422,48 @@ export function ColonyDetail({
           );
         })}
       </ul>
+
+      {/* Fabricación: inventario de componentes y recetas de la Fábrica. */}
+      <h3>{t("craft.items")}</h3>
+      <div className="deposits">
+        {COMPONENT_IDS.filter((c) => (colony.items[c] ?? 0) > 0).map((c) => (
+          <div key={c} className="deposit">
+            <span className="deposit-name">{t(`component.${c}`)}</span>
+            <span className="mono">{fmtInt(colony.items[c] ?? 0)}</span>
+          </div>
+        ))}
+        {COMPONENT_IDS.every((c) => !(colony.items[c] ?? 0)) && <span className="muted small">{t("craft.noItems")}</span>}
+      </div>
+      {(colony.installations.factory ?? 0) > 0 ? (
+        <>
+          <h3>{t("craft.title")}</h3>
+          <ul className="build-list">
+            {RECIPES.map((r) => {
+              const cost = { ...ZERO_STOCK, ...r.inputs };
+              const missing = missingInstallations(r.requires, colony.installations);
+              const parts = Object.entries(r.components ?? {}) as Array<[string, number]>;
+              const enough = parts.every(([c, n]) => (colony.items[c] ?? 0) >= n);
+              return (
+                <li key={r.id}>
+                  <button className="btn build-btn" disabled={busy || queueFull || missing.length > 0 || !affordable(cost) || !enough} onClick={() => onBuild("craft", r.id)}>
+                    <span className="ship-name">
+                      {t("craft.batch", { n: r.output, name: t(`component.${r.id}`) })}
+                      {missing.length > 0 && <span className="needs">{t("colony.needs", { list: missing.map((m) => t(`installation.${m}` as I18nKey)).join(", ") })}</span>}
+                      {parts.length > 0 && (
+                        <span className={enough ? "needs muted" : "needs"}>{t("craft.needs", { list: parts.map(([c, n]) => `${n} ${t(`component.${c}` as I18nKey)}`).join(", ") })}</span>
+                      )}
+                    </span>
+                    <Cost cost={cost} stock={stock} />
+                    <span className="muted small mono">{t("colony.costHours", { h: r.hours })}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      ) : (
+        <p className="muted small">{t("craft.needFactory")}</p>
+      )}
 
       {(colony.installations.shipyard ?? 0) > 0 && (
         <>

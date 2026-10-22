@@ -34,6 +34,7 @@ export const WIKI_ARTICLES = [
   { slug: "flotas", group: "empire" },
   { slug: "naves", group: "empire" },
   { slug: "astillero", group: "empire" },
+  { slug: "fabricacion", group: "empire" },
   { slug: "guerra", group: "war" },
   { slug: "conquista", group: "war" },
   { slug: "carroneros", group: "war" },

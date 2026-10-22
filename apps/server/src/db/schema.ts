@@ -417,6 +417,8 @@ export const colonies = pgTable(
      * economía la lee sin consultar otra tabla. Al cambiar, se resuelve antes.
      */
     governor: text("governor"),
+    /** Inventario de componentes fabricados (`COMPONENT_IDS` → unidades). */
+    items: jsonb("items").$type<Record<string, number>>().notNull().default({}),
   },
   (t) => [
     unique("colonies_planet_unique").on(t.systemId, t.planetIndex),

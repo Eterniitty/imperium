@@ -16,3 +16,4 @@ export * from "./flightModel";
 export * from "./deepspace";
 export * from "./mercenaries";
 export * from "./shipParts";
+export * from "./manufacturing";

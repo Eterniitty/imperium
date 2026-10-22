@@ -80,7 +80,7 @@ export const POPULATION = {
 } as const;
 
 /** Clases de instalación de una colonia. */
-export type InstallationId = "mine" | "refinery" | "power_plant" | "shipyard" | "drydock" | "defense_platform" | "lineage_cradle";
+export type InstallationId = "mine" | "refinery" | "power_plant" | "shipyard" | "drydock" | "defense_platform" | "lineage_cradle" | "factory";
 
 export interface InstallationDefinition {
   id: InstallationId;
@@ -166,6 +166,16 @@ export const INSTALLATIONS: readonly InstallationDefinition[] = [
     energyUse: 5,
     maxPerColony: 1,
     upkeepVolatilesPerHour: 1.5,
+  },
+  {
+    // Fabricación (22-10-2026): convierte recursos en componentes con las recetas de `RECIPES`.
+    id: "factory",
+    nameKey: "installation.factory",
+    cost: { metal: 400, volatiles: 120, crystal: 60, alloys: 40, rare_metals: 0, exotic: 0 },
+    buildTimeHours: 5,
+    energyUse: 5,
+    maxPerColony: 1,
+    upkeepVolatilesPerHour: 1,
   },
 ];
 

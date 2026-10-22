@@ -295,6 +295,17 @@ export function ShipEditor() {
                 .map((k) => (k === "credits" ? `₢ ${num(cost[k])}` : `${t(`resource.${k}` as I18nKey)} ${num(cost[k])}`))
                 .join(" · ")}
             </p>
+            {Object.keys(stats.components).length > 0 && (
+              <p className="small">
+                {t("shipEditor.components")}:{" "}
+                {(Object.entries(stats.components) as Array<[string, number]>).map(([c, n], i) => (
+                  <span key={c} className={yard && (yard.items[c] ?? 0) >= n ? "ship-ok" : "ship-bad"}>
+                    {i > 0 ? " · " : ""}
+                    {n} {t(`component.${c}` as I18nKey)}
+                  </span>
+                ))}
+              </p>
+            )}
             <p className="muted small">{t("shipEditor.builtAt", { where: t(`installation.${hull.builtAt}` as I18nKey) })}</p>
           </aside>
         </div>

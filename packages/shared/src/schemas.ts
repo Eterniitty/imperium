@@ -168,7 +168,7 @@ export const ClientMessageSchema = z.union([
     op: z.literal("colony.build"),
     // Diseños del Astillero: `itemId` es el uuid del diseño.
     args: z.union([
-      z.object({ colonyId: z.uuid(), kind: z.enum(["installation", "ship"]), itemId: z.string().regex(/^[a-z_]{1,32}$/) }),
+      z.object({ colonyId: z.uuid(), kind: z.enum(["installation", "ship", "craft"]), itemId: z.string().regex(/^[a-z_]{1,32}$/) }),
       z.object({ colonyId: z.uuid(), kind: z.literal("design"), itemId: z.uuid() }),
     ]),
   }),

@@ -50,6 +50,8 @@ import {
   PARTS,
   FLEET_FUEL,
   fleetFuelMax,
+  RECIPES,
+  type ComponentAmounts,
   type PartCost,
   type PartDef,
   TRAVEL_SPEED_SCALE,
@@ -133,6 +135,7 @@ const INSTALLATION_EFFECT: Record<InstallationId, I18nKey> = {
   refinery: "wiki.effect.refinery",
   power_plant: "wiki.effect.power_plant",
   shipyard: "wiki.effect.shipyard",
+  factory: "wiki.effect.factory",
   drydock: "wiki.effect.drydock",
   defense_platform: "wiki.effect.defense_platform",
   lineage_cradle: "wiki.effect.lineage_cradle",
@@ -185,6 +188,11 @@ function partCost(t: T, locale: Locale, c: PartCost): string {
     .join(" · ");
 }
 
+/** «4 Circuitos · 2 Ópticas». */
+function componentList(t: T, locale: Locale, c: ComponentAmounts | undefined): string {
+  return (Object.entries(c ?? {}) as Array<[string, number]>).map(([k, n]) => `${num(locale, n)} ${t(`component.${k}` as I18nKey)}`).join(" · ");
+}
+
 /** Lo que aporta una pieza, según su tipo. */
 function partEffect(locale: Locale, p: PartDef): string {
   const s = p.stats;
@@ -216,8 +224,19 @@ export const GEN_TABLES: Record<string, Builder> = {
     numeric: [1, 2],
   }),
 
+  recetas: (t, locale) => ({
+    head: [t("craft.title"), t("wiki.col.cost"), t("craft.items"), t("wiki.col.time"), t("wiki.col.requires")],
+    rows: RECIPES.map((r) => [
+      t("craft.batch", { n: r.output, name: t(`component.${r.id}`) }),
+      (Object.entries(r.inputs) as Array<[string, number]>).map(([k, n]) => `${t(`resource.${k}` as I18nKey)} ${num(locale, n)}`).join(" · "),
+      componentList(t, locale, r.components) || "—",
+      t("colony.costHours", { h: num(locale, r.hours) }),
+      Object.keys(r.requires).map((k) => t(`installation.${k}` as I18nKey)).join(", "),
+    ]),
+  }),
+
   cascos: (t, locale) => ({
-    head: [t("shipEditor.hull"), t("shipEditor.col.size"), t("shipEditor.stat.mass"), t("shipEditor.stat.hull"), t("shipEditor.slots"), t("shipEditor.cost"), t("shipEditor.col.builtAt")],
+    head: [t("shipEditor.hull"), t("shipEditor.col.size"), t("shipEditor.stat.mass"), t("shipEditor.stat.hull"), t("shipEditor.slots"), t("shipEditor.cost"), t("shipEditor.components"), t("shipEditor.col.builtAt")],
     rows: HULLS.map((h) => [
       t(h.nameKey as I18nKey),
       h.class,
@@ -225,13 +244,14 @@ export const GEN_TABLES: Record<string, Builder> = {
       num(locale, h.hull),
       num(locale, h.slots.length),
       partCost(t, locale, h.cost),
+      componentList(t, locale, h.components) || "—",
       t(`installation.${h.builtAt}`),
     ]),
     numeric: [2, 3, 4],
   }),
 
   piezas: (t, locale) => ({
-    head: [t("shipEditor.col.part"), t("shipEditor.col.kind"), t("shipEditor.col.size"), t("shipEditor.stat.mass"), t("shipEditor.col.effect"), t("shipEditor.cost")],
+    head: [t("shipEditor.col.part"), t("shipEditor.col.kind"), t("shipEditor.col.size"), t("shipEditor.stat.mass"), t("shipEditor.col.effect"), t("shipEditor.cost"), t("shipEditor.components")],
     rows: PARTS.map((p) => [
       t(p.nameKey as I18nKey) + (p.minHull ? ` (≥ ${p.minHull})` : ""),
       t(`partKind.${p.kind}`),
@@ -239,6 +259,7 @@ export const GEN_TABLES: Record<string, Builder> = {
       `${num(locale, p.massT)} t`,
       partEffect(locale, p),
       partCost(t, locale, p.cost),
+      componentList(t, locale, p.components) || "—",
     ]),
     numeric: [3],
   }),

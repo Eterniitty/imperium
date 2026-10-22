@@ -19,3 +19,4 @@ export * from "./ai/pirate";
 export * from "./ai/escort";
 export * from "./shipDesign";
 export * from "./fleetFuel";
+export * from "./manufacturing";

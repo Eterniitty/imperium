@@ -346,7 +346,7 @@ export interface FlagshipStatus {
 /** Construcción en la cola de una colonia: una instalación o una nave (del astillero). */
 export interface ColonyBuild {
   id: string;
-  kind: "installation" | "ship" | "design";
+  kind: "installation" | "ship" | "design" | "craft";
   /** Id de la instalación (`INSTALLATIONS`), de la clase de nave (`SHIP_CLASSES`) o del diseño del Astillero. */
   itemId: string;
   /** Diseño del Astillero: su foto al encargarlo (si luego se cambia o se borra, se construye este). */
@@ -390,6 +390,8 @@ export interface Colony {
   isolated: boolean;
   /** Instalaciones construidas, por id. */
   installations: Record<string, number>;
+  /** Componentes fabricados en su inventario (Fábrica). */
+  items: Record<string, number>;
   builds: ColonyBuild[];
   at: number;
   foundedAt: number;
