@@ -19,6 +19,19 @@ Solo llevan tecla por defecto las acciones que se usan constantemente con las ma
 
 En **Ajustes → Controles** puedes cambiar la sensibilidad y la zona muerta del vuelo con ratón e invertir su eje vertical. En cabina, en el modo de cámara libre, el ratón mira alrededor.
 
+### Modelo de vuelo: arcade o newtoniano
+
+Por defecto se vuela en modo **arcade**, como en No Man's Sky (Ajustes → Pilotaje → Modelo de vuelo):
+
+- La nave va siempre hacia donde apunta su morro: no deriva.
+- **W** acelera y **S** frena hasta pararse; no hay marcha atrás (los motores empujan hacia delante).
+- Sin tocar W ni S, mantiene la velocidad de crucero (30 % de la máxima).
+- **A/D** giran a izquierda y derecha y la nave se inclina sola en los giros; al soltar vuelve a nivelarse.
+- El **ratón** apunta la nave (vuelo con ratón activado por defecto); **Mayús**, impulso.
+- Tarda unos 5 s en pasar de parada a la velocidad máxima.
+
+El modo **newtoniano** es el de siempre: inercia real, propulsores laterales, subir y bajar y marcha atrás.
+
 ### Inercia y asistencia de vuelo
 
 La nave se mueve con propulsores: el principal empuja hacia delante, otros más débiles frenan y la mueven a los lados y arriba o abajo, y los de maniobra la hacen girar (los giros aceleran y frenan con suavidad, nunca de golpe).

@@ -37,6 +37,10 @@ export interface Maneuver {
   roll: number;
 }
 
+/** Vuelo arcade: fracción de la velocidad máxima sin tocar W/S (crucero) y segundos hasta la máxima. */
+const ARCADE_CRUISE = 0.3;
+const ARCADE_SECONDS_TO_MAX = 5;
+
 export class ShipController {
   /** Prestaciones propias (naves del Astillero): multiplican la aceleración y el giro de `FLIGHT_MODEL`. */
   performance = { accel: 1, turn: 1 };
@@ -54,6 +58,9 @@ export class ShipController {
   gravity: ((pos: THREE.Vector3, out: THREE.Vector3) => void) | null = null;
   /** Proporción de empuje (0–1) para el brillo de los motores. */
   thrust = 0;
+  /** Vuelo arcade: velocidad hacia el morro (m/s). */
+  private arcadeSpeed = 0;
+  private wasArcade = false;
   /** Lo que piden los mandos ahora (para los propulsores de maniobra del modelo). */
   readonly maneuver: Maneuver = { x: 0, y: 0, z: 0, pitch: 0, yaw: 0, roll: 0 };
   pulseLimit = 0;
@@ -203,6 +210,11 @@ export class ShipController {
     }
     const live = this.enabled && this.powered;
     const auto = live ? this.autopilot : null;
+    // Vuelo arcade (tipo No Man's Sky) a mano; el piloto automático vuela siempre con el modelo newtoniano.
+    const arcade = prefs.flightModel === "arcade" && !auto;
+    // Al pasar a arcade (tras el pulso, el piloto automático o al cambiar de modelo), se sigue a la velocidad que se lleve.
+    if (arcade && !this.wasArcade) this.arcadeSpeed = Math.max(0, this.velocity.dot(this.tmp.set(0, 0, -1).applyQuaternion(this.ship.quaternion)));
+    this.wasArcade = arcade && !this.pulseOn;
 
     // Mandos de giro (−1 a 1 por eje).
     const turn = this.turn.set(0, 0, 0);
@@ -218,11 +230,21 @@ export class ShipController {
       if (kb.action("turnRight")) turn.y -= 1;
       if (kb.action("rollLeft")) turn.z += 1;
       if (kb.action("rollRight")) turn.z -= 1;
+      // Arcade: A/D giran (en vez de desplazarse de lado).
+      if (arcade) {
+        if (kb.action("strafeLeft")) turn.y += 1;
+        if (kb.action("strafeRight")) turn.y -= 1;
+      }
       this.stickFromCursor();
       if (this.mouseStick.lengthSq() > 0) {
         turn.x += this.mouseStick.x;
         turn.y += this.mouseStick.y;
         turn.clampScalar(-1, 1);
+      }
+      if (arcade && turn.z === 0) {
+        // Se inclina al girar y, sin girar, se nivela sola (respecto al plano del sistema).
+        const rightY = this.tmp.set(1, 0, 0).applyQuaternion(this.ship.quaternion).y;
+        turn.z = Math.max(-1, Math.min(1, (Math.sin(turn.y * 0.55) - rightY) * 2.5));
       }
     }
     // Mandos de traslación, en ejes de la nave (−Z es delante).
@@ -265,6 +287,17 @@ export class ShipController {
         const limit = auto && auto.pulseCap > 0 ? Math.min(this.pulseLimit, auto.pulseCap) : this.pulseLimit;
         this.pulseSpeed = stepPulseSpeed(this.pulseSpeed, limit, h);
         this.velocity.set(0, 0, -1).applyQuaternion(this.ship.quaternion).multiplyScalar(this.pulseSpeed);
+      } else if (arcade) {
+        // Arcade: la velocidad sigue al acelerador con suavidad (unos 5 s hasta la máxima, sea cual sea) y va siempre
+        // hacia el morro, sin derrapar; sin teclas se queda en una velocidad de crucero. La gravedad no tira (como en NMS).
+        const top = M.maxSpeed * prefs.maxSpeed * (boost ? M.boostFactor : 1);
+        // Sin marcha atrás: S frena hasta pararse (los motores solo empujan hacia delante).
+        const throttle = !this.powered ? 0 : input.z < 0 ? 1 : input.z > 0 ? 0 : ARCADE_CRUISE;
+        const want = throttle * top;
+        const rate = (M.maxSpeed * prefs.maxSpeed * (want > this.arcadeSpeed && boost ? M.boostFactor : 1) * prefs.accel) / ARCADE_SECONDS_TO_MAX;
+        const diff = want - this.arcadeSpeed;
+        this.arcadeSpeed += Math.sign(diff) * Math.min(Math.abs(diff), rate * h * (diff < 0 ? 1.4 : 1));
+        this.velocity.set(0, 0, -1).applyQuaternion(this.ship.quaternion).multiplyScalar(this.arcadeSpeed);
       } else {
         if (this.powered) this.stepThrust(input, prefs.assist || auto !== null, maxSpeed, accelK * (boost ? M.boostAccelFactor : 1) * thrustScale(prefs.maxSpeed), prefs.inertia, h);
         if (this.gravity) this.gravity(this.ship.position, this.external);

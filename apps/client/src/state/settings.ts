@@ -173,6 +173,14 @@ export interface FlightPrefs {
   /** Fuego automático del cañón cuando el blanco fijado está a tiro y en el arco de los montajes. */
   autoFire: boolean;
   /**
+   * Modelo de vuelo (petición del usuario: «que se parezca lo más posible a No
+   * Man's Sky»). Arcade: la nave va siempre hacia el morro, W/S aceleran y
+   * frenan (sin teclas, mantiene una velocidad de crucero), A/D giran
+   * inclinándose, el ratón apunta. Newtoniano: propulsores en los seis ejes con
+   * inercia (el de antes). El piloto automático usa siempre el newtoniano.
+   */
+  flightModel: "arcade" | "newtonian";
+  /**
    * Seguro de armas (petición del usuario): no se dispara de ninguna forma y el
    * clic izquierdo vuelve a seleccionar y mover la cámara. Por defecto, puesto.
    */
@@ -186,12 +194,12 @@ export const CRUISE_LIMIT_MAX = 5_000_000;
 
 /** Empuje extra de los propulsores con una velocidad máxima alta: llegar a ella no lleva minutos. */
 export function thrustScale(maxSpeed: number): number {
-  return Math.max(1, maxSpeed) ** 0.75;
+  return Math.max(1, maxSpeed) ** 0.5;
 }
 
 export const DEFAULT_FLIGHT_PREFS: FlightPrefs = {
   assist: true,
-  mouseFlight: false,
+  mouseFlight: true,
   mouseSensitivity: 1,
   mouseDeadzone: 0.06,
   mouseInvertY: false,
@@ -203,6 +211,7 @@ export const DEFAULT_FLIGHT_PREFS: FlightPrefs = {
   mouseFire: true,
   autoFire: false,
   weaponsSafe: true,
+  flightModel: "arcade",
 };
 
 function loadFlightPrefs(saved: unknown): FlightPrefs {
@@ -212,7 +221,8 @@ function loadFlightPrefs(saved: unknown): FlightPrefs {
   const d = DEFAULT_FLIGHT_PREFS;
   return {
     assist: bool(f.assist, d.assist),
-    mouseFlight: bool(f.mouseFlight, d.mouseFlight),
+    // Al llegar el vuelo arcade (ajustes guardados sin `flightModel`), el ratón pasa a dirigir la nave una vez.
+    mouseFlight: f.flightModel === undefined ? true : bool(f.mouseFlight, d.mouseFlight),
     mouseSensitivity: num(f.mouseSensitivity, 0.3, 3, d.mouseSensitivity),
     mouseDeadzone: num(f.mouseDeadzone, 0, 0.3, d.mouseDeadzone),
     mouseInvertY: bool(f.mouseInvertY, d.mouseInvertY),
@@ -224,6 +234,7 @@ function loadFlightPrefs(saved: unknown): FlightPrefs {
     mouseFire: bool(f.mouseFire, d.mouseFire),
     autoFire: bool(f.autoFire, d.autoFire),
     weaponsSafe: bool(f.weaponsSafe, d.weaponsSafe),
+    flightModel: f.flightModel === "newtonian" ? "newtonian" : "arcade",
   };
 }
 

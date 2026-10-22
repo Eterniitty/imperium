@@ -202,6 +202,12 @@ function FlightSection() {
   return (
     <>
       <h3 className="set-group">{t("settings.group.assist")}</h3>
+      <Row label={t("settings.flight.model")} htmlFor="pref-flightModel" hint={t(flight.flightModel === "arcade" ? "settings.flight.model.arcadeHint" : "settings.flight.model.newtonianHint")}>
+        <select id="pref-flightModel" className="auth-input set-select" value={flight.flightModel} onChange={(e) => set({ flightModel: e.target.value === "newtonian" ? "newtonian" : "arcade" })}>
+          <option value="arcade">{t("settings.flight.model.arcade")}</option>
+          <option value="newtonian">{t("settings.flight.model.newtonian")}</option>
+        </select>
+      </Row>
       {check("assist", "settings.flight.assist")}
       {range("accel", "settings.flight.accel", 0.5, 1.5)}
       {range("inertia", "settings.flight.inertia", 0.5, 2)}
@@ -244,6 +250,7 @@ function ControlsSection({ capturing, setCapturing }: { capturing: { action: Act
         <summary>{t("settings.howToPlay")}</summary>
         <ul className="howto">
           <li>{t("help.pilotMouse", keys)}</li>
+          <li>{t("help.keysArcade", keys)}</li>
           <li>{t("help.keysPilot", keys)}</li>
           <li>{t("help.combat", keys)}</li>
           <li>{t("help.rotate")} · {t("help.pan")} · {t("help.zoom")}</li>

@@ -19,6 +19,19 @@ Only the actions used constantly with your hands on the controls have a default 
 
 In **Settings → Controls** you can change the mouse flight sensitivity and dead zone and invert its vertical axis. In the cockpit, in free camera mode, the mouse looks around.
 
+### Flight model: arcade or Newtonian
+
+By default you fly in **arcade** mode, like in No Man's Sky (Settings → Piloting → Flight model):
+
+- The ship always flies where its nose points: no drifting.
+- **W** speeds up and **S** brakes to a stop; there is no reverse (the engines push forwards).
+- Without W or S, it keeps cruise speed (30 % of the maximum).
+- **A/D** turn left and right and the ship banks by itself in turns; release and it levels out.
+- The **mouse** aims the ship (mouse flight is on by default); **Shift**, boost.
+- It takes about 5 s to go from standstill to top speed.
+
+The **Newtonian** mode is the classic one: real inertia, strafe thrusters, up/down and reverse.
+
 ### Inertia and flight assist
 
 The ship moves with thrusters: the main one pushes forward, weaker ones brake and move it sideways and up or down, and the manoeuvring thrusters turn it (turns speed up and slow down smoothly, never at once).
