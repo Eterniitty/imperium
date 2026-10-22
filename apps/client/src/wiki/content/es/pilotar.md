@@ -30,7 +30,7 @@ Por defecto se vuela en modo **arcade**, como en No Man's Sky (Ajustes → Pilot
 - El **ratón** apunta la nave (vuelo con ratón activado por defecto); **Mayús**, impulso.
 - Pesa: la nave del Emperador tarda unos 8 s en pasar de parada a la velocidad máxima. Las naves de tus flotas que pilotes a distancia van según su tamaño: los cazas aceleran y giran mucho más rápido; las capitales, más despacio.
 - Con las armas listas, la cámara se acerca y baja un poco (cámara de combate).
-- Con el vuelo con ratón, un clic sobre la vista **atrapa el ratón**: el cursor (un círculo dorado) no sale del círculo de mando ni de la ventana. **Esc** o **Alt** lo sueltan para usar la interfaz; se suelta solo al abrir una ventana o un panel (planeta, crucero, ajustes…), al apagar los motores o el vuelo con ratón.
+- Con el vuelo con ratón, un clic sobre la vista **atrapa el ratón**: el cursor (un círculo dorado) no sale del círculo de mando ni de la ventana. La nave solo se dirige con el ratón mientras está atrapado: **Esc** o **Alt** lo sueltan (la nave mantiene el rumbo) para usar la interfaz; se suelta solo al abrir una ventana o un panel (planeta, crucero, ajustes…), al apagar los motores o el vuelo con ratón.
 
 El modo **newtoniano** es el de siempre: inercia real, propulsores laterales, subir y bajar y marcha atrás.
 
@@ -70,6 +70,8 @@ El motor de pulso ([[P]], encender y apagar) es un **supercrucero** para cruzar 
 - Gasta **combustible** y algo de **energía**: sin combustible no funciona.
 
 ## Piloto automático de crucero
+
+El crucero **sigue con el mapa galáctico abierto** (M): la nave sigue volando hacia su destino y, al volver (M o «Pilotar»), la encuentras donde va, con el aviso del crucero. Ver otro sistema desde el mapa sí lo deja (la nave queda aparcada).
 
 Dentro de un sistema (o de una región de espacio profundo) la nave puede ir sola a un sitio o seguir a otra nave. Mueve los mismos mandos que tú —giros, propulsores, impulso y pulso—, así que va a las mismas velocidades y los demás la ven volar con normalidad.
 

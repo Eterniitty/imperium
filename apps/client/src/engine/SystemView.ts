@@ -900,6 +900,7 @@ export class SystemView implements View {
 
   /** Deja de pilotar y vuelve a la cámara orbital. */
   stopPiloting(): void {
+    this.backgroundCruise = false;
     if (!this.ship) return;
     this.cancelQuantum();
     this.cancelCruise();
@@ -1853,9 +1854,10 @@ export class SystemView implements View {
       return;
     }
     // Cualquier mando manual lo desactiva (en vuelo con ratón, también llevar el cursor fuera de la zona muerta).
-    const cursor = flight.cursorAt;
+    // Con el mapa abierto (crucero en segundo plano) las teclas y el ratón son del mapa: no cuentan.
+    const cursor = this.backgroundCruise ? null : flight.cursorAt;
     const moved = cursor !== null && (!this.cruiseCursor || Math.hypot(cursor.x - this.cruiseCursor.x, cursor.y - this.cruiseCursor.y) > 0.15);
-    if (MANUAL_ACTIONS.some((a) => this.keyboard.action(a)) || (flight.mouseSteering && moved)) return this.cancelCruise("cruise.manual");
+    if (!this.backgroundCruise && (MANUAL_ACTIONS.some((a) => this.keyboard.action(a)) || (flight.mouseSteering && moved))) return this.cancelCruise("cruise.manual");
     const { spots, obstacles } = this.cruiseWorld();
     const spot = spots.find((s) => s.id === target.id) ?? null;
     if (!spot) {
@@ -1891,9 +1893,29 @@ export class SystemView implements View {
     this.controls.enabled = false;
     if (this.flight) {
       this.flight.enabled = false;
-      this.flight.stop();
+      // Con el crucero en segundo plano (mapa abierto) la nave sigue volando: no se para.
+      if (this.backgroundCruise) this.flight.background = true;
+      else this.flight.stop();
     }
     this.dom.style.cursor = "";
+  }
+
+  /**
+   * Crucero en segundo plano: al abrir el mapa galáctico con el piloto automático
+   * puesto, la nave sigue volando (el motor llama a `update` sin dibujar esta
+   * vista). Al volver a los mandos (`resumeFromBackground`) se sigue desde donde vaya.
+   */
+  backgroundCruise = false;
+
+  /** ¿Se puede dejar el crucero en segundo plano? (pilotando la propia nave, con el piloto automático y sin saltar) */
+  get cruising(): boolean {
+    return !!this.ship && !!this.flight && this.autopilot.active && !this.remotePiloting && !this.quantum && !this.arrival;
+  }
+
+  /** Vuelve a los mandos de la nave que seguía en crucero con el mapa abierto. */
+  resumeFromBackground(): void {
+    this.backgroundCruise = false;
+    if (this.flight) this.flight.background = false;
   }
 
   /**
@@ -1969,7 +1991,7 @@ export class SystemView implements View {
       // Propulsores de maniobra del modelo, si los tiene (lo expone el generador de naves).
       (rig as { setManeuver?: (m: Maneuver) => void }).setManeuver?.(this.flight.maneuver);
       rig.tick(this.time, dt, this.quantum || this.arrival ? 0 : Math.max(0, 1 - this.flight.speed / 20));
-      if (!this.quantum && !this.arrival) this.fireCannon();
+      if (!this.quantum && !this.arrival && !this.backgroundCruise) this.fireCannon();
       this.updateCombatVisuals(dt);
       // Al entrar en la grieta, la cámara exterior se queda quieta y la ve alejarse; en cabina, entra con ella.
       if (!departing || gameStore.getState().cameraView === "first") this.placeChaseCamera(1 - Math.exp(-dt * 8));
@@ -1977,10 +1999,12 @@ export class SystemView implements View {
       this.updateDome(dt);
       telemetry.freeCam = this.chase.free && gameStore.getState().cameraView !== "first";
       // Vuelo con ratón: el cursor es la retícula (una cruz); en cámara libre, el de siempre.
-      const mouseFlight = settingsStore.getState().prefs.flight.mouseFlight;
-      const cursor = mouseFlight ? "crosshair" : "";
-      if (this.dom.style.cursor !== cursor) this.dom.style.cursor = cursor;
-      gameStore.getState().setFlight(true, this.flight.speed, this.flight.pulseActive);
+      if (!this.backgroundCruise) {
+        const mouseFlight = settingsStore.getState().prefs.flight.mouseFlight;
+        const cursor = mouseFlight ? "crosshair" : "";
+        if (this.dom.style.cursor !== cursor) this.dom.style.cursor = cursor;
+        gameStore.getState().setFlight(true, this.flight.speed, this.flight.pulseActive);
+      }
       // Más allá del borde: espacio interestelar.
       if (!this.leaving && this.layout && this.ship.position.length() > this.boundary) {
         this.leaving = true;

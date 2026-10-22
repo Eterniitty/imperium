@@ -82,6 +82,11 @@ export class ShipController {
   /** Tope de la velocidad de maniobra aquí (m/s): lo pone la vista según los cuerpos cercanos y el combustible. */
   maneuverCap = Infinity;
   /**
+   * Crucero en segundo plano (mapa galáctico abierto): el piloto automático sigue
+   * volando aunque la vista no tenga los mandos; teclado y ratón no cuentan.
+   */
+  background = false;
+  /**
    * Piloto automático de crucero: si lo hay, sus mandos sustituyen a los del
    * teclado y del ratón (misma física; la asistencia de vuelo va siempre puesta)
    * y el pulso no pasa de `pulseCap`.
@@ -137,6 +142,9 @@ export class ShipController {
     } else {
       lockedPointer.releasedAt = performance.now();
       this.ghost?.remove();
+      // Al soltarlo, el cursor de mando vuelve al centro: no queda un giro pendiente.
+      this.cursor = null;
+      this.mouseStick.set(0, 0);
     }
   };
 
@@ -237,7 +245,8 @@ export class ShipController {
     const f = settingsStore.getState().prefs.flight;
     const stick = this.mouseStick.set(0, 0);
     // Mirando alrededor (botón derecho) no se dirige; con el izquierdo sí (se dispara mientras se vira).
-    if (!f.mouseFlight || !this.cursor || (this.buttons & 2) !== 0) return;
+    // Solo con el ratón atrapado (un clic en la vista): suelto (Esc, Alt, una ventana abierta) la nave mantiene el rumbo.
+    if (!f.mouseFlight || !lockedPointer.active || !this.cursor || (this.buttons & 2) !== 0) return;
     const R = FLIGHT_MODEL.mouseReticleRadius;
     const dead = f.mouseDeadzone * R;
     const len = Math.hypot(this.cursor.x, this.cursor.y);
@@ -294,9 +303,9 @@ export class ShipController {
         this.pulseSpeed = this.velocity.length();
       }
     }
-    const live = this.enabled && this.powered;
+    const live = (this.enabled || (this.background && this.autopilot !== null)) && this.powered;
     const auto = live ? this.autopilot : null;
-    this.lockWanted = live && prefs.mouseFlight && !auto && !uiOpen();
+    this.lockWanted = this.enabled && live && prefs.mouseFlight && !auto && !uiOpen();
     this.syncLock();
     // Vuelo arcade (tipo No Man's Sky) a mano; el piloto automático vuela siempre con el modelo newtoniano.
     // Solo con los mandos y los motores: sin ellos (apagados, acoplada) la nave deriva con su inercia y la gravedad.

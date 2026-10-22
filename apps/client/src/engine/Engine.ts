@@ -240,7 +240,23 @@ export class Engine {
    * dirección por la que llega (la nave aparece en ese lado del borde).
    * Si el Emperador está viajando, no hace nada.
    */
+  /** Vuelve del mapa a la vista del sistema donde la nave seguía en crucero, sin volver a crearla. */
+  private resumeCruiseView(): void {
+    const store = gameStore.getState();
+    this.galaxy.follow(null);
+    const here = this.shown ? findSystemSummary(this.shown.id) : null;
+    if (here) store.select(here);
+    this.system.resumeFromBackground();
+    this.switchTo(this.system);
+    store.setView("system");
+  }
+
   pilot(from: THREE.Vector3 | null): boolean {
+    // La nave sigue en crucero con el mapa abierto: se vuelve a ella tal cual va.
+    if (this.system.backgroundCruise && this.active !== this.system) {
+      this.resumeCruiseView();
+      return true;
+    }
     const emperor = this.emperor();
     const now = serverNow();
     // Fase 10: caído y gestándose, no hay nave que pilotar.
@@ -283,8 +299,12 @@ export class Engine {
     if (this.active === this.tunnel) {
       this.showTravelOnMap();
     } else if (this.active === this.system) {
-      this.system.stopPiloting();
+      // Con el piloto automático puesto, la nave sigue en crucero mientras se mira el mapa (petición del usuario).
+      if (this.system.cruising) this.system.backgroundCruise = true;
+      else this.system.stopPiloting();
       this.exitSystem();
+    } else if (this.system.backgroundCruise) {
+      this.resumeCruiseView();
     } else if (!this.pilot(null)) {
       if (this.emperor()?.gestating) this.notify("lineage.cannotPilot");
       else if (this.emperor()?.travel && isTravelling(this.emperor()!, serverNow())) this.enterTunnel();
@@ -427,6 +447,7 @@ export class Engine {
     this.checkRemote();
     this.checkCarried();
     this.active.update(dt);
+    if (this.active !== this.system && this.system.backgroundCruise) this.system.update(dt);
   };
 
   /** Viaje en curso: la nave deja el sistema y se ve el túnel cuántico hasta llegar. */
@@ -601,6 +622,8 @@ export class Engine {
   }
 
   enterSystem(s: StarSystemSummary): void {
+    // Ver otro sistema desde el mapa redibuja la vista: el crucero en segundo plano se deja (la nave queda aparcada).
+    if (this.system.backgroundCruise) this.system.stopPiloting();
     const store = gameStore.getState();
     store.select(s);
     this.buildSystem(s);
@@ -699,6 +722,8 @@ export class Engine {
     this.checkRemote();
     this.checkCarried();
     this.active.update(dt);
+    // Crucero en segundo plano: la nave sigue volando aunque se vea el mapa.
+    if (this.active !== this.system && this.system.backgroundCruise) this.system.update(dt);
     const prefs = settingsStore.getState().prefs;
     const charge = this.active === this.system ? telemetry.quantumCharge : null;
     const low = prefs.quality === "low";

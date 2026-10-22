@@ -30,7 +30,7 @@ By default you fly in **arcade** mode, like in No Man's Sky (Settings → Piloti
 - The **mouse** aims the ship (mouse flight is on by default); **Shift**, boost.
 - It is heavy: the Emperor's ship takes about 8 s to go from standstill to top speed. Fleet ships you pilot remotely handle according to their size: fighters accelerate and turn much faster; capitals, more slowly.
 - With weapons ready, the camera moves a little closer and lower (combat camera).
-- With mouse flight, a click on the view **captures the mouse**: the cursor (a golden circle) cannot leave the steering circle or the window. **Esc** or **Alt** release it to use the interface; it is also released when a window or panel opens (planet, cruise, settings…), and when you switch off the engines or mouse flight.
+- With mouse flight, a click on the view **captures the mouse**: the cursor (a golden circle) cannot leave the steering circle or the window. The ship only steers with the mouse while it is captured: **Esc** or **Alt** release it (the ship holds its heading) to use the interface; it is also released when a window or panel opens (planet, cruise, settings…), and when you switch off the engines or mouse flight.
 
 The **Newtonian** mode is the classic one: real inertia, strafe thrusters, up/down and reverse.
 
@@ -70,6 +70,8 @@ The pulse drive ([[P]], on and off) is a **supercruise** to cross the system fro
 - It uses **fuel** and some **energy**: without fuel it does not work.
 
 ## Cruise autopilot
+
+Cruise **keeps going with the galaxy map open** (M): the ship keeps flying to its destination and, when you come back (M or "Pilot"), you find it where it is, with the cruise notice. Viewing another system from the map does stop it (the ship stays parked).
 
 Inside a system (or a deep-space region) the ship can fly itself to a place or follow another ship. It works the same controls you do —turning, thrusters, boost and pulse drive—, so it flies at the same speeds and other players see it fly normally.
 
