@@ -406,20 +406,35 @@ Ninguno revela el secreto (lore-era2.md §9 y §13); como mucho, siembran pregun
 
 ---
 
-## 15. Progresión
+## 15. Progresión (decisiones del 23-10-2026)
+
+### 15.1 Oficios en vez de un rango único
+
+El Emperador sube **por oficios**, cada uno con su experiencia y sus rangos (propuesta de oficios, por confirmar):
+
+| Oficio | Sube con | Desbloquea (ejemplos) |
+|---|---|---|
+| **Piloto** | Vuelo, combate de naves, cacerías | Maniobras, mejor reparto de energía, naves más grandes en el hangar. |
+| **Señor de la guerra** | Asedios, guerras, mando de flotas | Más flotas, órdenes de flota, tropas mejores. |
+| **Explorador** | Cartografía, sondas, criaturas, ruinas | Alcance del escáner, regiones antes que nadie, domesticar criaturas. |
+| **Mercader** | Comercio, rutas, misiones de entrega | Comisiones más bajas, más órdenes abiertas, cargueros mayores. |
+| **Señor de la tierra** | Colonias, población, construcción | Más parcelas, edificios de nivel alto, granjas mejores. |
+| **Erudito** | Códice, recuerdos, reliquias, Elydri | Investigación, colecciones, más huecos de recuerdo. |
+
+Las mejoras de los oficios son **pequeñas y prácticas** (como las del rango actual: bodega, combustible, parcelas…); el poder grande no viene del nivel.
+
+### 15.2 El resto
 
 | Qué | Cómo sube | Para qué |
 |---|---|---|
-| **Rango del Emperador** | Experiencia (contratos, combate, exploración, ruinas) | Más parcelas, bodega, combustible y acceso a contenidos. |
 | **Recuerdos** | Fragmentos (§5) | Rasgos permanentes pequeños, lore personal. |
-| **Tecnología** | Investigación (como hoy) | Mejoras de naves, colonias y armas. |
+| **Tecnología** | Investigación humana (un solo árbol) | Mejoras de naves, colonias y armas. |
 | **Reliquias y colecciones** | Botín (§4) | Ventajas pequeñas y adornos. |
-| **Reputación** | Pueblos (§9) | Piezas, misiones, protección, tratados. |
-| **Prestigio de la casa** | Todo lo anterior | Ranking, leyendas de la era. |
+| **Reputación** | Pueblos (§9) | Misiones, permisos, protección, tratados, adornos. |
+| **Prestigio de la casa** | Todo lo anterior | **Ranking público por prestigio** (de la era y del legado histórico) y leyendas. |
 
-Se mantienen los **contratos**, los **objetivos del día y de la semana**, el **reto de caza** y las **peticiones de colonia**, adaptados al sistema.
-
----
+- **Objetivos: solo semanales**, con racha de semanas; desaparecen los diarios.
+- Se mantienen los **contratos**, el **reto de caza** y las **peticiones de colonia**, adaptados al sistema.
 
 ## 16. El primer día de un jugador
 
