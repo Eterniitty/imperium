@@ -129,3 +129,29 @@ Nombres aprobados por el dueño (23-10-2026; se podrán retocar):
 ## 16. Lo que saben los jugadores (lore público) (23-10-2026)
 
 **Los Emperadores son conquistadores**: quieren la tumba de los dioses como todos los demás; es la gran carrera de la era. El lore público habla de seis dioses muertos, de sus cuerpos-planeta, de sus pueblos y de las reliquias; no habla de Origen ni de la sangre.
+
+## 17. Tiempo, premio, Carroñeros y Nihil (23-10-2026)
+
+- **Los dioses murieron hace eones**: sus cuerpos son ya paisaje y nadie vivo lo vio.
+- **Lo que se gana conquistando** (sistemas de juego a diseñar):
+  - **Reliquias divinas**: objetos raros de los dioses con poderes únicos para naves, colonias o el Emperador.
+  - **Tierra sagrada**: parcelas sobre restos divinos que producen recursos especiales.
+  - **Recuerdos**: cada reliquia devuelve al Emperador recuerdos rotos (lore personal; encaja con los Elydri y con el secreto de la sangre).
+- **Los Carroñeros son desterrados de todos los pueblos**: exiliados y desertores que viven de saquear reliquias y viajeros.
+- **Los Nihil velan a Ossal**: guardan su silencio para que nada lo perturbe. (Por eso distorsionan sensores y luz en Umbra: protegen el sueño de un muerto.)
+
+## 18. Cada pueblo y su dios (23-10-2026)
+
+| Pueblo | Su dios | Relación |
+|---|---|---|
+| **Aurelianos** | Kaurath, el que Forja | **Las tres cosas a la vez**: cada casa noble dice llevar su fuego y quien gobierne Brasa es su sucesor; forjan sus armas con el fuego que extraen de su corazón (su poder es literalmente el del dios); y cada duelo es una ofrenda, porque demostrar poder es su forma de rezar. |
+| **Elydri** | Ilwen, la que Recuerda | **Viven dentro de su memoria**: sus ciudades-archivo leen los recuerdos de Ilwen en los cristales. |
+| **Tharaxi** | Umara, la Madre Hambrienta | **Son sus hijos**: nacieron de su carne y creen que la mente colectiva es la de Umara. La **casta disidente** son **los que oyen a Umara de verdad**: creen que la mente colectiva traicionó a la Madre y que ella no quería devorar. Por eso pueden aliarse con los Emperadores. |
+| **Vesperi** | Vael, el Guardián del Umbral | **Le deben la vida**: Vael murió defendiéndolos; su pacto es proteger a otros como él los protegió. (De ahí que puedan proteger colonias humanas.) |
+| **Nómadas del Vacío** | Zefaro, el Aliento Errante | **Le deben su libertad**: Zefaro les enseñó a no tener tierra; quien los ata, ofende al dios. (De ahí que bloquear sus rutas los vuelva hostiles.) |
+| **Nihil** | Ossal, el Silencio | **Lo velan** (§17). |
+
+## 19. Personajes y textos (23-10-2026)
+
+- **Personajes con diálogo**: embajadores, sacerdotes y mercaderes con nombre que hablan y dan misiones. (Textos escritos por nosotros, en es/en; no es chat entre jugadores, así que respeta el principio de «sin texto libre público».)
+- **Muchos textos de lore que se encuentran**: inscripciones en las ruinas, crónicas de cada pueblo, cantos de los Elydri… coleccionables que se guardan en un **códice** del Emperador. Los textos nombran seis dioses y callan sobre Origen (§6).
