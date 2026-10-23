@@ -1,0 +1,89 @@
+# Aeonarch, Era II — Lore y construcción del mundo
+
+Decisiones del dueño sobre el mundo del juego en Unreal (un solo sistema, siete mundos; ver [roadmap-unreal.md](roadmap-unreal.md)). Se va llenando con las respuestas del dueño a las preguntas de Claude. El lore anterior ([lore.md](lore.md)) sigue valiendo salvo donde esto lo cambie.
+
+> Cada entrada lleva la fecha de la respuesta. Lo que está marcado como **propuesta** es de Claude y el dueño aún no lo ha confirmado.
+
+## 1. Tono (23-10-2026)
+
+**Mítico y solemne.** Aeonarch se cuenta como una leyenda antigua: dioses muertos, ruinas, destinos. La belleza del juego es grave, no alegre: cielos inmensos, silencio, monumentos más viejos que la memoria.
+
+## 2. Por qué todo ocurre en Aeon (23-10-2026)
+
+**Aeon es un lugar sagrado.** Fue el centro de los Precursores, y todos los pueblos han llegado atraídos por lo que esconde. Nadie está allí por casualidad: cada pueblo tiene su motivo para estar cerca de lo que hay en Aeon.
+
+## 3. Más allá del sistema (23-10-2026)
+
+**Es un misterio.** Nadie sabe qué hay fuera de Aeon ni si se puede llegar. Descubrirlo forma parte del juego. La Grieta, por donde llegan los Erradicadores, es la única pista visible de que hay un «fuera».
+
+## 4. Lo que saben los Emperadores de sí mismos (23-10-2026)
+
+**Recuerdos rotos.** Los Emperadores tienen fragmentos de vidas pasadas que no encajan entre sí. Cada muerte puede devolver un recuerdo o borrar otro. (Encaja con el lore: «algunos recuerdan vidas que no aparecen en ningún registro», y con los Elydri, que quieren estudiar esos recuerdos.)
+
+## 5. Lo sagrado: la tumba de los dioses (23-10-2026)
+
+**Aeon es la tumba de los dioses.** Los dioses primordiales murieron aquí, y sus restos (y lo que quede de su poder) siguen en el sistema. Eso es lo que atrae a todos los pueblos.
+
+## 6. Los siete dioses y el que nadie nombra (23-10-2026)
+
+- **Los dioses son siete**, uno por planeta. Pero el mundo cree que son **seis** (por eso el lore antiguo dice «los seis dioses primordiales han muerto»).
+- Una **civilización muerta adoraba a los planetas**, cada uno como un dios.
+- Los jugadores deben pensar al principio que hay seis dioses… y preguntarse: **¿y el séptimo planeta? ¿Por qué nadie habla de él?** Ese silencio es uno de los grandes misterios del juego.
+- Consecuencia para el diseño: los textos, inscripciones y relatos del juego nombran seis dioses y callan sobre uno de los planetas; las pistas del séptimo se descubren poco a poco.
+
+## 7. Los pueblos ante lo sagrado (23-10-2026)
+
+**Cada pueblo lo entiende de forma distinta**, según su doctrina: unos veneran la tumba, otros la estudian, otros la quieren destruir o apropiarse de ella. Propuesta de lectura por pueblo (por confirmar):
+
+| Pueblo | Qué ve en la tumba de los dioses |
+|---|---|
+| Elydri | Un archivo que no debe olvidarse: estudian y preservan cada resto. |
+| Tharaxi | Materia viva y poderosa que incorporar a la colmena. |
+| Aurelianos | Un trono: quien controle la tumba demuestra su derecho a gobernar. |
+| Vesperi | Un hogar sagrado que hay que proteger de todos. |
+| Nómadas | Un mercado y una ruta: reliquias que comerciar, nada que adorar. |
+| Grises | Una variable que ordenar y controlar. |
+| Nihil | La prueba de que todo muere: quieren que los dioses descansen del todo. |
+| Erradicadores | Algo que la humanidad no debe tocar nunca. |
+
+## 8. La fe (23-10-2026)
+
+**De fondo.** Existe en el lore y en los lugares (templos, inscripciones, cultos), pero el jugador no tiene un sistema de religión que manejar.
+
+## 9. El secreto de Origen (23-10-2026) — SECRETO
+
+> **No se publica en la Wiki ni en ningún texto del juego.** Es la verdad de fondo que el dueño irá desvelando poco a poco.
+
+- **El séptimo dios es Origen**, el planeta de la humanidad. Los humanos viven sobre él sin saberlo; nadie lo ve como un dios y nadie lo nombra.
+- **No murió: los otros seis dioses lo sellaron, y duerme.**
+- **Los Precursores** son la civilización muerta que adoraba a los planetas como dioses: sus ruinas son templos a los siete (aunque sus inscripciones solo nombran seis).
+- **No hay revelación final.** Al ser un MMO, el dueño irá contando la verdad poco a poco (sucesos, textos, lugares nuevos), sin una respuesta cerrada en el juego.
+
+Consecuencias para el diseño (propuesta):
+- Los templos de los Precursores en los seis mundos «divinos» tienen su dios; en Origen no hay templo… o lo hay enterrado bajo el océano.
+- Que la humanidad, los Emperadores que vuelven de la muerte y el dios que duerme bajo sus pies estén relacionados es la sospecha que el juego debe sembrar, nunca confirmar.
+
+## 10. Los seis dioses conocidos (23-10-2026)
+
+- Cada uno tiene **nombre y dominio** propios, ligados a su planeta.
+- **Se mataron entre ellos** (una guerra divina, después de sellar al séptimo).
+- **Cada planeta es el cuerpo de su dios**: los restos se ven a gran escala en el paisaje.
+- El repositorio es privado: este documento puede guardar los secretos (nunca la Wiki ni los textos del juego).
+
+Nombres aprobados por el dueño (23-10-2026; se podrán retocar):
+
+| Planeta | Dios | Dominio | El cuerpo en el paisaje | Pueblo que lo habita |
+|---|---|---|---|---|
+| Brasa | **Kaurath, el que Forja** | Fuego, voluntad, poder | La cara de día es su corazón, que aún arde; la de noche, su piel vitrificada; los ríos de lava son sus venas. | Aurelianos |
+| Elyss | **Ilwen, la que Recuerda** | Memoria, tiempo | Los cristales son sus pensamientos petrificados; cuando el viento los toca, cantan recuerdos que no son de nadie. | Elydri |
+| Tharax | **Umara, la Madre Hambrienta** | Vida, hambre, crecimiento | La selva de hongos crece sobre su carne; las colmenas anidan entre sus costillas, que forman las cordilleras. | Tharaxi |
+| Vesperia | **Vael, el Guardián del Umbral** | Hogar, protección, estaciones | Los árboles torre son sus huesos, que todavía florecen; los valles son sus manos cerradas sobre algo. | Vesperi |
+| Céfiro | **Zefaro, el Aliento Errante** | Viento, viaje, libertad | Su último aliento sigue girando en las bandas; la gran tormenta es su ojo, que nunca se cierra. | Nómadas del Vacío |
+| Umbra | **Ossal, el Silencio** | Muerte, final, olvido | Su cuerpo está congelado; el anillo roto que lo rodea es su corona partida. | Nihil |
+| Origen | *(nadie lo nombra)* | *(secreto, §9)* | *(nada visible… a primera vista)* | Humanidad |
+
+## 11. La guerra de los dioses, las lunas y las ruinas (23-10-2026)
+
+- **Se mataron por los mortales**: cada dios defendió a su pueblo, y la guerra entre pueblos acabó siendo una guerra entre dioses.
+- **Las lunas son sus siervos**: seres menores, servidores o hijos de los dioses, también muertos, que siguen orbitando a su señor.
+- **Las ruinas de los Precursores son una mezcla**: templos colosales visibles, tallados en los cuerpos de los dioses (escaleras que no acaban), y ciudades enterradas bajo el polvo y el hielo, con sus templos en el centro, por descubrir.
