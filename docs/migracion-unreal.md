@@ -2,6 +2,8 @@
 
 Plan escrito el 23-10-2026 a petición del dueño. **No es una migración hecha**: explica qué supone pasar el cliente a Unreal, qué se conserva, qué hay que reescribir, en qué orden y con qué riesgos. No se ha cambiado código del juego.
 
+> **Decisión del dueño (23-10-2026): se reconstruye todo el juego en Unreal** (naves, espacio, interfaz, efectos, sonido: todo lo que ve y oye el jugador). No es un prototipo para decidir después ni un segundo cliente opcional: el cliente de Unreal sustituye al cliente web, que se retira al terminar (M6). El **servidor de Hetzner se queda** (Node + PostgreSQL, multijugador y Wiki; §2): «todo» se refiere al juego que ve el jugador, no al servidor. Si «todo» incluye también el servidor, este plan cambia mucho (§2.1) y hay que decirlo.
+
 > Claude no puede instalar, compilar ni ejecutar Unreal en su contenedor ni en el servidor de Hetzner (sin GPU, sin Windows, sin el editor). Todo lo de Unreal lo compila y prueba el dueño en su ordenador; Claude escribe código C++, revisa, adapta el servidor y prepara pruebas que se puedan ejecutar fuera del motor.
 
 ## 0. Lo comprobado en la web (23-10-2026)
@@ -123,9 +125,9 @@ Hoy el cliente web siempre está al día (se descarga en cada visita) y el servi
 
 Todo se puede probar sin Unreal con un script Node que haga de cliente nativo (`scripts/native-client-smoke.ts`) contra el servidor de desarrollo, con cuentas de `aeonarch-sesion-prueba` (regla 11).
 
-## 3. Qué hay que reescribir en el cliente
+## 3. Qué hay que reconstruir en el cliente
 
-Tamaño de referencia: `apps/client/src` tiene unas 28 000 líneas (motor 3D, interfaz React, audio, tutorial, red). Lo que importa del cliente de `packages/*`: `procgen` (~800 líneas), parte de `sim` (~2 600 en total), los datos de `content` (~4 900) y las ~2 100 claves i18n por idioma.
+Se reconstruye **todo** el cliente en Unreal; no se reutiliza nada de Three.js ni de React. Lo que sigue son las piezas y cómo se traduce cada una. Las naves y el espacio no se «portan»: se rehacen con las herramientas de Unreal (§3.5). Tamaño de referencia: `apps/client/src` tiene unas 28 000 líneas (motor 3D, interfaz React, audio, tutorial, red). Lo que importa del cliente de `packages/*`: `procgen` (~800 líneas), parte de `sim` (~2 600 en total), los datos de `content` (~4 900) y las ~2 100 claves i18n por idioma.
 
 ### 3.1 Render y escena (`apps/client/src/engine`)
 
@@ -134,7 +136,7 @@ Tamaño de referencia: `apps/client/src` tiene unas 28 000 líneas (motor 3D, in
 | `GalaxyView`, `GalaxyCloud`, `SectorManager` (mapa de ~30 000 estrellas) | Niagara o `UInstancedStaticMeshComponent` para las estrellas; el mapa como un «nivel» aparte. |
 | `SystemView` (2 400 líneas: estrella, planetas, lunas, cinturones, órbitas) | Actores por cuerpo; materiales procedurales para planetas (`planetLook.ts` → material con parámetros). |
 | Escala astronómica (Sol de 2500 km, órbitas a 270 000 km·√UA, búfer de profundidad logarítmico) | Unreal usa coordenadas `double` (LWC) desde la 5.0, así que las distancias caben, pero la precisión de render sigue necesitando **origen flotante** (re-centrar el mundo en la nave) y escalar visualmente lo lejano. Hay que decidirlo en M1; es el punto técnico más delicado del render. |
-| `shipFactory.ts` (naves procedurales paramétricas, LOD) | `UProceduralMeshComponent` o **Geometry Script** (en tiempo de ejecución) con los mismos parámetros de `packages/content` shipModels.ts; o generar mallas una vez en el editor y guardarlas. Las bocas de fuego (`shipHardpoints`) deben salir del mismo cálculo. |
+| `shipFactory.ts` (naves procedurales paramétricas, LOD) | Naves rehechas como recursos de Unreal (§3.5); las bocas de fuego y radios siguen saliendo de `packages/content`. |
 | `TunnelView`, `Backdrop`, `Effects`, `fx/` (túnel cuántico, cielo por sistema, destellos con `flashLimiter`) | Niagara y materiales de postproceso. **Mantener el limitador global de destellos** (fotosensibilidad). |
 | `DeepField` (asteroides) | Instancias; la capa de asteroides es secreta y la manda el servidor (`field`). |
 | `FleetScene` (batallas por rondas en 3D) | Nivel o subescena propia. |
@@ -173,22 +175,41 @@ El cliente genera hoy en local el mapa estelar (`generateSector`, `STAR_CLASSES`
 
 Para `packages/sim` en el cliente se aplica la misma técnica de vectores, pero **con tolerancia** (el servidor manda).
 
+### 3.5 Naves y espacio, rehechos en Unreal
+
+Hoy las naves y los cuerpos se generan con código (`shipFactory.ts`, `planetLook.ts`, `starMaterial.ts`, `Backdrop.ts`). Reconstruirlos en Unreal permite un salto de calidad, pero con condiciones porque **el servidor también usa la forma de las naves**.
+
+**Naves**
+- Se modelan como recursos de Unreal (Static Mesh con Nanite o mallas con LOD, materiales PBR, luces de motor y Niagara para estelas, escudos e impactos). Pueden hacerse a mano (Blender → FBX/glTF → Unreal), con **Geometry Script / PCG en el editor** a partir de los parámetros de `packages/content` shipModels.ts, o mezclando: piezas modulares hechas a mano y montadas según el diseño del Astillero (`designLook`).
+- **Lo que no puede cambiar sin tocar el servidor**: las bocas de fuego (`hardpoints`, que `apps/server/src/space/service.ts` usa para el origen de cada disparo), el radio de choque y de blanco (`SHIP_COLLISION`, tamaño de blanco del combate por rondas) y la escala (`SHIP_SCALE`, nave del Emperador de 320 m). Regla: **los datos mandan y el modelo se ajusta a ellos**, o, si el modelo nuevo los cambia, un script exporta desde Unreal los sockets `Muzzle_*` y el radio a `packages/content` (regla 4: siguen siendo datos) y se revisa el equilibrio (`packages/sim/test/balance.test.ts`). Cada clase de nave tiene en Unreal un `UDataAsset` que apunta a su malla y a su id de `packages/content` (`ShipState.classId`).
+- Las 12 clases humanas, las seis de Carroñeros, las de cada especie alienígena (silueta y colores de `aliens.ts`), la nave nodriza y los cascos del Astillero: es la parte de arte más grande. Se puede empezar con las generadas por parámetros y sustituirlas una a una.
+- Cabina: se modela por dentro (instrumentos como widgets 3D de UMG).
+
+**Espacio**
+- Estrellas: material emisivo + corona y destellos de lente; clases de `STAR_CLASSES`. Agujeros negros y el Ónfalo supermasivo: material de lente gravitatoria (posproceso).
+- Planetas y lunas: esferas con materiales procedurales (ruido en el material, atmósfera con `SkyAtmosphere` adaptado a esfera o con shader propio, nubes). Los datos (tipo, radio, μ, atmósfera, aterrizaje) llegan del servidor (`GET /api/systems/:id`) y de `packages/sim` bodies.ts; el aspecto se elige de forma determinista a partir del id, igual que ahora, pero solo afecta a lo visual.
+- Cielo de cada sistema (`Backdrop.setSeed`): cubemap procedural o esfera con Niagara/material; la galaxia de fondo y las nebulosas, desde las estrellas del mapa.
+- Cinturones y asteroides: instancias (HISM/Nanite); los del espacio profundo los manda el servidor (`field`).
+- Túnel cuántico y grieta del salto: Niagara + posproceso, **con el limitador global de destellos** (fotosensibilidad).
+- Escala: Large World Coordinates (doble precisión) + origen que sigue a la nave + «falsa distancia» para lo lejano (dibujar a escala reducida lo que está a millones de km). Se prueba en M1 antes de hacer arte.
+
+**Qué no cambia**: posiciones, órbitas, tamaños físicos, gravedad, calor y choques los decide el servidor con `packages/sim`. Unreal no simula física de juego (nada de Chaos para la nave ni colisiones de Unreal que decidan daños): solo dibuja y predice.
+
 ## 4. Fases de la migración
 
-Cada fase termina con algo que el dueño puede abrir y jugar. Las estimaciones son de **semanas de trabajo del dueño a ratos** con ayuda de Claude, muy aproximadas; dependen sobre todo de cuánto se cuide el aspecto. Mientras tanto **el cliente web sigue siendo el juego** (se despliega como hasta ahora).
+Cada fase termina con algo que el dueño puede abrir y jugar. Las estimaciones son de **semanas de trabajo del dueño a ratos** con ayuda de Claude, muy aproximadas; dependen sobre todo de cuánto se cuide el aspecto. Mientras tanto **el cliente web sigue siendo el juego** (se despliega como hasta ahora), pero **se congela**: solo arreglos y lo que pida el servidor; las funciones nuevas se hacen ya en Unreal (o en el servidor, que sirve a los dos).
 
 | Fase | Contenido | Jugable al acabar | Tamaño | Lo que hace Claude | Lo que hace el dueño |
 |---|---|---|---|---|---|
 | **M0. Preparación** | Repositorio `aeonarch-unreal` (o carpeta `apps/unreal`, con Git LFS para `.uasset`; los binarios de Unreal no deben inflar el repositorio actual). Wiki a `apps/wiki`. Generador del protocolo, exportación de `content` e i18n a JSON/CSV. Servidor: puerta para cliente nativo, código de dispositivo, mapa estelar servido por el servidor, `/api/client-version` (§2.6). | Nada nuevo en Unreal; el servidor ya admite el cliente nativo (se prueba con un script Node que simule ser el cliente). | 1–2 semanas | Casi todo: scripts, servidor, pruebas Node. | Instalar UE 5.8.4 y Visual Studio 2026; crear el proyecto C++ vacío. |
-| **M1. Prototipo conectado** | Cliente Unreal que inicia sesión, pide ticket, abre el WebSocket, recibe `hello` y `snap`, dibuja el sistema actual (estrella, planetas desde `GET /api/systems/:id`) y las naves de `space`/`poses`. Vuela con controles básicos y manda `pose`. Origen flotante y escala. | **Sí**: se vuela en el mismo sistema que alguien del cliente web y ambos se ven. | 3–5 semanas | C++ de red, JSON, modelo de estado, controlador de vuelo (sin compilar: el dueño compila y pega los errores). | Compilar, probar, crear materiales y escena; decidir el estilo visual. |
-| **— Decisión —** | Con M1 en la mano: ¿rinde, se ve mejor, compensa el esfuerzo? (ver §5) | | | Informe de lo que falta. | Decide seguir o volver. |
+| **M1. Primer vuelo conectado** | Cliente Unreal que inicia sesión, pide ticket, abre el WebSocket, recibe `hello` y `snap`, dibuja el sistema actual (estrella, planetas desde `GET /api/systems/:id`) y las naves de `space`/`poses`. Vuela con controles básicos y manda `pose`. Origen flotante y escala. | **Sí**: se vuela en el mismo sistema que alguien del cliente web y ambos se ven. | 3–5 semanas | C++ de red, JSON, modelo de estado, controlador de vuelo (sin compilar: el dueño compila y pega los errores). | Compilar, probar, crear materiales y escena; decidir el estilo visual. |
 | **M2. Mapa y salto** | Mapa galáctico con las estrellas que manda el servidor (§2.4; port de `procgen` solo si se elige el plan B), salto cuántico (J), túnel y grieta (`rift`), salida a espacio profundo (K). | Sí: viajar por la galaxia. | 3–4 semanas | Lógica de salto y del mapa (y el port de procgen con su prueba en Linux, si hace falta). | Efectos (Niagara), pruebas en Windows. |
-| **M3. Combate y pilotaje completo** | Armas, misiles, escudos, asistencia de puntería, fuego automático, choques, calor, minería (L), arranque de motores (I), autopiloto de crucero, cabina, instrumentos, `shipFactory` en Unreal, audio de vuelo y combate (MetaSounds). | Sí: el bucle de vuelo y combate completo. | 6–10 semanas | Port de `aim.ts`, `flight.ts`, `gravity.ts`, autopiloto, generador de naves. | Arte, sonido, ajuste de sensaciones. |
+| **M3. Combate y pilotaje completo** | Armas, misiles, escudos, asistencia de puntería, fuego automático, choques, calor, minería (L), arranque de motores (I), autopiloto de crucero, cabina, instrumentos, primeras naves rehechas (§3.5), audio de vuelo y combate (MetaSounds). | Sí: el bucle de vuelo y combate completo. | 6–10 semanas (más el arte de naves, en paralelo) | Port de `aim.ts`, `flight.ts`, `gravity.ts`, autopiloto; script que exporta bocas de fuego y radios a `packages/content`. | Arte, sonido, ajuste de sensaciones. |
 | **M4. Interfaz de gestión** | Barra superior y de acciones, colonias, flotas, logística, mercado, humanidad, batallas por rondas (`FleetScene`), asedios, linaje y `DeathScreen`, contratos, rango, objetivos, Astillero, investigación, ajustes y teclas, i18n es/en completo. | Sí: todo el juego salvo el tutorial. | 8–14 semanas (la mayor) | Widgets en C++, enlaces con el estado, tablas de cadenas. | Diseño de los widgets en el editor. |
 | **M5. Pulido y distribución** | Tutorial (12 capítulos), aviso de fotosensibilidad, música generativa, opciones gráficas, instalador, alojamiento de la descarga (R2/itch.io/Steam), comprobación de versión, informes de fallo sin Epic, textos legales y `LEGAL_VERSION`, Wiki (artículo «Cliente de escritorio»). | Versión alfa descargable. | 3–5 semanas | Textos legales (sin datos personales: marcadores `{{LEGAL_*}}`), Wiki, servidor. | Empaquetar, firmar el ejecutable (si se quiere evitar el aviso de Windows SmartScreen, hace falta un certificado de firma de código, de pago), publicar. |
-| **M6. Retirar el cliente web** (opcional) | Solo cuando el cliente Unreal lo haga todo. Se borra el motor Three.js y la interfaz React; se quedan la Wiki, las páginas legales y una portada con el enlace de descarga. | — | 1 semana | Limpieza. | Decidir la fecha. |
+| **M6. Retirar el cliente web** | En cuanto el cliente Unreal lo haga todo (y no antes). Se borra el motor Three.js y la interfaz React; se quedan la Wiki, las páginas legales y una portada con el enlace de descarga. | — | 1 semana | Limpieza; portada web con enlace de descarga. | Decidir la fecha y avisar a los jugadores. |
 
-Total orientativo: **6–10 meses** a ratos hasta igualar el cliente actual. Durante ese tiempo cada función nueva del juego habría que hacerla dos veces (web y Unreal), así que conviene **congelar funciones nuevas grandes** a partir de M3 o asumir el doble trabajo.
+Total orientativo: **6–10 meses** a ratos hasta igualar el cliente actual. Con el cliente web congelado no hay doble trabajo; a cambio, durante esos meses el juego solo avanza en el servidor. El arte (naves y espacio de §3.5) puede ir en paralelo desde M1 si el dueño lo hace o lo encarga.
 
 ### Cómo trabajar con Claude en esto
 
@@ -202,7 +223,7 @@ Total orientativo: **6–10 meses** a ratos hasta igualar el cliente actual. Dur
 ### Riesgos
 
 1. **Tamaño**: el cliente actual son ~28 000 líneas más paquetes compartidos y una interfaz muy densa. Rehacerlo es varias veces el trabajo de una fase normal del proyecto.
-2. **Doble mantenimiento** mientras convivan los dos clientes, con `PROTOCOL_VERSION` compartida.
+2. **Convivencia de clientes**: mientras el web siga en marcha, cada cambio de protocolo hay que hacerlo en los dos (`PROTOCOL_VERSION` compartida); por eso se congela.
 3. **Se pierde el «abre el enlace y juega»**: descarga de GB, instalador, aviso de SmartScreen sin firma, requisitos de GPU. Para un alfa cerrado con amigos es aceptable; para atraer jugadores nuevos es un freno.
 4. **Escala astronómica** y precisión (origen flotante, distancias de cientos de miles de km): resuelto en Three.js con profundidad logarítmica; en Unreal hay que rehacerlo.
 5. **Determinismo de procgen** entre TypeScript, MSVC y Clang: se evita sirviendo el mapa desde el servidor (§2.4); si se porta, vectores al bit, porque un descuido (FMA, `float`, `TMap`) rompe el mapa en silencio.
@@ -212,20 +233,18 @@ Total orientativo: **6–10 meses** a ratos hasta igualar el cliente actual. Dur
 9. **Dependencia del ordenador del dueño**: solo él compila; Claude trabaja «a ciegas» en la parte visual.
 10. **Clientes viejos**: un cambio de protocolo deja fuera a quien no actualice; se mitiga con `GET /api/client-version` y cambios compatibles (§2.5).
 
-### Alternativas
+### Alternativas descartadas
 
-- **Quedarse en la web y mejorar el render**: Three.js con **WebGPU** (`WebGPURenderer`, ya estable en Three.js) o Babylon.js da sombras, posprocesado y mucha más potencia sin perder el navegador, la puerta, la Wiki integrada ni el despliegue actual. Es la opción más barata si lo que se busca es que «se vea mejor».
-- **Godot 4**: exporta a web (con limitaciones) y a escritorio, licencia MIT sin regalías, C# o GDScript; menos potencia gráfica que Unreal pero más cerca del modelo actual.
-- **Unreal solo como cliente de escritorio opcional** (además del web): lo que propone este plan hasta M5, sin llegar a M6.
-- **Pixel Streaming**: descartado por coste, salvo demo.
+Quedarse en la web con Three.js + WebGPU, Godot 4, Unreal como segundo cliente opcional y Pixel Streaming quedaron descartados: el dueño ha decidido reconstruir todo en Unreal. Pixel Streaming sigue descartado también por coste.
 
-### Recomendación
+### Recomendación (orden de trabajo)
 
-1. **No decidir la migración completa todavía.** Hacer **M0 y M1** (unas 4–7 semanas): un prototipo de cliente Unreal conectado al **servidor Node actual**, volando en el mismo sistema que el cliente web. Cuesta poco al servidor (los cambios son pequeños y útiles igualmente) y responde a lo importante: si Unreal se ve y se siente tanto mejor como para justificar meses de trabajo, y si el bucle «Claude escribe, el dueño compila» es llevadero.
-2. Mantener el **servidor Node + PostgreSQL de Hetzner** como fuente de verdad, para el multijugador y la Wiki (decisión del dueño). El cliente se conecta con el mismo protocolo; el servidor manda el mapa estelar y la versión mínima del cliente.
-3. Distribuir como **descarga de escritorio desde Cloudflare R2 o itch.io**, nunca desde Hetzner; descartar Pixel Streaming.
-4. Wiki y páginas legales, **siempre web**.
-5. Si tras M1 no compensa, la alternativa es **Three.js con WebGPU** en el cliente actual.
+1. **Empezar por M0 y M1**: el servidor preparado para el cliente de escritorio y un primer vuelo en Unreal conectado al servidor actual. No es para decidir si se migra (eso ya está decidido), sino para resolver pronto lo técnico que condiciona todo lo demás: escala y origen flotante, red y JSON, predicción del vuelo y el bucle «Claude escribe, el dueño compila».
+2. **Antes de hacer arte de naves**, fijar el contrato con el servidor: bocas de fuego, radios y escala salen de `packages/content` (o se exportan a él) (§3.5).
+3. Mantener el **servidor Node + PostgreSQL de Hetzner** como fuente de verdad, para el multijugador y la Wiki. El cliente se conecta con el mismo protocolo; el servidor manda el mapa estelar y la versión mínima del cliente.
+4. **Congelar el cliente web** desde ya y retirarlo en M6.
+5. Distribuir como **descarga de escritorio desde Cloudflare R2 o itch.io**, nunca desde Hetzner.
+6. Wiki y páginas legales, **siempre web**.
 
 ### Fuentes
 
