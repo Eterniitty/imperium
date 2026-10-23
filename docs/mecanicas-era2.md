@@ -395,6 +395,16 @@ Sucesos del servidor (decisión del 23-10-2026: **llegan por sorpresa con unas h
 
 Ninguno revela el secreto (lore-era2.md §9 y §13); como mucho, siembran preguntas.
 
+### 13.1 Las oleadas de la Grieta (decisiones del 23-10-2026)
+
+- **Destruyen de verdad**: si nadie las para, los Erradicadores arrasan las Cunas y las colonias pobladas que encuentran en su camino (edificios destruidos, población perdida). Es la amenaza real del sistema (Ley III).
+- **Tregua automática**: mientras dura una oleada, el PvP se desactiva en las zonas afectadas; las casas en guerra pelean del mismo lado.
+- **Los pueblos también luchan, cada uno a su manera**: los Vesperi defienden a quien esté cerca, los Aurelianos lo ven como un duelo glorioso, los Grises calculan y protegen solo Ábaco, los Nómadas huyen con sus ciudades, los Tharaxi se lanzan en enjambre, los Elydri salvan archivos y los Nihil se esconden en el silencio.
+
+### 13.2 Historia principal por era
+
+Cada era (3 meses) cuenta un **capítulo** de la historia para todo el servidor: una campaña de sucesos, misiones y lugares nuevos que avanza según lo que hacen los jugadores, y que termina con el gran suceso del fin de era (§18). Es la vía principal para que el dueño cuente el lore poco a poco, sin revelar nunca el secreto.
+
 ---
 
 ## 14. El códice
