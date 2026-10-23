@@ -368,15 +368,15 @@ Lo de la Fase 9b sobre parcelas (decisión del 23-10-2026: **solo asedio general
 
 ---
 
-## 12. Economía
+## 12. Economía (decisiones del 23-10-2026)
 
-- **Créditos** por población (como hoy), **tesoro de la humanidad** y **proyectos comunes** (ahora con monumentos que se ven en Origen).
-- **Mercado del anillo** (Origen): libro de órdenes, comisión y envíos según la distancia real. **Solo mercado** (decisión del 23-10-2026): no hay intercambio directo entre jugadores; todo pasa por los libros de órdenes, para evitar abusos.
-- **Mercado nómada** (Céfiro): más caro, pero compra y vende lo que el del anillo no (reliquias, esencias, contrabando), sin preguntar.
+- **Créditos por varias vías equilibradas**: renta de la población de las colonias (como hoy), comercio entre mercados, pagos de misiones y cacerías, botín.
+- **Sin mantenimiento**: tener colonias y naves no cuesta nada por estar; el límite al crecimiento lo ponen las parcelas, el rango y la guerra.
+- **Sin tesoro de la humanidad ni proyectos comunes**: se quitan en la Era II.
+- **Mercado del anillo** (Origen): libro de órdenes, comisión y envíos según la distancia real. **Solo mercado**: no hay intercambio directo entre jugadores; todo pasa por los libros de órdenes, para evitar abusos.
+- **Mercado nómada** (Céfiro): más caro, pero compra y vende lo que el del anillo no (reliquias comunes y raras, esencias, contrabando), sin preguntar.
 - **Fabricación** y **tecnología** como hoy (Fábrica, recetas, **un solo árbol de investigación humano**), con recetas nuevas que usan **esencia** y **biomasa**.
-- **Logística visible**: cargueros entre parcelas, lunas y mercados; se pueden asaltar en zonas sin ley.
-
----
+- **Logística visible**: cargueros entre parcelas, lunas y mercados. **Los jugadores pueden asaltarlos en zonas sin ley** (piratería de jugadores), además de los Carroñeros; en zonas disputadas, solo entre casas en guerra.
 
 ## 13. El sistema vivo: sucesos
 
