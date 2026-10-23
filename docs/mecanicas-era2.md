@@ -431,10 +431,11 @@ Lo nuevo frente al servidor actual, para las fases S1–S7 de la hoja de ruta:
 - Muerte suave: la nave, la carga y los humanos ya no se pierden; techo de gestación.
 - Sucesos del sistema (ampliación de `CrisisService` y `SPACE_EVENTS`).
 
-## 18. Eras con reinicio (decisión del 23-10-2026)
+## 18. Eras con reinicio (decisiones del 23-10-2026)
 
-El mundo **se reinicia cada cierto tiempo** (una «era» dura meses) y queda un **legado**. Propuesta (por confirmar):
-- Una era termina con un **gran suceso** del sistema (una oleada final de la Grieta, un despertar), anunciado con semanas de antelación.
-- Se reinician: parcelas, colonias, flotas, créditos, reputación, reliquias.
-- Queda (legado): la cuenta y el Emperador (nombre, casa, emblema), el **códice**, los **recuerdos** (rasgos), las **leyendas de la era** y el **prestigio** acumulado, y adornos de colecciones completadas.
+- **Una era dura 3 meses.** Termina con un **gran suceso** del sistema (una oleada final de la Grieta, un despertar), anunciado con semanas de antelación.
+- **Se reinicia** todo lo del mundo: parcelas, colonias, flotas, naves del hangar, créditos, reputación, reliquias y adornos.
+- **Legado que se conserva**: la cuenta y el Emperador (nombre, casa, emblema), el **códice**, los **recuerdos** (rasgos), el **prestigio** y las **leyendas de la era**.
+- **Sin ayudas para los que llegan tarde**: quien empieza a mitad de era empieza como todos (con la gracia de los nuevos y las zonas seguras, como siempre).
 - Cada era puede **cambiar algo del sistema** (una luna rota, una zona nueva, un pueblo con otra actitud) y es el gran momento para contar más lore.
+- Nota técnica: el cambio de era es una versión del script de reinicio que ya existe (`galaxia-30k.sh` conserva cuentas y Wiki); habrá que ampliarlo para conservar códice, recuerdos y prestigio.
