@@ -499,3 +499,20 @@ kbd {
 .wiki-spine .wiki-spine-kind { font-size: 0.72em; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; }
 .wiki-related { margin-top: 2.5em; padding-top: 1em; border-top: 1px solid rgba(143, 220, 255, 0.15); }
 .wiki-related .wiki-shelf { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+
+/* Móvil (petición del 23-10-2026): letra y toques cómodos, biblioteca en una o dos columnas, tablas con desplazamiento propio. */
+@media (max-width: 820px) {
+  .wiki-main { font-size: 16px; line-height: 1.65; }
+  .wiki-nav li > a { padding: 9px 10px; font-size: 15px; }
+  .wiki-nav .wiki-toc a { padding: 6px 10px; font-size: 14px; }
+  .wiki-search { font-size: 16px; min-height: 40px; }
+  .wiki-shelf, .wiki-related .wiki-shelf { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .wiki-spine { min-height: 150px; }
+  .wiki-library-tools input, .wiki-library-tools select { font-size: 16px; min-height: 40px; }
+  .wiki-library-tools input { min-width: 0; flex-basis: 100%; }
+  .wiki-table-wrap { -webkit-overflow-scrolling: touch; }
+  .wiki-table-wrap table { min-width: 100%; }
+}
+@media (max-width: 380px) {
+  .wiki-shelf, .wiki-related .wiki-shelf { grid-template-columns: 1fr; }
+}
