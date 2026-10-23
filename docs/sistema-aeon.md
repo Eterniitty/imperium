@@ -49,3 +49,33 @@ Mundo cristal, cuerpo de **Ilwen, la que Recuerda**; hogar de los **Elydri**. Zo
 |---|---|
 | **Las Llanuras Cantoras** | Campos de cristal que cantan con el viento; recuerdos que no son de nadie (y sonido ambiente del planeta). |
 | **El Ojo de Ilwen** | Un cristal gigante en el polo donde nace la aurora. |
+
+## Tharax (23-10-2026)
+
+Mundo vivo, cuerpo de **Umara, la Madre Hambrienta**; hogar de los **Tharaxi**. Zona sin ley.
+
+- **Cielo verde y brumoso**: neblina verdosa de día; de noche, la selva brilla.
+- **La colmena no se expande** fuera de Tharax y sus lunas: es un peligro que se queda en casa (y que se adapta a quien la ataca).
+- **Los disidentes pueden vivir en colonias humanas**: con mucha reputación, una colonia puede acoger una pequeña comunidad disidente (una bonificación, y el peligro de atraer a la colmena).
+
+### Lugares
+
+| Lugar | Qué es |
+|---|---|
+| **La Colmena Madre** | Una colmena del tamaño de una montaña, sobre el pecho de la diosa. El corazón de los Tharaxi; guardianes siempre hostiles. |
+| **El Refugio Disidente** | Escondite de los que oyen a Umara de verdad; sus personajes dan misiones y alianza. |
+| **El Pantano de Esporas** | Niebla de esporas que corroe las naves; recursos raros para quien se atreva. |
+
+## Vesperia (23-10-2026)
+
+Mundo jardín, cuerpo de **Vael, el Guardián del Umbral**; hogar de los **Vesperi**. Zona disputada.
+
+- **Clima tranquilo**: templado y sereno.
+- **Sus dos lunas son jardines salvajes**: selvas sin dueño, abiertas a colonizar (zona disputada).
+
+### Lugares
+
+| Lugar | Qué es |
+|---|---|
+| **La Cúpula Mayor** | La ciudad vesperi bajo un escudo que brilla como una pompa de jabón; se enciende entera si alguien amenaza el planeta. |
+| **Las Praderas del Ocaso** | Llanuras doradas donde el atardecer dura horas. |
