@@ -277,7 +277,14 @@ Se mantiene (cañones, misiles, escudos, asistencia de puntería, fuego automát
 
 ### 8.4 Flotas
 
-Igual que hoy (combate por rondas resuelto en el servidor, tácticas, escoltas, nodrizas, comandantes Herederos), pero **todo ocurre en el sistema y se ve en 3D en el lugar real**. Los viajes duran minutos.
+Decisiones del 23-10-2026:
+- **Todo en tiempo real**: desaparece el combate por rondas. Toda batalla (con o sin jugadores mirando) la simula el servidor en vivo, en el lugar real del sistema, con la IA de naves de la Fase 9d.
+- **Mando mixto**: cada flota lucha sola con la táctica elegida (como hoy) y, si el Emperador está cerca o a distancia, puede dar **órdenes en tiempo real** (atacar a un blanco, formar, cubrir, retirarse) mientras pilota.
+- **Armas**: cañones y misiles (lo que ya hay), **rayos continuos** (queman mientras se mantiene el haz) y **torpedos pesados** (lentos, enormes, interceptables, para naves grandes).
+- **Naves capitales** (300–600 m) para jugadores: **más adelante** (etapa B o C); por ahora solo las tienen los pueblos.
+- Se mantienen escoltas, nodrizas y comandantes Herederos. Los viajes duran minutos.
+
+Nota técnica: simular en vivo batallas sin nadie mirando cuesta CPU en un servidor pequeño. El servidor las simulará a menos pasos por segundo cuando no haya jugadores cerca (mismo resultado en esencia, menos detalle) y a ritmo completo cuando alguien llegue. Hay que medirlo en la fase S4 (prueba de carga).
 
 ---
 
