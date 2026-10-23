@@ -115,30 +115,38 @@ Informe completo en Claude Docs («Aeonarch — Plan de juego»). Cinco fases, c
 - [ ] **Materiales y fabricación** (petición del usuario): ✔ F1 Fábrica, seis componentes con recetas y cadenas (`RECIPES`, `colonies.items`, encargo `craft`), las piezas avanzadas del Astillero los piden; ✔ F2 transportarlos en las bodegas (`fleet.items`, `fleet_cargo.items`); falta venderlos en el mercado.
 - [x] **Libros en la Wiki** (grupo «Libros», firma del autor; solo administradores).
 
-## Dónde se quedó el trabajo (22-10-2026, noche; antes del reinicio del servidor)
+## Dónde se quedó el trabajo (madrugada del 23-10-2026, antes del reinicio del servidor de las 04:20 UTC)
 
-Hecho y desplegado ese día por la tarde y la noche:
-- **Contratos (fase 1)**: ver más abajo.
-- **Crucero**: con el vuelo con ratón, mover el cursor suelto ya no lo cancela; un clic sobre la vista toma los mandos.
-- **Privacidad**:
-  - registros con la IP recortada (/24, /48), sin agente de usuario y sin la consulta de la URL, también en la puerta;
-  - resumen al inicio de la política de privacidad;
-  - términos «proyecto privado, gratuito y sin ánimo de lucro: no se piden ni se aceptan dinero ni ayudas de ningún tipo» y línea en la portada;
-  - `LEGAL_VERSION` 2026-10-22;
-  - Impressum según § 18 Abs. 1 MStV.
-- **Tests al día con la galaxia v3**: ayudante `apps/server/test/systems.ts`, que busca sistemas en anillos de sectores; 313/314 en verde.
+Hecho y desplegado entre el 22-10 por la tarde y el 23-10 de madrugada, todo con tests (326 en verde) y probado en vivo con `scripts/sesion-prueba.sh`, salvo lo que se indica:
+- **Juego en solitario** (detalle en `docs/juego-solitario.md`):
+  - contratos: caza, exploración, minería, rescate y reparto;
+  - rango con diez títulos y sus mejoras (contratos, bodega, combustible y misiles);
+  - objetivos del día y de la semana con racha;
+  - sucesos en el espacio: restos y señal de socorro. **El panel no está probado en vivo**, porque sale al azar; lo cubre el test;
+  - reto de caza por oleadas. **Las oleadas no están probadas en vivo**: harían falta un sistema exterior y Carroñeros; lo cubre el test;
+  - peticiones de colonia.
+- **Tutorial de 12 capítulos** (Ajustes → Tutorial), probado en vivo capítulo a capítulo (la nodriza, solo hasta acoplarse).
+- **Otros**:
+  - nombre propio de cada nave;
+  - perfil público;
+  - la ventana del imperio también se abre pilotando (antes no se veía);
+  - el crucero ya no se cancela al mover el ratón;
+  - privacidad: registros con la IP recortada, resumen en la política de privacidad, términos «sin dinero ni ayudas», Impressum como proyecto privado;
+  - tests al día con la galaxia de 30 000 estrellas.
+- Migraciones 0046–0053.
 
 Pendiente, en este orden:
 1. **El usuario (con sudo)**:
-   - ejecutar `scripts/claude-ro.sql`: rol de solo lectura sin correos ni IP; instrucciones en el propio archivo;
-   - decidir si vacía las entradas antiguas del registro de accesos de la puerta (IP completa hasta el 22-10);
-   - decidir si quita `MAIL_LOG_LINKS`: el journal guarda el enlace de acceso.
-2. **Sábado 24-10**: planificar que Claude se ejecute con un usuario del sistema aparte, sin acceso a la base ni a los secretos (regla 11 de CLAUDE.md).
-3. Rango, tutorial 1–4 y rescate: hechos esa misma noche (ver la lista de abajo). **Nada de la interfaz con sesión se ha probado en vivo** (el hook bloquea las sesiones de prueba hasta que el usuario apruebe `scripts/sesion-prueba.sh`).
-4. Luego, el resto de «Siguiente: que se sienta como un juego» y los textos legales en alemán, con el mismo enfoque de proyecto privado (sin § 5 DDG).
-5. **Revisar**:
-   - con la galaxia v3 hay regiones alienígenas de un solo sistema; ahí la guarnición no aparece, porque no se crea en el sistema del intruso. Quizá convenga dejarla aparecer en ese sistema;
-   - el test «dos naves en el mismo sistema se ven y se mueven» de `realtime.test.ts` falló una vez en la suite completa y pasa solo: es intermitente.
+   - ejecutar `scripts/claude-ro.sql` (rol de solo lectura; instrucciones en el archivo);
+   - decidir si vacía las entradas antiguas del registro de accesos de la puerta;
+   - decidir si quita `MAIL_LOG_LINKS`.
+2. **Sábado 24-10**: planificar que Claude se ejecute con un usuario del sistema aparte, sin acceso a la base ni a los secretos.
+3. **Editor 3D de construcción de naves**: plan en `docs/editor-naves.md` (E6–E13); sin empezar.
+4. **Lore como recompensa**: necesita textos del universo que decida el usuario.
+5. **Reportes con motivos fijos**: el nombre de las naves y el perfil ya son texto público. Exigen cambiar los términos y la privacidad (`LEGAL_VERSION`), así que mejor con el usuario delante.
+6. **Revisar**:
+   - en las pruebas con Chromium sin pantalla, a veces el WebSocket tarda ~9 s o se agota a través de Caddy (directo al servidor abre en 8–20 ms). Si algún jugador ve el juego «sin mundo», empezar por ahí;
+   - regiones alienígenas de un solo sistema: no aparece guarnición.
 
 ## Siguiente: que se sienta como un juego (22-10-2026)
 
