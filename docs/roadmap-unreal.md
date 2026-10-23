@@ -8,7 +8,7 @@ Plan del 23-10-2026, a petición del dueño. Describe **qué juego** se construy
 
 | Decisión (23-10-2026) | Consecuencia para el plan |
 |---|---|
-| Todo el juego se reconstruye en **Unreal 5.8.4**: naves, espacio, interfaz, efectos, sonido. | El cliente web se congela y se retira. El servidor de Hetzner se queda (Node + PostgreSQL, multijugador y Wiki). |
+| Todo el juego se reconstruye en **Unreal 5.8.4**: naves, espacio, interfaz, efectos, sonido. | El juego web **se cierra ya** (decisión del 23-10-2026, §16): la Wiki y las páginas legales siguen en línea. El servidor de Hetzner se queda (Node + PostgreSQL, multijugador y Wiki). |
 | Lo que debe tener: planetas sin pantallas de carga, cielos de colores, cabina física, naves con peso e interiores caminables. | Son los pilares de la experiencia (§1.3 y §1.4). |
 | **No realista, pero precioso.** | Estilo pictórico propio: colores atrevidos, formas legibles, escalas comprimidas. Libera de los problemas de la escala astronómica real. |
 | **Un solo sistema solar de 7 planetas.** No hace falta más. | Fuera la galaxia de 30 000 estrellas, el salto entre estrellas y los territorios por sistemas. Todo el juego (colonias, especies, guerra, economía) pasa a ocurrir en un sistema que se puede conocer palmo a palmo. |
@@ -192,11 +192,11 @@ Cada fase entrega **capturas objetivo** hechas desde cámaras fijas del «banco 
 
 | Medida | Objetivo |
 |---|---|
-| GPU de referencia | Gama media (por decidir; p. ej. RTX 3060 o RX 6600) |
+| GPU de referencia | **AMD Radeon RX 9060 XT de 16 GB** (la del dueño). Se comprobará también que va bien en tarjetas de 8 GB con calidad media. |
 | Resolución | 1440p con escalado (TSR); 1080p nativo |
 | Fotogramas | 60 fps en el espacio; 45–60 en superficie (30 aceptable al principio de la etapa B) |
 | Carga inicial | < 20 s hasta ver el espacio; nada de cargas después |
-| Memoria de vídeo | ≤ 6 GB |
+| Memoria de vídeo | ≤ 8 GB en calidad alta (cabe con holgura en 16 GB); ≤ 6 GB en calidad media |
 | Tamaño de la descarga | < 3 GB (casi todo es procedural) |
 
 ---
@@ -537,13 +537,14 @@ Con un solo sistema, todos los jugadores comparten espacio. El servidor actual (
 
 ## 11. El servidor para la Era II
 
-El servidor se queda (Node + Fastify + ws + PostgreSQL), pero el mundo cambia por completo. Se trabaja en paralelo al cliente, en fases **S0–S7**, y **en desarrollo** (base `claude_dev` o el servidor local del dueño) mientras producción sigue con el mundo actual y el cliente web.
+El servidor se queda (Node + Fastify + ws + PostgreSQL), pero el mundo cambia por completo. Se trabaja en paralelo al cliente, en fases **S0–S7**. Como el juego web se cierra ya (§16), no hay que mantener dos mundos: el servidor nuevo se desarrolla en local y en pruebas, y producción solo sirve la portada, la Wiki y las páginas legales hasta el alfa.
 
 ### 11.1 Cómo se desarrolla sin tocar producción
 
 - El dueño ejecuta **el servidor en su propio ordenador** (Node + PostgreSQL en Docker), preparado por Claude Code: el cliente de Unreal se conecta a `localhost` sin puerta ni Cloudflare. Es lo más rápido para iterar.
 - Para probar con amigos antes del lanzamiento: un **servidor de pruebas** en Hetzner (otro servicio, otra base, `pruebas.aeonarch.de` detrás de Cloudflare y de la puerta). Necesita que el dueño cambie el Caddyfile (Claude prepara la orden exacta); no abre puertos nuevos.
-- Producción no cambia hasta el **cambio de era** (A9).
+- **Cierre del juego web (P0)**: producción deja de servir el juego (cliente, `/ws` y las rutas de juego de la API) y la portada pasa a «Aeonarch se está reconstruyendo», con enlace a la Wiki. Se conservan las cuentas, la Wiki, las páginas legales, la exportación y el borrado de cuenta (RGPD), y la puerta de entrada. La copia de seguridad de `aeonarch-desplegar` guarda el mundo actual por si se quiere consultar. Hay que avisar a los jugadores y actualizar los términos si hace falta (`LEGAL_VERSION`).
+- En el alfa (A9), el servidor de la Era II se despliega en producción con un mundo nuevo (conservando cuentas y Wiki).
 
 ### 11.2 Fases del servidor
 
@@ -602,7 +603,7 @@ gantt
   - Revisar con el dueño §2 (nombres, planetas, pueblos), §3 (estilo) y §10 (qué se queda).
   - Reescribir `docs/diseno.md` para la Era II y añadir `docs/sistema-aeon.md` con la ficha de cada mundo.
   - Tablero de referencias del dueño (10–20 imágenes) y paletas por planeta y pueblo, como datos.
-  - Elegir la GPU de referencia (§3.5).
+  - **Cerrar el juego web** (§11.1): portada nueva, aviso a los jugadores, copia de seguridad, Wiki y legal en línea.
 - **Hecho cuando**: el dueño aprueba la ficha de los siete mundos y el estilo.
 - **El dueño**: decide y reúne las referencias.
 
@@ -730,7 +731,7 @@ gantt
   - Opciones gráficas (calidad baja, media, alta), rendimiento en la GPU de referencia.
   - Instalador, firma del ejecutable (opcional, de pago), descarga desde R2 o itch.io (nunca desde Hetzner), comprobación de versión.
   - Informe de fallos propio (sin el de Epic), textos legales actualizados (`LEGAL_VERSION`), Wiki de la Era II (planetas, lunas, pueblos, sistemas).
-  - Servidor: **S6** (cambio de era, conservando cuentas y Wiki). Se retira el cliente web; la portada enlaza a la descarga.
+  - Servidor: **S6** (cambio de era, conservando cuentas y Wiki). La portada enlaza a la descarga.
 - **Hecho cuando**: el dueño y unos pocos jugadores juegan una semana en la Era II sin el cliente web.
 
 ### Etapa B — A pie y por dentro (≈ 12 meses)
@@ -833,7 +834,7 @@ Para la GPU de referencia a 1440p con TSR, 60 fps = 16,6 ms por fotograma.
 | Interfaz | 0,5 ms | 0,5 ms |
 | Margen | 6 ms | 1 ms |
 
-- Memoria de vídeo ≤ 6 GB; parches de terreno reutilizados (*pooling*); texturas generadas con tamaño máximo por calidad.
+- Memoria de vídeo ≤ 8 GB en calidad alta y ≤ 6 GB en media; parches de terreno reutilizados (*pooling*); texturas generadas con tamaño máximo por calidad.
 - Red: ≤ 30 KB/s por jugador en combate (hoy, JSON); si se pasa, formato binario solo para `poses` (migracion-unreal.md §2.2).
 - El banco de pruebas mide cada fotograma de las capturas objetivo y avisa si algo empeora más de un 10 %.
 
@@ -850,7 +851,7 @@ Para la GPU de referencia a 1440p con TSR, 60 fps = 16,6 ms por fotograma.
 | El plugin MCP es experimental | Alta | Bajo | Todo funciona sin él (C++, Python, línea de órdenes). |
 | Rendimiento de los planetas | Media | Alto | Presupuestos (§14) desde A1 y medidas automáticas. |
 | Determinismo TypeScript ↔ C++ del terreno | Media | Alto | Vectores al bit en integración continua. |
-| El juego no avanza para los jugadores actuales durante la etapa A | Segura | Medio | Producción sigue con el mundo actual; se arreglan errores; el cambio de era se anuncia con tiempo. |
+| Los jugadores actuales se quedan sin juego durante la etapa A | Segura | Medio | Aviso claro y portada con la Wiki; la galería de capturas puede publicarse para que vean el avance; cuentas conservadas para el alfa. |
 | El servidor pequeño no aguanta a todos en un sistema | Media | Alto | Zonas de interés y prueba de carga (S4) antes de lanzar. |
 | Coste de descargas | Baja | Alto | Descarga desde R2 o itch.io, nunca desde Hetzner; el vigilante de tráfico sigue. |
 | Privacidad y licencias | Baja | Alto | Informe de fallos propio; recursos de terceros solo con licencia revisada; regalías de Epic solo por encima de 1 millón de USD. |
@@ -870,22 +871,23 @@ Si el plan va lento, se quita en este orden (de lo primero a lo último):
 
 ---
 
-## 16. Preguntas para el dueño
+## 16. Decisiones del dueño (23-10-2026)
 
-Para cerrar en P0:
-1. ¿Te gustan los nombres y el reparto de pueblos de los siete mundos (§2.2, §2.6)? ¿Algún planeta que cambiarías?
-2. ¿La escala de §2.4 (planetas de 3–6 km, cruzar el sistema en unos 2 minutos) te parece bien, o quieres el sistema más grande?
-3. ¿Qué GPU tienes tú? Será la de referencia o una pista de por dónde va.
-4. ¿El Emperador a pie es importante desde pronto, o puede esperar a la etapa B?
-5. ¿Las parcelas (§10.3) te convencen como forma de repartir la tierra?
-6. ¿Quieres conservar el mundo actual en el cliente web hasta el cambio de era, o prefieres cerrarlo antes?
-7. ¿Instalamos Claude Code en tu ordenador (§4.1)? Es lo que hace posible el plan sin que programes.
+| Pregunta | Respuesta |
+|---|---|
+| Nombres y pueblos de los siete mundos (§2.2, §2.6) | Valen para empezar; se podrán cambiar más adelante. |
+| Escala (§2.4) | **Compacta**, como se propone: planetas de 3–6 km, cruzar el sistema en unos 2 min. |
+| GPU | **AMD Radeon RX 9060 XT de 16 GB**: es la de referencia (§3.5). |
+| Claude Code en el ordenador del dueño (§4.1) | **Ya lo tiene instalado.** Falta instalar Unreal 5.8.4 y Visual Studio (A0). |
+| Andar por los planetas | En la **etapa B**, después del alfa. |
+| Parcelas (§10.3) | **Sí.** |
+| Juego web actual | **Cerrarlo ya** (§11.1): solo quedan la portada, la Wiki y las páginas legales hasta el alfa. |
 
 ---
 
 ## 17. Los próximos pasos
 
-1. El dueño responde a las preguntas de §16 y reúne el tablero de referencias.
+1. Cerrar el juego web (§11.1), con la confirmación del dueño antes de desplegarlo, y reunir el tablero de referencias.
 2. P0: Claude reescribe `docs/diseno.md` para la Era II y escribe `docs/sistema-aeon.md`.
 3. A0: instalar el taller en el ordenador del dueño y hacer las siete pruebas de concepto.
 4. Publicar la galería de capturas como artefacto desde la primera captura.
