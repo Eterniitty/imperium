@@ -106,3 +106,17 @@ Mundo helado y oscuro, cuerpo de **Ossal, el Silencio**; lo velan los **Nihil**;
 | **La Corona Rota** | El anillo roto de los Precursores (la corona partida del dios); se vuela entre sus fragmentos. |
 | **El Velatorio** | Donde los Nihil velan a Ossal; silencio absoluto. |
 | **La Luna Hueca** | Una luna vacía por dentro, obra de los Precursores. |
+
+## Otros lugares (23-10-2026)
+
+| Lugar | Cómo es |
+|---|---|
+| **Ábaco** (estación de los Grises, L4 de Origen) | **Un mecanismo gigante**: anillos y engranajes blancos que giran despacio, como un reloj del tamaño de una ciudad, con líneas de luz exactas. Zona segura (los Grises no toleran combates). |
+| **La Grieta** (más allá de Umbra) | **Una herida de luz**: un corte en el espacio que brilla y sangra luz roja. Por ella llegan los Erradicadores. |
+| **El Cinturón** (entre Vesperia y Céfiro) | **Escondites** (bases carroñeras dentro de asteroides huecos) y **minas ricas** (metales raros y exóticos). Zona sin ley. |
+
+## Pendiente
+
+- Personajes con nombre de cada pueblo.
+- Las cinco o más casas aurelianas (nombres y caracteres).
+- Las lunas una a una.
