@@ -23,7 +23,7 @@ Tu **reputación ante la humanidad** va de −100 a 100 y sale en la pestaña Cl
 
 ## Privacidad
 
-En la clasificación se ve el **nombre** de los Emperadores públicos, de los de la IA, de tus compañeros mutuos y el tuyo. Los demás salen como **Emperador oculto**, con su prestigio pero sin nombre (ver [Compañeros](/wiki/companeros)). La tabla se actualiza como mucho una vez por minuto.
+En la clasificación se ve el **nombre** de los Emperadores públicos, de los de la IA, de tus compañeros mutuos y el tuyo. Los demás salen como **Emperador oculto**, con su prestigio pero sin nombre (ver [Compañeros](/wiki/companeros)). La tabla se actualiza como mucho una vez por minuto. Un clic en un nombre (de la clasificación o de la lista de Emperadores de un sistema) abre su **perfil público**: rango, generación de su linaje, fecha de alta, puesto, prestigio, colonias, población, sistemas descubiertos, naves, récord del reto de caza y leyendas. Solo se ve el de los Emperadores que ves por su nombre; sin texto libre.
 
 ## Crisis galácticas
 

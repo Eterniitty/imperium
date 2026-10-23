@@ -1214,3 +1214,15 @@ button.legend-title { background: none; border: none; padding: 0; width: 100%; t
 .fleet-ship-list li:hover .ship-rename-btn { opacity: 1; }
 /* Enlaces seguidos en la fila de una flota (naves, pilotar, repostar): con aire entre ellos. */
 .fleet-item .link-btn + .link-btn { margin-left: 12px; }
+
+/* Perfil público de un Emperador. */
+.profile-win { width: min(380px, calc(100vw - 32px)); padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 6px; }
+.profile-head { display: flex; align-items: center; justify-content: space-between; }
+.profile-name { margin: 2px 0 0; font-size: 22px; letter-spacing: 0.04em; }
+.profile-sub { margin: 0 0 8px; color: var(--gold); font-size: 13px; }
+.profile-stats { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; margin: 0; font-size: 13px; }
+.profile-stats dt { color: var(--muted); }
+.profile-stats dd { margin: 0; text-align: right; }
+.profile-link { padding: 0; font: inherit; color: inherit; text-decoration: none; }
+.profile-link:hover { text-decoration: underline; color: var(--gold); }
+.profile-win h3 { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 12px 0 4px; }

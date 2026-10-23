@@ -30,6 +30,7 @@ import { DamageAlert } from "./DamageAlert";
 import { EmpireWindow } from "./EmpireWindow";
 import { ContractsWindow } from "./ContractsWindow";
 import { TutorialPanel } from "../tutorial/TutorialPanel";
+import { ProfileWindow } from "./ProfileWindow";
 import { SpaceEventPanel } from "./SpaceEventPanel";
 import { ChallengeHud } from "./ChallengeHud";
 import { QuantumHud } from "./QuantumHud";
@@ -148,6 +149,7 @@ export function App() {
         <PlanetWindow />
         <ContractsWindow />
         <TutorialPanel />
+        <ProfileWindow />
         <LineagePanel />
         <ShipEditor />
         <PhotosensitivityNotice />

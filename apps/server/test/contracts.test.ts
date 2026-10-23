@@ -204,6 +204,29 @@ describe.skipIf(!TEST_DATABASE_URL)("contratos y rango", () => {
     expect(await app.requests.pay(e.id, late!.id)).toMatchObject({ ok: false });
   });
 
+  it("perfil público: el propio y los visibles se ven; un Emperador oculto, como si no existiera", async () => {
+    const login = async (name: string) => {
+      await app.inject({ method: "POST", url: "/api/auth/request", payload: { email: `${name.toLowerCase()}@ejemplo.com`, acceptTerms: true } });
+      const token = new URLSearchParams(new URL(sent.at(-1)!).hash.slice(1)).get(LOGIN_TOKEN_PARAM);
+      const res = await app.inject({ method: "POST", url: "/api/auth/verify", payload: { token } });
+      const cookies = { [SESSION_COOKIE]: res.cookies.find((c) => c.name === SESSION_COOKIE)!.value };
+      const e = (await app.inject({ method: "POST", url: "/api/emperor", payload: { name }, cookies })).json().emperor as Emperor;
+      return { e, cookies };
+    };
+    const a = await login("Visible");
+    const b = await login("Escondido");
+    await db.update(emperors).set({ xp: RANKS[3]!.xp, visibility: "public" }).where(eq(emperors.id, a.e.id));
+    await db.update(emperors).set({ visibility: "hidden" }).where(eq(emperors.id, b.e.id));
+    const mine = await app.inject({ method: "GET", url: `/api/ranking/profile/${b.e.id}`, cookies: b.cookies });
+    expect(mine.statusCode).toBe(200);
+    const seen = await app.inject({ method: "GET", url: `/api/ranking/profile/${a.e.id}`, cookies: b.cookies });
+    expect(seen.json()).toMatchObject({ id: a.e.id, name: "Visible", ai: false, rankId: RANKS[3]!.id, generation: 1 });
+    const hidden = await app.inject({ method: "GET", url: `/api/ranking/profile/${b.e.id}`, cookies: a.cookies });
+    expect(hidden.statusCode).toBe(404);
+    const bad = await app.inject({ method: "GET", url: "/api/ranking/profile/nada", cookies: a.cookies });
+    expect(bad.statusCode).toBe(404);
+  });
+
   it("las mejoras del rango: más huecos, más ofertas (las primeras no cambian) y más recompensa", async () => {
     const e = await emperor("Almirante");
     const base = await app.contracts.view(e.id);

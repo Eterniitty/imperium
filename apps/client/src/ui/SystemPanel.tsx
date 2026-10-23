@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ProfileLink } from "./ProfileWindow";
 import { fleetName } from "./fleetName";
 import { distance, type Colony, type Fleet, type I18nKey } from "@imperium/shared";
 import { engineRef } from "../engineRef";
@@ -186,7 +187,9 @@ export function SystemPanel() {
             {here.map(({ e }) => (
               <li key={e.id} className={e.id === myId ? "own" : ""}>
                 <span className={e.online ? "server-dot online" : "server-dot"} aria-hidden="true" />
-                <strong>{e.name}</strong>
+                <strong>
+                  <ProfileLink id={e.id} name={e.name} />
+                </strong>
                 <span className="muted small">
                   {e.id === myId ? t("emperor.you") : t(e.online ? "emperor.online" : "emperor.offline")}
                 </span>
@@ -198,7 +201,9 @@ export function SystemPanel() {
             {coming.map(({ e }) => (
               <li key={e.id} className={e.id === myId ? "own" : ""}>
                 <span className={e.online ? "server-dot online" : "server-dot"} aria-hidden="true" />
-                <strong>{e.name}</strong>
+                <strong>
+                  <ProfileLink id={e.id} name={e.name} />
+                </strong>
                 <span className="muted small mono">{formatDuration(e.travel!.arriveAt - now)}</span>
               </li>
             ))}

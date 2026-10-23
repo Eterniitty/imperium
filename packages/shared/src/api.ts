@@ -239,6 +239,33 @@ export interface GoalsView {
   weekEndsAt: number;
 }
 
+/**
+ * Perfil público de un Emperador (`GET /api/ranking/profile/:id`): solo de los
+ * que quien pregunta puede ver por su nombre (públicos, de la IA, el propio y
+ * los compañeros mutuos). Sin texto libre: todo son datos del juego.
+ */
+export interface EmperorProfile {
+  id: string;
+  name: string;
+  ai: boolean;
+  /** Rango (clave de `RANKS`); null en los de la IA. */
+  rankId: string | null;
+  /** Generación de su linaje (1 = el primero). */
+  generation: number;
+  /** Fecha de alta (ms); null en los de la IA. */
+  joinedAt: number | null;
+  prestige: number;
+  /** Puesto en la clasificación y total de Emperadores. */
+  position: number;
+  total: number;
+  stats: { colonies: number; population: number; discoveries: number; ships: number };
+  core: boolean;
+  /** Leyendas de la era que logró primero (ids de `LEGENDS`). */
+  legends: string[];
+  /** Récord del reto de caza (derribos). */
+  challengeBest: number;
+}
+
 /** Rango del Emperador (tema `me`, `rank`): su experiencia; el rango y las mejoras salen de `RANKS` (`@imperium/content`). */
 export interface RankView {
   xp: number;
@@ -388,6 +415,8 @@ export interface ResearchStatus {
 
 export interface RankingEntry {
   rank: number;
+  /** Solo si su nombre es visible para quien pregunta: para abrir su perfil. */
+  id?: string;
   /** Null si el Emperador no es visible para quien pregunta (oculto, o solo para sus compañeros). */
   name: string | null;
   ai: boolean;

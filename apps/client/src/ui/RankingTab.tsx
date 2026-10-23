@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ProfileLink } from "./ProfileWindow";
 import { ERA_GOALS, LEGENDS, PRESTIGE, type MetaStat } from "@imperium/content";
 import type { I18nKey, RankingResponse } from "@imperium/shared";
 import { api } from "../state/auth";
@@ -83,7 +84,7 @@ export function RankingTab() {
             <tr key={r.rank} className={me && r.rank === me.rank ? "me" : ""}>
               <td className="mono">{r.rank}</td>
               <th scope="row">
-                {r.name ?? <span className="muted">{t("ranking.hidden")}</span>}
+                {r.name && r.id ? <ProfileLink id={r.id} name={r.name} /> : <span className="muted">{t("ranking.hidden")}</span>}
                 {r.ai && <span className="tag">{t("ranking.ai")}</span>}
                 {r.core && <span className="tag capital">◉ {t("ranking.core")}</span>}
               </th>

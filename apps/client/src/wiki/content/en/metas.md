@@ -23,7 +23,7 @@ Your **reputation with humanity** goes from −100 to 100 and shows in the Ranki
 
 ## Privacy
 
-The ranking shows the **name** of public Emperors, AI ones, your mutual companions and yourself. The rest appear as **Hidden Emperor**, with their prestige but no name (see [Companions](/wiki/companeros)). The table updates at most once a minute.
+The ranking shows the **name** of public Emperors, AI ones, your mutual companions and yourself. The rest appear as **Hidden Emperor**, with their prestige but no name (see [Companions](/wiki/companeros)). The table updates at most once a minute. A click on a name (in the ranking or in a system's list of Emperors) opens their **public profile**: rank, lineage generation, join date, position, prestige, colonies, population, systems discovered, ships, hunt challenge record and legends. You only see it for Emperors whose name you can see; no free text.
 
 ## Galactic crises
 

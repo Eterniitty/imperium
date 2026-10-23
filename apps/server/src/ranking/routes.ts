@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
-import { LEGENDS, prestigeOf, type MetaStat } from "@imperium/content";
+import { LEGENDS, prestigeOf, rankOf, type MetaStat } from "@imperium/content";
 import { GALAXY_CENTER_SECTOR } from "@imperium/procgen";
-import { systemId, type ApiError, type RankingEntry, type RankingResponse } from "@imperium/shared";
+import { systemId, type ApiError, type EmperorProfile, type RankingEntry, type RankingResponse } from "@imperium/shared";
 import { eq, sql } from "drizzle-orm";
 import { emperors as emperorsTable, legends } from "../db/schema";
 import { accountFromRequest, sessionCookieName } from "../auth/routes";
@@ -72,23 +72,64 @@ export async function rankingRoutes(app: FastifyInstance, { config, db, emperors
     return rows;
   }
 
+  /** Compañeros mutuos de un Emperador (ven su nombre aunque no sea público). */
+  async function mutualAllies(emperorId: string | null): Promise<Set<string>> {
+    const allies = new Set<string>();
+    if (!emperorId) return allies;
+    const res = await db.execute<{ ally_id: string }>(sql`
+      select a.ally_id from emperor_allies a
+      join emperor_allies b on b.emperor_id = a.ally_id and b.ally_id = a.emperor_id
+      where a.emperor_id = ${emperorId}`);
+    for (const r of res) allies.add(r.ally_id);
+    return allies;
+  }
+
+  // Perfil público: solo de quien se ve por su nombre (si no, como si no existiera).
+  app.get<{ Params: { id: string } }>("/api/ranking/profile/:id", async (req, reply) => {
+    const account = await accountFromRequest(db, cookieName, req);
+    if (!account) return reply.code(401).send({ error: "unauthenticated" } satisfies ApiError);
+    if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) return reply.code(404).send({ error: "unknown_emperor" } satisfies ApiError);
+    const me = await emperors.byAccount(account.id);
+    const rows = await load();
+    const i = rows.findIndex((r) => r.id === req.params.id);
+    const r = rows[i];
+    const allies = await mutualAllies(me?.id ?? null);
+    if (!r || !(r.kind === "ai" || r.visibility === "public" || r.id === me?.id || allies.has(r.id))) return reply.code(404).send({ error: "unknown_emperor" } satisfies ApiError);
+    const [e] = await db
+      .select({ xp: emperorsTable.xp, generation: emperorsTable.generation, createdAt: emperorsTable.createdAt, best: emperorsTable.challengeBest })
+      .from(emperorsTable)
+      .where(eq(emperorsTable.id, r.id))
+      .limit(1);
+    const ai = r.kind === "ai";
+    return {
+      id: r.id,
+      name: r.name,
+      ai,
+      rankId: ai ? null : rankOf(e?.xp ?? 0).rank.id,
+      generation: e?.generation ?? 1,
+      joinedAt: ai || !e ? null : e.createdAt.getTime(),
+      prestige: r.prestige,
+      position: i + 1,
+      total: rows.length,
+      stats: { colonies: r.stats.colonies, population: r.stats.population, discoveries: r.stats.discoveries, ships: r.stats.ships },
+      core: r.stats.core > 0,
+      legends: legendRows.filter((l) => l.emperorId === r.id).map((l) => l.id),
+      challengeBest: e?.best ?? 0,
+    } satisfies EmperorProfile;
+  });
+
   app.get("/api/ranking", async (req, reply) => {
     const account = await accountFromRequest(db, cookieName, req);
     if (!account) return reply.code(401).send({ error: "unauthenticated" } satisfies ApiError);
     const me = await emperors.byAccount(account.id);
     const rows = await load();
     // Compañeros mutuos de quien pregunta: ven su nombre aunque no sean públicos.
-    const allies = new Set<string>();
-    if (me) {
-      const res = await db.execute<{ ally_id: string }>(sql`
-        select a.ally_id from emperor_allies a
-        join emperor_allies b on b.emperor_id = a.ally_id and b.ally_id = a.emperor_id
-        where a.emperor_id = ${me.id}`);
-      for (const r of res) allies.add(r.ally_id);
-    }
+    const allies = await mutualAllies(me?.id ?? null);
+    const visible = (r: Row) => r.kind === "ai" || r.visibility === "public" || r.id === me?.id || allies.has(r.id);
     const entry = (r: Row, i: number): RankingEntry => ({
       rank: i + 1,
-      name: r.kind === "ai" || r.visibility === "public" || r.id === me?.id || allies.has(r.id) ? r.name : null,
+      ...(visible(r) ? { id: r.id } : {}),
+      name: visible(r) ? r.name : null,
       ai: r.kind === "ai",
       prestige: r.prestige,
       core: r.stats.core > 0,
