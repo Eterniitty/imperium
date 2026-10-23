@@ -146,7 +146,7 @@ Los Emperadores tienen **recuerdos rotos**. Recuperarlos es la progresión perso
 - **Árbol de recuerdos**: 6 ramas (una por dios conocido) más una rama **sin nombre** que se llena muy despacio y nunca explica de dónde viene (lore secreto, sin decirlo).
 - Morir **no** borra recuerdos (muerte suave), aunque un sueño puede «cambiar» el texto de uno.
 
-> **Pregunta**: ¿los recuerdos deben poder compartirse o comerciarse con los Elydri, o son solo tuyos?
+- **Ceder recuerdos a los Elydri** (decisión del 23-10-2026): el Emperador puede entregar un recuerdo completo a cambio de algo valioso (tecnología, una reliquia, reputación alta). **Lo pierde**: desaparece su rasgo y su escena queda en el códice como «Entregado a los Elydri». Es una decisión dura y a propósito; los fragmentos de ese recuerdo pueden volver a encontrarse, muy despacio.
 
 ---
 
@@ -164,7 +164,7 @@ Los Emperadores tienen **recuerdos rotos**. Recuperarlos es la progresión perso
 | **Reclamar** | Aterrizar (o enviar una flota) en una parcela libre y plantar el estandarte de la casa: coste en créditos según el planeta (caro en Origen, barato y peligroso lejos). |
 | **Límite** | Número máximo de parcelas según el rango y las colonias (para que nadie se quede con un planeta entero al principio). |
 | **Conectar** | Las parcelas contiguas forman una colonia; las sueltas son **puestos** (minería, vigilancia). |
-| **Perder** | Por conquista (§11) o abandono: una parcela sin colonia ni puesto vuelve a estar libre tras un tiempo sin visitarla. |
+| **Perder** | Por conquista (§11) o abandono: una parcela sin colonia ni puesto vuelve a estar libre a los 14 días sin visitarla. |
 
 ### 6.3 Tierra sagrada
 
@@ -193,7 +193,9 @@ Recursos actuales que se mantienen: `metal`, `volatiles`, `crystal`, `alloys`, `
 - Descubrir da experiencia, entradas del códice y, a veces, ruinas o tierra sagrada.
 - La primera casa en cartografiar algo especial lo ve **antes** que las demás durante un tiempo (ventaja de explorar).
 
-> **Preguntas**: ¿te gustan los números de parcelas? ¿Abandono de parcelas: cuántos días sin visitarlas (propuesta: 14)?
+Decisión del 23-10-2026: una parcela sin colonia ni puesto queda libre a los **14 días** sin visitarla (se avisa antes).
+
+> **Pregunta**: ¿te gustan los números de parcelas?
 
 ---
 
@@ -270,12 +272,14 @@ Cada pueblo tiene una **reputación** con cada casa (de «enemigo jurado» a «e
 
 ### 9.3 Personajes con diálogo
 
-- Cada pueblo tiene **3–5 personajes** con nombre, retrato y voz escrita (no hablada al principio): un **embajador**, un **sacerdote o guardián**, un **mercader** y alguno especial (el líder de los disidentes tharaxi, una archivista elydri, un duelista aureliano…).
+- Cada pueblo tiene **3–5 personajes** con nombre, retrato y diálogo escrito (sin voces): un **embajador**, un **sacerdote o guardián**, un **mercader** y alguno especial (el líder de los disidentes tharaxi, una archivista elydri, un duelista aureliano…).
 - Dan **misiones** (cadenas cortas que cuentan una historia), comercian y reaccionan a tu reputación.
 - Los diálogos tienen **opciones** que cambian la reputación y, a veces, el desenlace.
 - Todo el texto lo escribimos nosotros (es/en); no hay texto libre de jugadores.
 
-> **Preguntas**: ¿quieres que los personajes tengan voz grabada algún día o solo texto? ¿Cuántas misiones por pueblo para el alfa (propuesta: una cadena de 5 por pueblo)?
+Decisión del 23-10-2026: **solo texto**, sin voces.
+
+> **Pregunta**: ¿cuántas misiones por pueblo para el alfa (propuesta: una cadena de 5 por pueblo)?
 
 ---
 
@@ -315,12 +319,12 @@ Lo de la Fase 9b sobre parcelas: presencia sostenida en órbita y en tierra, pla
 
 ### 11.4 Guerra declarada entre casas
 
-- Una casa **declara la guerra** a otra; empieza tras un **aviso** (p. ej. 12 h) para que la otra se prepare.
+- Una casa **declara la guerra** a otra; empieza tras un **aviso de 12 h** (decisión del 23-10-2026) para que la otra se prepare.
 - Durante la guerra, PvP libre entre ellas en las zonas disputadas; puntuación de guerra (naves destruidas, parcelas tomadas, reliquias capturadas).
 - La guerra termina por **rendición**, **tregua** acordada o **tiempo** (máximo de días).
 - Las alianzas entre casas (más adelante) arrastran a los aliados.
 
-> **Pregunta**: ¿cuánto aviso antes de una guerra (propuesta: 12 h)?
+
 
 ---
 
