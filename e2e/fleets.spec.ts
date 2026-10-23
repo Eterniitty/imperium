@@ -28,6 +28,8 @@ test("la flota inicial aparece, se envía a otro sistema y llega", async ({ page
   await page.keyboard.press("KeyM");
 
   // La flota inicial: un explorador, en el sistema del Emperador.
+  // Las flotas están en la ventana del imperio (cerrada al empezar).
+  await page.locator("[data-tutorial=empire]").click();
   const fleets = page.locator(".fleets");
   await expect(fleets.getByText("Flota 1")).toBeVisible();
   await expect(fleets.getByText("1 × Explorador")).toBeVisible();
