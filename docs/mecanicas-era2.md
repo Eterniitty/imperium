@@ -312,12 +312,12 @@ Cada pueblo tiene una **reputación** con cada casa (de «enemigo jurado» a «e
 
 ### 9.3 Personajes con diálogo
 
-- Cada pueblo tiene **3–5 personajes** con nombre, retrato y diálogo escrito (sin voces): un **embajador**, un **sacerdote o guardián**, un **mercader** y alguno especial (el líder de los disidentes tharaxi, una archivista elydri, un duelista aureliano…).
+- Cada pueblo tiene **3–5 personajes** con nombre, retrato y diálogo escrito: un **embajador**, un **sacerdote o guardián**, un **mercader** y alguno especial (el líder de los disidentes tharaxi, una archivista elydri, un duelista aureliano…).
 - Dan **misiones** (cadenas cortas que cuentan una historia), comercian y reaccionan a tu reputación.
 - Los diálogos tienen **opciones** que cambian la reputación y, a veces, el desenlace.
 - Todo el texto lo escribimos nosotros (es/en); no hay texto libre de jugadores.
 
-Decisión del 23-10-2026: **solo texto**, sin voces.
+Decisión del 23-10-2026: **texto ahora, voces algún día**. Las voces no serían frases habladas, sino una **lengua inventada**: murmullos, sílabas y exclamaciones breves que acompañan al texto escrito (el texto sigue siendo lo que se lee). Cada pueblo tendría su timbre: cristalino y en eco para los Elydri, grave y solemne para los Aurelianos, chasquidos y zumbidos para los Tharaxi, cálido para los Vesperi, cantarín para los Nómadas, apenas un susurro para los Nihil y tonos puros y exactos para los Grises. Se generarían por código, como el resto del sonido, así que no hace falta grabar a nadie ni traducir voces.
 
 - **Muchas misiones pequeñas** (decisión del 23-10-2026): cada personaje tiene encargos cortos y repetibles (llevar algo, cazar, escoltar, cartografiar, recuperar) que cambian con la reputación, más alguna cadena corta que cuenta su historia.
 
