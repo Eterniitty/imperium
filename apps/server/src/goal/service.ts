@@ -105,7 +105,13 @@ export class GoalService {
   async view(emperorId: string): Promise<GoalsView> {
     const now = this.now();
     const p = await this.ensure(this.db, emperorId, now);
-    const rows = await this.db.select().from(goals).where(eq(goals.emperorId, emperorId));
+    let rows = await this.db.select().from(goals).where(eq(goals.emperorId, emperorId));
+    // La caché decía que ya estaban, pero no (una transacción que se deshizo): se vuelven a crear.
+    if (!rows.some((r) => r.period === p.daily)) {
+      this.ensured.delete(emperorId);
+      await this.ensure(this.db, emperorId, now);
+      rows = await this.db.select().from(goals).where(eq(goals.emperorId, emperorId));
+    }
     const [me] = await this.db.select({ goalStreak: emperors.goalStreak, goalStreakDay: emperors.goalStreakDay }).from(emperors).where(eq(emperors.id, emperorId)).limit(1);
     const streak = this.streakOf(me, p.day);
     const weekStart = Math.floor(p.day / 7) * 7;

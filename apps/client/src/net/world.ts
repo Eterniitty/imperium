@@ -334,7 +334,9 @@ class Connection {
       case "space": {
         const ships: Record<string, RemoteShip> = {};
         for (const s of msg.ships) ships[s.id] = { state: s, samples: [{ t: msg.serverTime, p: s.p, q: s.q, v: s.v }] };
-        spaceStore.setState({ systemId: msg.systemId, ships });
+        // Otro sistema: el suceso y el reto del anterior ya no valen (el servidor los da por acabados).
+        const moved = spaceStore.getState().systemId !== msg.systemId;
+        spaceStore.setState({ systemId: msg.systemId, ships, ...(moved ? { event: null, challenge: null } : {}) });
         return;
       }
       case "ship": {
