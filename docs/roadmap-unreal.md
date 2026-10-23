@@ -216,6 +216,20 @@ En la nube y en Hetzner, Claude no puede compilar ni ejecutar Unreal (no hay Win
 | Manejar el editor | Plugin **MCP** de Unreal (experimental en la 5.8): crear actores, materiales, recursos y niveles, ejecutar pruebas. Escucha solo en `127.0.0.1` y no tiene autenticación, así que no se expone a la red. Si falla, todo sigue siendo posible con C++, Python y la línea de órdenes. |
 | Medir rendimiento | `stat unit`, `stat gpu`, Unreal Insights por línea de órdenes; Claude lee los informes. |
 
+#### 4.1.1 Instalar Claude Code en Windows
+
+Hay dos maneras; las dos usan la suscripción de Claude del dueño, sin clave de API:
+1. **Pestaña «Code» de la app de Claude para escritorio**, con un entorno **local**: en el selector de entorno (bajo el cuadro de texto), *New environment* → pestaña *Local*. Las sesiones locales trabajan con los archivos del ordenador, no en la nube.
+2. **Claude Code en la terminal**: instalar antes [Git para Windows](https://git-scm.com/downloads/win) y luego, en PowerShell, `irm https://claude.ai/install.ps1 | iex`. Abrir otra terminal, comprobar con `claude --version` y ejecutar `claude` en la carpeta del proyecto para iniciar sesión en el navegador.
+
+Cuidados:
+- No definir `ANTHROPIC_API_KEY` en el ordenador: haría que se facturase como API en vez de usar la suscripción (la misma regla que en el servidor).
+- La app de escritorio puede tapar la orden `claude` de la terminal; si `claude --version` muestra algo raro, `claude doctor` lo aclara.
+- Si PowerShell dice que «la ejecución de scripts está deshabilitada», la guía de problemas de instalación explica cómo permitirlo.
+- Las compilaciones de Unreal son largas: se lanzan en segundo plano para que no las corte el tiempo máximo de una orden.
+
+Documentación: [instalación](https://code.claude.com/docs/en/setup), [app de escritorio](https://code.claude.com/docs/en/desktop), [problemas de instalación](https://code.claude.com/docs/en/troubleshoot-install).
+
 La sesión de la nube sigue para lo que ya hace: servidor, Wiki, base de datos de desarrollo y despliegues (`aeonarch-desplegar`). Las reglas de privacidad (regla 11) valen también en el ordenador del dueño: nada de datos de producción allí.
 
 ### 4.2 Los papeles
@@ -611,7 +625,7 @@ gantt
 
 - **Objetivo**: poder trabajar. Al final, una ventana del juego que entra en el servidor.
 - **Contenido**:
-  - Instalar Unreal 5.8.4, Visual Studio, Git, Git LFS y **Claude Code** en el ordenador del dueño. Activar el plugin MCP de Unreal y comprobar qué herramientas trae.
+  - Instalar Git para Windows, Git LFS, **Claude Code** (§4.1.1), Unreal 5.8.4 y Visual Studio en el ordenador del dueño, por ese orden: con Claude Code funcionando, Claude guía el resto de la instalación. Activar el plugin MCP de Unreal y comprobar qué herramientas trae.
   - Repositorio `aeonarch-ue`, proyecto C++ con los módulos (§13), compilación y pruebas desde la línea de órdenes.
   - Servidor local en el ordenador del dueño (Docker con PostgreSQL), con datos de prueba.
   - **Pruebas de concepto de «todo por código»**: (1) un material creado desde Python; (2) un shader `.usf` propio; (3) una malla de *Geometry Script* horneada con Nanite desde un script; (4) un efecto de partículas en GPU propio; (5) un sonido de MetaSound construido desde C++; (6) un widget de Slate; (7) saber si Niagara se puede crear por script o MCP. El resultado decide herramientas para el resto del plan.
@@ -878,7 +892,7 @@ Si el plan va lento, se quita en este orden (de lo primero a lo último):
 | Nombres y pueblos de los siete mundos (§2.2, §2.6) | Valen para empezar; se podrán cambiar más adelante. |
 | Escala (§2.4) | **Compacta**, como se propone: planetas de 3–6 km, cruzar el sistema en unos 2 min. |
 | GPU | **AMD Radeon RX 9060 XT de 16 GB**: es la de referencia (§3.5). |
-| Claude Code en el ordenador del dueño (§4.1) | **Ya lo tiene instalado.** Falta instalar Unreal 5.8.4 y Visual Studio (A0). |
+| Claude Code en el ordenador del dueño (§4.1) | **Sí.** El dueño tiene la app de Claude, pero aún no Claude Code: se instala en A0 (§4.1.1), junto con Unreal 5.8.4 y Visual Studio. |
 | Andar por los planetas | En la **etapa B**, después del alfa. |
 | Parcelas (§10.3) | **Sí.** |
 | Juego web actual | **Cerrarlo ya** (§11.1): solo quedan la portada, la Wiki y las páginas legales hasta el alfa. |
