@@ -8,8 +8,10 @@
  *   bodega y experiencia.
  * - Señal de socorro: se elige acudir o no. Acudir paga créditos, reputación y
  *   experiencia; fuera del Núcleo Humano puede ser una trampa de Carroñeros.
+ * - Anomalía: se escanea quedándose junto a ella (más tiempo que los restos);
+ *   da materia exótica a la bodega y experiencia.
  */
-export type SpaceEventKind = "salvage" | "distress";
+export type SpaceEventKind = "salvage" | "distress" | "anomaly";
 
 export const SPACE_EVENTS = {
   /** Probabilidad de un suceso al salir de la grieta en un sistema. */
@@ -27,9 +29,11 @@ export const SPACE_EVENTS = {
   /** Minutos hasta que la señal se pierde. */
   expiresMin: 15,
   /** Peso de cada suceso al sortear. */
-  weights: { salvage: 3, distress: 2 } satisfies Record<SpaceEventKind, number>,
+  weights: { salvage: 3, distress: 2, anomaly: 1 } satisfies Record<SpaceEventKind, number>,
   /** Restos: unidades de mineral a la bodega (entre estos valores) y experiencia. */
   salvage: { units: [30, 90] as const, xp: 15 },
+  /** Anomalía: segundos de escaneo junto a ella, materia exótica a la bodega (entre estos valores) y experiencia. */
+  anomaly: { scanSec: 15, exotic: [2, 8] as const, xp: 30 },
   /** Socorro: recompensa al rescatar y probabilidad de trampa (solo fuera del Núcleo, si hay Carroñeros). */
   distress: { credits: 400, reputation: 2, xp: 25, trapChance: 0.3 },
 } as const;

@@ -65,7 +65,7 @@ export interface SpaceState {
   /** Láseres de minería encendidos de las demás naves: id de la nave → asteroide. */
   beams: Record<string, number>;
   /** Suceso en el espacio de la nave propia (`SPACE_EVENTS`): la señal y si falta decidir. */
-  event: { id: string; kind: "salvage" | "distress"; at: [number, number, number]; expiresAt: number; decide: boolean } | null;
+  event: { id: string; kind: "salvage" | "distress" | "anomaly"; at: [number, number, number]; expiresAt: number; decide: boolean } | null;
   /** Reto de caza en marcha (`HUNT_CHALLENGE`). */
   challenge: { until: number; kills: number; wave: number } | null;
   /** Bodega y refinería de a bordo según el servidor (mientras se pilota). */

@@ -424,13 +424,15 @@ class Connection {
       case "spaceEvent": {
         const prev = spaceStore.getState().event;
         spaceStore.setState({ event: { id: msg.id, kind: msg.kind, at: msg.at, expiresAt: msg.expiresAt, decide: msg.decide } });
-        if (!prev || prev.id !== msg.id) gameStore.getState().notify(msg.kind === "distress" ? "event.notice.distress" : "event.notice.salvage");
+        if (!prev || prev.id !== msg.id) gameStore.getState().notify(`event.notice.${msg.kind}` as I18nKey);
         return;
       }
       case "spaceEventEnd": {
-        if (spaceStore.getState().event?.id === msg.id) spaceStore.setState({ event: null });
+        const ended = spaceStore.getState().event;
+        if (ended?.id === msg.id) spaceStore.setState({ event: null });
         const notify = gameStore.getState().notify;
-        if (msg.outcome === "done") notify(msg.reward?.credits ? "event.done.distress" : "event.done.salvage", { xp: msg.reward?.xp ?? 0, credits: msg.reward?.credits ?? 0 });
+        const kind = ended?.id === msg.id ? ended.kind : msg.reward?.credits ? "distress" : "salvage";
+        if (msg.outcome === "done") notify(`event.done.${kind}` as I18nKey, { xp: msg.reward?.xp ?? 0, credits: msg.reward?.credits ?? 0 });
         else if (msg.outcome === "trap") notify("event.trap");
         else if (msg.outcome === "expired") notify("event.expired");
         return;

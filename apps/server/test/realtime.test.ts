@@ -520,6 +520,19 @@ describe.skipIf(!TEST_DATABASE_URL)("WebSocket y dos jugadores", () => {
       await settle(1500);
     }, 20_000);
 
+    it("sucesos: una anomalía se escanea quedándose junto a ella y paga experiencia", async () => {
+      const { a, sa, systemId } = await twoInOneSystem("hidden");
+      const at = near(systemId, [100, 0, 0]);
+      await parkAt(a.emperor.id, at);
+      sa.send({ t: "pose", systemId, ...pose(at) });
+      await sa.next(is("space"));
+      const id = app.space.startEvent(a.emperor.id, "anomaly", at)!;
+      expect(await sa.next(is("spaceEvent"))).toMatchObject({ id, kind: "anomaly", decide: false });
+      const end = await sa.next(is("spaceEventEnd"), 0, (SPACE_EVENTS.anomaly.scanSec + 4) * 1000);
+      expect(end).toMatchObject({ id, outcome: "done", reward: { xp: SPACE_EVENTS.anomaly.xp } });
+      await settle(1500);
+    }, 30_000);
+
     it("rescate: quedarse junto a los restos de un contrato el tiempo pedido lo da por cumplido (y solo ese)", async () => {
       const { a, sa, systemId } = await twoInOneSystem("hidden");
       const at = near(systemId, [100, 0, 0]);

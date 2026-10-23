@@ -455,7 +455,7 @@ export type ServerMessage =
    * Suceso en el espacio de tu nave (`SPACE_EVENTS`): una señal en `at` (m, en el sistema) hasta `expiresAt`.
    * `decide`: falta elegir si se acude (señal de socorro).
    */
-  | { t: "spaceEvent"; id: string; kind: "salvage" | "distress"; at: [number, number, number]; expiresAt: number; decide: boolean }
+  | { t: "spaceEvent"; id: string; kind: "salvage" | "distress" | "anomaly"; at: [number, number, number]; expiresAt: number; decide: boolean }
   /** El suceso terminó: cumplido (con su recompensa), trampa, ignorado, perdido o porque la nave se fue. */
   /** Reto de caza en marcha: hasta cuándo, derribos y oleada. */
   | { t: "challenge"; until: number; kills: number; wave: number }

@@ -1691,7 +1691,7 @@ export class SpaceService {
         const near = Math.hypot(m.pose.p[0] - ev.p[0], m.pose.p[1] - ev.p[1], m.pose.p[2] - ev.p[2]) <= E.reachM;
         if (!near) ev.since = undefined;
         else if (ev.since === undefined) ev.since = now;
-        else if (now - ev.since >= E.holdSec * 1000) this.resolveEvent(m, ev, now);
+        else if (now - ev.since >= (ev.kind === "anomaly" ? E.anomaly.scanSec : E.holdSec) * 1000) this.resolveEvent(m, ev, now);
       }
     }
     for (const m of this.members.values()) {
@@ -1716,8 +1716,8 @@ export class SpaceService {
 
   private spawnEvent(m: Member, now: number): void {
     const E = SPACE_EVENTS;
-    // En el espacio profundo solo hay restos (no hay naves que pidan ayuda).
-    const kinds = isDeepId(m.systemId) ? (["salvage"] as SpaceEventKind[]) : (Object.keys(E.weights) as SpaceEventKind[]);
+    // En el espacio profundo, restos y anomalías (no hay naves que pidan ayuda).
+    const kinds = isDeepId(m.systemId) ? (["salvage", "anomaly"] as SpaceEventKind[]) : (Object.keys(E.weights) as SpaceEventKind[]);
     let roll = Math.random() * kinds.reduce((n, k) => n + E.weights[k], 0);
     const kind = kinds.find((k) => (roll -= E.weights[k]) <= 0) ?? kinds[0]!;
     // Una señal a cierta distancia, cerca del plano del sistema y sin salirse de él.
@@ -1773,13 +1773,21 @@ export class SpaceService {
       this.onEventReward?.(m.emperorId, { credits: E.distress.credits, reputation: E.distress.reputation, xp: E.distress.xp });
       return this.endEvent(m.emperorId, "done", now, { credits: E.distress.credits, xp: E.distress.xp });
     }
-    // Restos: mineral a la bodega (lo que quepa) repartido entre tres recursos.
-    this.endEvent(m.emperorId, "done", now, { xp: E.salvage.xp });
-    const units = E.salvage.units[0] + Math.random() * (E.salvage.units[1] - E.salvage.units[0]);
-    const split = [Math.random(), Math.random(), Math.random() * 0.4];
-    const sum = split[0]! + split[1]! + split[2]!;
-    const loot: Hold = { metal: (units * split[0]!) / sum, volatiles: (units * split[1]!) / sum, rare_metals: (units * split[2]!) / sum };
-    this.onEventReward?.(m.emperorId, { xp: E.salvage.xp });
+    // Restos: mineral a la bodega (lo que quepa) repartido entre tres recursos; anomalía: materia exótica.
+    let loot: Hold;
+    let xp: number;
+    if (ev.kind === "anomaly") {
+      xp = E.anomaly.xp;
+      loot = { exotic: E.anomaly.exotic[0] + Math.random() * (E.anomaly.exotic[1] - E.anomaly.exotic[0]) };
+    } else {
+      xp = E.salvage.xp;
+      const units = E.salvage.units[0] + Math.random() * (E.salvage.units[1] - E.salvage.units[0]);
+      const split = [Math.random(), Math.random(), Math.random() * 0.4];
+      const sum = split[0]! + split[1]! + split[2]!;
+      loot = { metal: (units * split[0]!) / sum, volatiles: (units * split[1]!) / sum, rare_metals: (units * split[2]!) / sum };
+    }
+    this.endEvent(m.emperorId, "done", now, { xp });
+    this.onEventReward?.(m.emperorId, { xp });
     void this.flagships
       .updateHold(m.emperorId, (hold, capacity) => {
         const { hold: next, added } = addToHold(hold, loot, capacity);

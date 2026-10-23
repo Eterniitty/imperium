@@ -31,7 +31,7 @@ export function SpaceEventPanel() {
   return (
     <section className="space-event panel" role="status" aria-label={t(`event.name.${ev.kind}` as I18nKey)}>
       <span className="contract-kind">{t(`event.name.${ev.kind}` as I18nKey)}</span>
-      <p className="small">{t(ev.decide ? "event.text.distressAsk" : near ? "event.text.hold" : (`event.text.${ev.kind}` as I18nKey), { s: SPACE_EVENTS.holdSec })}</p>
+      <p className="small">{t(ev.decide ? "event.text.distressAsk" : near ? "event.text.hold" : (`event.text.${ev.kind}` as I18nKey), { s: ev.kind === "anomaly" ? SPACE_EVENTS.anomaly.scanSec : SPACE_EVENTS.holdSec })}</p>
       <div className="space-event-foot">
         <span className="mono small muted">
           {tel.eventDistance !== null && <>{formatDistance(tel.eventDistance)} · </>}

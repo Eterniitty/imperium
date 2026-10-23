@@ -251,7 +251,7 @@ function RankTab() {
         <li>{t("rank.src.pirate", { n: RANK_XP.pirateKill })}</li>
         <li>{t("rank.src.discovery", { n: RANK_XP.discovery })}</li>
         <li>{t("rank.src.mine", { n: RANK_XP.minedPerXp })}</li>
-        <li>{t("rank.src.event", { a: SPACE_EVENTS.salvage.xp, b: SPACE_EVENTS.distress.xp })}</li>
+        <li>{t("rank.src.event", { a: SPACE_EVENTS.salvage.xp, b: SPACE_EVENTS.distress.xp, c: SPACE_EVENTS.anomaly.xp })}</li>
         <li>{t("rank.src.goal", { a: GOALS.daily.xp, b: GOALS.weekly.xp })}</li>
         <li>{t("rank.src.challenge", { n: HUNT_CHALLENGE.xpPerKill })}</li>
         <li>{t("rank.src.request", { n: COLONY_REQUESTS.reward.xp })}</li>

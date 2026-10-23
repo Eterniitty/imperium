@@ -1905,7 +1905,7 @@ export class SystemView implements View {
     // Suceso en el espacio (restos o señal de socorro a la que se acude): un destino más.
     const ev = spaceStore.getState().event;
     if (ev && !ev.decide && this.ship && spaceStore.getState().systemId === this.systemId)
-      spots.push({ id: "event", kind: "signal", name: translate(locale, ev.kind === "distress" ? "event.name.distress" : "event.name.salvage"), center: new THREE.Vector3(...ev.at), radius: 50, stopRadius: 1000 });
+      spots.push({ id: "event", kind: "signal", name: translate(locale, `event.name.${ev.kind}` as I18nKey), center: new THREE.Vector3(...ev.at), radius: 50, stopRadius: 1000 });
     // Restos de un contrato de rescate en este sistema: hay que llegar y quedarse a su lado.
     for (const c of this.rescueHere()) spots.push({ id: `wreck:${c.id}`, kind: "wreck", name: translate(locale, "cruise.wreck"), center: new THREE.Vector3(...c.point!), radius: 60, stopRadius: 1500 });
     // Cualquier flota propia parada aquí: se llega junto a su nave más grande, fuera de su casco.

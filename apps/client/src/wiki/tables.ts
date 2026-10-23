@@ -337,6 +337,7 @@ export const GEN_TABLES: Record<string, Builder> = {
       ["wiki.k.eventSalvage", t("wiki.v.eventSalvage", { min: SPACE_EVENTS.salvage.units[0], max: SPACE_EVENTS.salvage.units[1], xp: SPACE_EVENTS.salvage.xp })],
       ["wiki.k.eventDistress", t("wiki.v.eventDistress", { credits: num(locale, SPACE_EVENTS.distress.credits), rep: SPACE_EVENTS.distress.reputation, xp: SPACE_EVENTS.distress.xp })],
       ["wiki.k.eventTrap", `${num(locale, SPACE_EVENTS.distress.trapChance * 100)} %`],
+      ["wiki.k.eventAnomaly", t("wiki.v.eventAnomaly", { s: SPACE_EVENTS.anomaly.scanSec, min: SPACE_EVENTS.anomaly.exotic[0], max: SPACE_EVENTS.anomaly.exotic[1], xp: SPACE_EVENTS.anomaly.xp })],
     ]),
 
   "objetivos-diarios": (t, locale) => {
@@ -360,7 +361,7 @@ export const GEN_TABLES: Record<string, Builder> = {
       [t("rank.src.pirate", { n: RANK_XP.pirateKill })],
       [t("rank.src.discovery", { n: RANK_XP.discovery })],
       [t("rank.src.mine", { n: RANK_XP.minedPerXp })],
-      [t("rank.src.event", { a: SPACE_EVENTS.salvage.xp, b: SPACE_EVENTS.distress.xp })],
+      [t("rank.src.event", { a: SPACE_EVENTS.salvage.xp, b: SPACE_EVENTS.distress.xp, c: SPACE_EVENTS.anomaly.xp })],
       [t("rank.src.goal", { a: GOALS.daily.xp, b: GOALS.weekly.xp })],
       [t("rank.src.challenge", { n: HUNT_CHALLENGE.xpPerKill })],
       [t("rank.src.request", { n: COLONY_REQUESTS.reward.xp })],
