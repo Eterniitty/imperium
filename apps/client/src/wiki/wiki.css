@@ -276,7 +276,11 @@ kbd {
     left: 0;
     bottom: 0;
     width: min(320px, 86vw);
+    /* Alto de la pantalla (no el de su contenido): así el índice largo se desplaza. */
+    height: 100vh;
+    height: 100dvh;
     max-height: none;
+    overflow-y: auto;
     z-index: 15;
     background: var(--panel-solid);
     border-right: 1px solid var(--panel-border);
