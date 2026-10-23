@@ -157,6 +157,7 @@ Los Emperadores tienen **recuerdos rotos**. Recuperarlos es la progresión perso
 ## 5b. Colonias (decisiones del 23-10-2026)
 
 - **Construcción libre**: el jugador coloca cada edificio **donde quiera dentro de sus parcelas** (con rejilla y giro), como en un juego de construcción. El servidor valida la posición (dentro de una parcela propia, sin solaparse, en terreno válido) y guarda la intención; el edificio se construye solo con la cola de siempre, aunque el jugador se desconecte.
+- **Edificios fijos**: cada instalación (mina, refinería, central, astillero, dique seco, plataforma defensiva, Cuna, fábrica, relicario, granja…) es **un edificio completo** con su aspecto por casa y nivel; no se montan por piezas.
 - **Comida**: la población consume **biomasa**; si falta, deja de crecer (no muere). Se produce en granjas (biomas fértiles: Origen, Vesperia, Tharax) o se compra.
 - **Herederos visibles**: tienen nombre, aspecto (el traje de la casa con los colores de su doctrina) y se les ve en la colonia que gobiernan o en el puente de la flota que mandan; se les puede visitar.
 
@@ -336,7 +337,7 @@ Los Emperadores nuevos tienen **gracia** (como hoy, 24 h ampliables a unos días
 
 ### 11.3 Asedio y conquista de parcelas
 
-Lo de la Fase 9b sobre parcelas: presencia sostenida en órbita y en tierra, plataformas defensivas, desembarco de tropas (humanos), captura con pérdidas. Para no perder tierra mientras duermes:
+Lo de la Fase 9b sobre parcelas (decisión del 23-10-2026: **solo asedio general**, no se destruyen edificios concretos uno a uno): presencia sostenida en órbita y en tierra, plataformas defensivas, desembarco de tropas, captura con pérdidas. Las **tropas son visibles** (decisión del 23-10-2026): los mortales de la casa bajan en lanzaderas y se les ve luchar en el suelo (etapa B, con el personaje a pie; antes, solo las lanzaderas y los combates de fondo). Para no perder tierra mientras duermes:
 - **Aviso** inmediato a la casa (en el juego y, si se activa, notificación).
 - **Tiempos largos**: un asedio necesita **horas de presencia** y se puede **defender** al volver.
 - **Ventanas de vulnerabilidad** (aprobadas el 23-10-2026): cada casa elige unas horas del día en que sus colonias pueden ser asediadas en zonas disputadas. En zonas sin ley no hay ventana: se puede asediar a cualquier hora (con asedios largos y aviso).
@@ -429,3 +430,11 @@ Lo nuevo frente al servidor actual, para las fases S1–S7 de la hoja de ruta:
 - Recursos nuevos (`biomass`, `essence_*`).
 - Muerte suave: la nave, la carga y los humanos ya no se pierden; techo de gestación.
 - Sucesos del sistema (ampliación de `CrisisService` y `SPACE_EVENTS`).
+
+## 18. Eras con reinicio (decisión del 23-10-2026)
+
+El mundo **se reinicia cada cierto tiempo** (una «era» dura meses) y queda un **legado**. Propuesta (por confirmar):
+- Una era termina con un **gran suceso** del sistema (una oleada final de la Grieta, un despertar), anunciado con semanas de antelación.
+- Se reinician: parcelas, colonias, flotas, créditos, reputación, reliquias.
+- Queda (legado): la cuenta y el Emperador (nombre, casa, emblema), el **códice**, los **recuerdos** (rasgos), las **leyendas de la era** y el **prestigio** acumulado, y adornos de colecciones completadas.
+- Cada era puede **cambiar algo del sistema** (una luna rota, una zona nueva, un pueblo con otra actitud) y es el gran momento para contar más lore.
