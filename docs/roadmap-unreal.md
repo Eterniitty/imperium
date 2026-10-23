@@ -205,7 +205,7 @@ Cada fase entrega **capturas objetivo** hechas desde cámaras fijas del «banco 
 
 ### 4.0 Por ahora, desde la nube (decisión del 23-10-2026)
 
-El dueño usa su cupo de Claude en su ordenador para otras cosas, así que **de momento Claude trabaja solo desde la nube** (estas sesiones de claude.ai/code). Eso cambia el bucle de trabajo:
+Hasta el **domingo 25-10-2026** el dueño no tiene cupo de Claude en su ordenador, así que **hasta entonces Claude trabaja solo desde la nube** (estas sesiones de claude.ai/code). Eso cambia el bucle de trabajo:
 
 | Qué | Cómo, desde la nube |
 |---|---|
@@ -222,7 +222,7 @@ Para que el dueño tenga que hacer lo mínimo:
 - Un botón del menú de depuración del juego guarda **todas las capturas del banco de pruebas** de una vez (§4.6), para mandarlas juntas.
 - Compilar Unreal en el contenedor de la nube **no es viable**: no tiene GPU ni Windows, el motor pesa decenas de GB y para Linux habría que compilarlo desde el código fuente.
 
-Cuando el dueño tenga cupo en su ordenador, se pasa a §4.1 y el ritmo sube mucho.
+Desde el domingo, con cupo en el ordenador del dueño, se pasa a §4.1 (Claude Code local) y el ritmo sube mucho. Estos días en la nube sirven para lo que no necesita Unreal: el diseño de la Era II (P0), `AeonCore` y el servidor.
 
 ### 4.1 Claude en el ordenador del dueño (más adelante)
 
@@ -913,7 +913,7 @@ Si el plan va lento, se quita en este orden (de lo primero a lo último):
 | Nombres y pueblos de los siete mundos (§2.2, §2.6) | Valen para empezar; se podrán cambiar más adelante. |
 | Escala (§2.4) | **Compacta**, como se propone: planetas de 3–6 km, cruzar el sistema en unos 2 min. |
 | GPU | **AMD Radeon RX 9060 XT de 16 GB**: es la de referencia (§3.5). |
-| Claude Code en el ordenador del dueño (§4.1) | **Más adelante.** De momento se trabaja **desde la nube** (§4.0): Claude escribe y prueba lo que puede en Linux, el dueño compila y juega en su ordenador. Cuando tenga cupo, se instala Claude Code (§4.1.1). |
+| Claude Code en el ordenador del dueño (§4.1) | **Más adelante.** Hasta el domingo 25-10-2026 se trabaja **desde la nube** (§4.0); desde entonces, Claude Code en el ordenador del dueño (§4.1.1). |
 | Andar por los planetas | En la **etapa B**, después del alfa. |
 | Parcelas (§10.3) | **Sí.** |
 | Juego web actual | **Cerrado** el 23-10-2026 (`GAME_CLOSED`, commit `99d390a` en `main`, pendiente de desplegar): solo quedan la portada, la Wiki, las páginas legales y la gestión de la cuenta hasta el alfa. No hace falta avisar: solo juega el dueño. |
