@@ -203,7 +203,28 @@ Cada fase entrega **capturas objetivo** hechas desde cámaras fijas del «banco 
 
 ## 4. Cómo trabajamos dos personas
 
-### 4.1 Claude en el ordenador del dueño
+### 4.0 Por ahora, desde la nube (decisión del 23-10-2026)
+
+El dueño usa su cupo de Claude en su ordenador para otras cosas, así que **de momento Claude trabaja solo desde la nube** (estas sesiones de claude.ai/code). Eso cambia el bucle de trabajo:
+
+| Qué | Cómo, desde la nube |
+|---|---|
+| Escribir el código de Unreal (C++, `.usf`, Python de editor, datos) | Claude lo escribe y lo sube a GitHub. |
+| Compilar y probar `AeonCore` (C++ puro: protocolo, fórmulas, terreno, parcelas) | **Sí se puede en la nube**: CMake y g++/clang en Linux, con pruebas y vectores compartidos con TypeScript; también en GitHub Actions. |
+| Compilar el proyecto de Unreal y jugarlo | **Lo hace el dueño**: baja los cambios (GitHub Desktop o `git pull`), abre el proyecto (Unreal compila solo al abrirlo) y pulsa *Play*. |
+| Errores de compilación | El dueño copia el texto del error (o una captura) en la conversación; Claude lo corrige y vuelve a subir. |
+| Ver cómo queda | El dueño manda capturas o vídeos cortos; Claude los mira y propone cambios. |
+| Servidor, Wiki, despliegues | Como hasta ahora, desde la nube. |
+
+Para que el dueño tenga que hacer lo mínimo:
+- Todo lo que se pueda se escribe en `AeonCore` y se prueba en la nube antes de que el dueño compile nada.
+- Cada entrega trae una **lista corta de pasos** («baja los cambios, abre el proyecto, pulsa Play, mira el planeta desde la cámara 3 y mándame una captura»).
+- Un botón del menú de depuración del juego guarda **todas las capturas del banco de pruebas** de una vez (§4.6), para mandarlas juntas.
+- Compilar Unreal en el contenedor de la nube **no es viable**: no tiene GPU ni Windows, el motor pesa decenas de GB y para Linux habría que compilarlo desde el código fuente.
+
+Cuando el dueño tenga cupo en su ordenador, se pasa a §4.1 y el ritmo sube mucho.
+
+### 4.1 Claude en el ordenador del dueño (más adelante)
 
 En la nube y en Hetzner, Claude no puede compilar ni ejecutar Unreal (no hay Windows, ni GPU, ni editor). Para que el plan funcione sin que el dueño programe, **Claude Code se instala en el ordenador del dueño**, junto a Unreal. Desde ahí Claude puede:
 
@@ -625,7 +646,7 @@ gantt
 
 - **Objetivo**: poder trabajar. Al final, una ventana del juego que entra en el servidor.
 - **Contenido**:
-  - Instalar Git para Windows, Git LFS, **Claude Code** (§4.1.1), Unreal 5.8.4 y Visual Studio en el ordenador del dueño, por ese orden: con Claude Code funcionando, Claude guía el resto de la instalación. Activar el plugin MCP de Unreal y comprobar qué herramientas trae.
+  - Instalar en el ordenador del dueño Git para Windows (o GitHub Desktop), Git LFS, Unreal 5.8.4 y Visual Studio, con una guía paso a paso que escribe Claude (§4.0). Claude Code local, cuando haya cupo (§4.1.1). Activar el plugin MCP de Unreal y comprobar qué herramientas trae.
   - Repositorio `aeonarch-ue`, proyecto C++ con los módulos (§13), compilación y pruebas desde la línea de órdenes.
   - Servidor local en el ordenador del dueño (Docker con PostgreSQL), con datos de prueba.
   - **Pruebas de concepto de «todo por código»**: (1) un material creado desde Python; (2) un shader `.usf` propio; (3) una malla de *Geometry Script* horneada con Nanite desde un script; (4) un efecto de partículas en GPU propio; (5) un sonido de MetaSound construido desde C++; (6) un widget de Slate; (7) saber si Niagara se puede crear por script o MCP. El resultado decide herramientas para el resto del plan.
@@ -892,16 +913,16 @@ Si el plan va lento, se quita en este orden (de lo primero a lo último):
 | Nombres y pueblos de los siete mundos (§2.2, §2.6) | Valen para empezar; se podrán cambiar más adelante. |
 | Escala (§2.4) | **Compacta**, como se propone: planetas de 3–6 km, cruzar el sistema en unos 2 min. |
 | GPU | **AMD Radeon RX 9060 XT de 16 GB**: es la de referencia (§3.5). |
-| Claude Code en el ordenador del dueño (§4.1) | **Sí.** El dueño tiene la app de Claude, pero aún no Claude Code: se instala en A0 (§4.1.1), junto con Unreal 5.8.4 y Visual Studio. |
+| Claude Code en el ordenador del dueño (§4.1) | **Más adelante.** De momento se trabaja **desde la nube** (§4.0): Claude escribe y prueba lo que puede en Linux, el dueño compila y juega en su ordenador. Cuando tenga cupo, se instala Claude Code (§4.1.1). |
 | Andar por los planetas | En la **etapa B**, después del alfa. |
 | Parcelas (§10.3) | **Sí.** |
-| Juego web actual | **Cerrarlo ya** (§11.1): solo quedan la portada, la Wiki y las páginas legales hasta el alfa. |
+| Juego web actual | **Cerrado** el 23-10-2026 (`GAME_CLOSED`, commit `99d390a` en `main`, pendiente de desplegar): solo quedan la portada, la Wiki, las páginas legales y la gestión de la cuenta hasta el alfa. No hace falta avisar: solo juega el dueño. |
 
 ---
 
 ## 17. Los próximos pasos
 
-1. Cerrar el juego web (§11.1), con la confirmación del dueño antes de desplegarlo, y reunir el tablero de referencias.
+1. Desplegar el cierre del juego web (ya en `main`) y reunir el tablero de referencias.
 2. P0: Claude reescribe `docs/diseno.md` para la Era II y escribe `docs/sistema-aeon.md`.
 3. A0: instalar el taller en el ordenador del dueño y hacer las siete pruebas de concepto.
 4. Publicar la galería de capturas como artefacto desde la primera captura.
