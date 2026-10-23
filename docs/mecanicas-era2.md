@@ -54,7 +54,7 @@ Igual que ahora, con resolución perezosa en el servidor: producción y poblaci�
 
 ### 2.1 Qué tiene
 
-- **Hangar de naves** (decisión del 23-10-2026): el Emperador puede tener **varias naves** y elegir con cuál sale; la que pilota es su **nave insignia** de ese momento (bodega, armas, escudo, motores, combustible y 3 huecos de reliquia). Las demás esperan en el hangar de una colonia propia o en Origen. Se sigue pudiendo pilotar a distancia las naves de flota, como hoy.
+- **Hangar de naves** (decisión del 23-10-2026): el Emperador puede tener **las naves que quiera** (sin límite; solo limita el coste) y elegir con cuál sale; la que pilota es su **nave insignia** de ese momento (bodega, armas, escudo, motores, combustible y 3 huecos de reliquia). Las demás esperan en el hangar de una colonia propia o en Origen. Se sigue pudiendo pilotar a distancia las naves de flota, como hoy.
 - **Traje** (etapa B, a pie): escáner, linterna, *jetpack*, herramienta de minería, protección contra el clima.
 - **Recuerdos** (§5) y **reliquias equipadas** (§4).
 - **Rango** (el actual: experiencia por contratos, combate, exploración).
@@ -248,7 +248,7 @@ Se mantiene (cañones, misiles, escudos, asistencia de puntería, fuego automát
 
 ### 8.3 Criaturas del espacio (decisión del 23-10-2026)
 
-**Sí hay criaturas espaciales**, sobre todo cerca de los cuerpos de los dioses (propuesta, por confirmar):
+**Sí hay criaturas espaciales**, sobre todo cerca de los cuerpos de los dioses (lista aprobada el 23-10-2026):
 
 | Criatura | Dónde | Comportamiento |
 |---|---|---|
@@ -258,6 +258,8 @@ Se mantiene (cañones, misiles, escudos, asistencia de puntería, fuego automát
 | **Esporas del vacío** | Alrededor de Tharax | Nubes vivas que se pegan a los cascos y los corroen; la colmena las usa como arma. |
 | **Siervos menores** | Junto a las lunas | Restos animados de los siervos de los dioses (las lunas); son los **jefes del sistema** de los sucesos «Despertar de un guardián». |
 | **Ecos de Ossal** | En la oscuridad de Umbra | Siluetas que solo se ven por el rabillo del ojo; desactivan sensores. |
+
+**Domesticar** (decisión del 23-10-2026): algunas criaturas (no los jefes) se pueden **atraer y domesticar**; acompañan a la nave o viven en una colonia, con un pequeño efecto (un banco de luz que ilumina y revela lo oculto, una brasa que calienta en Umbra…). Cazarlas no es el objetivo del juego. Cómo se atraen (alimento, esencia, paciencia) queda por diseñar.
 
 ### 8.4 Flotas
 
