@@ -251,6 +251,16 @@ Cuidados:
 
 Documentación: [instalación](https://code.claude.com/docs/en/setup), [app de escritorio](https://code.claude.com/docs/en/desktop), [problemas de instalación](https://code.claude.com/docs/en/troubleshoot-install).
 
+#### 4.1.2 Conectar Claude Code con el editor (plugin MCP de la 5.8)
+
+Pasos según las guías publicadas (comprobarlos con la documentación de Epic al hacerlo; el plugin es experimental y las guías no coinciden del todo en la lista de plugins):
+1. En el editor: *Edit → Plugins*, activar **Unreal MCP** y los conjuntos de herramientas (*Editor Tool Set*; algunas guías citan también *All Tool Sets* o *Terminal*). Reiniciar el editor.
+2. *Edit → Editor Preferences → Model Context Protocol*: activar el **arranque automático** del servidor (escucha solo en la máquina local).
+3. Ejecutar la orden de consola que genera la configuración del cliente: escribe un `.mcp.json` en la raíz del proyecto.
+4. Abrir Claude Code **en la carpeta del proyecto** (donde está `.mcp.json`) y comprobar con `/mcp` que el servidor de Unreal aparece conectado.
+
+Guías: [tutorial en español del foro de Epic](https://forums.unrealengine.com/t/community-tutorial-unreal-engine-5-8-claude-code-con-mcp-desde-cero-tutorial-completo/2729874), [vídeo «UE5.8 MCP Server Setup & Test»](https://www.youtube.com/watch?v=Ko3dy_G75-s), [vídeo «Get Claude AI INSIDE Unreal Engine 5.8»](https://www.youtube.com/watch?v=iiSOB0XbRfU).
+
 La sesión de la nube sigue para lo que ya hace: servidor, Wiki, base de datos de desarrollo y despliegues (`aeonarch-desplegar`). Las reglas de privacidad (regla 11) valen también en el ordenador del dueño: nada de datos de producción allí.
 
 ### 4.2 Los papeles
