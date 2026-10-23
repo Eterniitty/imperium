@@ -45,7 +45,7 @@ export const GATE_PAGE = /* html */ `<!doctype html>
     <input id="password" name="password" type="password" autocomplete="current-password" required />
     <button type="submit" data-t="enter">Entrar</button>
     <p class="error" id="error" role="alert"></p>
-    <p class="device" id="device" hidden data-t="device">Aeonarch solo se puede jugar desde el navegador de un ordenador.</p>
+    <p class="device" id="device" hidden><span data-t="device">El juego solo se puede jugar desde el navegador de un ordenador. Desde aquí puedes leer la Wiki.</span><br /><a href="/wiki/" data-t="wiki">Abrir la Wiki</a></p>
     <p class="foot"><a id="imprint" href="/legal/aviso-legal.html" data-t="imprint">Aviso legal (Impressum)</a> · <a id="privacy" href="/legal/privacidad.html" data-t="privacy">Privacidad (Datenschutz)</a></p>
   </form>
 </main>
@@ -53,8 +53,8 @@ export const GATE_PAGE = /* html */ `<!doctype html>
 (() => {
   const en = !/^es\\b/i.test(navigator.language || "es");
   const T = en
-    ? { sub: "Alpha · private access", user: "User", password: "Password", enter: "Enter", imprint: "Legal notice (Impressum)", privacy: "Privacy (Datenschutz)", wrong: "Wrong user or password.", limited: "Too many attempts. Wait a few minutes.", fail: "Could not connect. Try again.", device: "Aeonarch can only be played from a computer's web browser." }
-    : { sub: "Alfa · acceso privado", user: "Usuario", password: "Contraseña", enter: "Entrar", imprint: "Aviso legal (Impressum)", privacy: "Privacidad (Datenschutz)", wrong: "Usuario o contraseña incorrectos.", limited: "Demasiados intentos. Espera unos minutos.", fail: "No se pudo conectar. Inténtalo de nuevo.", device: "Aeonarch solo se puede jugar desde el navegador de un ordenador." };
+    ? { sub: "Alpha · private access", user: "User", password: "Password", enter: "Enter", imprint: "Legal notice (Impressum)", privacy: "Privacy (Datenschutz)", wrong: "Wrong user or password.", limited: "Too many attempts. Wait a few minutes.", fail: "Could not connect. Try again.", device: "The game can only be played from a computer's web browser. From here you can read the Wiki.", wiki: "Open the Wiki" }
+    : { sub: "Alfa · acceso privado", user: "Usuario", password: "Contraseña", enter: "Entrar", imprint: "Aviso legal (Impressum)", privacy: "Privacidad (Datenschutz)", wrong: "Usuario o contraseña incorrectos.", limited: "Demasiados intentos. Espera unos minutos.", fail: "No se pudo conectar. Inténtalo de nuevo.", device: "El juego solo se puede jugar desde el navegador de un ordenador. Desde aquí puedes leer la Wiki.", wiki: "Abrir la Wiki" };
   document.documentElement.lang = en ? "en" : "es";
   for (const el of document.querySelectorAll("[data-t]")) el.textContent = T[el.dataset.t];
   if (en) {
@@ -67,13 +67,14 @@ export const GATE_PAGE = /* html */ `<!doctype html>
   const ua = navigator.userAgent;
   const touchMac = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
   const mobile = (navigator.userAgentData && navigator.userAgentData.mobile) || /Mobi|Android|iPhone|iPad|iPod|PlayStation|Xbox|Nintendo|SmartTV|SMART-TV|Tizen|webOS|Web0S|CrKey/i.test(ua);
-  if (touchMac || mobile || new URLSearchParams(location.search).has("dispositivo")) {
-    for (const el of form.querySelectorAll("label, input, button, .error")) el.hidden = true;
-    document.getElementById("device").hidden = false;
-  }
+  // Móviles y tabletas: se entra igual (con la credencial), pero solo a la Wiki.
+  const handheld = touchMac || mobile || new URLSearchParams(location.search).has("dispositivo");
+  if (handheld) document.getElementById("device").hidden = false;
   const error = document.getElementById("error");
   const button = form.querySelector("button");
-  const next = new URLSearchParams(location.search).get("next") || "/";
+  const asked = new URLSearchParams(location.search).get("next") || "/";
+  const toWiki = asked === "/wiki" || asked.startsWith("/wiki/");
+  const next = handheld && !toWiki ? "/wiki/" : asked;
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     error.textContent = "";

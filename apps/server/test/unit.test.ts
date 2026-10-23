@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { GENERATOR_VERSION } from "@imperium/shared";
 import { buildApp } from "../src/app";
 import { anonIp, emailRateKey, ipRateKey, RateLimiter } from "../src/auth/rateLimit";
+import { isDesktop, wikiPath } from "../src/gate/routes";
 import { maskEmail, sessionCookieName } from "../src/auth/routes";
 import { generateToken, hashToken, normalizeEmail } from "../src/auth/tokens";
 import { DEV_DETAIL_SEED, loadConfig } from "../src/config";
@@ -98,6 +99,13 @@ describe("RateLimiter", () => {
 });
 
 describe("claves de límite", () => {
+  it("puerta: los móviles solo pasan a la Wiki (y a sus recursos y su API)", () => {
+    expect(isDesktop("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148")).toBe(false);
+    expect(isDesktop("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36")).toBe(true);
+    for (const ok of ["/wiki", "/wiki/", "/wiki/especies", "/wiki/?p=nuevo", "/assets/wiki-1.js", "/favicon.svg", "/api/wiki", "/api/wiki/me"]) expect(wikiPath(ok)).toBe(true);
+    for (const no of ["/", "/api/auth/me", "/ws", "/wikipedia", "/api/wikis", "/legal/x.html", "/assetsx"]) expect(wikiPath(no)).toBe(false);
+  });
+
   it("recorta las IP de los registros a /24 (IPv4) y /48 (IPv6)", () => {
     expect(anonIp("203.0.113.77")).toBe("203.0.113.0/24");
     expect(anonIp("::ffff:198.51.100.9")).toBe("198.51.100.0/24");

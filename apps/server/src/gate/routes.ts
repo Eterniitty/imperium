@@ -88,6 +88,16 @@ function safeNext(next: unknown): string {
 }
 
 /**
+ * Lo que un móvil o una tableta pueden abrir (petición del usuario, 23-10-2026): la
+ * Wiki, sus recursos y su API, siempre con la credencial de la puerta. El juego
+ * sigue siendo solo para ordenador.
+ */
+export function wikiPath(uri: string): boolean {
+  const path = uri.split("?")[0]!;
+  return path === "/wiki" || path.startsWith("/wiki/") || path.startsWith("/assets/") || path === "/favicon.svg" || path === "/api/wiki" || path.startsWith("/api/wiki/");
+}
+
+/**
  * Solo ordenadores (petición del usuario, 21-10-2026): fuera móviles, tabletas,
  * consolas, televisores y visores. Se mira el agente de usuario en el servidor; la
  * página de la puerta además descarta las tabletas que se hacen pasar por un Mac.
@@ -155,8 +165,8 @@ export async function gateRoutes(app: FastifyInstance, { config }: { config: Ser
   // Caddy (forward_auth): 2xx deja pasar; si no, el navegador va a la puerta.
   app.get("/puerta/check", async (req, reply: FastifyReply) => {
     const uri = typeof req.headers["x-forwarded-uri"] === "string" ? req.headers["x-forwarded-uri"] : "/";
-    // Solo ordenadores: aunque traiga la cookie.
-    if (!isDesktop(req.headers["user-agent"])) {
+    // Solo ordenadores, salvo la Wiki (también con la credencial de la puerta).
+    if (!isDesktop(req.headers["user-agent"]) && !wikiPath(uri)) {
       if (uri.startsWith("/api/") || uri.startsWith("/ws")) return reply.code(403).send();
       return reply.redirect("/puerta/?dispositivo=1", 302);
     }
@@ -178,10 +188,8 @@ export async function gateRoutes(app: FastifyInstance, { config }: { config: Ser
     if (!parsed.success) return reply.code(400).send({ error: "invalid_request" });
     const name = parsed.data.user.trim();
     const ua = req.headers["user-agent"] ?? "";
-    if (!isDesktop(ua)) {
-      log({ user: name.slice(0, 60), ok: false, reason: "device", ip: ipOf(req) });
-      return reply.code(403).send({ error: "device" });
-    }
+    // Desde un móvil también se entra, pero solo a la Wiki.
+    const desktop = isDesktop(ua);
     const hash = secret ? hashOf(name) : null;
     if (!hash || !checkPassword(parsed.data.password, hash)) {
       log({ user: name.slice(0, 60), ok: false, reason: "wrong", ip: ipOf(req) });
@@ -196,7 +204,8 @@ export async function gateRoutes(app: FastifyInstance, { config }: { config: Ser
       sameSite: "lax",
       maxAge: COOKIE_DAYS * 24 * 3600,
     });
-    return { ok: true, next: safeNext(parsed.data.next) };
+    const next = safeNext(parsed.data.next);
+    return { ok: true, next: desktop || wikiPath(next) ? next : "/wiki/" };
   });
 
   app.post("/puerta/salir", async (_req, reply) => {
