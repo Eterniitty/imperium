@@ -147,6 +147,7 @@ Pendiente, en este orden:
 6. **Revisar**:
    - en las pruebas con Chromium sin pantalla, a veces el WebSocket tarda ~9 s o se agota a través de Caddy (directo al servidor abre en 8–20 ms). Si algún jugador ve el juego «sin mundo», empezar por ahí;
    - regiones alienígenas de un solo sistema: no aparece guarnición.
+   - la e2e lenta `e2e/colony.spec.ts` (@lento) está desfasada: busca la ficha del planeta en el panel lateral (`aside.side .planet-detail`) y ahora vive en la ventana del planeta (`PlanetWindow`), y la flota, en la ventana del imperio. Hay que reescribirla. Las rápidas están en verde.
 
 ## Siguiente: que se sienta como un juego (22-10-2026)
 
