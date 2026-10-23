@@ -150,9 +150,15 @@ Los Emperadores tienen **recuerdos rotos**. Recuperarlos es la progresión perso
 - **Árbol de recuerdos**: 6 ramas (una por dios conocido) más una rama **sin nombre** que se llena muy despacio y nunca explica de dónde viene (lore secreto, sin decirlo).
 - Morir **no** borra recuerdos (muerte suave), aunque un sueño puede «cambiar» el texto de uno.
 
-- **Ceder recuerdos a los Elydri** (decisión del 23-10-2026): el Emperador puede entregar un recuerdo completo a cambio de algo valioso (tecnología, una reliquia, reputación alta). **Lo pierde**: desaparece su rasgo y su escena queda en el códice como «Entregado a los Elydri». Es una decisión dura y a propósito; los fragmentos de ese recuerdo pueden volver a encontrarse, muy despacio.
+- **Ceder recuerdos a los Elydri** (decisión del 23-10-2026): el Emperador puede entregar un recuerdo completo a cambio de algo valioso (avanzar de golpe una investigación humana, una reliquia, reputación alta). **Lo pierde**: desaparece su rasgo y su escena queda en el códice como «Entregado a los Elydri». Es una decisión dura y a propósito; los fragmentos de ese recuerdo pueden volver a encontrarse, muy despacio.
 
 ---
+
+## 5b. Colonias (decisiones del 23-10-2026)
+
+- **Construcción libre**: el jugador coloca cada edificio **donde quiera dentro de sus parcelas** (con rejilla y giro), como en un juego de construcción. El servidor valida la posición (dentro de una parcela propia, sin solaparse, en terreno válido) y guarda la intención; el edificio se construye solo con la cola de siempre, aunque el jugador se desconecte.
+- **Comida**: la población consume **biomasa**; si falta, deja de crecer (no muere). Se produce en granjas (biomas fértiles: Origen, Vesperia, Tharax) o se compra.
+- **Herederos visibles**: tienen nombre, aspecto (el traje de la casa con los colores de su doctrina) y se les ve en la colonia que gobiernan o en el puente de la flota que mandan; se les puede visitar.
 
 ## 6. La tierra: parcelas
 
@@ -279,12 +285,12 @@ Cada pueblo tiene una **reputación** con cada casa (de «enemigo jurado» a «e
 
 | Pueblo | Qué ofrece a buena reputación | Qué le enfada |
 |---|---|---|
-| **Aurelianos** (Brasa) | Duelos y torneos con premios, armas forjadas con el fuego de Kaurath, vasallaje temporal a cambio de protección. | Rechazar un duelo, tomar tierra de Kaurath sin vencerles antes. |
+| **Aurelianos** (Brasa) | Duelos y torneos con premios, adornos y emblemas forjados con el fuego de Kaurath, vasallaje temporal a cambio de protección. | Rechazar un duelo, tomar tierra de Kaurath sin vencerles antes. |
 | **Elydri** (Elyss) | Conocimiento (investigación más rápida) a cambio de **recuerdos**; restauran reliquias dañadas. | Destruir ruinas o archivos; quemar tierra sagrada. |
 | **Tharaxi** (Tharax) | La colmena: nada (es hostil). Los **disidentes**: biomasa, criaturas aliadas, rutas secretas por la selva. | Cualquier ataque a la colmena despierta su **adaptación** (resisten más tu tipo de arma). |
 | **Vesperi** (Vesperia) | **Protección** de tus colonias cercanas (sus escudos), permiso para aterrizar y colonizar en sus tierras. | Abusar de la fuerza, atacar a débiles, colonizar sin permiso. |
 | **Nómadas** (Céfiro) | Mercado propio, escoltas, rutas rápidas, contrabando de reliquias. | Bloquear sus rutas, atacar sus ciudades. |
-| **Grises** (Ábaco) | **Tratados**: tecnología o protección a cambio de no pasar de cierto número de parcelas. Romper el tratado tiene castigo. | Crecer más allá de lo pactado. |
+| **Grises** (Ábaco) | **Tratados**: investigación más rápida o protección a cambio de no pasar de cierto número de parcelas. Romper el tratado tiene castigo. | Crecer más allá de lo pactado. |
 | **Nihil** (Umbra) | Muy poco: paso seguro por Umbra, alguna reliquia de Ossal a quien respeta el silencio. | Hacer ruido en Umbra: combates, minería, motores a tope cerca de sus velatorios. |
 | **Carroñeros** | Nada oficial; contratos sucios, mercado negro. | Siempre hostiles salvo pacto puntual. |
 | **Erradicadores** | Nada. | Existir. |
@@ -305,7 +311,7 @@ Decisión del 23-10-2026: **solo texto**, sin voces.
 ## 10. Naves y Astillero
 
 - Se mantienen las clases actuales (12 humanas, Carroñeros, alienígenas, nodriza) y el **Astillero por piezas**.
-- Nuevo: **piezas de los pueblos** que se desbloquean con reputación (un escudo vesperi, un motor nómada, un cañón aureliano), con su aspecto.
+- **Solo tecnología humana** (decisión del 23-10-2026): no hay piezas alienígenas que funcionen distinto. Con reputación, los pueblos dan **adornos** de su estilo (pintura, emblemas, luces) que no cambian el poder.
 - **Reliquias** en los huecos de la nave (§4.2).
 - **Personalización**: colores y emblema de la casa, adornos de colecciones completadas.
 - La nave insignia se **reconstruye** al morir sin perder nada (muerte suave).
@@ -352,7 +358,7 @@ Lo de la Fase 9b sobre parcelas: presencia sostenida en órbita y en tierra, pla
 - **Créditos** por población (como hoy), **tesoro de la humanidad** y **proyectos comunes** (ahora con monumentos que se ven en Origen).
 - **Mercado del anillo** (Origen): libro de órdenes, comisión y envíos según la distancia real. **Solo mercado** (decisión del 23-10-2026): no hay intercambio directo entre jugadores; todo pasa por los libros de órdenes, para evitar abusos.
 - **Mercado nómada** (Céfiro): más caro, pero compra y vende lo que el del anillo no (reliquias, esencias, contrabando), sin preguntar.
-- **Fabricación** y **tecnología** como hoy (Fábrica, recetas, árbol de investigación), con recetas nuevas que usan **esencia** y **biomasa**.
+- **Fabricación** y **tecnología** como hoy (Fábrica, recetas, **un solo árbol de investigación humano**), con recetas nuevas que usan **esencia** y **biomasa**.
 - **Logística visible**: cargueros entre parcelas, lunas y mercados; se pueden asaltar en zonas sin ley.
 
 ---
