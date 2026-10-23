@@ -155,3 +155,23 @@ Nombres aprobados por el dueño (23-10-2026; se podrán retocar):
 
 - **Personajes con diálogo**: embajadores, sacerdotes y mercaderes con nombre que hablan y dan misiones. (Textos escritos por nosotros, en es/en; no es chat entre jugadores, así que respeta el principio de «sin texto libre público».)
 - **Muchos textos de lore que se encuentran**: inscripciones en las ruinas, crónicas de cada pueblo, cantos de los Elydri… coleccionables que se guardan en un **códice** del Emperador. Los textos nombran seis dioses y callan sobre Origen (§6).
+
+## 20. Los humanos y sus Emperadores (23-10-2026)
+
+- **Los mortales temen a los Emperadores**: seres que vuelven de la muerte; se les obedece, pero inquietan.
+- **Emperador o Emperatriz**: se elige al crear el personaje, con concordancia en todos los textos (petición ya pendiente en la hoja de ruta).
+- **La humanidad se divide en las casas de cada Emperador** (linaje, colores, emblema).
+- **Música coral y sacra**: voces, órgano, cantos antiguos; una catedral en el espacio. Nota técnica: la música es generativa y sin archivos (regla actual); un órgano se sintetiza bien por código, pero un **coro sintético** convincente es difícil. Habrá que probarlo pronto (A0/A1) y, si no convence, valorar con el dueño si se admiten grabaciones de voz.
+
+## 21. Muerte, Cunas y emblemas (23-10-2026)
+
+- **Entre vidas, sueños**: mientras gesta, el Emperador tiene visiones breves e inquietantes (un océano, una voz dormida…) que se ven en la pantalla de muerte. Son pistas del secreto (§9, §13), nunca explicadas.
+- **Las Cunas de linaje son cápsulas en el agua**: como el primer despertar, el Emperador renace bajo el agua o en un líquido, en cualquier planeta donde tenga una Cuna.
+- **Emblemas de las casas**: se genera uno único a partir del nombre del Emperador y se puede retocar con piezas (formas, símbolos y colores de una lista; sin dibujo a mano ni texto libre, para no tener que moderar).
+
+## Pendiente para la próxima tanda
+
+- Cada planeta en detalle: paisajes, lugares, peligros, ruinas.
+- Naves y tecnología: cómo funcionan en este mundo y de dónde sale la tecnología.
+- Juego: progreso, PvP, economía con reliquias y tierra sagrada.
+- Personajes con nombre de cada pueblo (embajadores, sacerdotes, mercaderes).
