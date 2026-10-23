@@ -128,8 +128,8 @@ export function App() {
             <DamageAlert />
             <EscortHud />
             <ActionBar />
-            {/* Puente de mando a bordo de la nave nodriza (acoplado): el imperio, como en el túnel. */}
-            {docked && <EmpireWindow bridge />}
+            {/* El imperio también pilotando (su botón de la barra superior); acoplado en una nodriza, con el puente de mando. */}
+            {docked ? <EmpireWindow bridge /> : <EmpireWindow />}
             <MiningHud />
             <QuantumHud />
             <CruiseHud />
