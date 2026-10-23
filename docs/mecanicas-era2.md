@@ -405,6 +405,9 @@ Ninguno revela el secreto (lore-era2.md §9 y §13); como mucho, siembran pregun
 
 Cada era (3 meses) cuenta un **capítulo** de la historia para todo el servidor: una campaña de sucesos, misiones y lugares nuevos que avanza según lo que hacen los jugadores, y que termina con el gran suceso del fin de era (§18). Es la vía principal para que el dueño cuente el lore poco a poco, sin revelar nunca el secreto.
 
+- **La historia la decide el dueño** (23-10-2026): está escrita de antemano; los jugadores la viven, no la votan.
+- **Primera era: «La Grieta se abre».** Los Erradicadores llegan por primera vez; los pueblos y la humanidad descubren que algo de fuera puede entrar en Aeon. La era empieza con señales en el borde del sistema y termina con la gran oleada.
+
 ---
 
 ## 14. El códice
