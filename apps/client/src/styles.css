@@ -1226,5 +1226,7 @@ button.legend-title { background: none; border: none; padding: 0; width: 100%; t
 .profile-link { padding: 0; font: inherit; color: inherit; text-decoration: none; }
 .profile-link:hover { text-decoration: underline; color: var(--gold); }
 .profile-win h3 { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 12px 0 4px; }
-/* El tutorial va abajo a la izquierda (junto a la barra de acciones, sobre el estado de la nave): a la derecha tapaba los botones del panel del sistema. */
-.tutorial-panel, .tutorial-pill { right: auto; left: 84px; bottom: 110px; }
+/* El tutorial va abajo en el centro, sobre el velocímetro (a la derecha tapaba «Saltar aquí»; el borde izquierdo es de la barra
+   de acciones). Con un suceso en el espacio abierto, sube para no taparlo. */
+.tutorial-panel, .tutorial-pill { right: auto; left: 50%; transform: translateX(-50%); bottom: 150px; }
+.tutorial-panel.raised, .tutorial-pill.raised { bottom: 300px; }

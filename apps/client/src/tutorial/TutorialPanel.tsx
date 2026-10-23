@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
 import type { I18nKey } from "@imperium/shared";
+import { spaceStore } from "../net/space";
 import { usePhotoNoticeOpen } from "../state/photoNotice";
 import { useT } from "../state/store";
 import { KeyHint } from "../ui/common";
@@ -22,6 +23,9 @@ export function TutorialPanel() {
   const active = useStore(tutorialStore, (s) => s.active);
   const mini = useStore(tutorialStore, (s) => s.mini);
   const [rect, setRect] = useState<DOMRect | null>(null);
+  const raised = useStore(spaceStore, (s) => s.event !== null);
+  // Con una ventana modal abierta (Ajustes, Humanidad…), plegado: así no tapa sus botones.
+  const [modal, setModal] = useState(false);
   const [done, setDone] = useState(false);
   const start = useRef<Snapshot | null>(null);
 
@@ -47,6 +51,7 @@ export function TutorialPanel() {
       const el = step.target ? [...document.querySelectorAll<HTMLElement>(`[data-tutorial="${step.target}"]`)].find((e) => e.offsetParent !== null) : null;
       const r = el?.getBoundingClientRect() ?? null;
       setRect((prev) => (r && prev && r.x === prev.x && r.y === prev.y && r.width === prev.width && r.height === prev.height ? prev : r));
+      setModal(document.querySelector(".modal-backdrop") !== null);
       if (!finished && step.done && start.current && step.done({ start: start.current, now: snapshot() })) {
         finished = true;
         setDone(true);
@@ -69,9 +74,9 @@ export function TutorialPanel() {
   const total = chapter.steps.length;
   const title = t(`tut.${chapter.id}.title` as I18nKey);
 
-  if (mini) {
+  if (mini || modal) {
     return (
-      <button type="button" className="tutorial-pill panel" onClick={() => store.setMini(false)} title={t("tut.expand")}>
+      <button type="button" className={raised ? "tutorial-pill panel raised" : "tutorial-pill panel"} onClick={() => store.setMini(false)} title={t("tut.expand")}>
         <span className="contract-kind">{t("tut.title")}</span> {title} · <span className="mono">{active.step + 1}/{total}</span>
       </button>
     );
@@ -86,7 +91,7 @@ export function TutorialPanel() {
           style={{ left: rect.left - 6, top: rect.top - 6, width: rect.width + 12, height: rect.height + 12 }}
         />
       )}
-      <section className="tutorial-panel panel" role="region" aria-label={t("tut.title")}>
+      <section className={raised ? "tutorial-panel panel raised" : "tutorial-panel panel"} role="region" aria-label={t("tut.title")}>
         <header className="tutorial-head">
           <span className="contract-kind">
             {t("tut.title")} · {t("tut.chapterN", { n: CHAPTERS.indexOf(chapter) + 1 })}
