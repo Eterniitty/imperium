@@ -4,6 +4,8 @@ Plan escrito el 23-10-2026 a petición del dueño. **No es una migración hecha*
 
 > **Decisión del dueño (23-10-2026): se reconstruye todo el juego en Unreal** (naves, espacio, interfaz, efectos, sonido: todo lo que ve y oye el jugador). No es un prototipo para decidir después ni un segundo cliente opcional: el cliente de Unreal sustituye al cliente web, que se retira al terminar (M6). El **servidor de Hetzner se queda** (Node + PostgreSQL, multijugador y Wiki; §2): «todo» se refiere al juego que ve el jugador, no al servidor. Si «todo» incluye también el servidor, este plan cambia mucho (§2.1) y hay que decirlo.
 
+> **Actualización (23-10-2026):** el dueño ha decidido que el juego ocurra en **un solo sistema de 7 planetas**, no realista pero precioso, y todo hecho por código. La hoja de ruta completa está en [roadmap-unreal.md](roadmap-unreal.md) y manda sobre este documento donde no coincidan: ya no hay galaxia ni salto entre estrellas (§2.4 de este documento queda sin efecto), cambia la escala y Claude puede compilar y probar si se instala Claude Code en el ordenador del dueño (roadmap §4.1).
+
 > Claude no puede instalar, compilar ni ejecutar Unreal en su contenedor ni en el servidor de Hetzner (sin GPU, sin Windows, sin el editor). Todo lo de Unreal lo compila y prueba el dueño en su ordenador; Claude escribe código C++, revisa, adapta el servidor y prepara pruebas que se puedan ejecutar fuera del motor.
 
 ## 0. Lo comprobado en la web (23-10-2026)
