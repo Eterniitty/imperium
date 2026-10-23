@@ -6,6 +6,8 @@ export const en: Record<I18nKey, string> = {
   "app.subtitle": "The war never ends. Neither does humanity.",
   "legal.nonprofit": "A private, free, not-for-profit project. No donations, money or support of any kind are asked for or accepted.",
   "app.prototype": "Alpha · in development",
+  "closed.title": "Aeonarch is being rebuilt",
+  "closed.body": "The game is closed while we rebuild it from scratch. The Wiki stays open, and you can sign in to download or delete your account data.",
 
   "start.enter": "Awaken",
 

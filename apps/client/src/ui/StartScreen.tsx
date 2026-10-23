@@ -8,6 +8,8 @@ import { LanguageToggle } from "./LanguageToggle";
 import { AcceptTerms, LegalLinks } from "./Legal";
 import { CookieNotice } from "./CookieNotice";
 import { PhotosensitivityNotice } from "./PhotosensitivityNotice";
+import { AccountTab } from "./AccountTab";
+import { GAME_CLOSED } from "../config";
 
 /** Formulario de acceso o botón de entrada, según el estado de la sesión. */
 function AuthPanel() {
@@ -58,6 +60,17 @@ function AuthPanel() {
       </button>
     </p>
   );
+
+  // Juego cerrado: con sesión solo se gestiona la cuenta (RGPD); sin sesión, se puede entrar para eso.
+  if (GAME_CLOSED && (status === "authenticated" || status === "naming" || status === "waiting")) {
+    return (
+      <div className="auth-box">
+        <AccountTab />
+        {signedIn}
+      </div>
+    );
+  }
+  if (GAME_CLOSED && status === "offline") return null;
 
   switch (status) {
     case "loading":
@@ -298,6 +311,15 @@ export function StartScreen() {
         </div>
         <h1 className="start-title">{t("app.title")}</h1>
         <p className="start-subtitle">{t("app.subtitle")}</p>
+        {GAME_CLOSED && (
+          <div className="start-closed" role="status">
+            <h2>{t("closed.title")}</h2>
+            <p>{t("closed.body")}</p>
+            <a className="btn" href="/wiki/">
+              {t("wiki.title")}
+            </a>
+          </div>
+        )}
         {deleted && (
           <p className="start-hint" role="status">
             {t("account.deleted")}

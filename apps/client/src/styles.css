@@ -121,6 +121,17 @@ kbd {
   text-transform: uppercase;
 }
 .start-hint { margin-top: 18px; color: var(--muted); font-size: 12px; }
+/* Juego web cerrado (GAME_CLOSED): aviso con enlace a la Wiki. */
+.start-closed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(460px, 100%);
+  margin: 0 auto 24px;
+}
+.start-closed h2 { margin: 0; font-family: var(--font-display); font-size: 20px; letter-spacing: 0.08em; color: var(--gold); }
+.start-closed p { margin: 0; line-height: 1.5; color: #c9d1e0; }
 .auth-box {
   display: flex;
   flex-direction: column;

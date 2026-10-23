@@ -7,6 +7,13 @@ import { universeSeedFromString } from "@imperium/procgen";
 export const UNIVERSE_SEED_TEXT = import.meta.env.VITE_UNIVERSE_SEED || "imperium-alpha";
 export const UNIVERSE_SEED = universeSeedFromString(UNIVERSE_SEED_TEXT);
 
+/**
+ * Juego web cerrado (23-10-2026): el juego se rehace en Unreal (docs/roadmap-unreal.md).
+ * La portada solo deja entrar para gestionar la cuenta (descargar o borrar los datos);
+ * la Wiki y las páginas legales siguen abiertas. Para volver a abrirlo, poner `false`.
+ */
+export const GAME_CLOSED = true;
+
 /** Radio de carga del mapa estelar, en sectores alrededor del foco. */
 export const LOAD_RADIUS = 2;
 

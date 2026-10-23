@@ -8,6 +8,8 @@ export const es = {
   "app.subtitle": "La guerra no termina. La humanidad tampoco.",
   "legal.nonprofit": "Proyecto privado, gratuito y sin ánimo de lucro. No se piden ni se aceptan donaciones, dinero ni ayudas de ningún tipo.",
   "app.prototype": "Alfa · en desarrollo",
+  "closed.title": "Aeonarch se está reconstruyendo",
+  "closed.body": "El juego está cerrado mientras lo rehacemos desde cero. La Wiki sigue abierta, y puedes entrar para descargar o borrar los datos de tu cuenta.",
 
   "start.enter": "Despertar",
 
