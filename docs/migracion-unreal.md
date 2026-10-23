@@ -25,53 +25,37 @@ Con Unreal, Aeonarch pasa a ser un **programa de escritorio** (Windows primero; 
 1. **Descarga** (recomendada). El jugador instala un cliente de 2–10 GB. El servidor de Hetzner no cambia de tamaño: sigue moviendo JSON pequeño por WebSocket. Lo único peligroso es **dónde se aloja la descarga**:
    - **Nunca desde Hetzner**: un instalador de varios GB descargado en bucle se come los 20 TB del mes en horas (es justo el ataque que preocupa en `CLAUDE.md`). El vigilante `aeonarch-egress` cortaría Caddy, pero el juego quedaría caído.
    - Opciones: **Cloudflare R2** (sin coste de tráfico saliente; se paga el almacenamiento, céntimos al mes por unos GB, y las operaciones; compruébalo en su página de precios antes de decidir), **itch.io** (gratis, con su propio lanzador), **Steam** (100 USD por juego; aporta actualizaciones y anticheat básico, pero añade un tercero en la política de privacidad) o **Epic Games Store** (rebaja de regalías).
-   - Actualizaciones: cada versión del cliente es una descarga nueva (o un parche). Hay que añadir comprobación de versión al arrancar (ver §2.3).
+   - Actualizaciones: cada versión del cliente es una descarga nueva (o un parche). Hay que añadir comprobación de versión al arrancar (ver §2.5).
 2. **Pixel Streaming**. Se sigue jugando en el navegador, pero el render ocurre en GPUs del servidor. Con los precios de arriba, 20 jugadores a la vez durante 4 h al día son unas 5–10 GPUs × 120 h/mes ≈ **300–1200 €/mes**, frente a los 23 € del CPX22. Además: latencia añadida al pilotaje en tiempo real, mucho tráfico saliente (vídeo, 5–20 Mbit/s por jugador) y un ataque trivial (abrir sesiones) que cuesta dinero de verdad. **No es compatible con la prioridad de costes del dueño**; solo tendría sentido para una demo de pocos minutos con cola y límite estricto.
 
 > Hoy el juego es Three.js y funciona en cualquier ordenador con navegador; con Unreal los requisitos suben (GPU con DirectX 12 / Vulkan y SM6 para Nanite/Lumen). Con Lumen apagado y materiales sencillos se puede apuntar a GPUs modestas, pero hay que decidirlo al principio.
 
-### 1.2 La puerta de entrada
+### 1.2 Acceso, puerta y versión del cliente
 
-Hoy Caddy protege todo (también `/api/*` y `/ws`) con `forward_auth` a `/puerta/check`, que comprueba la cookie `aeon_gate` y **rechaza agentes de usuario que no sean de ordenador** (`isDesktop` en `apps/server/src/gate/routes.ts`). Un cliente de Unreal no tiene esa cookie ni un agente de usuario de navegador, así que:
+Hoy el acceso depende del navegador (cookies, enlace por correo que se abre en él, puerta de Caddy con cookie). En un cliente de escritorio eso cambia; los detalles están en §2.3 (acceso y puerta), §2.4 (mapa estelar) y §2.5 (versión mínima del cliente).
 
-- **Mientras siga cerrado** (alfa): se añade al servidor un modo «cliente nativo» de la puerta: el jugador escribe en el cliente su usuario y contraseña de la puerta, `/puerta/` responde con el mismo valor firmado que la cookie y el cliente lo manda en **todas** las peticiones como cookie `aeon_gate` (el módulo HTTP de UE permite poner cabeceras `Cookie` a mano, y `CreateWebSocket` acepta cabeceras de la conexión). `isDesktop` debe aceptar el agente de usuario propio del cliente (p. ej. `Aeonarch/<versión> (Windows)`), que no es una frontera de seguridad pero mantiene la regla «solo ordenadores».
-- La puerta deja de proteger la descarga (si está en R2/itch.io, es pública): **no pasa nada**, el binario no lleva secretos; lo que importa es que sin credenciales de la puerta no se llega a `/api` ni a `/ws`.
-- Ni Caddy ni el cortafuegos cambian: el cliente sigue entrando por `https://aeonarch.de` a través de Cloudflare (Cloudflare admite WebSocket en el plan Free).
+### 1.3 La Wiki y las páginas legales
 
-### 1.3 Inicio de sesión (enlace por correo)
-
-El acceso es por **enlace de un solo uso** que, al abrirse en el navegador, deja una cookie de sesión. En un programa de escritorio hace falta un flujo nuevo, sin cambiar el modelo de cuentas:
-
-- **Recomendado: código de dispositivo.** El cliente pide `POST /api/auth/device` → recibe `deviceCode` (secreto, solo para el cliente) y un código corto para mostrar. El jugador pide el enlace con su correo (desde el cliente o la web); al abrir el enlace en el navegador, la página pregunta «¿Autorizar el cliente con el código XXXX?». El cliente consulta `POST /api/auth/device/poll` hasta recibir la sesión. Así el cliente nunca maneja el enlace del correo.
-- Alternativa: esquema propio (`aeonarch://login?token=…`) registrado por el instalador. Es más frágil (Windows pregunta, los antivirus desconfían) y el token viaja por la línea de órdenes.
-- La sesión se guarda en el disco del jugador (cifrada con DPAPI en Windows si es posible) y se envía como cookie igual que ahora. El WebSocket sigue pidiendo **ticket de un solo uso** (`POST /api/ws/ticket`).
-- El WebSocket comprueba `Origin == PUBLIC_URL` (`apps/server/src/realtime/routes.ts`, línea ~132). El cliente nativo puede mandar esa cabecera; es mejor documentarlo como «el cliente nativo envía `Origin: https://aeonarch.de`», porque la comprobación protege contra webs ajenas en navegadores, no contra programas.
-
-### 1.4 La Wiki y las páginas legales
-
-- **La Wiki sigue siendo web** (`/wiki`, compilada con Vite, panel de edición incluido). No hay motivo para meterla en Unreal: el cliente abre el navegador del sistema con `FPlatformProcess::LaunchURL`. Lo que hoy genera tablas desde `packages/content` (`apps/client/src/wiki/tables.ts`) sigue igual, así que **hay que conservar el paquete `apps/client` mínimo** (o separar la Wiki en `apps/wiki`) aunque el juego deje de usarlo. Recomendado: mover la Wiki a `apps/wiki` en la fase M0.
-- Detrás de la puerta: la Wiki necesita la cookie del navegador. Si el jugador solo tiene el cliente, una opción es que el cliente abra `/puerta/?next=/wiki/...` y el jugador entre una vez en el navegador.
-- **Páginas legales**: siguen en `apps/client/public/legal/` (o donde vaya la Wiki), servidas sin puerta y rellenadas con `scripts/fill-legal.sh`. Cambios necesarios (subir `LEGAL_VERSION`):
-  - La política de privacidad debe describir el cliente: qué guarda en el disco (sesión, ajustes), y si se usa Steam/itch.io/Epic, que son terceros con su propia política.
+- **La Wiki sigue siendo web, servida por el mismo servidor de Hetzner** (Caddy, desde los archivos compilados, con su panel de edición en `apps/server/src/wiki`). No se mete en Unreal: el cliente abre el navegador del sistema con `FPlatformProcess::LaunchURL`. Las tablas que se generan desde `packages/content` (`apps/client/src/wiki/tables.ts`) siguen igual, así que **hay que conservar la parte web** aunque el juego deje de usar el cliente React. Recomendado: mover la Wiki a `apps/wiki` en la fase M0, para poder retirar algún día el cliente web sin tocarla.
+- Detrás de la puerta: la Wiki necesita la cookie del navegador. Un jugador que solo tenga el cliente entra una vez en el navegador por `/puerta/?next=/wiki/` (el cliente le abre esa dirección).
+- **Páginas legales**: siguen en la parte web (hoy `apps/client/public/legal/`), servidas sin puerta y rellenadas con `scripts/fill-legal.sh`. Cambios necesarios (subir `LEGAL_VERSION`):
+  - La política de privacidad debe describir el cliente: qué guarda en el disco (sesión, ajustes, caché del mapa), y si se usa Steam/itch.io/Epic, que son terceros con su propia política.
   - **El informador de fallos de Unreal (`CrashReportClient`) envía datos a Epic por defecto**. Hay que desactivarlo en el empaquetado o, si se usa, mencionarlo en la privacidad (implica un encargado más fuera de la UE). Recomendado: desactivarlo y, si hace falta, enviar informes propios al servidor sin datos personales.
   - Los términos deben incluir la licencia del cliente y los avisos de terceros que exige la EULA de Epic.
-  - El cliente muestra los enlaces a Impressum y privacidad en la pantalla de inicio (hoy los muestra la puerta).
+  - El cliente muestra los enlaces a Impressum y privacidad en la pantalla de inicio (hoy los muestra la puerta) y acepta `LEGAL_VERSION` igual que la web.
   - El aviso de fotosensibilidad pasa a la primera ejecución del cliente.
 
-## 2. Qué se conserva: el servidor
+## 2. El servidor: se queda el actual
 
-### 2.1 Opciones
+**Decisión del dueño (23-10-2026): el servidor de Hetzner se queda**, para el multijugador y para la Wiki. La base es el servidor autoritativo Node actual (Fastify + ws + PostgreSQL, `apps/server`, migraciones 0001–0053), y el cliente de Unreal se conecta a él con **el mismo protocolo** que el cliente web. Ambos clientes pueden convivir durante toda la migración.
 
-| | **A. Servidor Node actual + cliente Unreal** | **B. Servidor dedicado de Unreal** |
-|---|---|---|
-| Qué se reescribe | Solo el cliente. | Cliente **y** servidor: 17 500 líneas de `apps/server` más `packages/sim` en C++ (combate en tiempo real, IA de naves, asedios, economía, mercado, linaje, contratos…). |
-| Base de datos | Igual (PostgreSQL + Drizzle, migraciones 0001–0053). | UE no trae acceso a PostgreSQL: habría que añadir libpq o seguir con un servicio Node aparte para la persistencia (con lo que se tendrían dos servidores). |
-| Modelo de mundo | El de ahora: mundo persistente, cola de eventos, resolución perezosa, «el juego sigue sin el jugador». | La replicación de UE está pensada para **partidas/mapas** con decenas de jugadores por proceso; un MMO con miles de sistemas exige un proceso por sistema activo, orquestación y un servicio central igualmente. |
-| Servidor | CPX22 actual (2 vCPU, sin GPU), ~23 €/mes. | Motor compilado desde el código fuente, binario Linux grande, más RAM y CPU por proceso; probablemente un servidor mayor. |
-| Ventaja | Lo que funciona hoy sigue funcionando; el cliente web y el de Unreal pueden convivir durante la transición. | Predicción y replicación de UE «gratis» para el vuelo y el combate. |
-| Riesgo | El protocolo JSON hay que implementarlo a mano en C++. | Reescribir medio año de trabajo antes de tener nada jugable. |
+### 2.1 Por qué no un servidor dedicado de Unreal (nota breve)
 
-**Recomendación: opción A.** El servidor es la fuente de verdad (regla 2) y ya resuelve todo lo difícil; el cliente solo muestra y manda órdenes. Unreal se usa como **motor de render, sonido e interfaz**, sin su replicación (`bReplicates` apagado, sin `NetDriver`: un juego «de un jugador» que habla con nuestro servidor por WebSocket). Si dentro de mucho tiempo el combate en tiempo real necesitara más (cientos de naves en un sistema), se podría estudiar mover **solo** `SpaceService` a otro proceso, no antes.
+- Habría que reescribir en C++ las ~17 500 líneas de `apps/server` y `packages/sim` (combate, IA de naves, asedios, economía, mercado, linaje, contratos…) antes de tener nada jugable.
+- La replicación de Unreal está pensada para partidas con decenas de jugadores por proceso, no para un mundo persistente con cola de eventos, resolución perezosa y «el juego sigue sin el jugador».
+- Unreal no trae acceso a PostgreSQL, exige compilar el motor desde el código fuente para empaquetar servidores Linux y cada proceso pide más CPU y RAM que el CPX22.
+
+Unreal se usa como **motor de render, sonido e interfaz**, sin su replicación (sin `NetDriver` ni actores replicados): para Unreal es un juego «de un jugador» que habla con nuestro servidor por WebSocket.
 
 ### 2.2 El protocolo como contrato
 
@@ -80,19 +64,64 @@ El acceso es por **enlace de un solo uso** que, al abrirse en el navegador, deja
   - `USTRUCT`s con `UPROPERTY` (para `FJsonObjectConverter` y Blueprints),
   - enumeraciones (`CommandError`, `WeaponKind`, `RiftPhase`…),
   - la constante `PROTOCOL_VERSION` y las claves de los mensajes.
-  Los archivos generados se suben al repositorio del cliente; una comprobación en `scripts/verify.sh` falla si el protocolo cambió y no se regeneraron.
+  Los archivos generados se suben con el cliente; una comprobación en `scripts/verify.sh` falla si el protocolo cambió y no se regeneraron.
 - Uniones con campo `t`: se decodifican leyendo `t` primero y luego el `USTRUCT` correspondiente. Los `delta` (`ops` con rutas) se aplican sobre un modelo de datos en C++ (`UAeonWorldState`) equivalente al almacén del cliente (`apps/client/src/state`).
 - Rendimiento: `poses` llega a 10–20 Hz con muchas naves; con JSON y `FJsonSerializer` va bien para decenas de naves. Si un día no basta, se puede añadir un formato binario **solo** para `poses`/`pose` (sube `PROTOCOL_VERSION`), sin tocar el resto.
-- `PROTOCOL_VERSION`: el servidor ya rechaza versiones distintas en `hello`. Mientras convivan cliente web y cliente Unreal, ambos deben usar la misma versión; cualquier cambio de protocolo obliga a publicar un cliente nuevo (en el navegador era automático; en escritorio no). Conviene añadir `GET /api/client-version` con la versión mínima del cliente nativo y un enlace de descarga, para avisar al jugador en vez de fallar.
 
-### 2.3 Cambios pequeños en el servidor (los hace Claude)
+### 2.3 Qué cambia en el acceso
 
-1. Puerta para cliente nativo (§1.2) y agente de usuario propio en `isDesktop`.
-2. Flujo de código de dispositivo (§1.3), con sus límites por IP y cuenta y el borrado de sus filas en la exportación/borrado de la cuenta (regla legal de `CLAUDE.md`).
-3. `GET /api/client-version`.
-4. Generador del protocolo en C++ (§2.2) y vectores de prueba de procgen (§3.4).
+Hoy, en el navegador:
 
-Ninguno cambia la base de datos salvo el código de dispositivo (una tabla nueva, con caducidad corta).
+1. Caddy protege todo (también `/api/*` y `/ws`) con `forward_auth` a `/puerta/check`, que exige la cookie firmada `aeon_gate` y **rechaza agentes de usuario que no sean de ordenador** (`isDesktop` en `apps/server/src/gate/routes.ts`).
+2. El jugador pide un **enlace de un solo uso** por correo; al abrirlo en el navegador, el servidor deja una cookie de sesión (`httpOnly`, `SameSite=Lax`).
+3. Con esa cookie, `POST /api/ws/ticket` da un **ticket de un solo uso** y el WebSocket comprueba además `Origin == PUBLIC_URL` (`apps/server/src/realtime/routes.ts`, línea ~132).
+
+En el cliente de escritorio:
+
+- **Puerta (mientras el juego siga cerrado).** El cliente pide usuario y contraseña de la puerta en su pantalla de inicio y los manda a una ruta nueva, `POST /puerta/native` (sin protección de Caddy, como el resto de `/puerta/*`), que devuelve el mismo valor firmado que la cookie `aeon_gate` (7 días). El cliente lo guarda y lo manda como cabecera `Cookie: aeon_gate=…` en **todas** las peticiones HTTP y en la conexión del WebSocket (el módulo `HTTP` de UE deja poner cabeceras y `CreateWebSocket` acepta cabeceras de la conexión). Así **ni Caddy ni el cortafuegos cambian**: `forward_auth` sigue siendo la frontera. `isDesktop` aceptará además el agente de usuario propio del cliente (`Aeonarch/<versión> (Windows; x64)`); no es una frontera de seguridad, pero mantiene la regla «solo ordenadores». Mismos límites por IP que la página de la puerta y el mismo registro de intentos.
+- **Enlace por correo → código de dispositivo.** El cliente no puede recibir la cookie del navegador, así que:
+  1. El cliente llama a `POST /api/auth/device` → recibe un `deviceCode` (secreto largo, solo para él, caduca en 10 min) y un `userCode` corto (p. ej. `KQ7-4MX`).
+  2. El jugador escribe su correo en el cliente y se le manda el enlace de siempre (`POST /api/auth/request`, con el `userCode` asociado). Al abrirlo en el navegador, la página muestra «¿Autorizar el cliente de escritorio con el código KQ7-4MX?» y un botón; el navegador también queda con sesión (útil para la Wiki).
+  3. El cliente consulta `POST /api/auth/device/poll` cada pocos segundos hasta recibir un **token de sesión de cliente**, que es una fila normal de `sessions` marcada como `kind = 'native'` (para poder verla y cerrarla en Ajustes → Cuenta).
+  4. El cliente guarda el token cifrado (DPAPI en Windows) y lo manda como cookie de sesión, igual que el navegador. Nada más del servidor cambia: `accountFromRequest` sigue leyendo la cookie.
+  - Tabla nueva `device_codes` (código, cuenta, caducidad), borrada en cascada al borrar la cuenta y fuera de la exportación (es efímera). Límites por IP para `device` y `poll`. Se descarta un esquema `aeonarch://` registrado en Windows (más frágil y el token viajaría por la línea de órdenes).
+- **WebSocket.** Igual que ahora: ticket con la cookie de sesión. El cliente manda `Origin: https://aeonarch.de`; la comprobación de `Origin` protege contra webs ajenas en navegadores, no contra programas, así que se mantiene y se documenta que el cliente nativo la envía.
+- **Cuando el juego se abra al público** y se quite la puerta, el cliente simplemente deja de pedirla (`GET /api/client-version` dirá si hace falta, ver §2.5).
+
+### 2.4 Qué cambia con el mapa estelar
+
+Hoy **el cliente genera el mapa** (posiciones y clases de estrella) con `packages/procgen` (`generateSector`, `galaxyDensityAt`, `universeSeedFromString`, en `SectorManager.ts`, `QuantumPanel.tsx` y `state/store.ts`) usando `VITE_UNIVERSE_SEED`, y el servidor hace lo mismo con `UNIVERSE_SEED`; el **detalle** de cada sistema ya lo da solo el servidor (`GET /api/systems/:id`, con la semilla secreta `DETAIL_SEED` y la niebla de guerra). Con un cliente en C++ hay dos caminos:
+
+- **A. El servidor manda el mapa (recomendado).** Ruta nueva `GET /api/galaxy/sectors?…` (o un archivo por `GENERATOR_VERSION`) con las estrellas públicas por sector: id, posición, clase y nombre, lo mismo que hoy genera el cliente, nada del detalle secreto. Son ~30 000 estrellas: en binario o JSON comprimido, del orden de 1–2 MB **una vez**; el cliente lo guarda en disco junto a la versión y solo lo vuelve a pedir si cambia `GENERATOR_VERSION`. Para no gastar tráfico de Hetzner (y que nadie pueda descargarlo en bucle), se sirve como archivo estático con huella (`/assets/galaxy-v3-<hash>.bin`, caché larga de Cloudflare, como el resto de `/assets/`) o se incluye en el propio instalador. Ventajas: el cliente no necesita portar `procgen` con igualdad al bit, el servidor sigue siendo la única fuente de verdad (regla 2) y un cambio del generador no obliga a publicar un cliente nuevo.
+- **B. El cliente lo sigue generando** con un port exacto de `procgen` a C++ y vectores de prueba (ver §3.4). Más trabajo y más riesgo; solo compensa si un día el mapa crece tanto que no cabe enviarlo.
+
+Recomendación: **A** desde M1; el port de `procgen` (§3.4) se deja como plan B y para lo que el cliente quiera calcular sin preguntar (p. ej. nombres o cielos de fondo, que no afectan al juego).
+
+### 2.5 Versión mínima del cliente frente a `PROTOCOL_VERSION`
+
+Hoy el cliente web siempre está al día (se descarga en cada visita) y el servidor rechaza en `hello` cualquier `PROTOCOL_VERSION` distinta. Un cliente de escritorio instalado se queda viejo, así que:
+
+- **`PROTOCOL_VERSION` sigue siendo la regla dura** del WebSocket: si no coincide, no hay conexión. Sigue subiendo solo con cambios incompatibles del protocolo.
+- Se añade **`GET /api/client-version`** (público, pequeño, sin datos personales), que el cliente consulta antes de iniciar sesión:
+  ```jsonc
+  { "protocol": 15, "minNative": "0.4.0", "latestNative": "0.5.2", "download": "https://…", "gate": true }
+  ```
+  - Si `protocol` no es la del cliente o su versión es menor que `minNative`: pantalla «Hay que actualizar» con el enlace, en vez de un error de conexión.
+  - Si es menor que `latestNative`: aviso suave.
+  - `gate`: si hay que pedir la puerta.
+- La versión del cliente (`Aeonarch/<versión>` en el agente de usuario y en `hello`) se guarda en la configuración del servidor (`NATIVE_MIN_VERSION`, `NATIVE_LATEST_VERSION`, `NATIVE_DOWNLOAD_URL` en `.env.example`), así un despliegue del servidor puede exigir un cliente nuevo.
+- Para no obligar a actualizar por cada cambio: preferir **cambios compatibles** (campos nuevos opcionales, mensajes nuevos que el cliente viejo ignora) y subir `PROTOCOL_VERSION` solo cuando se rompa algo. El decodificador del cliente debe **ignorar mensajes y campos desconocidos** en vez de fallar.
+- Orden de un despliegue con protocolo nuevo: publicar el cliente nuevo → desplegar el servidor (con `minNative` nuevo) → los clientes viejos ven «Hay que actualizar». El cliente web se despliega a la vez, como ahora.
+
+### 2.6 Resumen de cambios en el servidor (los hace Claude)
+
+1. Puerta para cliente nativo (`POST /puerta/native`, agente de usuario en `isDesktop`).
+2. Código de dispositivo (`/api/auth/device`, `/poll`, tabla `device_codes`, `sessions.kind`, sesiones nativas visibles en Ajustes → Cuenta), con límites, cascada al borrar la cuenta y artículo de la Wiki.
+3. Mapa estelar servido por el servidor (§2.4), como archivo estático con huella.
+4. `GET /api/client-version` y variables `NATIVE_*`.
+5. Generador del protocolo en C++ (§2.2) y exportación de `content` e i18n.
+
+Todo se puede probar sin Unreal con un script Node que haga de cliente nativo (`scripts/native-client-smoke.ts`) contra el servidor de desarrollo, con cuentas de `aeonarch-sesion-prueba` (regla 11).
 
 ## 3. Qué hay que reescribir en el cliente
 
@@ -124,7 +153,9 @@ Tamaño de referencia: `apps/client/src` tiene unas 28 000 líneas (motor 3D, in
 - **Datos** (`packages/content`): se exportan a JSON en el empaquetado (`scripts/export-content.ts`) y el cliente los carga como `UDataTable`/`UDataAsset`. Así siguen siendo datos (regla 4), sin copiar a mano.
 - **Audio generativo** (`apps/client/src/audio`: música y efectos con Web Audio, sin archivos): en Unreal, **MetaSounds** (síntesis procedural nativa, con parámetros desde C++). La música generativa de `music.ts` se reescribe como grafo de MetaSound + lógica de composición en C++. Se puede mantener la regla «sin archivos de audio».
 
-### 3.4 Generación procedural idéntica (regla 3)
+### 3.4 Generación procedural idéntica (regla 3) — plan B
+
+Con el mapa servido por el servidor (§2.4) esto deja de ser imprescindible; queda como plan B y para lo que el cliente calcule por su cuenta. Si se porta:
 
 El cliente genera hoy en local el mapa estelar (`generateSector`, `STAR_CLASSES`, `galaxyDensityAt`, `universeSeedFromString`) y el servidor, el detalle secreto. Si el cliente de Unreal calcula una estrella distinta en un solo sector, el jugador ve un mapa que no coincide con el del servidor. Hay que **portar `packages/procgen` a C++ (`AeonProcgen`, módulo sin dependencias de UE)** con igualdad exacta, así:
 
@@ -148,10 +179,10 @@ Cada fase termina con algo que el dueño puede abrir y jugar. Las estimaciones s
 
 | Fase | Contenido | Jugable al acabar | Tamaño | Lo que hace Claude | Lo que hace el dueño |
 |---|---|---|---|---|---|
-| **M0. Preparación** | Repositorio `aeonarch-unreal` (o carpeta `apps/unreal`, con Git LFS para `.uasset`; los binarios de Unreal no deben inflar el repositorio actual). Wiki a `apps/wiki`. Generador del protocolo, exportación de `content` e i18n a JSON/CSV. Servidor: puerta para cliente nativo, código de dispositivo, `/api/client-version`. | Nada nuevo en Unreal; el servidor ya admite el cliente nativo (se prueba con un script Node que simule ser el cliente). | 1–2 semanas | Casi todo: scripts, servidor, pruebas Node. | Instalar UE 5.8.4 y Visual Studio 2026; crear el proyecto C++ vacío. |
+| **M0. Preparación** | Repositorio `aeonarch-unreal` (o carpeta `apps/unreal`, con Git LFS para `.uasset`; los binarios de Unreal no deben inflar el repositorio actual). Wiki a `apps/wiki`. Generador del protocolo, exportación de `content` e i18n a JSON/CSV. Servidor: puerta para cliente nativo, código de dispositivo, mapa estelar servido por el servidor, `/api/client-version` (§2.6). | Nada nuevo en Unreal; el servidor ya admite el cliente nativo (se prueba con un script Node que simule ser el cliente). | 1–2 semanas | Casi todo: scripts, servidor, pruebas Node. | Instalar UE 5.8.4 y Visual Studio 2026; crear el proyecto C++ vacío. |
 | **M1. Prototipo conectado** | Cliente Unreal que inicia sesión, pide ticket, abre el WebSocket, recibe `hello` y `snap`, dibuja el sistema actual (estrella, planetas desde `GET /api/systems/:id`) y las naves de `space`/`poses`. Vuela con controles básicos y manda `pose`. Origen flotante y escala. | **Sí**: se vuela en el mismo sistema que alguien del cliente web y ambos se ven. | 3–5 semanas | C++ de red, JSON, modelo de estado, controlador de vuelo (sin compilar: el dueño compila y pega los errores). | Compilar, probar, crear materiales y escena; decidir el estilo visual. |
 | **— Decisión —** | Con M1 en la mano: ¿rinde, se ve mejor, compensa el esfuerzo? (ver §5) | | | Informe de lo que falta. | Decide seguir o volver. |
-| **M2. Procgen y mapa** | Port de `packages/procgen` con vectores (prueba CMake + Automation Test), mapa galáctico, salto cuántico (J), túnel y grieta (`rift`), salida a espacio profundo (K). | Sí: viajar por la galaxia. | 3–4 semanas | Port de procgen y prueba en Linux; lógica de salto. | Efectos (Niagara), pruebas en Windows. |
+| **M2. Mapa y salto** | Mapa galáctico con las estrellas que manda el servidor (§2.4; port de `procgen` solo si se elige el plan B), salto cuántico (J), túnel y grieta (`rift`), salida a espacio profundo (K). | Sí: viajar por la galaxia. | 3–4 semanas | Lógica de salto y del mapa (y el port de procgen con su prueba en Linux, si hace falta). | Efectos (Niagara), pruebas en Windows. |
 | **M3. Combate y pilotaje completo** | Armas, misiles, escudos, asistencia de puntería, fuego automático, choques, calor, minería (L), arranque de motores (I), autopiloto de crucero, cabina, instrumentos, `shipFactory` en Unreal, audio de vuelo y combate (MetaSounds). | Sí: el bucle de vuelo y combate completo. | 6–10 semanas | Port de `aim.ts`, `flight.ts`, `gravity.ts`, autopiloto, generador de naves. | Arte, sonido, ajuste de sensaciones. |
 | **M4. Interfaz de gestión** | Barra superior y de acciones, colonias, flotas, logística, mercado, humanidad, batallas por rondas (`FleetScene`), asedios, linaje y `DeathScreen`, contratos, rango, objetivos, Astillero, investigación, ajustes y teclas, i18n es/en completo. | Sí: todo el juego salvo el tutorial. | 8–14 semanas (la mayor) | Widgets en C++, enlaces con el estado, tablas de cadenas. | Diseño de los widgets en el editor. |
 | **M5. Pulido y distribución** | Tutorial (12 capítulos), aviso de fotosensibilidad, música generativa, opciones gráficas, instalador, alojamiento de la descarga (R2/itch.io/Steam), comprobación de versión, informes de fallo sin Epic, textos legales y `LEGAL_VERSION`, Wiki (artículo «Cliente de escritorio»). | Versión alfa descargable. | 3–5 semanas | Textos legales (sin datos personales: marcadores `{{LEGAL_*}}`), Wiki, servidor. | Empaquetar, firmar el ejecutable (si se quiere evitar el aviso de Windows SmartScreen, hace falta un certificado de firma de código, de pago), publicar. |
@@ -174,11 +205,12 @@ Total orientativo: **6–10 meses** a ratos hasta igualar el cliente actual. Dur
 2. **Doble mantenimiento** mientras convivan los dos clientes, con `PROTOCOL_VERSION` compartida.
 3. **Se pierde el «abre el enlace y juega»**: descarga de GB, instalador, aviso de SmartScreen sin firma, requisitos de GPU. Para un alfa cerrado con amigos es aceptable; para atraer jugadores nuevos es un freno.
 4. **Escala astronómica** y precisión (origen flotante, distancias de cientos de miles de km): resuelto en Three.js con profundidad logarítmica; en Unreal hay que rehacerlo.
-5. **Determinismo de procgen** entre TypeScript, MSVC y Clang: cubierto con vectores al bit, pero un descuido (FMA, `float`, `TMap`) rompe el mapa en silencio.
+5. **Determinismo de procgen** entre TypeScript, MSVC y Clang: se evita sirviendo el mapa desde el servidor (§2.4); si se porta, vectores al bit, porque un descuido (FMA, `float`, `TMap`) rompe el mapa en silencio.
 6. **Costes**: con descarga, los costes del servidor no cambian; con Pixel Streaming se multiplican por 10–50 y abren un vector de ataque que cuesta dinero. No usar Pixel Streaming salvo para una demo muy limitada.
 7. **Privacidad y legal**: el informador de fallos de Epic, las tiendas y los SDK de terceros son encargados nuevos; hay que revisarlos antes de publicar.
 8. **Licencia**: sin coste mientras el juego no ingrese más de 1 millón de USD; si se monetiza, 5 % por encima. Confirmar en la EULA vigente (no la he podido leer directamente).
 9. **Dependencia del ordenador del dueño**: solo él compila; Claude trabaja «a ciegas» en la parte visual.
+10. **Clientes viejos**: un cambio de protocolo deja fuera a quien no actualice; se mitiga con `GET /api/client-version` y cambios compatibles (§2.5).
 
 ### Alternativas
 
@@ -190,7 +222,7 @@ Total orientativo: **6–10 meses** a ratos hasta igualar el cliente actual. Dur
 ### Recomendación
 
 1. **No decidir la migración completa todavía.** Hacer **M0 y M1** (unas 4–7 semanas): un prototipo de cliente Unreal conectado al **servidor Node actual**, volando en el mismo sistema que el cliente web. Cuesta poco al servidor (los cambios son pequeños y útiles igualmente) y responde a lo importante: si Unreal se ve y se siente tanto mejor como para justificar meses de trabajo, y si el bucle «Claude escribe, el dueño compila» es llevadero.
-2. Mantener el **servidor Node + PostgreSQL** como fuente de verdad (opción A). Descartar el servidor dedicado de Unreal.
+2. Mantener el **servidor Node + PostgreSQL de Hetzner** como fuente de verdad, para el multijugador y la Wiki (decisión del dueño). El cliente se conecta con el mismo protocolo; el servidor manda el mapa estelar y la versión mínima del cliente.
 3. Distribuir como **descarga de escritorio desde Cloudflare R2 o itch.io**, nunca desde Hetzner; descartar Pixel Streaming.
 4. Wiki y páginas legales, **siempre web**.
 5. Si tras M1 no compensa, la alternativa es **Three.js con WebGPU** en el cliente actual.
