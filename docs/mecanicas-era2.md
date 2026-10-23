@@ -32,6 +32,10 @@ Diseño de cómo se juega en la Era II: un solo sistema de siete mundos, en Unre
 4. **Volver con el botín**: reliquias, recuerdos, recursos, reputación, entradas del códice.
 5. **Invertir**: reclamar tierra, construir, equipar la nave, encargar naves en el Astillero.
 
+### 1.1.1 La etapa A: un poco de todo (decisión del 23-10-2026)
+
+Hasta que llegue el Emperador a pie (etapa B), las sesiones largas se reparten **a partes iguales** entre cacerías y combate, conquista y asedios, exploración y cartografía volando bajo, misiones de los pueblos y sucesos del sistema. Ninguna es «la principal»: el jugador elige cada día.
+
 ### 1.2 Lo que avanza sin el jugador
 
 Igual que ahora, con resolución perezosa en el servidor: producción y población de las colonias, construcción, rutas de logística, viajes de flotas, investigación, gestación del Emperador muerto, gobierno de los Herederos y la IA de los pueblos. El jugador **no** pierde progreso por no conectarse, pero sí puede perder tierra si no la defiende (con avisos y tiempos de asedio largos, §11).
@@ -50,7 +54,7 @@ Igual que ahora, con resolución perezosa en el servidor: producción y poblaci�
 
 ### 2.1 Qué tiene
 
-- **Nave insignia** (la del Astillero, §10), con bodega, armas, escudo, motores y combustible.
+- **Hangar de naves** (decisión del 23-10-2026): el Emperador puede tener **varias naves** y elegir con cuál sale; la que pilota es su **nave insignia** de ese momento (bodega, armas, escudo, motores, combustible y 3 huecos de reliquia). Las demás esperan en el hangar de una colonia propia o en Origen. Se sigue pudiendo pilotar a distancia las naves de flota, como hoy.
 - **Traje** (etapa B, a pie): escáner, linterna, *jetpack*, herramienta de minería, protección contra el clima.
 - **Recuerdos** (§5) y **reliquias equipadas** (§4).
 - **Rango** (el actual: experiencia por contratos, combate, exploración).
@@ -61,7 +65,7 @@ Igual que ahora, con resolución perezosa en el servidor: producción y poblaci�
 | Se pierde | Se conserva |
 |---|---|
 | El **tiempo** de gestación. | La nave (se reconstruye), su carga, sus humanos, su combustible y munición. |
-| La **posición**: se renace en una Cuna (o en Origen). | Las reliquias equipadas y guardadas. |
+| La **posición**: se renace en una Cuna (o en Origen). | Las reliquias equipadas y guardadas. La nave que pilotaba vuelve a su hangar. |
 | | Colonias, flotas, créditos, reputación, recuerdos, códice. |
 
 - **Gestación**: unos minutos la primera vez, más con muertes seguidas (la racha de la Fase 10 sigue: unos minutos la primera vez y se dobla con cada muerte seguida hasta **1 hora o más** de techo, decisión del 23-10-2026; propuesta: 2 h), y se olvida con el tiempo.
@@ -242,7 +246,20 @@ Se mantiene todo lo que ya existe (inercia y asistencia, pulso de crucero, cáma
 
 Se mantiene (cañones, misiles, escudos, asistencia de puntería, fuego automático, choques, fuego amigo), con **zonas** (§11.1) y con **reliquias** que cambian un poco las armas. Las naves de los pueblos pelean según su identidad militar del lore: Elydri con escudos y análisis, Tharaxi en enjambre que se adapta, Aurelianos con comandantes de élite, Nihil con ocultación e interferencia, Vesperi con defensas extraordinarias.
 
-### 8.3 Flotas
+### 8.3 Criaturas del espacio (decisión del 23-10-2026)
+
+**Sí hay criaturas espaciales**, sobre todo cerca de los cuerpos de los dioses (propuesta, por confirmar):
+
+| Criatura | Dónde | Comportamiento |
+|---|---|---|
+| **Bancos de luz** | Cerca de Aeon y de Elyss | Enjambres de destellos que siguen a las naves; inofensivos; su paso deja esencia de Ilwen. |
+| **Leviatanes del aliento** | Entre las nubes de Céfiro | Gigantes lentos que nadan en el viento de Zefaro; los Nómadas los respetan; cazarlos enfada a los Nómadas. |
+| **Brasas errantes** | Órbita de Brasa | Fragmentos vivos del fuego de Kaurath; atacan a quien se acerca demasiado al corazón. |
+| **Esporas del vacío** | Alrededor de Tharax | Nubes vivas que se pegan a los cascos y los corroen; la colmena las usa como arma. |
+| **Siervos menores** | Junto a las lunas | Restos animados de los siervos de los dioses (las lunas); son los **jefes del sistema** de los sucesos «Despertar de un guardián». |
+| **Ecos de Ossal** | En la oscuridad de Umbra | Siluetas que solo se ven por el rabillo del ojo; desactivan sensores. |
+
+### 8.4 Flotas
 
 Igual que hoy (combate por rondas resuelto en el servidor, tácticas, escoltas, nodrizas, comandantes Herederos), pero **todo ocurre en el sistema y se ve en 3D en el lugar real**. Los viajes duran minutos.
 
@@ -255,6 +272,8 @@ Igual que hoy (combate por rondas resuelto en el servidor, tácticas, escoltas, 
 Cada pueblo tiene una **reputación** con cada casa (de «enemigo jurado» a «elegido»), que cambia con lo que haces: misiones, comercio, tributos, ataques, tierra sagrada que controlas y cómo la tratas.
 
 ### 9.2 Lo que ofrece cada pueblo
+
+**Guardianes** (decisión del 23-10-2026): cada pueblo tiene guardianes (drones o criaturas) en sus tierras sagradas que **atacan siempre** a cualquiera que entre, tenga la reputación que tenga. La reputación abre otras puertas (ciudades, embajadas, mercados, permisos para colonizar zonas no sagradas de su mundo), pero el corazón de cada pueblo es peligroso para todos.
 
 | Pueblo | Qué ofrece a buena reputación | Qué le enfada |
 |---|---|---|
