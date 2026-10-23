@@ -253,6 +253,13 @@ Se mantiene todo lo que ya existe (inercia y asistencia, pulso de crucero, cáma
 
 Se mantiene (cañones, misiles, escudos, asistencia de puntería, fuego automático, choques, fuego amigo), con **zonas** (§11.1) y con **reliquias** que cambian un poco las armas. Las naves de los pueblos pelean según su identidad militar del lore: Elydri con escudos y análisis, Tharaxi en enjambre que se adapta, Aurelianos con comandantes de élite, Nihil con ocultación e interferencia, Vesperi con defensas extraordinarias.
 
+### 8.2.1 Estilo del combate (decisiones del 23-10-2026)
+
+- **Pesado y táctico**: naves con masa e inercia que giran despacio; lo que cuenta es la posición, el reparto de **energía** entre armas, escudo y motores (la energía ya existe en el juego) y elegir el momento. Las naves pequeñas son algo más ágiles, pero nadie esquiva balas como en un juego de cazas.
+- **Escudo de burbuja única**, como ahora: un valor que baja y se recarga.
+- **Daño por partes**: además del casco, se pueden romper **motores** (la nave queda lenta), **armas** (dejan de disparar), **generador de escudo** (no se recarga) y **sensores** (se pierde el radar). Se reparan despacio a bordo y deprisa en una colonia propia o un hangar.
+- **Tripulación de varios jugadores**: las naves grandes tienen **puestos de artillero** (y, más adelante, de ingeniero) que pueden ocupar compañeros; el piloto vuela y ellos manejan torretas. En la etapa A se entra al puesto desde el menú; con los interiores (etapa B), andando hasta él.
+
 ### 8.3 Criaturas del espacio (decisión del 23-10-2026)
 
 **Sí hay criaturas espaciales**, sobre todo cerca de los cuerpos de los dioses (lista aprobada el 23-10-2026):
