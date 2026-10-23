@@ -86,7 +86,7 @@ export function TutorialPanel() {
           style={{ left: rect.left - 6, top: rect.top - 6, width: rect.width + 12, height: rect.height + 12 }}
         />
       )}
-      <section className="tutorial-panel panel" role="dialog" aria-label={t("tut.title")}>
+      <section className="tutorial-panel panel" role="region" aria-label={t("tut.title")}>
         <header className="tutorial-head">
           <span className="contract-kind">
             {t("tut.title")} · {t("tut.chapterN", { n: CHAPTERS.indexOf(chapter) + 1 })}
@@ -201,7 +201,7 @@ export function TutorialOffer() {
     if (start) tutorialStore.getState().start("basics");
   };
   return (
-    <section className="tutorial-panel panel" role="dialog" aria-label={t("tut.title")}>
+    <section className="tutorial-panel panel" role="region" aria-label={t("tut.title")}>
       <span className="contract-kind">{t("tut.title")}</span>
       <p className="tutorial-text">{t("tut.offer")}</p>
       <footer className="tutorial-foot">
