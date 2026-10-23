@@ -1,6 +1,6 @@
 # Contratos
 
-Los **contratos** son encargos con recompensa: te dicen qué hacer ahora y te pagan al cumplirlos. Se abren con el botón de la barra superior (el número es cuántos tienes en curso; el punto dorado avisa de que quedan ofertas).
+Los **contratos** son encargos con recompensa: te dicen qué hacer ahora y te pagan al cumplirlos. Se abren con el botón de la barra superior (el número es cuántos tienes en curso; el punto dorado avisa de que quedan ofertas y tienes sitio para aceptarlas).
 
 ## Cómo funcionan
 

@@ -1,6 +1,6 @@
 # Contracts
 
-**Contracts** are jobs with a reward: they tell you what to do now and pay you when you complete them. Open them with the button in the top bar (the number is how many you have under way; the gold dot means offers are left).
+**Contracts** are jobs with a reward: they tell you what to do now and pay you when you complete them. Open them with the button in the top bar (the number is how many you have under way; the gold dot means offers are left and you have room to accept them).
 
 ## How they work
 

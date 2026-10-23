@@ -271,7 +271,8 @@ export function ContractsButton() {
   return (
     <button type="button" data-tutorial="contracts" className={open ? "btn empire-btn on" : "btn empire-btn"} title={t("contract.openRank")} aria-pressed={open} onClick={() => contractsStore.getState().set({ open: !open })}>
       <HudIcon name="contract" size={14} className="inline-icon" /> <span className="mono">{active}</span>
-      {view.offers.length > 0 && <span className="contract-dot" aria-hidden />}
+      {/* Punto dorado: hay ofertas y sitio para aceptarlas. */}
+      {view.offers.length > 0 && active < view.maxActive && <span className="contract-dot" aria-hidden />}
     </button>
   );
 }
