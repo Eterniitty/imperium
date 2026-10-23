@@ -473,6 +473,13 @@ Lo nuevo frente al servidor actual, para las fases S1–S7 de la hoja de ruta:
 - Muerte suave: la nave, la carga y los humanos ya no se pierden; techo de gestación.
 - Sucesos del sistema (ampliación de `CrisisService` y `SPACE_EVENTS`).
 
+## 17b. Interfaz y experiencia (decisiones del 23-10-2026)
+
+- **Mesa de mando 3D**: la gestión del imperio se hace en un **holograma del sistema** en el puente de la nave (y en las colonias con sala de mando): se acerca un planeta para ver parcelas y colonias, se arrastran flotas, se trazan rutas, se ven guerras y sucesos. Los datos detallados (colas, mercado, reliquias, códice) se abren como paneles flotantes alrededor del holograma, con el mismo estilo.
+- **Tutorial como guía con pasos**: capítulos que señalan qué tocar y explican (como el tutorial actual), empezando por el despertar en el mar.
+- **Modo foto**: cámara libre, ocultar la interfaz, ajustes de exposición, profundidad de campo y filtros; encaja con el pilar de «cada captura, un fondo de pantalla».
+- **Mando de consola desde el principio**: todo el juego (vuelo, combate, mesa de mando, menús) se puede jugar con mando además de teclado y ratón.
+
 ## 18. Eras con reinicio (decisiones del 23-10-2026)
 
 - **Una era dura 3 meses.** Termina con un **gran suceso** del sistema (una oleada final de la Grieta, un despertar), anunciado con semanas de antelación.

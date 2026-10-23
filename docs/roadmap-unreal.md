@@ -824,7 +824,7 @@ gantt
 | C4. La verdad de los Precursores | Arco de lore que lleva al anillo roto de Umbra y a la luna hueca. |
 | C5. Organizaciones | Fase 12 de la hoja de ruta actual: alianzas, casas, cuarteles en parcelas. |
 | C6. Escala | Más jugadores por zona; si hace falta, separar `SpaceService` en otro proceso (misma pila). |
-| C7. Mando de juego y accesibilidad | Mando completo, subtítulos del sonido, modos de daltonismo. |
+| C7. Accesibilidad | Subtítulos del sonido, modos de daltonismo. (El mando de consola va desde el principio: decisión del 23-10-2026, ver mecanicas-era2.md §17b.) |
 
 ---
 
