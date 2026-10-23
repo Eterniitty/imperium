@@ -64,7 +64,7 @@ Igual que ahora, con resolución perezosa en el servidor: producción y poblaci�
 | La **posición**: se renace en una Cuna (o en Origen). | Las reliquias equipadas y guardadas. |
 | | Colonias, flotas, créditos, reputación, recuerdos, códice. |
 
-- **Gestación**: unos minutos la primera vez, más con muertes seguidas (la racha de la Fase 10 sigue, pero con techo más bajo: **máximo 30 min**), y se olvida con el tiempo.
+- **Gestación**: unos minutos la primera vez, más con muertes seguidas (la racha de la Fase 10 sigue: unos minutos la primera vez y se dobla con cada muerte seguida hasta **1 hora o más** de techo, decisión del 23-10-2026; propuesta: 2 h), y se olvida con el tiempo.
 - **Renacer**: en una **Cuna** propia (cápsula en el agua, en cualquier planeta con colonia propia) o, si no hay, en **Origen**, en la cápsula del fondo del mar (la escena del primer despertar).
 - **Sueños** (lore): mientras gesta, la pantalla de muerte muestra una visión breve; algunas dejan una pista en el códice.
 - **Quién te mató** queda registrado para la casa (para guerras y venganzas, §11.4).
@@ -76,7 +76,6 @@ Se elige al crear el personaje (y se puede cambiar en Ajustes); todos los textos
 
 - **La nave desaparece** donde cayó (decisión del 23-10-2026): no deja pecio; se reconstruye entera con el Emperador.
 
-> **Pregunta**: ¿30 minutos de gestación máxima te parece bien?
 
 ---
 
@@ -87,7 +86,7 @@ Se elige al crear el personaje (y se puede cambiar en Ajustes); todos los textos
 - **Prestigio de la casa**: suma de tierra, reliquias, colecciones completadas, victorias y obras. Es la base del ranking y del lore (leyendas de la era).
 - **Alianzas entre casas** (más adelante, Fase 12 de la hoja de ruta actual): pactos de no agresión y defensa mutua; por ahora, **compañeros** como hoy.
 
-> **Pregunta**: ¿las casas de varios jugadores (un clan) entran ya en la Era II o se quedan para más adelante?
+**Una casa por jugador** (decisión del 23-10-2026); las alianzas y casas de varios jugadores llegan más adelante.
 
 ---
 
@@ -132,7 +131,7 @@ Objetos de los dioses muertos. **Poder moderado, coleccionables**: lo bonito es 
 | **Comercio** | Mercado del anillo (comunes y raras) y Nómadas (con su comisión). Las únicas no se venden. |
 | **Conquista** | Al conquistar una colonia, su relicario puede perder parte de lo guardado (§11.3). |
 
-> **Preguntas**: ¿te gustan los 3 + 2 + 2 huecos? ¿Las reliquias únicas deben poder perderse al conquistar la colonia donde están guardadas?
+Decisiones del 23-10-2026: **huecos 3 + 2 + 2** aprobados; las **reliquias únicas pasan al conquistador** si se conquista la colonia donde están guardadas (son objetivo de guerra; las que lleva la nave o el Emperador no se pierden, por la muerte suave).
 
 ---
 
@@ -312,7 +311,7 @@ Lo de la Fase 9b sobre parcelas: presencia sostenida en órbita y en tierra, pla
 - **Aviso** inmediato a la casa (en el juego y, si se activa, notificación).
 - **Tiempos largos**: un asedio necesita **horas de presencia** y se puede **defender** al volver.
 - **Ventanas de vulnerabilidad** (aprobadas el 23-10-2026): cada casa elige unas horas del día en que sus colonias pueden ser asediadas en zonas disputadas. En zonas sin ley no hay ventana: se puede asediar a cualquier hora (con asedios largos y aviso).
-- Al capturar una colonia: la tierra cambia de dueño, el relicario puede perder parte de lo guardado (no las únicas, a decidir), los edificios quedan dañados.
+- Al capturar una colonia: la tierra cambia de dueño, el relicario puede perder parte de lo guardado, los edificios quedan dañados. Las reliquias únicas guardadas allí pasan al conquistador.
 
 ### 11.4 Guerra declarada entre casas
 
