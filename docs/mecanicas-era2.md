@@ -23,7 +23,7 @@ Diseño de cómo se juega en la Era II: un solo sistema de siete mundos, en Unre
 1. **Despertar o volver**: el Emperador aparece donde lo dejó (o renace en una Cuna). Un resumen le cuenta qué pasó mientras no estaba: producción, ataques, rutas, mensajes de los pueblos.
 2. **Gestionar (10–15 min)**: colas de construcción, rutas, mercado, encargos de los personajes.
 3. **Salir a la aventura (1–2 h)**, una o varias de:
-   - una **expedición** a una ruina de los Precursores (§7);
+   - una **expedición** a una ruina de los Precursores (§7; llega en la etapa B, con el Emperador a pie);
    - una **cacería** de Carroñeros en el anillo de Céfiro o el Cinturón;
    - una **misión** de un personaje de un pueblo (§9);
    - un **asedio** o la defensa de una parcela (§11);
@@ -74,7 +74,9 @@ Igual que ahora, con resolución perezosa en el servidor: producción y poblaci�
 
 Se elige al crear el personaje (y se puede cambiar en Ajustes); todos los textos concuerdan. El traje y la nave cambian de detalles, no de poder.
 
-> **Preguntas**: ¿30 minutos de gestación máxima te parece bien? ¿La nave debería quedar como pecio donde cayó (para que otros la saqueen un poco) o desaparecer?
+- **La nave desaparece** donde cayó (decisión del 23-10-2026): no deja pecio; se reconstruye entera con el Emperador.
+
+> **Pregunta**: ¿30 minutos de gestación máxima te parece bien?
 
 ---
 
@@ -216,9 +218,11 @@ La actividad larga principal. Mezcla de **templos colosales** visibles y **ciuda
 - **Inscripciones** para el códice (siempre nombran seis dioses).
 - **Botín**: reliquias, fragmentos de recuerdo, esencia.
 
-### 7.3 Antes de la etapa B (sin andar)
+### 7.3 A pie, en la etapa B (decisión del 23-10-2026)
 
-Las primeras expediciones se hacen **con la nave**: cañones-catedral por los que se vuela, salas enormes, puertas que se abren con el escáner. Encaja con la escala de los dioses. Cuando llegue el Emperador a pie, se añaden zonas interiores a pie.
+Las expediciones **llegan con el Emperador a pie** (etapa B de la hoja de ruta), no antes. Hasta entonces, las sesiones largas de la etapa A se llenan con cacerías, misiones de los pueblos, asedios, cartografía y sucesos del sistema; los templos colosales se ven y se sobrevuelan desde fuera, cerrados, como promesa.
+
+Dentro de las ruinas hay **puzles, combate y jefes** (un gran guardián al final de cada gran templo); recorrerlas es el camino, no el objetivo.
 
 ### 7.4 Reglas
 
@@ -226,7 +230,6 @@ Las primeras expediciones se hacen **con la nave**: cañones-catedral por los qu
 - Cada ruina se **reinicia** con otra distribución cada cierto tiempo (días), para volver a jugarla.
 - Los grandes templos están en **zonas disputadas o sin ley**: entrar es arriesgarse a encontrarse con otra casa.
 
-> **Preguntas**: ¿quieres puzles o solo exploración y combate? ¿Te parece bien que las expediciones empiecen con la nave y no a pie?
 
 ---
 
@@ -308,7 +311,7 @@ Los Emperadores nuevos tienen **gracia** (como hoy, 24 h ampliables a unos días
 Lo de la Fase 9b sobre parcelas: presencia sostenida en órbita y en tierra, plataformas defensivas, desembarco de tropas (humanos), captura con pérdidas. Para no perder tierra mientras duermes:
 - **Aviso** inmediato a la casa (en el juego y, si se activa, notificación).
 - **Tiempos largos**: un asedio necesita **horas de presencia** y se puede **defender** al volver.
-- **Ventanas de vulnerabilidad** opcionales (propuesta): cada casa elige unas horas del día en que sus colonias pueden ser asediadas en zonas disputadas.
+- **Ventanas de vulnerabilidad** (aprobadas el 23-10-2026): cada casa elige unas horas del día en que sus colonias pueden ser asediadas en zonas disputadas. En zonas sin ley no hay ventana: se puede asediar a cualquier hora (con asedios largos y aviso).
 - Al capturar una colonia: la tierra cambia de dueño, el relicario puede perder parte de lo guardado (no las únicas, a decidir), los edificios quedan dañados.
 
 ### 11.4 Guerra declarada entre casas
@@ -318,7 +321,7 @@ Lo de la Fase 9b sobre parcelas: presencia sostenida en órbita y en tierra, pla
 - La guerra termina por **rendición**, **tregua** acordada o **tiempo** (máximo de días).
 - Las alianzas entre casas (más adelante) arrastran a los aliados.
 
-> **Preguntas**: ¿te gustan las ventanas de vulnerabilidad? ¿Cuánto aviso antes de una guerra (propuesta: 12 h)?
+> **Pregunta**: ¿cuánto aviso antes de una guerra (propuesta: 12 h)?
 
 ---
 
