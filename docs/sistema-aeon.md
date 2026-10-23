@@ -79,3 +79,30 @@ Mundo jardín, cuerpo de **Vael, el Guardián del Umbral**; hogar de los **Vespe
 |---|---|
 | **La Cúpula Mayor** | La ciudad vesperi bajo un escudo que brilla como una pompa de jabón; se enciende entera si alguien amenaza el planeta. |
 | **Las Praderas del Ocaso** | Llanuras doradas donde el atardecer dura horas. |
+
+## Céfiro (23-10-2026)
+
+Gigante gaseoso, cuerpo de **Zefaro, el Aliento Errante**; hogar de los **Nómadas del Vacío** (y de los Carroñeros en su anillo). Las ciudades nómadas son zona segura; las lunas, disputadas; el anillo, sin ley.
+
+- **Se puede entrar en las nubes hasta cierta profundidad**: las capas altas se navegan (vuelo entre nubes, leviatanes del aliento); más abajo, la presión aplasta la nave.
+
+### Lugares
+
+| Lugar | Qué es |
+|---|---|
+| **El Ojo** | La gran tormenta que nunca se cierra (el ojo del dios). Dentro, calma y algo antiguo. |
+| **Las Ciudades Velas** | Las ciudades nómadas que navegan entre las nubes con velas enormes; mercado nómada y personajes. |
+
+## Umbra (23-10-2026)
+
+Mundo helado y oscuro, cuerpo de **Ossal, el Silencio**; lo velan los **Nihil**; ruinas de los Precursores. Zona sin ley.
+
+- **Hacer ruido en el Velatorio despierta a los Nihil**: combates, minería o motores a tope cerca de él hacen que te persigan con ocultación e interferencias hasta echarte.
+
+### Lugares
+
+| Lugar | Qué es |
+|---|---|
+| **La Corona Rota** | El anillo roto de los Precursores (la corona partida del dios); se vuela entre sus fragmentos. |
+| **El Velatorio** | Donde los Nihil velan a Ossal; silencio absoluto. |
+| **La Luna Hueca** | Una luna vacía por dentro, obra de los Precursores. |
