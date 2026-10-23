@@ -32,6 +32,8 @@ test("niebla de guerra: un sistema lejano sale sin explorar y, al llegar la flot
   await page.keyboard.press("KeyM");
 
   const panel = page.locator("aside.side");
+  // Las flotas están en la ventana del imperio (cerrada al empezar).
+  await page.locator("[data-tutorial=empire]").click();
   const fleets = page.locator(".fleets");
   await expect(fleets.getByText("Flota 1")).toBeVisible();
   // El sistema propio está descubierto: se ven sus planetas (la lista llega del servidor).
