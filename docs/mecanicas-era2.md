@@ -200,9 +200,9 @@ Recursos actuales que se mantienen: `metal`, `volatiles`, `crystal`, `alloys`, `
 
 ### 6.5 Cartografía
 
-- Las regiones de un planeta empiezan **borrosas** en el mapa. Se cartografían sobrevolándolas con el escáner, con sondas o a pie.
-- Descubrir da experiencia, entradas del códice y, a veces, ruinas o tierra sagrada.
-- La primera casa en cartografiar algo especial lo ve **antes** que las demás durante un tiempo (ventaja de explorar).
+- Las regiones de un planeta empiezan **borrosas** en el mapa. Se cartografían de dos formas (decisión del 23-10-2026): **volando bajo con el escáner** (revela al pasar) y con **sondas y torres de escucha** que revelan alrededor y mantienen la región **vigilada** (avisan de quién entra). A pie, en la etapa B.
+- Descubrir da experiencia (oficio de Explorador), entradas del códice y, a veces, ruinas o tierra sagrada.
+- **Cada casa tiene su mapa**: lo que cartografías solo lo ves tú… salvo que **vendas el mapa** en el mercado (decisión del 23-10-2026). Un mapa vendido es una copia de una región tal como estaba ese día.
 
 Decisión del 23-10-2026: una parcela sin colonia ni puesto queda libre a los **14 días** sin visitarla (se avisa antes). Los números de parcelas (642 / 362 / 162, unas 3600 en total) quedan aprobados.
 
@@ -380,9 +380,9 @@ Lo de la Fase 9b sobre parcelas (decisión del 23-10-2026: **solo asedio general
 
 ## 13. El sistema vivo: sucesos
 
-Sucesos del servidor que hacen que el sistema cambie y que el dueño puede usar para contar el lore poco a poco (MMO):
+Sucesos del servidor (decisión del 23-10-2026: **llegan por sorpresa con unas horas de señales** —temblores en la Grieta, cambios en las nubes de Céfiro, cantos de los cristales—, no con calendario) que hacen que el sistema cambie y que el dueño puede usar para contar el lore poco a poco (MMO):
 
-| Suceso | Qué pasa | Frecuencia (propuesta) |
+| Suceso | Qué pasa | Frecuencia aproximada (propuesta) |
 |---|---|---|
 | **Oleada de la Grieta** | Los Erradicadores entran por la Grieta y van a por Cunas y colonias pobladas; recompensas para quien defiende. | Semanal |
 | **Tormenta de Zefaro** | Una gran tormenta de Céfiro cambia las rutas y deja esencia en las nubes. | Cada pocos días |
@@ -410,7 +410,7 @@ Ninguno revela el secreto (lore-era2.md §9 y §13); como mucho, siembran pregun
 
 ### 15.1 Oficios en vez de un rango único
 
-El Emperador sube **por oficios**, cada uno con su experiencia y sus rangos (propuesta de oficios, por confirmar):
+El Emperador sube **por oficios**, cada uno con su experiencia y sus rangos (oficios aprobados el 23-10-2026):
 
 | Oficio | Sube con | Desbloquea (ejemplos) |
 |---|---|---|
