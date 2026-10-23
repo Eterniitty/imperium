@@ -193,9 +193,7 @@ Recursos actuales que se mantienen: `metal`, `volatiles`, `crystal`, `alloys`, `
 - Descubrir da experiencia, entradas del códice y, a veces, ruinas o tierra sagrada.
 - La primera casa en cartografiar algo especial lo ve **antes** que las demás durante un tiempo (ventaja de explorar).
 
-Decisión del 23-10-2026: una parcela sin colonia ni puesto queda libre a los **14 días** sin visitarla (se avisa antes).
-
-> **Pregunta**: ¿te gustan los números de parcelas?
+Decisión del 23-10-2026: una parcela sin colonia ni puesto queda libre a los **14 días** sin visitarla (se avisa antes). Los números de parcelas (642 / 362 / 162, unas 3600 en total) quedan aprobados.
 
 ---
 
@@ -279,7 +277,7 @@ Cada pueblo tiene una **reputación** con cada casa (de «enemigo jurado» a «e
 
 Decisión del 23-10-2026: **solo texto**, sin voces.
 
-> **Pregunta**: ¿cuántas misiones por pueblo para el alfa (propuesta: una cadena de 5 por pueblo)?
+- **Muchas misiones pequeñas** (decisión del 23-10-2026): cada personaje tiene encargos cortos y repetibles (llevar algo, cazar, escoltar, cartografiar, recuperar) que cambian con la reputación, más alguna cadena corta que cuenta su historia.
 
 ---
 
@@ -303,7 +301,7 @@ Decisión del 23-10-2026: **solo texto**, sin voces.
 | **Disputada** | Brasa, Elyss, Vesperia, las lunas de Céfiro, los puntos de Lagrange | PvP **solo entre casas en guerra declarada** (§11.4). Pueblos y piratas atacan igual. |
 | **Sin ley** | Tharax, Umbra, el Cinturón, el anillo de Céfiro, alrededores de la Grieta | Todo vale. Allí están las mejores ruinas, la tierra sagrada más rica y lo más raro. |
 
-La zona se ve siempre en el HUD y en el mapa. Las zonas pueden cambiar con sucesos (una oleada de la Grieta convierte una zona en sin ley mientras dura).
+El reparto queda aprobado por ahora (23-10-2026) y podrá cambiar. La zona se ve siempre en el HUD y en el mapa. Las zonas pueden cambiar con sucesos (una oleada de la Grieta convierte una zona en sin ley mientras dura).
 
 ### 11.2 Gracia
 
@@ -331,7 +329,7 @@ Lo de la Fase 9b sobre parcelas: presencia sostenida en órbita y en tierra, pla
 ## 12. Economía
 
 - **Créditos** por población (como hoy), **tesoro de la humanidad** y **proyectos comunes** (ahora con monumentos que se ven en Origen).
-- **Mercado del anillo** (Origen): libro de órdenes, comisión y envíos según la distancia real.
+- **Mercado del anillo** (Origen): libro de órdenes, comisión y envíos según la distancia real. **Solo mercado** (decisión del 23-10-2026): no hay intercambio directo entre jugadores; todo pasa por los libros de órdenes, para evitar abusos.
 - **Mercado nómada** (Céfiro): más caro, pero compra y vende lo que el del anillo no (reliquias, esencias, contrabando), sin preguntar.
 - **Fabricación** y **tecnología** como hoy (Fábrica, recetas, árbol de investigación), con recetas nuevas que usan **esencia** y **biomasa**.
 - **Logística visible**: cargueros entre parcelas, lunas y mercados; se pueden asaltar en zonas sin ley.
