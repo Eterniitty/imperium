@@ -87,3 +87,45 @@ Nombres aprobados por el dueño (23-10-2026; se podrán retocar):
 - **Se mataron por los mortales**: cada dios defendió a su pueblo, y la guerra entre pueblos acabó siendo una guerra entre dioses.
 - **Las lunas son sus siervos**: seres menores, servidores o hijos de los dioses, también muertos, que siguen orbitando a su señor.
 - **Las ruinas de los Precursores son una mezcla**: templos colosales visibles, tallados en los cuerpos de los dioses (escaleras que no acaban), y ciudades enterradas bajo el polvo y el hielo, con sus templos en el centro, por descubrir.
+
+## 12. Los pueblos, la humanidad y el Núcleo (23-10-2026)
+
+- **Los pueblos de los dioses son los de hoy**: Aurelianos, Elydri, Tharaxi, Vesperi, Nómadas y Nihil ya estaban aquí en tiempos de los dioses, y cada dios defendió al suyo. Encaja con la respuesta del §2 así (propuesta): los seis pueblos «de dios» son nativos de Aeon; los que **llegaron atraídos** por la tumba son los forasteros: los **Erradicadores** (por la Grieta) y los **Carroñeros** (de todas partes). Los **Grises** no son forasteros: son máquinas de los dioses (§15).
+
+  | Dios | Su pueblo |
+  |---|---|
+  | Kaurath, el que Forja (Brasa) | Aurelianos |
+  | Ilwen, la que Recuerda (Elyss) | Elydri |
+  | Umara, la Madre Hambrienta (Tharax) | Tharaxi |
+  | Vael, el Guardián del Umbral (Vesperia) | Vesperi |
+  | Zefaro, el Aliento Errante (Céfiro) | Nómadas del Vacío |
+  | Ossal, el Silencio (Umbra) | Nihil |
+  | *(el que duerme, Origen)* | *(la humanidad… secreto)* |
+
+- **La humanidad en Origen: nadie se pone de acuerdo** sobre desde cuándo está ahí. Cada fuente humana cuenta una historia distinta.
+- **Un consejo de Emperadores** gobierna Origen y el Núcleo Humano.
+- **El primer despertar**: el Emperador despierta en una **cápsula en el fondo del mar** de Origen, sube a la superficie y ve el cielo por primera vez. (Propuesta: es la primera escena del tutorial y también la de cada renacer en el Núcleo.)
+
+## 13. La sangre de los dioses (23-10-2026) — SECRETO
+
+> Tampoco va a la Wiki ni a los textos del juego.
+
+- **La humanidad es la sangre de los dioses.**
+- **Los Precursores eran el pueblo del séptimo dios** (el que duerme en Origen). Adoraban a los siete planetas; al sellar al séptimo, su pueblo desapareció.
+- Lectura de Claude (propuesta, por confirmar): explica por qué la humanidad «no puede ser exterminada definitivamente» (Ley II) y por qué los Emperadores vuelven de la muerte; por qué la Gran Hostilidad apunta a los humanos (son lo que queda de los dioses); y por qué la humanidad vive, sin saberlo, sobre el dios dormido de los Precursores.
+
+## 14. El consejo y la vida en Origen (23-10-2026)
+
+- **El consejo de Emperadores es solo lore**: existe en la historia, sin papel jugable por ahora.
+- **Rebelarse contra el consejo**: más adelante (fase futura).
+- **La vida en Origen es una mezcla**: ciudades bonitas sobre el mar levantadas sobre ruinas antiguas que no construyeron los humanos, con las defensas en el anillo orbital. (Las ruinas serían de los Precursores, el pueblo del dios dormido: otra pista nunca explicada.)
+
+## 15. Erradicadores, la Grieta y los Grises (23-10-2026)
+
+- **Los Erradicadores son lo que mató al universo de fuera.** Aeon es lo último que les queda. (Mantiene el misterio del §3: se sabe que algo arrasó lo de fuera, no qué había ni qué queda.)
+- **La Grieta es una herida de la guerra de los dioses**: un golpe rompió el borde del sistema y por ahí se cuela lo de fuera.
+- **Los Grises son máquinas de los dioses**: inteligencias creadas para administrar el sistema, que siguen funcionando sin dueños. Su estación Ábaco y su obsesión por el orden vienen de ahí: siguen cumpliendo una función para unos amos muertos.
+
+## 16. Lo que saben los jugadores (lore público) (23-10-2026)
+
+**Los Emperadores son conquistadores**: quieren la tumba de los dioses como todos los demás; es la gran carrera de la era. El lore público habla de seis dioses muertos, de sus cuerpos-planeta, de sus pueblos y de las reliquias; no habla de Origen ni de la sangre.
