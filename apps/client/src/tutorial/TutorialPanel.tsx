@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
 import type { I18nKey } from "@imperium/shared";
+import { usePhotoNoticeOpen } from "../state/photoNotice";
 import { useT } from "../state/store";
 import { KeyHint } from "../ui/common";
 import { CHAPTERS, chapterById, snapshot, type Snapshot } from "./chapters";
@@ -166,5 +167,51 @@ export function TutorialMenu() {
         {t("tut.reset")}
       </button>
     </div>
+  );
+}
+
+const OFFER_KEY = "aeon.tutorialOffered";
+
+/**
+ * Ofrecimiento del tutorial, una sola vez en este navegador: al entrar con un
+ * Emperador, si no se ha empezado ni hecho ningún capítulo. «Ahora no» no
+ * vuelve a preguntar (sigue en Ajustes → Tutorial).
+ */
+export function TutorialOffer() {
+  const t = useT();
+  const active = useStore(tutorialStore, (s) => s.active);
+  const done = useStore(tutorialStore, (s) => s.done);
+  const [offered, setOffered] = useState(() => {
+    try {
+      return localStorage.getItem(OFFER_KEY) === "1";
+    } catch {
+      return true;
+    }
+  });
+  // Primero el aviso de fotosensibilidad (si está abierto): luego, esto.
+  const photo = usePhotoNoticeOpen();
+  if (offered || active || photo || Object.keys(done).length > 0) return null;
+  const answer = (start: boolean) => {
+    try {
+      localStorage.setItem(OFFER_KEY, "1");
+    } catch {
+      // Sin almacenamiento: no se vuelve a preguntar en esta sesión.
+    }
+    setOffered(true);
+    if (start) tutorialStore.getState().start("basics");
+  };
+  return (
+    <section className="tutorial-panel panel" role="dialog" aria-label={t("tut.title")}>
+      <span className="contract-kind">{t("tut.title")}</span>
+      <p className="tutorial-text">{t("tut.offer")}</p>
+      <footer className="tutorial-foot">
+        <button type="button" className="btn btn-small" onClick={() => answer(false)}>
+          {t("tut.offerLater")}
+        </button>
+        <button type="button" className="btn btn-small btn-primary" onClick={() => answer(true)}>
+          {t("tut.start")}
+        </button>
+      </footer>
+    </section>
   );
 }

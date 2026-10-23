@@ -1854,6 +1854,8 @@ export const es = {
   "wiki.col.xp": "Experiencia",
   "wiki.col.perk": "Mejora",
   "settings.tab.tutorial": "Tutorial",
+  "tut.offer": "¿Es tu primera vez? El tutorial te guía paso a paso por lo básico sobre tu partida real. Siempre lo tienes en Ajustes → Tutorial.",
+  "tut.offerLater": "Ahora no",
   "tut.title": "Tutorial",
   "tut.chapterN": "Capítulo {n}",
   "tut.expand": "Abrir el tutorial",

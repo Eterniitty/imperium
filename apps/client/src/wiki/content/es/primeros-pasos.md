@@ -1,6 +1,6 @@
 # Primeros pasos
 
-> El **tutorial guiado** (Ajustes → **Tutorial**) te lleva paso a paso por la barra superior, el pilotaje, el crucero, el pulso y el salto, sobre tu partida real. Se puede repetir cuando quieras y no da recompensas.
+> El **tutorial guiado** (Ajustes → **Tutorial**) te lleva paso a paso por la barra superior, el pilotaje, el crucero, el pulso y el salto, sobre tu partida real. Se puede repetir cuando quieras y no da recompensas; la primera vez que entras, el juego te lo ofrece.
 
 ## Entrar en el juego
 

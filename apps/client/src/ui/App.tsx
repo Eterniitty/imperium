@@ -29,7 +29,8 @@ import { MapLayersPanel } from "./MapLayersPanel";
 import { DamageAlert } from "./DamageAlert";
 import { EmpireWindow } from "./EmpireWindow";
 import { ContractsWindow } from "./ContractsWindow";
-import { TutorialPanel } from "../tutorial/TutorialPanel";
+import { useWorld } from "../net/world";
+import { TutorialOffer, TutorialPanel } from "../tutorial/TutorialPanel";
 import { ProfileWindow } from "./ProfileWindow";
 import { SpaceEventPanel } from "./SpaceEventPanel";
 import { ChallengeHud } from "./ChallengeHud";
@@ -101,6 +102,8 @@ export function App() {
   }, [started]);
 
   const docked = useStore(spaceStore, (s) => s.docked !== null);
+  // Con el mundo cargado y un Emperador: para ofrecer el tutorial la primera vez.
+  const emperorReady = useWorld((s) => s.myEmperorId !== null && s.contracts !== null);
   if (!started) return <StartScreen />;
 
   return (
@@ -149,6 +152,7 @@ export function App() {
         <PlanetWindow />
         <ContractsWindow />
         <TutorialPanel />
+        {emperorReady && <TutorialOffer />}
         <ProfileWindow />
         <LineagePanel />
         <ShipEditor />

@@ -1852,6 +1852,8 @@ export const en: Record<I18nKey, string> = {
   "wiki.col.xp": "Experience",
   "wiki.col.perk": "Improvement",
   "settings.tab.tutorial": "Tutorial",
+  "tut.offer": "First time here? The tutorial guides you step by step through the basics over your real game. It is always available in Settings → Tutorial.",
+  "tut.offerLater": "Not now",
   "tut.title": "Tutorial",
   "tut.chapterN": "Chapter {n}",
   "tut.expand": "Open the tutorial",

@@ -36,3 +36,5 @@ Petición del usuario (22-10-2026): un tutorial guiado de **todas** las mecánic
 ## Estado (22-10-2026, noche)
 
 Hecho: motor (`apps/client/src/tutorial/`: `chapters.ts` con los pasos como datos, `store.ts` con el progreso y `TutorialPanel.tsx` con el panel, el anillo de resaltado y el menú de Ajustes → Tutorial) y los doce capítulos (Primeros pasos, Pilotar, Crucero y órbita, Pulso y salto, Combate, Minería, Planetas y colonias, Flotas, Nave nodriza, Economía y humanidad, Linaje y muerte, Contratos, objetivos y rango), probados en vivo con una cuenta de prueba (la nodriza solo hasta acoplarse, que pide tener una). Los elementos resaltados llevan `data-tutorial` (los botones de la barra de acciones, con el nombre de su acción).
+
+Al entrar con un Emperador, si en ese navegador no se ha empezado ningún capítulo, se ofrece el tutorial una sola vez («Empezar» o «Ahora no»; después del aviso de fotosensibilidad).

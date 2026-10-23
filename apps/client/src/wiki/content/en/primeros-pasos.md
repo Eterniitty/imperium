@@ -1,6 +1,6 @@
 # First steps
 
-> The **guided tutorial** (Settings → **Tutorial**) walks you step by step through the top bar, flying, cruise, the pulse and the jump, over your real game. You can repeat it whenever you like and it gives no rewards.
+> The **guided tutorial** (Settings → **Tutorial**) walks you step by step through the top bar, flying, cruise, the pulse and the jump, over your real game. You can repeat it whenever you like and it gives no rewards; the first time you play, the game offers it to you.
 
 ## Signing in
 
