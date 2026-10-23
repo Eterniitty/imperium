@@ -93,6 +93,10 @@ pnpm e2e         # pruebas en navegador (Playwright + Chromium sin ventana)
 
 `pnpm e2e` arranca su propio servidor (puerto 3100) y cliente (5174) contra `TEST_DATABASE_URL`, que se vacía, así que no toca el juego en marcha. No lo ejecutes a la vez que `pnpm test`. Las capturas quedan en `test-results/capturas/`. La primera vez en una máquina nueva: `pnpm exec playwright install chromium` y, con sudo, `playwright install-deps chromium`.
 
+### Sesiones en la nube (claude.ai/code)
+
+`scripts/preparar-nube.sh` prepara un contenedor desechable: instala y arranca PostgreSQL, crea las bases `imperium_dev`, `imperium_test` e `imperium_test_b`, instala las dependencias y escribe un `.env` de desarrollo si no hay. Se pone como script de preparación del entorno en la nube (o se ejecuta a mano dentro de la sesión). En el servidor de producción se niega a ejecutarse. Desde la nube no se despliega: se sube una rama a GitHub y se despliega desde el servidor.
+
 ## Estructura
 
 ```
