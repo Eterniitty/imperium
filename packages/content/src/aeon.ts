@@ -54,7 +54,23 @@ export interface AeonBiome {
   humidity: number;
   /** Rampa de color estilizada: sombra → luz. */
   colors: readonly [RGB, RGB];
+  /** Producción base de una parcela de este bioma, en unidades por hora (propuesta para ajustar jugando). */
+  yields: Partial<Record<AeonResource, number>>;
 }
+
+/**
+ * Recursos de la Era II: los de hoy (`StockId`) más la biomasa (comida y vida) y
+ * la esencia de cada dios (de la tierra sagrada; ver mecanicas-era2.md §6.3).
+ */
+export type AeonResource =
+  | "metal"
+  | "volatiles"
+  | "crystal"
+  | "alloys"
+  | "rare_metals"
+  | "exotic"
+  | "biomass"
+  | "essence";
 
 export interface AeonMoon {
   id: string;
@@ -115,12 +131,22 @@ export const AEON_STAR = {
   heatRangeKm: 40,
 } as const;
 
-const b = (id: string, es: string, en: string, temperature: number, humidity: number, dark: RGB, light: RGB): AeonBiome => ({
+const b = (
+  id: string,
+  es: string,
+  en: string,
+  temperature: number,
+  humidity: number,
+  dark: RGB,
+  light: RGB,
+  yields: Partial<Record<AeonResource, number>> = {},
+): AeonBiome => ({
   id,
   name: { es, en },
   temperature,
   humidity,
   colors: [dark, light],
+  yields,
 });
 
 export const AEON_WORLDS: readonly AeonWorld[] = [
@@ -139,11 +165,11 @@ export const AEON_WORLDS: readonly AeonWorld[] = [
     color: [0.85, 0.32, 0.12],
     atmosphereColor: [1.0, 0.45, 0.15],
     terrain: { reliefM: 900, seaLevel: 0.35, continentFreq: 1.6, mountainFreq: 9, ridge: 0.8 },
-    sea: b("lava", "Mar de lava", "Lava sea", 1, 0, [0.5, 0.06, 0.02], [1.0, 0.55, 0.1]),
+    sea: b("lava", "Mar de lava", "Lava sea", 1, 0, [0.5, 0.06, 0.02], [1.0, 0.55, 0.1], { metal: 4, exotic: 0.2 }),
     biomes: [
-      b("glass", "Vidrio negro", "Black glass", 0.2, 0.2, [0.03, 0.03, 0.05], [0.25, 0.22, 0.3]),
-      b("dusk", "Crepúsculo", "Twilight", 0.5, 0.4, [0.25, 0.08, 0.06], [0.75, 0.4, 0.25]),
-      b("ash", "Ceniza", "Ash", 0.8, 0.1, [0.2, 0.18, 0.17], [0.55, 0.5, 0.46]),
+      b("glass", "Vidrio negro", "Black glass", 0.2, 0.2, [0.03, 0.03, 0.05], [0.25, 0.22, 0.3], { crystal: 3, metal: 2 }),
+      b("dusk", "Crepúsculo", "Twilight", 0.5, 0.4, [0.25, 0.08, 0.06], [0.75, 0.4, 0.25], { metal: 5, biomass: 1 }),
+      b("ash", "Ceniza", "Ash", 0.8, 0.1, [0.2, 0.18, 0.17], [0.55, 0.5, 0.46], { metal: 4, rare_metals: 0.3 }),
     ],
     moons: [],
   },
@@ -164,9 +190,9 @@ export const AEON_WORLDS: readonly AeonWorld[] = [
     terrain: { reliefM: 1400, seaLevel: 0.2, continentFreq: 1.2, mountainFreq: 12, ridge: 0.9 },
     sea: null,
     biomes: [
-      b("crystal_plain", "Llanura cantora", "Singing plain", 0.5, 0.5, [0.3, 0.2, 0.5], [0.85, 0.75, 1.0]),
-      b("crystal_spires", "Agujas de cristal", "Crystal spires", 0.3, 0.8, [0.45, 0.25, 0.6], [1.0, 0.8, 0.95]),
-      b("frost", "Escarcha", "Frost", 0.1, 0.3, [0.5, 0.5, 0.7], [0.95, 0.95, 1.0]),
+      b("crystal_plain", "Llanura cantora", "Singing plain", 0.5, 0.5, [0.3, 0.2, 0.5], [0.85, 0.75, 1.0], { crystal: 6, biomass: 1 }),
+      b("crystal_spires", "Agujas de cristal", "Crystal spires", 0.3, 0.8, [0.45, 0.25, 0.6], [1.0, 0.8, 0.95], { crystal: 8, rare_metals: 0.4 }),
+      b("frost", "Escarcha", "Frost", 0.1, 0.3, [0.5, 0.5, 0.7], [0.95, 0.95, 1.0], { crystal: 3, volatiles: 2 }),
     ],
     moons: [
       { id: "elyss_shard", name: { es: "La Esquirla", en: "The Shard" }, radiusKm: 1, orbitKm: 18, orbitPeriodH: 3, zone: "disputed", owner: null, parcelFrequency: 4, color: [0.8, 0.7, 1.0] },
@@ -186,13 +212,13 @@ export const AEON_WORLDS: readonly AeonWorld[] = [
     parcelFrequency: 8,
     color: [0.16, 0.45, 0.75],
     atmosphereColor: [0.45, 0.75, 1.0],
-    terrain: { reliefM: 1800, seaLevel: 0.58, continentFreq: 1.8, mountainFreq: 10, ridge: 0.5 },
-    sea: b("ocean", "Océano", "Ocean", 0.6, 1, [0.02, 0.12, 0.3], [0.2, 0.75, 0.8]),
+    terrain: { reliefM: 1800, seaLevel: 0.5, continentFreq: 1.8, mountainFreq: 10, ridge: 0.5 },
+    sea: b("ocean", "Océano", "Ocean", 0.6, 1, [0.02, 0.12, 0.3], [0.2, 0.75, 0.8], { biomass: 4, volatiles: 2 }),
     biomes: [
-      b("beach", "Playa", "Beach", 0.8, 0.5, [0.55, 0.5, 0.35], [0.95, 0.9, 0.7]),
-      b("forest", "Bosque de las islas", "Island forest", 0.6, 0.8, [0.05, 0.25, 0.12], [0.3, 0.65, 0.3]),
-      b("highland", "Tierras altas", "Highlands", 0.4, 0.4, [0.3, 0.32, 0.28], [0.6, 0.62, 0.5]),
-      b("snow", "Nieve", "Snow", 0.05, 0.5, [0.7, 0.75, 0.85], [1.0, 1.0, 1.0]),
+      b("beach", "Playa", "Beach", 0.85, 0.4, [0.55, 0.5, 0.35], [0.95, 0.9, 0.7], { biomass: 2, crystal: 1 }),
+      b("forest", "Bosque de las islas", "Island forest", 0.6, 0.65, [0.05, 0.25, 0.12], [0.3, 0.65, 0.3], { biomass: 6 }),
+      b("highland", "Tierras altas", "Highlands", 0.35, 0.35, [0.3, 0.32, 0.28], [0.6, 0.62, 0.5], { metal: 4, biomass: 1 }),
+      b("snow", "Nieve", "Snow", 0, 0.45, [0.7, 0.75, 0.85], [1.0, 1.0, 1.0], { volatiles: 3 }),
     ],
     moons: [
       { id: "origen_yard", name: { es: "La Luna Astillero", en: "Shipyard Moon" }, radiusKm: 1.2, orbitKm: 25, orbitPeriodH: 4, zone: "safe", owner: "humanity", parcelFrequency: 4, color: [0.55, 0.55, 0.6] },
@@ -213,11 +239,11 @@ export const AEON_WORLDS: readonly AeonWorld[] = [
     color: [0.3, 0.62, 0.22],
     atmosphereColor: [0.55, 1.0, 0.45],
     terrain: { reliefM: 2200, seaLevel: 0.4, continentFreq: 1.4, mountainFreq: 8, ridge: 0.7 },
-    sea: b("spore_marsh", "Pantano de esporas", "Spore marsh", 0.7, 1, [0.1, 0.2, 0.05], [0.45, 0.7, 0.2]),
+    sea: b("spore_marsh", "Pantano de esporas", "Spore marsh", 0.7, 1, [0.1, 0.2, 0.05], [0.45, 0.7, 0.2], { biomass: 5, volatiles: 3 }),
     biomes: [
-      b("fungal_forest", "Selva de hongos", "Fungal jungle", 0.7, 0.8, [0.08, 0.2, 0.1], [0.55, 0.95, 0.4]),
-      b("hive", "Colmena", "Hive", 0.6, 0.4, [0.25, 0.15, 0.05], [0.8, 0.6, 0.2]),
-      b("ribs", "Costillas", "Ribs", 0.3, 0.3, [0.35, 0.32, 0.25], [0.8, 0.75, 0.6]),
+      b("fungal_forest", "Selva de hongos", "Fungal jungle", 0.7, 0.8, [0.08, 0.2, 0.1], [0.55, 0.95, 0.4], { biomass: 8 }),
+      b("hive", "Colmena", "Hive", 0.6, 0.4, [0.25, 0.15, 0.05], [0.8, 0.6, 0.2], { biomass: 4, exotic: 0.3 }),
+      b("ribs", "Costillas", "Ribs", 0.3, 0.3, [0.35, 0.32, 0.25], [0.8, 0.75, 0.6], { metal: 4, rare_metals: 0.3 }),
     ],
     moons: [
       { id: "tharax_seed", name: { es: "La Semilla", en: "The Seed" }, radiusKm: 1.4, orbitKm: 20, orbitPeriodH: 3.5, zone: "lawless", owner: "tharaxi", parcelFrequency: 4, color: [0.4, 0.55, 0.2] },
@@ -239,11 +265,11 @@ export const AEON_WORLDS: readonly AeonWorld[] = [
     color: [0.85, 0.68, 0.3],
     atmosphereColor: [1.0, 0.7, 0.85],
     terrain: { reliefM: 1100, seaLevel: 0.45, continentFreq: 1.3, mountainFreq: 7, ridge: 0.3 },
-    sea: b("lake", "Lagos", "Lakes", 0.6, 1, [0.1, 0.2, 0.3], [0.5, 0.65, 0.75]),
+    sea: b("lake", "Lagos", "Lakes", 0.6, 1, [0.1, 0.2, 0.3], [0.5, 0.65, 0.75], { biomass: 3, volatiles: 1 }),
     biomes: [
-      b("golden_prairie", "Pradera dorada", "Golden prairie", 0.6, 0.4, [0.45, 0.35, 0.1], [1.0, 0.85, 0.4]),
-      b("tower_forest", "Bosque de árboles torre", "Tower forest", 0.55, 0.8, [0.15, 0.25, 0.12], [0.55, 0.7, 0.4]),
-      b("mauve_hills", "Colinas malva", "Mauve hills", 0.3, 0.5, [0.35, 0.25, 0.35], [0.8, 0.65, 0.8]),
+      b("golden_prairie", "Pradera dorada", "Golden prairie", 0.6, 0.4, [0.45, 0.35, 0.1], [1.0, 0.85, 0.4], { biomass: 7 }),
+      b("tower_forest", "Bosque de árboles torre", "Tower forest", 0.55, 0.8, [0.15, 0.25, 0.12], [0.55, 0.7, 0.4], { biomass: 5, crystal: 1 }),
+      b("mauve_hills", "Colinas malva", "Mauve hills", 0.3, 0.5, [0.35, 0.25, 0.35], [0.8, 0.65, 0.8], { crystal: 3, metal: 2 }),
     ],
     moons: [
       { id: "vesperia_wild_a", name: { es: "Jardín Mayor", en: "Greater Garden" }, radiusKm: 1.3, orbitKm: 19, orbitPeriodH: 3, zone: "disputed", owner: null, parcelFrequency: 4, color: [0.4, 0.6, 0.3] },
@@ -290,11 +316,11 @@ export const AEON_WORLDS: readonly AeonWorld[] = [
     color: [0.4, 0.7, 0.85],
     atmosphereColor: [0.5, 0.9, 1.0],
     terrain: { reliefM: 1600, seaLevel: 0.3, continentFreq: 1.1, mountainFreq: 11, ridge: 0.75 },
-    sea: b("methane", "Mar de metano", "Methane sea", 0.1, 1, [0.02, 0.05, 0.1], [0.15, 0.3, 0.4]),
+    sea: b("methane", "Mar de metano", "Methane sea", 0.1, 1, [0.02, 0.05, 0.1], [0.15, 0.3, 0.4], { volatiles: 6 }),
     biomes: [
-      b("blue_ice", "Hielo azul", "Blue ice", 0.2, 0.6, [0.2, 0.4, 0.6], [0.7, 0.9, 1.0]),
-      b("geysers", "Géiseres", "Geysers", 0.4, 0.8, [0.3, 0.45, 0.55], [0.85, 0.95, 1.0]),
-      b("dark_rock", "Roca oscura", "Dark rock", 0.3, 0.2, [0.05, 0.06, 0.08], [0.25, 0.28, 0.32]),
+      b("blue_ice", "Hielo azul", "Blue ice", 0.2, 0.6, [0.2, 0.4, 0.6], [0.7, 0.9, 1.0], { volatiles: 4, crystal: 1 }),
+      b("geysers", "Géiseres", "Geysers", 0.4, 0.8, [0.3, 0.45, 0.55], [0.85, 0.95, 1.0], { volatiles: 5, exotic: 0.3 }),
+      b("dark_rock", "Roca oscura", "Dark rock", 0.3, 0.2, [0.05, 0.06, 0.08], [0.25, 0.28, 0.32], { metal: 3, rare_metals: 0.6, exotic: 0.2 }),
     ],
     moons: [
       { id: "umbra_hollow", name: { es: "La Luna Hueca", en: "The Hollow Moon" }, radiusKm: 1.5, orbitKm: 22, orbitPeriodH: 4, zone: "lawless", owner: null, parcelFrequency: null, color: [0.5, 0.48, 0.42] },
