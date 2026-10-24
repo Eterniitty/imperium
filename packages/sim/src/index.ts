@@ -23,3 +23,4 @@ export * from "./manufacturing";
 export * from "./aeonOrbits";
 export * from "./aeonParcels";
 export * from "./aeonFlight";
+export * from "./aeonEnvironment";

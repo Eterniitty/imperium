@@ -1,7 +1,7 @@
 // Exporta los datos del sistema de Aeon (Era II) a JSON para el cliente de Unreal.
 // Uso: node node_modules/.pnpm/tsx@*/node_modules/tsx/dist/cli.mjs scripts/export-aeon.ts ../aeonarch-ue/Data/aeon.json
 import { writeFileSync } from "node:fs";
-import { AEON_FLIGHT, AEON_PLACES, AEON_STAR, AEON_WORLDS, parcelCount, validateAeon } from "../packages/content/src/aeon.ts";
+import { AEON_ENVIRONMENT, AEON_FLIGHT, AEON_PLACES, AEON_STAR, AEON_WORLDS, parcelCount, validateAeon } from "../packages/content/src/aeon.ts";
 
 const errors = validateAeon();
 if (errors.length) {
@@ -23,6 +23,7 @@ const data = {
   })),
   places: AEON_PLACES,
   flight: AEON_FLIGHT,
+  environment: AEON_ENVIRONMENT,
 };
 writeFileSync(out, JSON.stringify(data, null, 2) + "\n");
 console.log(`Escrito ${out}: ${data.worlds.length} mundos, ${data.worlds.reduce((n, w) => n + w.moons.length, 0)} lunas, ${data.places.length} lugares.`);

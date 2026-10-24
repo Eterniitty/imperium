@@ -360,6 +360,26 @@ export const AEON_FLIGHT = {
   rollRate: 0.2,
 } as const;
 
+/**
+ * Entorno del vuelo cerca de los mundos (Era II, estilizado): zona de influencia,
+ * gravedad, arrastre de la atmósfera y suelo. packages/sim aeonEnvironment.ts y
+ * aeonarch-ue/Core environment.h. Metros y segundos.
+ */
+export const AEON_ENVIRONMENT = {
+  /** Radio de la zona de influencia, en radios del cuerpo (dentro, la nave se mueve con él). */
+  influenceRadii: 4,
+  /** Gravedad en la superficie (m/s²) de los rocosos, los gigantes y las lunas. */
+  gravityRocky: 9,
+  gravityGas: 14,
+  gravityMoon: 4,
+  /** Arrastre a densidad 1 (fracción de la velocidad por segundo); la densidad baja lineal con la altura. */
+  drag: 0.6,
+  /** Distancia mínima del casco al suelo (m): ahí la nave se posa. */
+  clearanceM: 20,
+  /** Gigantes gaseosos: suelo de presión a esta fracción del radio por debajo de las nubes. */
+  gasFloorDepth: 0.1,
+} as const;
+
 export function parcelCount(frequency: number): number {
   return 10 * frequency * frequency + 2;
 }
