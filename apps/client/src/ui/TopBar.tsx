@@ -200,6 +200,11 @@ export function TopBar() {
         <button className="icon-btn" data-tutorial="settings" onClick={() => gameStore.getState().setSettingsOpen(true)} aria-label={t("settings.open")} title={t("settings.title")}>
           <HudIcon name="gear" size={16} />
         </button>
+        <button className="icon-btn" onClick={() => gameStore.getState().setPauseOpen(true)} aria-label={t("menu.open")} title={t("menu.open")}>
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+            <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+        </button>
 
       </div>
     </header>

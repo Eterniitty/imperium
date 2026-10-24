@@ -10,6 +10,8 @@ import { CookieNotice } from "./CookieNotice";
 import { PhotosensitivityNotice } from "./PhotosensitivityNotice";
 import { AccountTab } from "./AccountTab";
 import { GAME_CLOSED } from "../config";
+import { MainMenu, MenuBackdrop } from "./MainMenu";
+import { SettingsPanel } from "./SettingsPanel";
 
 /** Formulario de acceso o botón de entrada, según el estado de la sesión. */
 function AuthPanel() {
@@ -289,6 +291,8 @@ function CompanionWaiting() {
 
 export function StartScreen() {
   const t = useT();
+  const status = useAuth((s) => s.status);
+  const menu = !GAME_CLOSED && (status === "authenticated" || status === "offline");
   // Aviso tras borrar la cuenta (la página se recarga al borrarla).
   const [deleted] = useState(() => {
     const flag = sessionStorage.getItem(ACCOUNT_DELETED_FLAG) !== null;
@@ -300,8 +304,35 @@ export function StartScreen() {
     void authStore.getState().init();
   }, []);
 
+  if (menu) {
+    return (
+      <div className="start start-menu">
+        <MenuBackdrop />
+        <div className="menu-shade" />
+        {deleted && (
+          <p className="start-hint" role="status">
+            {t("account.deleted")}
+          </p>
+        )}
+        <MainMenu />
+        <SettingsPanel />
+        <CookieNotice />
+        <PhotosensitivityNotice />
+        <div className="start-footer">
+          <span>
+            {t("app.prototype")}
+            <span className="nonprofit">{t("legal.nonprofit")}</span>
+          </span>
+          <LegalLinks />
+          <LanguageToggle />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="start">
+      <MenuBackdrop />
       <div className="start-bg" />
       <div className="start-content">
         <div className="start-emblem" aria-hidden>

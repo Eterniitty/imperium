@@ -38,6 +38,7 @@ import { QuantumHud } from "./QuantumHud";
 import { QuantumPanel } from "./QuantumPanel";
 import { CruiseHud, CruisePanel } from "./CruisePanel";
 import { StartScreen } from "./StartScreen";
+import { PauseMenu } from "./MainMenu";
 import { SystemPanel } from "./SystemPanel";
 import { TopBar } from "./TopBar";
 import { DeathScreen } from "./DeathScreen";
@@ -147,6 +148,7 @@ export function App() {
         <CompanionInbox />
         <HelpCalls />
         <SettingsPanel />
+        <PauseMenu />
         <EconomyPanel />
         <ColonyManager />
         <PlanetWindow />

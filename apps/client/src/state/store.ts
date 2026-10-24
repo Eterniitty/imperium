@@ -52,6 +52,8 @@ export interface GameState {
   /** Aviso breve en pantalla (salir de un sistema, error de un salto…). */
   notice: { key: I18nKey; params?: Record<string, string | number>; id: number } | null;
   settingsOpen: boolean;
+  /** Menú de pausa abierto (F10 o el botón de la barra superior). */
+  pauseOpen: boolean;
   /** Panel de economía abierto: «Humanidad», «Mercado» o ninguno. */
   economyOpen: EconomyTab | null;
   /** Ventana de gestión de colonias (desde cualquier sitio): id de la colonia abierta, o null. */
@@ -83,6 +85,9 @@ export interface GameState {
   setStats(stats: { loadedSectors: number; loadedSystems: number; fps: number }): void;
   notify(key: I18nKey, params?: Record<string, string | number>): void;
   setSettingsOpen(open: boolean): void;
+  setPauseOpen(open: boolean): void;
+  /** Vuelve al menú principal (cierra la partida: el motor y la conexión se paran). */
+  toMenu(): void;
   setEconomyOpen(tab: EconomyTab | null): void;
   setColonyManager(colonyId: string | null): void;
   setLineageOpen(open: boolean): void;
@@ -139,6 +144,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   selectedPlanet: null,
   notice: null,
   settingsOpen: false,
+  pauseOpen: false,
   economyOpen: null,
   colonyManager: null,
   lineageOpen: false,
@@ -186,6 +192,8 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   setStats: (stats) => set(stats),
 
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
+  setPauseOpen: (pauseOpen) => set({ pauseOpen }),
+  toMenu: () => set({ started: false, pauseOpen: false, settingsOpen: false }),
   setEconomyOpen: (economyOpen) => set({ economyOpen }),
   setColonyManager: (colonyManager) => set({ colonyManager }),
   setLineageOpen: (lineageOpen) => set({ lineageOpen }),
