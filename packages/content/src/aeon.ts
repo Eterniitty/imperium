@@ -336,6 +336,30 @@ export const AEON_PLACES: readonly AeonPlace[] = [
 ];
 
 /** Número de parcelas de una malla de frecuencia f. */
+/**
+ * Vuelo de la nave provisional (Era II), en metros y segundos. Lo usan igual el
+ * servidor (para validar) y el cliente de Unreal (para predecir): packages/sim
+ * aeonFlight.ts y aeonarch-ue/Core flight.h. Giros en vueltas por segundo.
+ */
+export const AEON_FLIGHT = {
+  /** Aceleración de los motores (m/s²); el impulso la multiplica. */
+  accel: 80,
+  boostFactor: 2,
+  /** Velocidad máxima normal y con impulso (m/s). */
+  maxSpeed: 250,
+  boostSpeed: 500,
+  /** Asistencia: fracción de la velocidad que frena por segundo sin empuje. */
+  assistBrake: 0.8,
+  /** Crucero: velocidad máxima (m/s), segundos hasta llegar y rapidez con que se alinea con el morro. */
+  cruiseSpeed: 15_000,
+  cruiseRampS: 5,
+  cruiseAlign: 3,
+  /** Giro máximo en cabeceo, guiñada y alabeo (vueltas por segundo). */
+  pitchRate: 0.25,
+  yawRate: 0.25,
+  rollRate: 0.2,
+} as const;
+
 export function parcelCount(frequency: number): number {
   return 10 * frequency * frequency + 2;
 }

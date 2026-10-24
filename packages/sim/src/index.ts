@@ -22,3 +22,4 @@ export * from "./fleetFuel";
 export * from "./manufacturing";
 export * from "./aeonOrbits";
 export * from "./aeonParcels";
+export * from "./aeonFlight";
