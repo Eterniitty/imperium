@@ -17,6 +17,15 @@ Plan del 23-10-2026, a petición del dueño. Describe **qué juego** se construy
 
 ---
 
+## Progreso
+
+| Fecha | Qué | Dónde |
+|---|---|---|
+| 23-10-2026 | Juego web cerrado (portada «Aeonarch se está reconstruyendo», sin acceso ni registro). | `imperium` `main` |
+| 24-10-2026 | **A0**: el ordenador del dueño compila Unreal 5.8.4 (faltaba el Windows SDK completo). Proyecto `aeonarch-ue` con módulo C++ y núcleo `Core/` en C++ puro: el hash de TypeScript sale igual dentro de Unreal (mensaje verde). | `aeonarch-ue` |
+| 24-10-2026 (noche, sin compilar en Unreal) | **A1 en marcha**: sistema de Aeon con estrella, siete mundos y 12 lunas desde `Data/aeon.json`; **planetas con relieve, mares y biomas generados por código**; gigante gaseoso con bandas; órbitas y giro según la hora real; cielo de estrellas; nave provisional con vuelo con inercia, impulso, crucero y cámaras; materiales creados por Python al abrir el editor. | `aeonarch-ue` |
+| 24-10-2026 (noche) | **S1–S3 empezados** (probados al bit en TypeScript y C++ con g++ y clang): terreno y clima, parcelas geodésicas (162/362/642), bioma más cercano, seno y coseno deterministas, órbitas de mundos y lunas; datos del sistema en `packages/content` aeon.ts exportados a JSON. | `imperium` rama `era2`, `aeonarch-ue/Core` |
+
 ## 1. Visión
 
 ### 1.1 La frase del juego
@@ -533,10 +542,10 @@ Pasar de una galaxia a un sistema cambia la forma de casi todo. Esta tabla dice 
 | Horizonte de agujeros negros | **Se va** | No hay agujero negro en el sistema (podría volver como anomalía de los Nihil). |
 | IA de naves (Carroñeros, escoltas, milicia, alienígenas) | **Se queda** | Con los hogares de cada pueblo (§2.6). |
 | Flotas, logística, bodegas, rutas automáticas | **Cambia** | Rutas entre parcelas, lunas, la estación Ábaco y las ciudades nómadas, en tiempo real dentro del sistema (minutos, no horas). |
-| Combate de flotas por rondas, asedios, conquista | **Cambia** | Se libran sobre parcelas y órbitas, y se ven en 3D en el lugar real. |
+| Combate de flotas por rondas, asedios, conquista | **Cambia** | Sin rondas: **todas las batallas en tiempo real**, simuladas por el servidor en el lugar real. Asedio general sobre parcelas, con ventanas de vulnerabilidad (mecanicas-era2.md §8 y §11). |
 | Colonias, economía perezosa, cola de construcción, libro `resource_ledger` | **Cambia** | Una colonia ocupa **parcelas** de un planeta o luna (§10.3); los recursos dependen del bioma. La resolución perezosa y el libro siguen igual. |
 | Reclamar y renombrar planetas | **Cambia** | Se reclaman parcelas; se pueden nombrar las colonias y los lugares descubiertos (nombres reportables, como hoy). |
-| Mercado global, créditos, humanidad, proyectos comunes | **Se queda** | El mercado físico está en el anillo de Origen; los envíos tardan según la distancia real. |
+| Mercado global, créditos, humanidad, proyectos comunes | **Cambia** | Se queda el mercado (anillo de Origen y nómada; solo mercado, sin trueque directo). **Se van el tesoro de la humanidad y los proyectos comunes**. Sin mantenimiento. |
 | Galaxia de 30 000 estrellas, sectores, mapa estelar | **Se va** | Sustituido por el mapa del sistema (§9.1). |
 | Salto cuántico entre estrellas, túnel, grieta del salto | **Se va** | No hay otras estrellas. El efecto de la grieta se reaprovecha para la **Grieta** de los Erradicadores. |
 | Descubrimientos y niebla de guerra por sistema | **Cambia** | **Cartografía**: se descubren regiones de los planetas, ruinas, cuevas, especies y anomalías; las parcelas no exploradas se ven borrosas en el mapa. |
@@ -547,7 +556,7 @@ Pasar de una galaxia a un sistema cambia la forma de casi todo. Esta tabla dice 
 | Emperadores de la IA | **Se queda** | Ocupan parcelas como los jugadores. |
 | Nave nodriza y acople | **Se queda** | — |
 | Tecnología, fabricación, Astillero | **Se queda** | El Astillero se hace en 3D (§5.7). |
-| Contratos, rango, objetivos, sucesos, reto de caza, peticiones de colonia | **Se queda** | Contratos adaptados (explorar regiones, rescates en lunas, repartos entre parcelas). |
+| Contratos, rango, objetivos, sucesos, reto de caza, peticiones de colonia | **Cambia** | El rango pasa a **seis oficios**; **solo objetivos semanales**; contratos adaptados (explorar regiones, rescates en lunas, repartos entre parcelas). |
 | Crisis galácticas | **Cambia** | Crisis del sistema: oleadas de la Grieta, tormentas de Céfiro, despertar de los Precursores. |
 | Leyendas de la era, ranking, metas | **Se queda** | — |
 | Ónfalo supermasivo, cielo por sistema, artículo de Wiki por sistema | **Se va** | La Wiki tiene un artículo por planeta, luna y lugar. |
