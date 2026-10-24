@@ -7,7 +7,7 @@ export const en: Record<I18nKey, string> = {
   "legal.nonprofit": "A private, free, not-for-profit project. No donations, money or support of any kind are asked for or accepted.",
   "app.prototype": "Alpha · in development",
   "closed.title": "Aeonarch is being rebuilt",
-  "closed.body": "The game is closed while we rebuild it from scratch. The Wiki stays open, and you can sign in to download or delete your account data.",
+  "closed.body": "The game is closed while we rebuild it from scratch: signing in and creating accounts are disabled. The Wiki stays open. To download or delete your account data, see the privacy policy.",
 
   "start.enter": "Awaken",
 

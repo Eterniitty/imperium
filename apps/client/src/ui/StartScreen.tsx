@@ -70,7 +70,8 @@ function AuthPanel() {
       </div>
     );
   }
-  if (GAME_CLOSED && status === "offline") return null;
+  // Sin sesión no se puede entrar ni registrarse: el juego está cerrado (los derechos sobre los datos, por la política de privacidad).
+  if (GAME_CLOSED && (status === "offline" || status === "anonymous" || status === "sent")) return null;
 
   switch (status) {
     case "loading":

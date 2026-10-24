@@ -9,7 +9,7 @@ export const es = {
   "legal.nonprofit": "Proyecto privado, gratuito y sin ánimo de lucro. No se piden ni se aceptan donaciones, dinero ni ayudas de ningún tipo.",
   "app.prototype": "Alfa · en desarrollo",
   "closed.title": "Aeonarch se está reconstruyendo",
-  "closed.body": "El juego está cerrado mientras lo rehacemos desde cero. La Wiki sigue abierta, y puedes entrar para descargar o borrar los datos de tu cuenta.",
+  "closed.body": "El juego está cerrado mientras lo rehacemos desde cero: no se puede entrar ni crear cuentas. La Wiki sigue abierta. Para descargar o borrar los datos de tu cuenta, mira la política de privacidad.",
 
   "start.enter": "Despertar",
 
