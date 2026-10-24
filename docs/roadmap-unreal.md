@@ -25,6 +25,7 @@ Plan del 23-10-2026, a petición del dueño. Describe **qué juego** se construy
 | 24-10-2026 | **A0**: el ordenador del dueño compila Unreal 5.8.4 (faltaba el Windows SDK completo). Proyecto `aeonarch-ue` con módulo C++ y núcleo `Core/` en C++ puro: el hash de TypeScript sale igual dentro de Unreal (mensaje verde). | `aeonarch-ue` |
 | 24-10-2026 (noche, sin compilar en Unreal) | **A1 en marcha**: sistema de Aeon con estrella, siete mundos y 12 lunas desde `Data/aeon.json`; **planetas con relieve, mares y biomas generados por código**; gigante gaseoso con bandas; órbitas y giro según la hora real; cielo de estrellas; nave provisional con vuelo con inercia, impulso, crucero y cámaras; materiales creados por Python al abrir el editor. | `aeonarch-ue` |
 | 24-10-2026 (noche) | **S1–S3 empezados** (probados al bit en TypeScript y C++ con g++ y clang): terreno y clima, parcelas geodésicas (162/362/642), bioma más cercano, seno y coseno deterministas, órbitas de mundos y lunas; datos del sistema en `packages/content` aeon.ts exportados a JSON. | `imperium` rama `era2`, `aeonarch-ue/Core` |
+| 24-10-2026 (madrugada) | **S3 parcelas en el servidor**: bioma y producción de cada parcela (`packages/sim` aeonParcels.ts), tierra sagrada elegida con la semilla secreta del servidor, Origen con más tierra firme (nivel del mar 0,5). `Data/aeon.json` al día. | `imperium` rama `era2`, `aeonarch-ue` |
 
 ## 1. Visión
 
