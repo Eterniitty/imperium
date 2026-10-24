@@ -328,6 +328,71 @@ export const AEON_WORLDS: readonly AeonWorld[] = [
   },
 ];
 
+/**
+ * «Cosas» repartidas por la superficie (Era II, fase A3): rocas, cristales,
+ * agujas, árboles, arbustos y hongos. Las coloca packages/sim aeonScatter.ts por
+ * casillas, con semilla, igual en el servidor y en el cliente (aeonarch-ue/Core
+ * scatter.h); las formas las genera el cliente por código según `kind`.
+ */
+export type AeonPropKind = "rock" | "crystal" | "spire" | "tree" | "shrub" | "mushroom";
+
+export interface AeonProp {
+  id: string;
+  kind: AeonPropKind;
+  /** Biomas de tierra del mundo en los que aparece. */
+  biomes: readonly string[];
+  /** Cuántas por km² donde se dan (antes de los claros). */
+  densityPerKm2: number;
+  /** Tamaño en metros (más pequeñas que grandes). */
+  sizeM: readonly [number, number];
+  /** Rampa de color estilizada: base → punta. */
+  colors: readonly [RGB, RGB];
+  /** Claros: 0 reparto uniforme; cerca de 1, solo en manchas. */
+  clump: number;
+  /** Brillo propio (0: ninguno), para cristales y hongos. */
+  glow: number;
+}
+
+export const AEON_SCATTER = {
+  /** Lado aproximado de la casilla del reparto, en metros. */
+  tileM: 128,
+  /** Tamaño de las manchas (claros y bosquecillos), en metros. */
+  clumpM: 400,
+} as const;
+
+export const AEON_PROPS: Readonly<Record<string, readonly AeonProp[]>> = {
+  brasa: [
+    { id: "glass_shard", kind: "crystal", biomes: ["glass"], densityPerKm2: 300, sizeM: [2, 9], colors: [[0.02, 0.02, 0.04], [0.35, 0.25, 0.4]], clump: 0.3, glow: 0 },
+    { id: "obsidian_spire", kind: "spire", biomes: ["glass", "dusk"], densityPerKm2: 25, sizeM: [12, 45], colors: [[0.05, 0.03, 0.05], [0.6, 0.2, 0.1]], clump: 0.5, glow: 0.4 },
+    { id: "ash_rock", kind: "rock", biomes: ["ash", "dusk"], densityPerKm2: 350, sizeM: [1, 7], colors: [[0.15, 0.13, 0.12], [0.5, 0.45, 0.42]], clump: 0.2, glow: 0 },
+  ],
+  elyss: [
+    { id: "singing_crystal", kind: "crystal", biomes: ["crystal_plain"], densityPerKm2: 450, sizeM: [1.5, 7], colors: [[0.45, 0.3, 0.75], [0.95, 0.85, 1.0]], clump: 0.35, glow: 0.8 },
+    { id: "crystal_spire", kind: "spire", biomes: ["crystal_spires"], densityPerKm2: 260, sizeM: [10, 40], colors: [[0.5, 0.3, 0.7], [1.0, 0.85, 1.0]], clump: 0.2, glow: 0.6 },
+    { id: "frost_rock", kind: "rock", biomes: ["frost", "crystal_plain"], densityPerKm2: 200, sizeM: [1, 5], colors: [[0.55, 0.55, 0.7], [0.95, 0.95, 1.0]], clump: 0.3, glow: 0 },
+  ],
+  origen: [
+    { id: "island_tree", kind: "tree", biomes: ["forest"], densityPerKm2: 900, sizeM: [10, 28], colors: [[0.25, 0.17, 0.1], [0.2, 0.6, 0.25]], clump: 0.35, glow: 0 },
+    { id: "bush", kind: "shrub", biomes: ["forest", "highland", "beach"], densityPerKm2: 500, sizeM: [1, 3.5], colors: [[0.08, 0.25, 0.1], [0.4, 0.7, 0.3]], clump: 0.4, glow: 0 },
+    { id: "granite", kind: "rock", biomes: ["highland", "snow", "beach"], densityPerKm2: 260, sizeM: [1, 8], colors: [[0.3, 0.3, 0.28], [0.7, 0.68, 0.62]], clump: 0.25, glow: 0 },
+  ],
+  tharax: [
+    { id: "giant_fungus", kind: "mushroom", biomes: ["fungal_forest"], densityPerKm2: 700, sizeM: [4, 18], colors: [[0.6, 0.55, 0.4], [0.45, 0.95, 0.35]], clump: 0.3, glow: 0.7 },
+    { id: "hive_shrub", kind: "shrub", biomes: ["hive", "fungal_forest"], densityPerKm2: 350, sizeM: [1, 4], colors: [[0.3, 0.2, 0.05], [0.85, 0.65, 0.2]], clump: 0.4, glow: 0 },
+    { id: "rib", kind: "spire", biomes: ["ribs"], densityPerKm2: 120, sizeM: [8, 35], colors: [[0.5, 0.45, 0.35], [0.95, 0.9, 0.8]], clump: 0.5, glow: 0 },
+  ],
+  vesperia: [
+    { id: "tower_tree", kind: "tree", biomes: ["tower_forest"], densityPerKm2: 450, sizeM: [25, 60], colors: [[0.3, 0.2, 0.15], [0.6, 0.75, 0.4]], clump: 0.25, glow: 0 },
+    { id: "golden_grass", kind: "shrub", biomes: ["golden_prairie"], densityPerKm2: 900, sizeM: [0.8, 2.5], colors: [[0.55, 0.4, 0.1], [1.0, 0.88, 0.45]], clump: 0.2, glow: 0 },
+    { id: "mauve_stone", kind: "rock", biomes: ["mauve_hills"], densityPerKm2: 300, sizeM: [1, 6], colors: [[0.35, 0.25, 0.35], [0.85, 0.7, 0.85]], clump: 0.3, glow: 0 },
+  ],
+  umbra: [
+    { id: "ice_shard", kind: "crystal", biomes: ["blue_ice"], densityPerKm2: 280, sizeM: [2, 10], colors: [[0.25, 0.45, 0.65], [0.8, 0.95, 1.0]], clump: 0.3, glow: 0.3 },
+    { id: "geyser_cone", kind: "spire", biomes: ["geysers"], densityPerKm2: 70, sizeM: [6, 20], colors: [[0.3, 0.4, 0.45], [0.85, 0.95, 1.0]], clump: 0.5, glow: 0 },
+    { id: "dark_boulder", kind: "rock", biomes: ["dark_rock", "geysers"], densityPerKm2: 380, sizeM: [1, 9], colors: [[0.04, 0.05, 0.07], [0.3, 0.32, 0.36]], clump: 0.2, glow: 0 },
+  ],
+};
+
 export const AEON_PLACES: readonly AeonPlace[] = [
   { id: "abacus", name: { es: "Ábaco", en: "Abacus" }, kind: "station", orbitKm: 5100, zone: "safe", owner: "greys" },
   { id: "belt", name: { es: "El Cinturón", en: "The Belt" }, kind: "belt", orbitKm: [11400, 12000], zone: "lawless", owner: null },
@@ -417,5 +482,16 @@ export function validateAeon(): string[] {
     }
   }
   for (const p of AEON_PLACES) unique(p.id);
+  for (const [worldId, props] of Object.entries(AEON_PROPS)) {
+    const world = AEON_WORLDS.find((w) => w.id === worldId);
+    if (!world) errors.push(`aeon: cosas de un mundo que no existe: ${worldId}`);
+    for (const prop of props) {
+      unique(prop.id);
+      for (const biome of prop.biomes) {
+        if (!world?.biomes.some((b) => b.id === biome)) errors.push(`aeon: ${prop.id} en un bioma que no existe: ${worldId}.${biome}`);
+      }
+      if (!(prop.sizeM[0] > 0 && prop.sizeM[1] >= prop.sizeM[0])) errors.push(`aeon: ${prop.id} con tamaño inválido`);
+    }
+  }
   return errors;
 }

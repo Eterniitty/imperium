@@ -24,3 +24,4 @@ export * from "./aeonOrbits";
 export * from "./aeonParcels";
 export * from "./aeonFlight";
 export * from "./aeonEnvironment";
+export * from "./aeonScatter";
