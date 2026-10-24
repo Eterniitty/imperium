@@ -11,6 +11,7 @@ import {
   type ShipCustomization,
   type ShipExtra,
 } from "@imperium/content";
+import type { ShipPose } from "../engine/ship/customShip";
 import type { I18nKey } from "@imperium/shared";
 import { useT } from "../state/store";
 import { menuSound } from "./MainMenu";
@@ -27,15 +28,19 @@ const ROOM_COLORS: Record<string, string> = { cockpit: "#4fa8ff", corridor: "#b4
 export function ShipCustomizer({
   draft,
   interior,
+  pose,
   onChange,
   onInterior,
+  onPose,
   onSave,
   onCancel,
 }: {
   draft: ShipCustomization;
   interior: boolean;
+  pose: ShipPose;
   onChange(next: ShipCustomization): void;
   onInterior(on: boolean): void;
+  onPose(pose: ShipPose): void;
   onSave(): void;
   onCancel(): void;
 }) {
@@ -165,6 +170,16 @@ export function ShipCustomizer({
           ))}
         </ul>
       )}
+      <div className="custom-choices">
+        <button className="custom-choice" onClick={() => (menuSound("select"), onPose({ ...pose, gearDown: !pose.gearDown }))}>
+          {t(pose.gearDown ? "custom.gearUp" : "custom.gearDown")}
+        </button>
+        {draft.parts.wings === "fan" && (
+          <button className="custom-choice" onClick={() => (menuSound("select"), onPose({ ...pose, wingsOpen: !pose.wingsOpen }))}>
+            {t(pose.wingsOpen ? "custom.wingsFold" : "custom.wingsOpen")}
+          </button>
+        )}
+      </div>
       <p className="muted small">{t("custom.cameraHint")}</p>
 
       <footer className="customizer-actions">

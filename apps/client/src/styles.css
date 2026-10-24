@@ -1311,7 +1311,7 @@ button.legend-title { background: none; border: none; padding: 0; width: 100%; t
 .customizer-tabs { display: flex; gap: 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
 .customizer-tab { flex: 1; padding: 8px 4px; border: 0; border-bottom: 2px solid transparent; background: none; color: #b8bfcc; font: inherit; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
 .customizer-tab.active { color: #ffe1a0; border-bottom-color: #e3b24e; }
-.customizer-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
+.customizer-body { flex: 1; min-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
 .customizer-body h3 { margin: 8px 0 0; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #9aa4b8; }
 .custom-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .custom-row input[type="color"] { width: 54px; height: 30px; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 6px; background: none; padding: 0; cursor: pointer; }

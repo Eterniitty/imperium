@@ -1,7 +1,13 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import type { ShipCustomization } from "@imperium/content";
-import { createCustomShip, disposeCustomShip } from "../engine/ship/customShip";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+import { SMAAPass } from "three/examples/jsm/postprocessing/SMAAPass.js";
+import { animateCustomShip, createCustomShip, disposeCustomShip, setShipPose, type ShipPose } from "../engine/ship/customShip";
 
 /**
  * Hangar en 3D del menú principal y del editor de la nave: la nave del jugador
@@ -27,6 +33,11 @@ export class MenuScene {
   private readonly planetMaterial: THREE.ShaderMaterial;
   private readonly padRings: THREE.Mesh[] = [];
   private readonly envTarget: THREE.WebGLRenderTarget;
+  private readonly composer: EffectComposer;
+  private readonly gtao: GTAOPass;
+  private readonly bloom: UnrealBloomPass;
+  private readonly smaa: SMAAPass;
+  private pose: ShipPose = { gearDown: true, wingsOpen: true };
   private frame = 0;
   private last = performance.now();
   private readonly start = performance.now();
@@ -40,8 +51,11 @@ export class MenuScene {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 0.9;
     this.renderer.setClearColor(0x02040a, 1);
+    // Sombras suaves de los focos del techo.
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(this.renderer.domElement);
 
     // Reflejos suaves en los metales (entorno de estudio generado).
@@ -50,7 +64,20 @@ export class MenuScene {
     pmrem.dispose();
     this.scene.environment = this.envTarget.texture;
     this.scene.environmentIntensity = 0.35;
-    this.scene.fog = new THREE.Fog(0x05070d, 60, 420);
+    this.scene.fog = new THREE.Fog(0x05070d, 80, 480);
+
+    // Posproceso: oclusión ambiental (rincones y uniones), resplandor de las luces y suavizado.
+    this.composer = new EffectComposer(this.renderer);
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
+    this.gtao = new GTAOPass(this.scene, this.camera, 1, 1);
+    this.gtao.blendIntensity = 0.85;
+    this.gtao.updateGtaoMaterial({ radius: 1.6, distanceExponent: 1.5, thickness: 2, scale: 1 });
+    this.composer.addPass(this.gtao);
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.4, 0.4, 0.92);
+    this.composer.addPass(this.bloom);
+    this.composer.addPass(new OutputPass());
+    this.smaa = new SMAAPass();
+    this.composer.addPass(this.smaa);
 
     this.buildHangar();
     this.buildOutside();
@@ -86,8 +113,13 @@ export class MenuScene {
   }
 
   private makeShip(): THREE.Group {
-    const { group } = createCustomShip(this.style, { interior: this.interior });
-    group.position.set(0, 4.5, 0);
+    const { group } = createCustomShip(this.style, { interior: this.interior, landed: true, pose: { ...this.pose } });
+    group.traverse((o) => {
+      if (o instanceof THREE.Mesh && !(o.material instanceof THREE.MeshBasicMaterial)) {
+        o.castShadow = true;
+        o.receiveShadow = true;
+      }
+    });
     // De tres cuartos: la proa hacia la cámara y la compuerta detrás.
     group.rotation.y = 2.3;
     return group;
@@ -102,6 +134,12 @@ export class MenuScene {
     this.ship = this.makeShip();
     this.scene.add(this.ship);
     if (this.still) this.loop();
+  }
+
+  /** Tren y alas (se animan hacia la postura pedida). */
+  setPose(pose: Partial<ShipPose>): void {
+    Object.assign(this.pose, pose);
+    setShipPose(this.ship, pose);
   }
 
   /** Menú (cámara que flota sola) o editor (cámara con el ratón). */
@@ -169,7 +207,10 @@ export class MenuScene {
     floorTexture.anisotropy = 8;
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, L), new THREE.MeshStandardMaterial({ map: floorTexture, roughness: 0.75, metalness: 0.45 }));
     floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
     this.scene.add(floor);
+    this.buildMarkings();
+    this.buildProps();
 
     // Franjas de aviso amarillas y negras junto a la compuerta.
     const hazard = document.createElement("canvas");
@@ -204,7 +245,7 @@ export class MenuScene {
       this.scene.add(ring);
       this.padRings.push(ring);
     }
-    const padLight = new THREE.PointLight(0x6fb8ff, 120, 40, 2);
+    const padLight = new THREE.PointLight(0x6fb8ff, 50, 40, 2);
     padLight.position.set(0, 1.5, 0);
     this.scene.add(padLight);
 
@@ -243,11 +284,25 @@ export class MenuScene {
       [16, -20],
       [-16, 20],
       [16, 20],
-      [0, 0],
     ] as const) {
-      const light = new THREE.PointLight(0xfff0dc, 110, 60, 2);
+      const light = new THREE.PointLight(0xfff0dc, 28, 60, 2);
       light.position.set(x, H - 2, z);
       this.scene.add(light);
+    }
+    // Dos focos sobre la plataforma que dan las sombras de la nave.
+    for (const [x, z, k] of [
+      [-10, 8, 420],
+      [12, -10, 280],
+    ] as const) {
+      const spot = new THREE.SpotLight(0xfff2e0, k, 80, 0.62, 0.55, 1.6);
+      spot.position.set(x, H - 1.5, z);
+      spot.target.position.set(0, 0, 0);
+      spot.castShadow = true;
+      spot.shadow.mapSize.set(2048, 2048);
+      spot.shadow.bias = -0.0002;
+      spot.shadow.normalBias = 0.02;
+      spot.shadow.radius = 4;
+      this.scene.add(spot, spot.target);
     }
 
     // Marco de la compuerta con luces rojas de aviso.
@@ -274,6 +329,104 @@ export class MenuScene {
     this.scene.add(field);
 
     this.scene.add(new THREE.HemisphereLight(0x8aa4c8, 0x10131a, 0.35));
+  }
+
+  /** Marcas pintadas en el suelo: círculo de aterrizaje, esquinas naranjas, número de la plataforma y líneas de paso. */
+  private buildMarkings(): void {
+    const paint = (color: number, opacity = 0.9) => new THREE.MeshStandardMaterial({ color, roughness: 0.65, metalness: 0.1, transparent: true, opacity, polygonOffset: true, polygonOffsetFactor: -2 });
+    const circle = new THREE.Mesh(new THREE.RingGeometry(21, 21.35, 128), paint(0xe8e6e0, 0.85));
+    circle.rotation.x = -Math.PI / 2;
+    circle.position.y = 0.02;
+    circle.receiveShadow = true;
+    this.scene.add(circle);
+    // Trazos naranjas alrededor del círculo y en las esquinas del puesto.
+    const orange = paint(0xe0782a);
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      const dash = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 3.2), orange);
+      dash.rotation.set(-Math.PI / 2, 0, a);
+      dash.position.set(Math.cos(a) * 24, 0.021, Math.sin(a) * 24);
+      dash.receiveShadow = true;
+      this.scene.add(dash);
+    }
+    for (const sx of [-1, 1]) {
+      for (const sz of [-1, 1]) {
+        for (const [w, l, dx, dz] of [[6, 0.45, -3, 0], [0.45, 6, 0, -3]] as const) {
+          const bar = new THREE.Mesh(new THREE.PlaneGeometry(w, l), orange);
+          bar.rotation.x = -Math.PI / 2;
+          bar.position.set(sx * (28 + dx * sx), 0.021, sz * (30 + dz * sz));
+          this.scene.add(bar);
+        }
+      }
+    }
+    // Número de la plataforma pintado en el suelo.
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 256;
+    const g = canvas.getContext("2d")!;
+    g.fillStyle = "rgba(232,230,224,0.85)";
+    g.font = "bold 200px 'Rajdhani', 'Arial Narrow', sans-serif";
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillText("A-01", 256, 130);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(10, 5), new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.7, polygonOffset: true, polygonOffsetFactor: -2 }));
+    label.rotation.x = -Math.PI / 2;
+    label.position.set(0, 0.022, 27);
+    this.scene.add(label);
+    // Líneas de paso de los operarios, en amarillo.
+    for (const sx of [-1, 1]) {
+      const lane = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 90), paint(0xd8b02a, 0.7));
+      lane.rotation.x = -Math.PI / 2;
+      lane.position.set(sx * 36, 0.021, 0);
+      this.scene.add(lane);
+    }
+  }
+
+  /** Atrezo: caja de herramientas, cajas y un foco portátil. */
+  private buildProps(): void {
+    const orange = new THREE.MeshStandardMaterial({ color: 0xd8682a, roughness: 0.55, metalness: 0.3 });
+    const dark = new THREE.MeshStandardMaterial({ color: 0x2a2d33, roughness: 0.6, metalness: 0.5 });
+    const steel = new THREE.MeshStandardMaterial({ color: 0x8a9098, roughness: 0.35, metalness: 0.85 });
+    const rubber = new THREE.MeshStandardMaterial({ color: 0x111215, roughness: 0.9 });
+    const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false });
+    const add = (geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number, ry = 0) => {
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set(x, y, z);
+      m.rotation.y = ry;
+      m.castShadow = true;
+      m.receiveShadow = true;
+      this.scene.add(m);
+      return m;
+    };
+    // Caja de herramientas con cajones.
+    const tx = -18;
+    const tz = 12;
+    add(new THREE.BoxGeometry(2.6, 1.6, 1.2), orange, tx, 0.95, tz, -0.3);
+    for (let i = 0; i < 4; i++) add(new THREE.BoxGeometry(2.4, 0.04, 0.02), dark, tx, 0.5 + i * 0.32, tz + 0.61, -0.3);
+    for (const dx of [-1.1, 1.1]) add(new THREE.CylinderGeometry(0.12, 0.12, 0.15, 12), rubber, tx + dx, 0.08, tz, -0.3);
+    // Cajas apiladas junto a la pared.
+    const crate = new THREE.MeshStandardMaterial({ color: 0x4a5058, roughness: 0.7, metalness: 0.4 });
+    for (const [x, y, z, s, r] of [
+      [-38, 1, -12, 2, 0.1],
+      [-35.6, 1, -12.4, 2, -0.15],
+      [-37, 3, -12.2, 2, 0.3],
+      [-38, 0.75, -8, 1.5, 0],
+      [38, 1.2, 20, 2.4, 0.2],
+      [36, 0.8, 23, 1.6, -0.3],
+    ] as const) {
+      add(new THREE.BoxGeometry(s, s, s), crate, x, y, z, r);
+      add(new THREE.BoxGeometry(s * 1.02, s * 0.08, s * 1.02), orange, x, y + s * 0.3, z, r);
+    }
+    // Foco portátil apuntando a la nave.
+    add(new THREE.CylinderGeometry(0.05, 0.05, 3, 8), steel, -14, 1.5, -12);
+    const head = add(new THREE.CylinderGeometry(0.45, 0.3, 0.6, 16).rotateX(Math.PI / 2), dark, -14, 3.1, -12, -0.9);
+    head.rotation.x = 0.4;
+    const lamp = new THREE.SpotLight(0xd8ecff, 140, 40, 0.45, 0.6, 1.5);
+    lamp.position.set(-14, 3.2, -12);
+    lamp.target.position.set(0, 2, 0);
+    this.scene.add(lamp, lamp.target);
   }
 
   /** Lo que se ve por la compuerta: estrellas y el sol. */
@@ -345,6 +498,7 @@ export class MenuScene {
     const w = this.container.clientWidth || window.innerWidth;
     const h = this.container.clientHeight || window.innerHeight;
     this.renderer.setSize(w, h, false);
+    this.composer.setSize(w, h);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
   };
@@ -372,17 +526,14 @@ export class MenuScene {
       const angle = 0.75 + Math.sin(t * 0.04) * 0.25;
       const radius = wide ? 46 : 62;
       this.camera.position.set(Math.sin(angle) * radius, 8 + Math.sin(t * 0.06) * 1.5, Math.cos(angle) * radius);
-      this.camera.lookAt(wide ? -12 : 0, 6, -4);
+      this.camera.lookAt(wide ? -12 : 0, 4, -4);
     }
-    // La nave flota: sube y baja un poco y se balancea.
-    this.ship.position.y = 4.5 + Math.sin(t * 0.8) * 0.15;
-    this.ship.rotation.z = Math.sin(t * 0.5) * 0.01;
-    void dt;
+    animateCustomShip(this.ship, t, dt);
     this.dust.rotation.y = t * 0.01;
     this.dust.position.y = Math.sin(t * 0.1) * 0.5;
     const pulse = 0.65 + 0.25 * Math.sin(t * 1.6);
     for (const ring of this.padRings) (ring.material as THREE.MeshBasicMaterial).opacity = pulse;
-    this.renderer.render(this.scene, this.camera);
+    this.composer.render(dt);
     if (!this.still) this.frame = requestAnimationFrame(this.loop);
   };
 
@@ -407,6 +558,7 @@ export class MenuScene {
       }
     });
     this.envTarget.dispose();
+    this.composer.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }

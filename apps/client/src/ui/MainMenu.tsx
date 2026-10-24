@@ -7,6 +7,7 @@ import { findSystemSummary, gameStore, useGame, useT } from "../state/store";
 import { tutorialStore } from "../tutorial/store";
 import type { ShipCustomization } from "@imperium/content";
 import { shipStyleStore, useShipStyle } from "../state/shipStyle";
+import type { ShipPose } from "../engine/ship/customShip";
 import { MenuScene } from "./MenuScene";
 import { ShipCustomizer } from "./ShipCustomizer";
 
@@ -39,7 +40,7 @@ export function startMusic(): void {
  * El hangar en 3D detrás del menú (quieto con «Reducir efectos»), con la nave
  * del jugador. En el editor, `style` es el borrador y la cámara va con el ratón.
  */
-export function MenuBackdrop({ style, mode = "menu", interior = false }: { style?: ShipCustomization; mode?: "menu" | "editor"; interior?: boolean }) {
+export function MenuBackdrop({ style, mode = "menu", interior = false, pose }: { style?: ShipCustomization; mode?: "menu" | "editor"; interior?: boolean; pose?: ShipPose }) {
   const ref = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<MenuScene | null>(null);
   const still = useSettings((s) => s.prefs.reduceEffects);
@@ -63,6 +64,9 @@ export function MenuBackdrop({ style, mode = "menu", interior = false }: { style
   useEffect(() => {
     sceneRef.current?.setMode(mode);
   }, [mode]);
+  useEffect(() => {
+    if (pose) sceneRef.current?.setPose(pose);
+  }, [pose]);
   return <div className={mode === "editor" ? "menu-backdrop editing" : "menu-backdrop"} ref={ref} aria-hidden={mode !== "editor"} />;
 }
 
@@ -70,14 +74,17 @@ export function MenuBackdrop({ style, mode = "menu", interior = false }: { style
 export function HangarEditor({ onClose }: { onClose(): void }) {
   const [draft, setDraft] = useState(() => shipStyleStore.getState().style);
   const [interior, setInterior] = useState(false);
+  const [pose, setPose] = useState<ShipPose>({ gearDown: true, wingsOpen: true });
   return (
     <>
-      <MenuBackdrop style={draft} mode="editor" interior={interior} />
+      <MenuBackdrop style={draft} mode="editor" interior={interior} pose={pose} />
       <ShipCustomizer
         draft={draft}
         interior={interior}
+        pose={pose}
         onChange={setDraft}
         onInterior={setInterior}
+        onPose={setPose}
         onSave={() => {
           shipStyleStore.getState().set(draft);
           onClose();
