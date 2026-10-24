@@ -24,3 +24,4 @@ export * from "./rank";
 export * from "./goals";
 export * from "./spaceEvents";
 export * from "./colonyRequests";
+export * from "./aeon";
