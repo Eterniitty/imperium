@@ -5,7 +5,10 @@ import { authStore, useAuth } from "../state/auth";
 import { settingsStore, useSettings } from "../state/settings";
 import { findSystemSummary, gameStore, useGame, useT } from "../state/store";
 import { tutorialStore } from "../tutorial/store";
+import type { ShipCustomization } from "@imperium/content";
+import { shipStyleStore, useShipStyle } from "../state/shipStyle";
 import { MenuScene } from "./MenuScene";
+import { ShipCustomizer } from "./ShipCustomizer";
 
 /** Sonidos del menú: un toque al pasar por una opción y otro al elegirla (generativos). */
 export function menuSound(kind: "hover" | "select"): void {
@@ -32,21 +35,57 @@ export function startMusic(): void {
   music.start();
 }
 
-/** El hangar en 3D detrás del menú (quieto con «Reducir efectos»). */
-export function MenuBackdrop() {
+/**
+ * El hangar en 3D detrás del menú (quieto con «Reducir efectos»), con la nave
+ * del jugador. En el editor, `style` es el borrador y la cámara va con el ratón.
+ */
+export function MenuBackdrop({ style, mode = "menu", interior = false }: { style?: ShipCustomization; mode?: "menu" | "editor"; interior?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<MenuScene | null>(null);
   const still = useSettings((s) => s.prefs.reduceEffects);
+  const saved = useShipStyle((s) => s.style);
+  const shown = style ?? saved;
   useEffect(() => {
     if (!ref.current) return;
-    let scene: MenuScene | null = null;
     try {
-      scene = new MenuScene(ref.current, still);
+      sceneRef.current = new MenuScene(ref.current, still, shipStyleStore.getState().style);
     } catch {
       // Sin WebGL: queda el fondo de colores de la portada.
     }
-    return () => scene?.dispose();
+    return () => {
+      sceneRef.current?.dispose();
+      sceneRef.current = null;
+    };
   }, [still]);
-  return <div className="menu-backdrop" ref={ref} aria-hidden />;
+  useEffect(() => {
+    sceneRef.current?.setStyle(shown, interior);
+  }, [shown, interior]);
+  useEffect(() => {
+    sceneRef.current?.setMode(mode);
+  }, [mode]);
+  return <div className={mode === "editor" ? "menu-backdrop editing" : "menu-backdrop"} ref={ref} aria-hidden={mode !== "editor"} />;
+}
+
+/** El hangar con el editor de la nave: borrador en vivo, «Guardar» lo confirma. */
+export function HangarEditor({ onClose }: { onClose(): void }) {
+  const [draft, setDraft] = useState(() => shipStyleStore.getState().style);
+  const [interior, setInterior] = useState(false);
+  return (
+    <>
+      <MenuBackdrop style={draft} mode="editor" interior={interior} />
+      <ShipCustomizer
+        draft={draft}
+        interior={interior}
+        onChange={setDraft}
+        onInterior={setInterior}
+        onSave={() => {
+          shipStyleStore.getState().set(draft);
+          onClose();
+        }}
+        onCancel={onClose}
+      />
+    </>
+  );
 }
 
 export interface MenuItem {
@@ -135,7 +174,7 @@ export function Credits({ onClose }: { onClose(): void }) {
  * Menú principal (con sesión o sin servidor): la nave del Emperador en su hangar
  * y las opciones a la izquierda. «Continuar» entra en el juego donde estaba.
  */
-export function MainMenu() {
+export function MainMenu({ onHangar }: { onHangar(): void }) {
   const t = useT();
   const { account, emperor, busy } = useAuth((s) => s);
   const [credits, setCredits] = useState(false);
@@ -149,6 +188,7 @@ export function MainMenu() {
   const where = emperor ? emperor.location.systemName || t("deep.name") : null;
   const items: MenuItem[] = [
     { id: "continue", label: t(emperor ? "menu.continue" : "menu.explore"), hint: emperor ? t("menu.continueHint", { name: emperor.name, system: where ?? "" }) : t("auth.offline"), onSelect: () => enter() },
+    { id: "hangar", label: t("menu.hangar"), hint: t("menu.hangarHint"), onSelect: onHangar },
     ...(emperor ? [{ id: "tutorial", label: t("menu.tutorial"), hint: t("menu.tutorialHint"), onSelect: () => enter(true) }] : []),
     { id: "settings", label: t("menu.settings"), onSelect: () => gameStore.getState().setSettingsOpen(true) },
     { id: "wiki", label: t("menu.wiki"), href: "/wiki/", onSelect: () => undefined },

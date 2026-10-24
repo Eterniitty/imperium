@@ -1297,3 +1297,32 @@ button.legend-title { background: none; border: none; padding: 0; width: 100%; t
 .pause-title { margin: 0; font-size: 40px; letter-spacing: 0.3em; text-transform: uppercase; color: #ffe1a0; }
 .reduce-fx .menu-item { transition: none; }
 .start-menu .start-footer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; }
+
+/* ===== Hangar: editor de la nave ===== */
+.menu-backdrop.editing { z-index: 1; }
+.menu-backdrop.editing canvas { cursor: grab; }
+.menu-backdrop.editing canvas:active { cursor: grabbing; }
+.customizer {
+  position: fixed; z-index: 3; top: 24px; left: 24px; bottom: 90px; width: min(400px, calc(100vw - 48px));
+  display: flex; flex-direction: column; gap: 12px; padding: 20px 22px; overflow: hidden;
+}
+.customizer-head h2 { margin: 0; letter-spacing: 0.3em; text-transform: uppercase; color: #ffe1a0; }
+.customizer-head p { margin: 4px 0 0; }
+.customizer-tabs { display: flex; gap: 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+.customizer-tab { flex: 1; padding: 8px 4px; border: 0; border-bottom: 2px solid transparent; background: none; color: #b8bfcc; font: inherit; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+.customizer-tab.active { color: #ffe1a0; border-bottom-color: #e3b24e; }
+.customizer-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
+.customizer-body h3 { margin: 8px 0 0; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #9aa4b8; }
+.custom-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.custom-row input[type="color"] { width: 54px; height: 30px; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 6px; background: none; padding: 0; cursor: pointer; }
+.custom-slider { flex-direction: column; align-items: stretch; gap: 4px; }
+.custom-slider input { width: 100%; accent-color: #e3b24e; }
+.custom-row .auth-input { width: 180px; }
+.custom-choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.custom-choice { padding: 6px 12px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 999px; background: rgba(255, 255, 255, 0.03); color: #e8e2d4; font: inherit; font-size: 13px; cursor: pointer; }
+.custom-choice:hover { border-color: rgba(227, 178, 78, 0.6); }
+.custom-choice.active { border-color: #e3b24e; background: rgba(227, 178, 78, 0.2); color: #ffe1a0; }
+.custom-interior { justify-content: flex-start; }
+.custom-rooms { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 12px; color: #b8bfcc; }
+.custom-rooms i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.customizer-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }

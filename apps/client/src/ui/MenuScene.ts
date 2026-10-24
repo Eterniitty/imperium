@@ -1,20 +1,28 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { createFlagship, disposeShip, shipRig } from "../engine/shipModel";
+import type { ShipCustomization } from "@imperium/content";
+import { createCustomShip, disposeCustomShip } from "../engine/ship/customShip";
 
 /**
- * Fondo en 3D del menú principal: la nave insignia del Emperador (la misma del
- * juego) aparcada en un hangar, flotando sobre su plataforma, con la compuerta
- * abierta al espacio. Todo generado aquí, sin texturas ni archivos. Solo
- * decorativo: no usa el motor del juego ni datos del servidor.
+ * Hangar en 3D del menú principal y del editor de la nave: la nave del jugador
+ * (la cañonera personalizada, `engine/ship/customShip.ts`) flotando sobre su
+ * plataforma, con la compuerta abierta al espacio. Todo generado aquí, sin
+ * texturas ni archivos.
  *
- * Unidades: 1 = 10 m, como el modelo de la nave (SHIP_SCALE); la nave mide 32.
+ * En metros. En el modo editor la cámara se mueve con el ratón (arrastrar para
+ * girar, rueda para acercar) y se puede ver el interior.
  */
 export class MenuScene {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera(38, 1, 0.5, 6000);
-  private readonly ship: THREE.Group;
+  private ship: THREE.Group;
+  private style: ShipCustomization;
+  private interior = false;
+  private mode: "menu" | "editor" = "menu";
+  /** Cámara del editor: ángulos y distancia alrededor de la nave. */
+  private orbit = { yaw: 0.8, pitch: 0.2, distance: 62 };
+  private drag: { x: number; y: number } | null = null;
   private readonly dust: THREE.Points;
   private readonly planetMaterial: THREE.ShaderMaterial;
   private readonly padRings: THREE.Mesh[] = [];
@@ -26,7 +34,9 @@ export class MenuScene {
   constructor(
     private readonly container: HTMLElement,
     private readonly still: boolean,
+    style: ShipCustomization,
   ) {
+    this.style = style;
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -45,14 +55,8 @@ export class MenuScene {
     this.buildHangar();
     this.buildOutside();
 
-    // La nave, flotando sobre la plataforma, con los motores al ralentí.
-    this.ship = createFlagship(0xc792ff);
-    this.ship.position.set(0, 5.5, 0);
-    // De tres cuartos: la proa hacia la cámara y la compuerta detrás.
-    this.ship.rotation.y = 2.3;
-    const rig = shipRig(this.ship);
-    rig.setPower(1);
-    rig.setThrust(0);
+    // La nave, flotando sobre la plataforma.
+    this.ship = this.makeShip();
     this.scene.add(this.ship);
 
     // Polvo que flota en la luz.
@@ -72,8 +76,63 @@ export class MenuScene {
 
     this.resize();
     window.addEventListener("resize", this.resize);
+    const canvas = this.renderer.domElement;
+    canvas.style.pointerEvents = "none";
+    canvas.addEventListener("pointerdown", this.onDown);
+    canvas.addEventListener("pointermove", this.onMove);
+    canvas.addEventListener("pointerup", this.onUp);
+    canvas.addEventListener("wheel", this.onWheel, { passive: false });
     this.loop();
   }
+
+  private makeShip(): THREE.Group {
+    const { group } = createCustomShip(this.style, { interior: this.interior });
+    group.position.set(0, 4.5, 0);
+    // De tres cuartos: la proa hacia la cámara y la compuerta detrás.
+    group.rotation.y = 2.3;
+    return group;
+  }
+
+  /** Cambia la nave (personalización nueva o vista del interior). */
+  setStyle(style: ShipCustomization, interior = this.interior): void {
+    this.style = style;
+    this.interior = interior;
+    this.scene.remove(this.ship);
+    disposeCustomShip(this.ship);
+    this.ship = this.makeShip();
+    this.scene.add(this.ship);
+    if (this.still) this.loop();
+  }
+
+  /** Menú (cámara que flota sola) o editor (cámara con el ratón). */
+  setMode(mode: "menu" | "editor"): void {
+    this.mode = mode;
+    const canvas = this.renderer.domElement;
+    canvas.style.pointerEvents = mode === "editor" ? "auto" : "none";
+    if (this.still) this.loop();
+  }
+
+  private readonly onDown = (e: PointerEvent) => {
+    if (this.mode !== "editor") return;
+    this.drag = { x: e.clientX, y: e.clientY };
+    this.renderer.domElement.setPointerCapture(e.pointerId);
+  };
+  private readonly onMove = (e: PointerEvent) => {
+    if (!this.drag) return;
+    this.orbit.yaw -= (e.clientX - this.drag.x) * 0.006;
+    this.orbit.pitch = Math.min(1.2, Math.max(-0.1, this.orbit.pitch + (e.clientY - this.drag.y) * 0.004));
+    this.drag = { x: e.clientX, y: e.clientY };
+    if (this.still) this.loop();
+  };
+  private readonly onUp = () => {
+    this.drag = null;
+  };
+  private readonly onWheel = (e: WheelEvent) => {
+    if (this.mode !== "editor") return;
+    e.preventDefault();
+    this.orbit.distance = Math.min(110, Math.max(20, this.orbit.distance * (1 + Math.sign(e.deltaY) * 0.08)));
+    if (this.still) this.loop();
+  };
 
   /** Suelo de placas, plataforma, columnas, techo con tiras de luz y marco de la compuerta. */
   private buildHangar(): void {
@@ -296,12 +355,29 @@ export class MenuScene {
     this.last = now;
     const t = this.still ? 8 : (now - this.start) / 1000;
     // La cámara recorre despacio un arco por el lado de la nave (el menú va a la izquierda).
-    const angle = 0.75 + Math.sin(t * 0.04) * 0.25;
     const wide = this.camera.aspect > 1;
-    const radius = wide ? 46 : 62;
-    this.camera.position.set(Math.sin(angle) * radius, 8 + Math.sin(t * 0.06) * 1.5, Math.cos(angle) * radius);
-    this.camera.lookAt(wide ? -12 : 0, 6, -4);
-    shipRig(this.ship).tick(t, dt, 1);
+    if (this.mode === "editor") {
+      // El editor deja la nave a la derecha del panel de opciones (a la izquierda).
+      const { yaw, pitch } = this.orbit;
+      const dir = new THREE.Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
+      // La cámara nunca sale del hangar: se acorta la distancia hasta quedar dentro de las paredes.
+      let distance = this.orbit.distance;
+      const inside = (d: number) => Math.abs(dir.x * d) < 44 && Math.abs(dir.z * d) < 50 && 4.5 + dir.y * d < 23 && 4.5 + dir.y * d > 1;
+      while (distance > 12 && !inside(distance)) distance *= 0.95;
+      this.camera.position.set(dir.x * distance, 4.5 + dir.y * distance, dir.z * distance);
+      const right = new THREE.Vector3().subVectors(new THREE.Vector3(0, 4.5, 0), this.camera.position).cross(new THREE.Vector3(0, 1, 0)).normalize();
+      const target = new THREE.Vector3(0, 4.5, 0).addScaledVector(right, wide ? -distance * 0.16 : 0);
+      this.camera.lookAt(target);
+    } else {
+      const angle = 0.75 + Math.sin(t * 0.04) * 0.25;
+      const radius = wide ? 46 : 62;
+      this.camera.position.set(Math.sin(angle) * radius, 8 + Math.sin(t * 0.06) * 1.5, Math.cos(angle) * radius);
+      this.camera.lookAt(wide ? -12 : 0, 6, -4);
+    }
+    // La nave flota: sube y baja un poco y se balancea.
+    this.ship.position.y = 4.5 + Math.sin(t * 0.8) * 0.15;
+    this.ship.rotation.z = Math.sin(t * 0.5) * 0.01;
+    void dt;
     this.dust.rotation.y = t * 0.01;
     this.dust.position.y = Math.sin(t * 0.1) * 0.5;
     const pulse = 0.65 + 0.25 * Math.sin(t * 1.6);
@@ -313,8 +389,13 @@ export class MenuScene {
   dispose(): void {
     cancelAnimationFrame(this.frame);
     window.removeEventListener("resize", this.resize);
+    const canvas = this.renderer.domElement;
+    canvas.removeEventListener("pointerdown", this.onDown);
+    canvas.removeEventListener("pointermove", this.onMove);
+    canvas.removeEventListener("pointerup", this.onUp);
+    canvas.removeEventListener("wheel", this.onWheel);
     this.scene.remove(this.ship);
-    disposeShip(this.ship);
+    disposeCustomShip(this.ship);
     this.scene.traverse((o) => {
       if (o instanceof THREE.Mesh || o instanceof THREE.Points) {
         o.geometry.dispose();
