@@ -66,12 +66,16 @@ kbd {
 .start {
   position: relative;
   height: 100%;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
+  /* Columna con desplazamiento: si el contenido (p. ej. la cuenta con el juego
+     cerrado) no cabe, se baja con la rueda en vez de taparse con el pie. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 .start-bg {
-  position: absolute;
+  position: fixed;
   inset: -10%;
   background:
     radial-gradient(ellipse 60% 40% at 50% 55%, rgba(232, 182, 76, 0.12), transparent 70%),
@@ -88,6 +92,8 @@ kbd {
   position: relative;
   text-align: center;
   padding: 24px;
+  /* Centrado vertical cuando cabe; arriba del todo cuando no. */
+  margin-block: auto;
 }
 .start-emblem {
   width: 72px;
@@ -181,10 +187,11 @@ kbd {
 }
 .link-btn:disabled { opacity: 0.5; cursor: default; }
 .start-footer {
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
-  right: 16px;
+  position: relative;
+  align-self: stretch;
+  padding: 16px;
+  gap: 16px;
+  flex-wrap: wrap;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -702,7 +709,8 @@ a.btn-link { color: inherit; text-decoration: none; }
 .btn-danger:hover { border-color: var(--danger); background: rgba(255, 90, 90, 0.18); }
 a.btn { display: inline-block; text-decoration: none; color: var(--text); margin-bottom: 4px; }
 .account .legal-links { justify-content: flex-start; }
-.cookie-notice { position: absolute; left: 50%; bottom: 48px; transform: translateX(-50%); width: min(560px, calc(100% - 24px)); display: flex; gap: 14px; align-items: center; padding: 10px 14px; font-size: 12.5px; color: #c3cbd9; z-index: 5; }
+.account .mono { overflow-wrap: anywhere; }
+.cookie-notice { position: fixed; left: 50%; bottom: 48px; transform: translateX(-50%); width: min(560px, calc(100% - 24px)); display: flex; gap: 14px; align-items: center; padding: 10px 14px; font-size: 12.5px; color: #c3cbd9; z-index: 5; }
 .cookie-notice p { margin: 0; line-height: 1.45; }
 .cookie-notice a { color: var(--cyan); }
 
