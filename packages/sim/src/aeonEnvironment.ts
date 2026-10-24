@@ -10,7 +10,7 @@
  * El suelo es el relieve del servidor (escala de relieve 1), el mismo que se dibuja.
  */
 import { AEON_ENVIRONMENT, AEON_WORLDS, type AeonWorld } from "@imperium/content";
-import { cosSinTurns, terrainHeight, type TerrainParams } from "@imperium/procgen";
+import { cosSinTurns, terrainDetail, terrainHeight, type TerrainParams } from "@imperium/procgen";
 import type { FlightState, Vec3 } from "./aeonFlight";
 import { aeonTerrainParams, moonTerrainParams } from "./aeonParcels";
 import { moonOffsetKm, spinTurns, worldPositionKm } from "./aeonOrbits";
@@ -91,7 +91,8 @@ export function bodySpinTurns(b: EnvBody, tMs: number): number {
 export function groundRadiusM(b: EnvBody, d: Vec3, p: EnvParams = AEON_ENVIRONMENT): number {
   if (b.kind === "gas") return b.radiusM * (1 - p.gasFloorDepth);
   if (!b.terrain) return b.radiusM;
-  const h = terrainHeight(b.terrain, d[0], d[1], d[2]);
+  // El relieve grande más el fino (el mismo que se dibuja).
+  const h = terrainHeight(b.terrain, d[0], d[1], d[2]) + terrainDetail(b.terrain, b.radiusM, d[0], d[1], d[2]);
   return b.radiusM + (b.hasSea && h < 0 ? 0 : h);
 }
 

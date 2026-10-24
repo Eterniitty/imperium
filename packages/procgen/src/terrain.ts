@@ -56,6 +56,20 @@ export function terrainHeight(p: TerrainParams, x: number, y: number, z: number)
 }
 
 /**
+ * Relieve fino en metros (solo la forma del suelo: no cambia el clima, los
+ * biomas ni las parcelas): colinas de unos 3 km de ancho y rugosidad de unos
+ * 100 m, en proporción al relieve del mundo. `radiusM` es el radio del cuerpo.
+ * El suelo es terrainHeight + terrainDetail (packages/sim aeonEnvironment.ts).
+ */
+export function terrainDetail(p: TerrainParams, radiusM: number, x: number, y: number, z: number): number {
+  const f1 = radiusM / 3000;
+  const hills = fbm3(p.seed + 15485863, x * f1, y * f1, z * f1, 5) - 0.5;
+  const f2 = radiusM / 100;
+  const rough = fbm3(p.seed + 32452843, x * f2, y * f2, z * f2, 4) - 0.5;
+  return p.reliefM * (hills * 0.06 + rough * 0.003);
+}
+
+/**
  * Clima en (x, y, z) unitario, con la altura ya calculada: hace frío en los polos
  * (z = ±1) y en las alturas; la humedad es otro ruido.
  */
