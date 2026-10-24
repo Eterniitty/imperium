@@ -17,6 +17,8 @@ Plan del 23-10-2026, a petición del dueño. Describe **qué juego** se construy
 
 ---
 
+> **En pausa (24-10-2026, decisión del dueño).** Se vuelve a la versión web: en Unreal el trabajo iba demasiado lento (cada cambio dependía de compilar y probar en el ordenador del dueño) y no daba los resultados que quería. Este plan, el lore (`lore-era2.md`), las mecánicas (`mecanicas-era2.md`) y los mundos (`sistema-aeon.md`) quedan guardados aquí; el sistema de Aeon, el vuelo, la gravedad, el aterrizaje, el relieve fino y el reparto de cosas, en TypeScript en la rama `era2`; y el cliente de Unreal, en el repositorio `aeonarch-ue`. Todo lo de `era2` se puede usar también en el cliente web.
+
 ## Progreso
 
 | Fecha | Qué | Dónde |
