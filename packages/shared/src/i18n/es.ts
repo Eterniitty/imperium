@@ -2154,6 +2154,8 @@ export const es = {
   "ue.hud.controls": "W/S avanzar · A/D lateral · Espacio/Ctrl subir/bajar · Q/E alabeo · ratón dirección · Mayús impulso · C crucero · Z asistencia · B cámara",
   "ue.common.yes": "sí",
   "ue.common.no": "no",
+  "ue.hud.altitude": "Altura: {alt} m",
+  "ue.hud.landed": "Posada en el suelo",
 } as const;
 
 export type I18nKey = keyof typeof es;

@@ -2152,4 +2152,6 @@ export const en: Record<I18nKey, string> = {
   "ue.hud.controls": "W/S forward · A/D strafe · Space/Ctrl up/down · Q/E roll · mouse steer · Shift boost · C cruise · Z assist · B camera",
   "ue.common.yes": "yes",
   "ue.common.no": "no",
+  "ue.hud.altitude": "Altitude: {alt} m",
+  "ue.hud.landed": "Landed",
 };
