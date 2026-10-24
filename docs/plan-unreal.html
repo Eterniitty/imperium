@@ -1,0 +1,3213 @@
+<title>Aeonarch en Unreal</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Instrument+Sans:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Concepto: cuaderno de bitácora de una nave imperial; cabecera con el sistema dibujado, índice lateral fijo y texto de lectura larga. Un solo aspecto oscuro, elegido a propósito. */
+:root {
+  --void: #0a0b16;        /* fondo: negro con sesgo índigo */
+  --hull: #13152a;        /* superficies */
+  --line: #2a2d4d;        /* filetes */
+  --text: #e8e5f2;        /* texto */
+  --muted: #a19eba;       /* texto secundario */
+  --aeon: #f4c76e;        /* acento: la luz de la estrella */
+  --tech: #79d9d2;        /* secundario: datos y código */
+  --display: "Cinzel", "Trajan Pro", Georgia, serif;
+  --body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--void); color: var(--text); font-family: var(--body); font-size: 16px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+a { color: var(--aeon); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--tech); outline-offset: 2px; border-radius: 2px; }
+.hero { max-width: 1240px; margin: 0 auto; padding-block: 28px 8px; display: grid; gap: 8px; }
+.hero canvas { width: 100%; height: clamp(180px, 30vw, 320px); display: block; border-bottom: 1px solid var(--line); }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--tech); margin: 0; }
+.hero h1 { font-family: var(--display); font-weight: 700; font-size: clamp(30px, 5vw, 54px); line-height: 1.05; margin: 4px 0 0; letter-spacing: .04em; text-wrap: balance; }
+.hero .lede { color: var(--muted); max-width: 62ch; margin: 0; font-size: 17px; }
+.status { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.chip { font-family: var(--mono); font-size: 12px; padding: 3px 10px; border: 1px solid var(--line); border-radius: 99px; color: var(--muted); }
+.chip.warn { border-color: #6b5320; color: var(--aeon); }
+.layout { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 48px; padding-block: 24px 80px; }
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; max-height: calc(100vh - 32px); overflow: auto; }
+nav.toc p { margin: 0 0 8px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: s; }
+nav.toc a { display: block; color: var(--muted); text-decoration: none; font-size: 14px; padding: 4px 10px; border-left: 2px solid transparent; line-height: 1.35; }
+nav.toc a:hover, nav.toc a.on { color: var(--text); border-left-color: var(--aeon); }
+main { min-width: 0; }
+main > * { max-width: 76ch; }
+main .parttitle { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 4vw, 42px); letter-spacing: .04em; margin: 8px 0 8px; color: var(--aeon); text-wrap: balance; }
+main .part { padding-top: 32px; scroll-margin-top: 16px; }
+main .part + .part { margin-top: 72px; border-top: 2px solid var(--aeon); }
+main .partnote { color: var(--aeon); border: 1px solid #6b5320; padding: 8px 12px; background: #1d1810; }
+nav.toc li.tocpart > a { color: var(--text); font-weight: 600; margin-top: 10px; }
+nav.toc li.tocpart ol { list-style: none; padding: 0; margin: 0 0 0 8px; }
+main h2 { font-family: var(--display); font-weight: 700; font-size: clamp(24px, 3vw, 32px); letter-spacing: .03em; margin: 56px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); text-wrap: balance; scroll-margin-top: 16px; }
+main h3 { font-size: 19px; margin: 32px 0 8px; text-wrap: balance; }
+main h4 { font-size: 16px; margin: 24px 0 6px; color: var(--tech); }
+main p, main li { color: var(--text); }
+main strong { color: #fff; }
+main em { color: var(--text); }
+main blockquote { margin: 16px 0; padding: 10px 18px; border-left: 3px solid var(--aeon); background: var(--hull); color: var(--text); }
+main blockquote p { margin: 6px 0; }
+main code { font-family: var(--mono); font-size: .86em; color: var(--tech); background: #0f1a24; padding: 1px 5px; border-radius: 3px; }
+main pre { overflow-x: auto; background: var(--hull); padding: 14px; border: 1px solid var(--line); }
+main pre code { background: none; padding: 0; color: var(--text); }
+main hr { border: 0; border-top: 1px solid var(--line); margin: 40px 0; }
+.twrap { overflow-x: auto; max-width: 100%; margin: 14px 0; }
+main .twrap { max-width: 100%; }
+table { border-collapse: collapse; font-size: 14px; min-width: 520px; width: 100%; font-variant-numeric: tabular-nums; }
+th { text-align: left; font-weight: 600; color: var(--aeon); border-bottom: 1px solid var(--aeon); padding: 8px 10px; vertical-align: bottom; }
+td { border-bottom: 1px solid var(--line); padding: 8px 10px; vertical-align: top; }
+tr:hover td { background: #15172e; }
+.mwrap { overflow-x: auto; max-width: 100% !important; background: #f6f4fb; padding: 12px; margin: 16px 0; }
+.planets { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 16px; margin: 18px 0 8px; max-width: 100% !important; }
+.planet { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 14px; padding: 16px; background: var(--hull); border: 1px solid var(--line); }
+.orb { width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle at 32% 30%, #fff8 0, var(--p) 22%, var(--p2) 78%); box-shadow: 0 0 22px -4px var(--p); }
+.pbody { min-width: 0; }
+.pbody p { margin: 4px 0; font-size: 14.5px; }
+.pnum { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.planet h3 { font-family: var(--display); font-size: 22px; margin: 0; color: var(--p); letter-spacing: .04em; }
+.ptags { font-family: var(--mono); font-size: 12px !important; color: var(--muted); }
+.ppeople { color: var(--tech) !important; font-weight: 600; }
+.pgame { color: var(--muted) !important; }
+footer { max-width: 1240px; margin: 0 auto; padding-block: 24px 40px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  nav.toc { position: static; max-height: none; border: 1px solid var(--line); padding: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+
+<header class="hero">
+  <canvas id="sky" aria-label="Dibujo del sistema de Aeon con sus siete planetas"></canvas>
+  <p class="eyebrow">Plan, mundo y diseño del juego · Unreal Engine 5.8.4</p>
+  <h1>Aeonarch en Unreal</h1>
+  <p class="lede">Todo en una página: el plan para rehacer Aeonarch en Unreal, el lore de la Era II, los siete mundos de Aeon y las mecánicas de juego, con todas tus decisiones.</p>
+  <div class="status"><span class="chip warn">En pausa · se vuelve a la versión web (24-10-2026)</span><span class="chip">Actualizado: 23-10-2026</span><span class="chip">Fuente: docs/ (4 documentos)</span></div>
+</header>
+
+<div class="layout">
+  <nav class="toc" aria-label="Índice"><p class="eyebrow">Índice</p><ol>
+<li class="tocpart"><a href="#plan">1. El plan</a><ol><li><a href="#plan-0-las-decisiones-del-due-o-que-gu-an-todo">0. Las decisiones del dueño que guían todo</a></li><li><a href="#plan-progreso">Progreso</a></li><li><a href="#plan-1-visi-n">1. Visión</a></li><li><a href="#plan-2-el-sistema-siete-mundos">2. El sistema: siete mundos</a></li><li><a href="#plan-3-direcci-n-art-stica-no-realista-pero-precioso">3. Dirección artística: «no realista, pero precioso»</a></li><li><a href="#plan-4-c-mo-trabajamos-dos-personas">4. Cómo trabajamos dos personas</a></li><li><a href="#plan-5-naves-por-c-digo">5. Naves por código</a></li><li><a href="#plan-6-planetas-por-c-digo">6. Planetas por código</a></li><li><a href="#plan-7-disparos-efectos-y-luz">7. Disparos, efectos y luz</a></li><li><a href="#plan-8-personas-cabina-e-interiores">8. Personas, cabina e interiores</a></li><li><a href="#plan-9-interfaz-y-sonido">9. Interfaz y sonido</a></li><li><a href="#plan-10-el-juego-rehecho-para-un-solo-sistema">10. El juego, rehecho para un solo sistema</a></li><li><a href="#plan-11-el-servidor-para-la-era-ii">11. El servidor para la Era II</a></li><li><a href="#plan-12-la-mega-hoja-de-ruta">12. La mega hoja de ruta</a></li><li><a href="#plan-13-arquitectura-del-cliente">13. Arquitectura del cliente</a></li><li><a href="#plan-14-presupuestos-de-rendimiento">14. Presupuestos de rendimiento</a></li><li><a href="#plan-15-riesgos">15. Riesgos</a></li><li><a href="#plan-16-decisiones-del-due-o-23-10-2026">16. Decisiones del dueño (23-10-2026)</a></li><li><a href="#plan-17-los-pr-ximos-pasos">17. Los próximos pasos</a></li><li><a href="#plan-18-fuentes">18. Fuentes</a></li></ol></li>
+<li class="tocpart"><a href="#lore">2. El lore de la Era II</a><ol><li><a href="#lore-1-tono-23-10-2026">1. Tono (23-10-2026)</a></li><li><a href="#lore-2-por-qu-todo-ocurre-en-aeon-23-10-2026">2. Por qué todo ocurre en Aeon (23-10-2026)</a></li><li><a href="#lore-3-m-s-all-del-sistema-23-10-2026">3. Más allá del sistema (23-10-2026)</a></li><li><a href="#lore-4-lo-que-saben-los-emperadores-de-s-mismos-23-10-2026">4. Lo que saben los Emperadores de sí mismos (23-10-2026)</a></li><li><a href="#lore-5-lo-sagrado-la-tumba-de-los-dioses-23-10-2026">5. Lo sagrado: la tumba de los dioses (23-10-2026)</a></li><li><a href="#lore-6-los-siete-dioses-y-el-que-nadie-nombra-23-10-2026">6. Los siete dioses y el que nadie nombra (23-10-2026)</a></li><li><a href="#lore-7-los-pueblos-ante-lo-sagrado-23-10-2026">7. Los pueblos ante lo sagrado (23-10-2026)</a></li><li><a href="#lore-8-la-fe-23-10-2026">8. La fe (23-10-2026)</a></li><li><a href="#lore-9-el-secreto-de-origen-23-10-2026-secreto">9. El secreto de Origen (23-10-2026) — SECRETO</a></li><li><a href="#lore-10-los-seis-dioses-conocidos-23-10-2026">10. Los seis dioses conocidos (23-10-2026)</a></li><li><a href="#lore-11-la-guerra-de-los-dioses-las-lunas-y-las-ruinas-23-10-2026">11. La guerra de los dioses, las lunas y las ruinas (23-10-2026)</a></li><li><a href="#lore-12-los-pueblos-la-humanidad-y-el-n-cleo-23-10-2026">12. Los pueblos, la humanidad y el Núcleo (23-10-2026)</a></li><li><a href="#lore-13-la-sangre-de-los-dioses-23-10-2026-secreto">13. La sangre de los dioses (23-10-2026) — SECRETO</a></li><li><a href="#lore-14-el-consejo-y-la-vida-en-origen-23-10-2026">14. El consejo y la vida en Origen (23-10-2026)</a></li><li><a href="#lore-15-erradicadores-la-grieta-y-los-grises-23-10-2026">15. Erradicadores, la Grieta y los Grises (23-10-2026)</a></li><li><a href="#lore-16-lo-que-saben-los-jugadores-lore-p-blico-23-10-2026">16. Lo que saben los jugadores (lore público) (23-10-2026)</a></li><li><a href="#lore-17-tiempo-premio-carro-eros-y-nihil-23-10-2026">17. Tiempo, premio, Carroñeros y Nihil (23-10-2026)</a></li><li><a href="#lore-18-cada-pueblo-y-su-dios-23-10-2026">18. Cada pueblo y su dios (23-10-2026)</a></li><li><a href="#lore-19-personajes-y-textos-23-10-2026">19. Personajes y textos (23-10-2026)</a></li><li><a href="#lore-20-los-humanos-y-sus-emperadores-23-10-2026">20. Los humanos y sus Emperadores (23-10-2026)</a></li><li><a href="#lore-21-muerte-cunas-y-emblemas-23-10-2026">21. Muerte, Cunas y emblemas (23-10-2026)</a></li><li><a href="#lore-pendiente-para-la-pr-xima-tanda">Pendiente para la próxima tanda</a></li></ol></li>
+<li class="tocpart"><a href="#mundos">3. Los mundos de Aeon</a><ol><li><a href="#mundos-origen-23-10-2026">Origen (23-10-2026)</a></li><li><a href="#mundos-brasa-23-10-2026">Brasa (23-10-2026)</a></li><li><a href="#mundos-elyss-23-10-2026">Elyss (23-10-2026)</a></li><li><a href="#mundos-tharax-23-10-2026">Tharax (23-10-2026)</a></li><li><a href="#mundos-vesperia-23-10-2026">Vesperia (23-10-2026)</a></li><li><a href="#mundos-c-firo-23-10-2026">Céfiro (23-10-2026)</a></li><li><a href="#mundos-umbra-23-10-2026">Umbra (23-10-2026)</a></li><li><a href="#mundos-otros-lugares-23-10-2026">Otros lugares (23-10-2026)</a></li><li><a href="#mundos-pendiente">Pendiente</a></li></ol></li>
+<li class="tocpart"><a href="#mecanicas">4. Las mecánicas</a><ol><li><a href="#mecanicas-0-decisiones-del-due-o-que-marcan-este-dise-o-23-10-2026">0. Decisiones del dueño que marcan este diseño (23-10-2026)</a></li><li><a href="#mecanicas-1-el-bucle-de-juego">1. El bucle de juego</a></li><li><a href="#mecanicas-2-el-emperador">2. El Emperador</a></li><li><a href="#mecanicas-3-las-casas">3. Las casas</a></li><li><a href="#mecanicas-4-reliquias-divinas">4. Reliquias divinas</a></li><li><a href="#mecanicas-5-recuerdos">5. Recuerdos</a></li><li><a href="#mecanicas-5b-colonias-decisiones-del-23-10-2026">5b. Colonias (decisiones del 23-10-2026)</a></li><li><a href="#mecanicas-6-la-tierra-parcelas">6. La tierra: parcelas</a></li><li><a href="#mecanicas-7-ruinas-de-los-precursores-expediciones">7. Ruinas de los Precursores (expediciones)</a></li><li><a href="#mecanicas-8-el-espacio-y-el-combate">8. El espacio y el combate</a></li><li><a href="#mecanicas-9-los-pueblos">9. Los pueblos</a></li><li><a href="#mecanicas-10-naves-y-astillero">10. Naves y Astillero</a></li><li><a href="#mecanicas-11-guerra-y-pvp-modelo-mixto">11. Guerra y PvP (modelo mixto)</a></li><li><a href="#mecanicas-12-econom-a-decisiones-del-23-10-2026">12. Economía (decisiones del 23-10-2026)</a></li><li><a href="#mecanicas-13-el-sistema-vivo-sucesos">13. El sistema vivo: sucesos</a></li><li><a href="#mecanicas-14-el-c-dice">14. El códice</a></li><li><a href="#mecanicas-15-progresi-n-decisiones-del-23-10-2026">15. Progresión (decisiones del 23-10-2026)</a></li><li><a href="#mecanicas-16-el-primer-d-a-de-un-jugador">16. El primer día de un jugador</a></li><li><a href="#mecanicas-17-qu-cambia-en-el-servidor-resumen">17. Qué cambia en el servidor (resumen)</a></li><li><a href="#mecanicas-17b-interfaz-y-experiencia-decisiones-del-23-10-2026">17b. Interfaz y experiencia (decisiones del 23-10-2026)</a></li><li><a href="#mecanicas-18-eras-con-reinicio-decisiones-del-23-10-2026">18. Eras con reinicio (decisiones del 23-10-2026)</a></li></ol></li>
+  </ol></nav>
+  <main id="doc">
+<section class="part" id="plan"><p class="eyebrow">Parte 1 · roadmap-unreal.md</p><h1 class="parttitle">El plan</h1>
+<p>Plan del 23-10-2026, a petición del dueño. Describe <strong>qué juego</strong> se construye en Unreal Engine 5.8.4 y <strong>en qué orden</strong>, con todo el detalle posible. El <em>cómo</em> técnico de conectar el cliente al servidor (acceso, protocolo, versión del cliente) está en <a href="migracion-unreal.md">migracion-unreal.md</a>; lo que aquí cambie manda sobre aquel.</p>
+<blockquote>
+<p><strong>Estado: plan, nada hecho.</strong> Ningún código de Unreal existe todavía y nada de esto se ha probado. Las cifras son propuestas para que el dueño decida; las estimaciones son orientativas.</p>
+</blockquote>
+<h2 id="plan-0-las-decisiones-del-due-o-que-gu-an-todo">0. Las decisiones del dueño que guían todo</h2>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Decisión (23-10-2026)</th>
+<th>Consecuencia para el plan</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Todo el juego se reconstruye en <strong>Unreal 5.8.4</strong>: naves, espacio, interfaz, efectos, sonido.</td>
+<td>El juego web <strong>se cierra ya</strong> (decisión del 23-10-2026, §16): la Wiki y las páginas legales siguen en línea. El servidor de Hetzner se queda (Node + PostgreSQL, multijugador y Wiki).</td>
+</tr>
+<tr>
+<td>Lo que debe tener: planetas sin pantallas de carga, cielos de colores, cabina física, naves con peso e interiores caminables.</td>
+<td>Son los pilares de la experiencia (§1.3 y §1.4).</td>
+</tr>
+<tr>
+<td><strong>No realista, pero precioso.</strong></td>
+<td>Estilo pictórico propio: colores atrevidos, formas legibles, escalas comprimidas. Libera de los problemas de la escala astronómica real.</td>
+</tr>
+<tr>
+<td><strong>Un solo sistema solar de 7 planetas.</strong> No hace falta más.</td>
+<td>Fuera la galaxia de 30 000 estrellas, el salto entre estrellas y los territorios por sistemas. Todo el juego (colonias, especies, guerra, economía) pasa a ocurrir en un sistema que se puede conocer palmo a palmo.</td>
+</tr>
+<tr>
+<td>El equipo son <strong>el dueño y Claude</strong>; el dueño no programa ni modela (puede aprender).</td>
+<td><strong>Todo por código</strong>: naves, texturas, shaders, disparos, planetas, interfaz, sonido. Claude trabaja en el ordenador del dueño con Claude Code (§3).</td>
+</tr>
+<tr>
+<td>Presupuesto: el dueño acepta gastar en Claude lo que haga falta para hacerlo bien.</td>
+<td>Se puede permitir iterar mucho el aspecto, con capturas y comparaciones en cada fase.</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<blockquote>
+<p><strong>En pausa (24-10-2026, decisión del dueño).</strong> Se vuelve a la versión web: en Unreal el trabajo iba demasiado lento (cada cambio dependía de compilar y probar en el ordenador del dueño) y no daba los resultados que quería. Este plan, el lore (<code>lore-era2.md</code>), las mecánicas (<code>mecanicas-era2.md</code>) y los mundos (<code>sistema-aeon.md</code>) quedan guardados aquí; el sistema de Aeon, el vuelo, la gravedad, el aterrizaje, el relieve fino y el reparto de cosas, en TypeScript en la rama <code>era2</code>; y el cliente de Unreal, en el repositorio <code>aeonarch-ue</code>. Todo lo de <code>era2</code> se puede usar también en el cliente web.</p>
+</blockquote>
+<h2 id="plan-progreso">Progreso</h2>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Fecha</th>
+<th>Qué</th>
+<th>Dónde</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>23-10-2026</td>
+<td>Juego web cerrado (portada «Aeonarch se está reconstruyendo», sin acceso ni registro).</td>
+<td><code>imperium</code> <code>main</code></td>
+</tr>
+<tr>
+<td>24-10-2026</td>
+<td><strong>A0</strong>: el ordenador del dueño compila Unreal 5.8.4 (faltaba el Windows SDK completo). Proyecto <code>aeonarch-ue</code> con módulo C++ y núcleo <code>Core/</code> en C++ puro: el hash de TypeScript sale igual dentro de Unreal (mensaje verde).</td>
+<td><code>aeonarch-ue</code></td>
+</tr>
+<tr>
+<td>24-10-2026 (noche, sin compilar en Unreal)</td>
+<td><strong>A1 en marcha</strong>: sistema de Aeon con estrella, siete mundos y 12 lunas desde <code>Data/aeon.json</code>; <strong>planetas con relieve, mares y biomas generados por código</strong>; gigante gaseoso con bandas; órbitas y giro según la hora real; cielo de estrellas; nave provisional con vuelo con inercia, impulso, crucero y cámaras; materiales creados por Python al abrir el editor.</td>
+<td><code>aeonarch-ue</code></td>
+</tr>
+<tr>
+<td>24-10-2026 (noche)</td>
+<td><strong>S1–S3 empezados</strong> (probados al bit en TypeScript y C++ con g++ y clang): terreno y clima, parcelas geodésicas (162/362/642), bioma más cercano, seno y coseno deterministas, órbitas de mundos y lunas; datos del sistema en <code>packages/content</code> aeon.ts exportados a JSON.</td>
+<td><code>imperium</code> rama <code>era2</code>, <code>aeonarch-ue/Core</code></td>
+</tr>
+<tr>
+<td>24-10-2026 (madrugada)</td>
+<td><strong>S3 parcelas en el servidor</strong>: bioma y producción de cada parcela (<code>packages/sim</code> aeonParcels.ts), tierra sagrada elegida con la semilla secreta del servidor, Origen con más tierra firme (nivel del mar 0,5). <code>Data/aeon.json</code> al día.</td>
+<td><code>imperium</code> rama <code>era2</code>, <code>aeonarch-ue</code></td>
+</tr>
+<tr>
+<td>24-10-2026 (mañana, sin compilar en Unreal lo de <code>Source/</code>)</td>
+<td><strong>Núcleo compartido</strong>: bioma y altura de cada parcela igual al bit en servidor y cliente (2452 parcelas), contorno de las parcelas para dibujar sus bordes, <strong>modelo de vuelo compartido</strong> (<code>packages/sim</code> aeonFlight.ts y <code>Core</code> flight.h, 2000 pasos al bit, también con -O3), modo de coma flotante preciso forzado en MSVC (por si Unreal usa /fp:fast) y pruebas en Windows con MSVC. <strong>Textos en español e inglés</strong> desde <code>Data/i18n.json</code> (claves <code>ue.*</code>).</td>
+<td><code>imperium</code> rama <code>era2</code>, <code>aeonarch-ue</code></td>
+</tr>
+<tr>
+<td>24-10-2026 (tarde)</td>
+<td><strong>Pruebas en Windows con MSVC</strong> (también con <code>/fp:fast</code>): el núcleo da los mismos bits que TypeScript con el compilador de Unreal. <strong>Planeta por trozos</strong> con nivel de detalle (<code>planet_lod.h</code>) y <strong>entorno del vuelo</strong> (<code>aeonEnvironment.ts</code> y <code>environment.h</code>): la nave se mueve con el mundo, cae con gravedad estilizada, frena con el aire y se posa en el relieve del servidor (3420 pasos al bit). Qué falta conectar en Unreal: <code>aeonarch-ue/docs/nucleo-pendiente.md</code>.</td>
+<td><code>imperium</code> rama <code>era2</code>, <code>aeonarch-ue</code></td>
+</tr>
+<tr>
+<td>24-10-2026 (tarde)</td>
+<td><strong>Primer vuelo en Unreal funcionando</strong> en el ordenador del dueño: sistema desde los datos, vuelo y gravedad del núcleo, planetas por trozos. <strong>Decisión del dueño: los mundos eran muy pequeños</strong> → radios ×50 (Origen 300 km, Céfiro 800 km), atmósferas ×50, relieve ×3, órbitas ×15 (lo mínimo para que no se crucen las lunas), crucero de 300 km/s que frena solo según la altura. Sustituye a la «escala compacta» de §2.</td>
+<td><code>imperium</code> rama <code>era2</code>, <code>aeonarch-ue</code></td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="plan-1-visi-n">1. Visión</h2>
+<h3 id="plan-1-1-la-frase-del-juego">1.1 La frase del juego</h3>
+<blockquote>
+<p><strong>Un único sistema solar, siete mundos y nueve pueblos, y en medio la humanidad, que no se puede extinguir.</strong> Cada Emperador baja a los planetas, reclama tierra, construye, comercia y pelea, muere y vuelve. Todos los jugadores comparten el mismo cielo.</p>
+</blockquote>
+<h3 id="plan-1-2-por-qu-un-solo-sistema-es-mejor-para-este-juego">1.2 Por qué un solo sistema es mejor para este juego</h3>
+<ul>
+<li><strong>Profundidad en vez de extensión.</strong> Con 30 000 estrellas, casi todas eran puntos de un mapa. Con siete planetas, cada uno puede ser un lugar memorable con su paisaje, su pueblo, su música y sus secretos.</li>
+<li><strong>Los jugadores se encuentran.</strong> En una galaxia enorme, un servidor pequeño se siente vacío. En un sistema, siempre hay alguien en la órbita de al lado.</li>
+<li><strong>Es abarcable para dos personas.</strong> Siete planetas hechos con mimo (más sus lunas, un cinturón y una estación) son un objetivo alcanzable; una galaxia precioso no lo es.</li>
+<li><strong>Encaja con el lore.</strong> La Gran Hostilidad «no necesita una declaración de guerra ni un enemigo único»: aquí todos los pueblos se disputan el mismo sistema.</li>
+</ul>
+<h3 id="plan-1-3-los-pilares-lo-que-nunca-se-recorta">1.3 Los pilares (lo que nunca se recorta)</h3>
+<ol>
+<li><strong>Belleza en cada encuadre.</strong> Cualquier captura del juego debe valer como fondo de pantalla.</li>
+<li><strong>Sin pantallas de carga</strong> entre el espacio, la atmósfera, la superficie y el interior de la nave.</li>
+<li><strong>Vuelo que se siente bien</strong>: inercia, peso, sonido, cabina.</li>
+<li><strong>El juego sigue sin el jugador</strong> (principio de <code>docs/diseno.md</code>): el servidor lo calcula todo.</li>
+<li><strong>La muerte no expulsa</strong> (Ley I): se renace y se pierde tiempo, posición y obras (Ley III).</li>
+</ol>
+<h3 id="plan-1-4-la-experiencia-que-buscamos">1.4 La experiencia que buscamos</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>En los mundos</th>
+<th>En las naves</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Despegar y aterrizar sin cortes.</td>
+<td>Cabina con instrumentos 3D; levantarse del asiento.</td>
+</tr>
+<tr>
+<td>Una paleta de color y un cielo propios en cada planeta.</td>
+<td>Naves grandes con interiores caminables.</td>
+</tr>
+<tr>
+<td>Flora y fauna procedurales: descubrir y catalogar.</td>
+<td>Peso: masa, inercia, motores que empujan de verdad.</td>
+</tr>
+<tr>
+<td>Bases construidas por piezas.</td>
+<td>Luces de cabina, materiales con desgaste, sonido envolvente.</td>
+</tr>
+<tr>
+<td>Guardianes que protegen las tierras de cada pueblo.</td>
+<td>Estaciones y hangares con vida.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Lo que no intentamos</strong>: una cantidad enorme de contenido hecho a mano ni el realismo. Somos dos personas: ganamos con <strong>lo procedural</strong> y con <strong>elegir bien</strong>.</p>
+<hr />
+<h2 id="plan-2-el-sistema-siete-mundos">2. El sistema: siete mundos</h2>
+<blockquote>
+<p>Todo lo de esta sección es una <strong>propuesta</strong> (nombres incluidos) para que el dueño la cambie a su gusto. Los datos vivirán en <code>packages/content</code> (regla 4), no en el código.</p>
+</blockquote>
+<h3 id="plan-2-1-la-estrella-aeon">2.1 La estrella: Aeon</h3>
+<p>Una estrella blanco-dorada, grande en el cielo, con una corona que ondula y destellos lentos. Se puede volar cerca para cosechar plasma (recurso <code>exotic</code>), con el calor como peligro (<code>STAR_HEAT</code> ya existe). En su cara se ven manchas que cambian con los días.</p>
+<h3 id="plan-2-2-los-planetas-de-dentro-afuera">2.2 Los planetas, de dentro afuera</h3>
+<div class="planets"><article class="planet" style="--p:#ff7a3d;--p2:#3a1a14"><div class="orb" aria-hidden="true"></div><div class="pbody"><p class="pnum">Planeta 1</p><h3>Brasa</h3><p class="ptags">Mundo forja · 3 km de radio · órbita 120 km</p><p class="ppeople">Aurelianos</p><p>Cara de día fundida, cara de noche de cristal negro; una franja habitable en el crepúsculo, con ríos de lava y bosques de obsidiana.</p><p class="pgame"><strong>En el juego:</strong> Metales y aleaciones. Arena de duelos de las casas aurelianas («el poder debe demostrarse»). Calor extremo de día.</p></div></article><article class="planet" style="--p:#c79bff;--p2:#2b1f4a"><div class="orb" aria-hidden="true"></div><div class="pbody"><p class="pnum">Planeta 2</p><h3>Elyss</h3><p class="ptags">Mundo cristal · 4 km de radio · órbita 220 km · 1 luna</p><p class="ppeople">Elydri</p><p>Llanuras de cristal violeta que cantan con el viento, auroras permanentes, ciudades-archivo que brillan bajo el suelo.</p><p class="pgame"><strong>En el juego:</strong> Investigación y lore. Los Elydri cambian conocimiento por recuerdos del Emperador entre vidas.</p></div></article><article class="planet" style="--p:#4fb6ff;--p2:#0d2a3f"><div class="orb" aria-hidden="true"></div><div class="pbody"><p class="pnum">Planeta 3</p><h3>Origen</h3><p class="ptags">Mundo océano · 6 km de radio · órbita 340 km · 1 luna · anillo</p><p class="ppeople">Humanidad (Núcleo Humano)</p><p>Océano turquesa con archipiélagos, nubes altas, un anillo orbital humano que cruza el cielo como una cinta de luz.</p><p class="pgame"><strong>En el juego:</strong> Zona segura (Núcleo Humano). Nacimiento de los Emperadores nuevos, mercado, tesoro de la humanidad, primeras parcelas.</p></div></article><article class="planet" style="--p:#7cff6b;--p2:#16301a"><div class="orb" aria-hidden="true"></div><div class="pbody"><p class="pnum">Planeta 4</p><h3>Tharax</h3><p class="ptags">Mundo vivo · 5.5 km de radio · órbita 480 km · 2 lunas</p><p class="ppeople">Tharaxi</p><p>Selva de hongos gigantes bioluminiscentes, esporas en el aire, colmenas que crecen sobre las montañas.</p><p class="pgame"><strong>En el juego:</strong> Biomasa y química. Peligroso: la colmena se adapta a quien la ataca. Casta disidente aliable.</p></div></article><article class="planet" style="--p:#ffd36b;--p2:#3a2e12"><div class="orb" aria-hidden="true"></div><div class="pbody"><p class="pnum">Planeta 5</p><h3>Vesperia</h3><p class="ptags">Mundo jardín · 4.5 km de radio · órbita 700 km · 2 lunas</p><p class="ppeople">Vesperi</p><p>Praderas doradas, árboles como torres, cielo malva al atardecer, cúpulas defensivas que se encienden si alguien amenaza.</p><p class="pgame"><strong>En el juego:</strong> Santuario: hay que ganarse el permiso para aterrizar. Protectores de colonias humanas… o resistencia contra quien abuse.</p></div></article><article class="planet" style="--p:#ff9ec8;--p2:#3d1830"><div class="orb" aria-hidden="true"></div><div class="pbody"><p class="pnum">Planeta 6</p><h3>Céfiro</h3><p class="ptags">Gigante gaseoso · 16 km de radio · órbita 950 km · 5 lunas · anillo</p><p class="ppeople">Nómadas del Vacío (y Carroñeros en el anillo)</p><p>Bandas rosas y crema, tormentas como ojos, un anillo enorme de hielo y roca, ciudades nómadas que flotan entre las nubes.</p><p class="pgame"><strong>En el juego:</strong> Comercio y volátiles (combustible). Los Nómadas comercian; los Carroñeros acechan en el anillo.</p></div></article><article class="planet" style="--p:#7fe0ff;--p2:#0a1622"><div class="orb" aria-hidden="true"></div><div class="pbody"><p class="pnum">Planeta 7</p><h3>Umbra</h3><p class="ptags">Mundo helado y oscuro · 5 km de radio · órbita 1300 km · 1 luna · anillo</p><p class="ppeople">Nihil (y ruinas de los Precursores)</p><p>Hielo azul bajo un sol lejano, geiseres, un anillo roto de los Precursores que lo rodea; zonas donde la luz se dobla.</p><p class="pgame"><strong>En el juego:</strong> Final del juego: anomalías, ruinas, tecnología antigua. Los Nihil distorsionan sensores y luz.</p></div></article></div>
+
+<h3 id="plan-2-3-los-otros-lugares">2.3 Los otros lugares</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Lugar</th>
+<th>Dónde</th>
+<th>Qué es</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ábaco</strong></td>
+<td>Punto de Lagrange L4 de Origen</td>
+<td>Estación perfecta de los <strong>Grises</strong>, de geometría exacta y blanca. Diplomacia con condiciones: tecnología o protección a cambio de límites a tu expansión.</td>
+</tr>
+<tr>
+<td><strong>El Cinturón</strong></td>
+<td>Entre Vesperia y Céfiro (≈ 800–880 km)</td>
+<td>Asteroides de todos los tamaños: minería, escondites de Carroñeros, restos de batallas.</td>
+</tr>
+<tr>
+<td><strong>La Grieta</strong></td>
+<td>Más allá de Umbra (≈ 1600 km)</td>
+<td>Herida en el espacio por la que llegan los <strong>Erradicadores</strong> en oleadas (crisis del sistema, <code>CRISES</code>).</td>
+</tr>
+<tr>
+<td><strong>Lunas</strong></td>
+<td>12 en total</td>
+<td>Cada una con un rasgo: la luna de cristal de Elyss; la luna-astillero humana de Origen; las dos de Tharax (una colmena-semilla y el refugio de la casta disidente); las dos lunas guardianas de Vesperia; las cinco de Céfiro (tres de casas nómadas, una carroñera y una helada sin dueño); la luna hueca de Umbra (Precursores). Brasa no tiene.</td>
+</tr>
+<tr>
+<td><strong>Restos y anomalías</strong></td>
+<td>Por todo el sistema</td>
+<td>Sucesos (<code>SPACE_EVENTS</code>), señales de socorro, pecios, ruinas.</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="plan-2-4-escala-propuesta-no-realista-jugable">2.4 Escala propuesta (no realista, jugable)</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Magnitud</th>
+<th>Hoy (cliente web)</th>
+<th>Propuesta para Unreal</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Radio de un planeta rocoso</td>
+<td>20–95 km</td>
+<td><strong>3–6 km</strong> (gigante: 16 km)</td>
+</tr>
+<tr>
+<td>Altura de la atmósfera</td>
+<td>proporcional</td>
+<td><strong>25–40 % del radio</strong> (atmósferas gruesas y visibles)</td>
+</tr>
+<tr>
+<td>Distancia estrella–último planeta</td>
+<td>millones de km</td>
+<td><strong>≈ 1300 km</strong></td>
+</tr>
+<tr>
+<td>Velocidad de vuelo normal</td>
+<td>—</td>
+<td>0–250 m/s (impulso hasta 500)</td>
+</tr>
+<tr>
+<td>Crucero (pulso)</td>
+<td>hasta 1800 km/s</td>
+<td><strong>hasta 15 km/s</strong>, con 5 s de carga</td>
+</tr>
+<tr>
+<td>De Origen a Tharax</td>
+<td>—</td>
+<td>≈ 15–20 s de crucero</td>
+</tr>
+<tr>
+<td>Cruzar el sistema entero</td>
+<td>—</td>
+<td>≈ 2 min de crucero</td>
+</tr>
+<tr>
+<td>Rodear Origen a pie</td>
+<td>—</td>
+<td>horas (circunferencia ≈ 38 km)</td>
+</tr>
+<tr>
+<td>Nave del Emperador</td>
+<td>320 m</td>
+<td><strong>60–90 m</strong> (proporción con planetas de pocos km); naves capitales de 300–600 m</td>
+</tr>
+<tr>
+<td>Persona</td>
+<td>—</td>
+<td>1,8 m</td>
+</tr>
+</tbody>
+</table></div>
+<p>Con estas escalas, el sistema entero cabe en coordenadas <code>double</code> sin trucos raros y la precisión deja de ser el problema principal (lo era con la escala astronómica).</p>
+<h3 id="plan-2-5-el-tiempo-en-el-sistema">2.5 El tiempo en el sistema</h3>
+<ul>
+<li><strong>Rotación</strong>: cada planeta gira (día de 40–90 min reales): hay amaneceres y noches en la superficie.</li>
+<li><strong>Órbitas</strong>: lentas (de 8 h para Brasa a 4 días para Umbra), calculadas por el servidor en función del tiempo, como hoy <code>positionAt</code>. Las alineaciones cambian: a veces Céfiro tapa el sol de una luna.</li>
+<li><strong>Eclipses</strong>, lluvias de meteoros del Cinturón y tormentas de Céfiro como sucesos visibles.</li>
+<li>El juego sigue en tiempo real (<code>TIME_SCALE=1</code>).</li>
+</ul>
+<h3 id="plan-2-6-los-nueve-pueblos-en-el-sistema">2.6 Los nueve pueblos en el sistema</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Pueblo</th>
+<th>Hogar</th>
+<th>Postura hacia la humanidad (lore)</th>
+<th>Qué hace el jugador con ellos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Humanidad</td>
+<td>Origen y su anillo</td>
+<td>—</td>
+<td>Base segura, mercado, proyectos comunes.</td>
+</tr>
+<tr>
+<td>Aurelianos</td>
+<td>Fortaleza en el crepúsculo de Brasa</td>
+<td>Rivales naturales; vasallaje o duelo</td>
+<td>Duelos y torneos, vasallaje temporal a cambio de favores, guerra por las minas.</td>
+</tr>
+<tr>
+<td>Elydri</td>
+<td>Ciudades-archivo de Elyss</td>
+<td>Quieren estudiar sus recuerdos</td>
+<td>Intercambio de conocimiento (tecnología) por «recuerdos» (registro de muertes y vidas del Emperador).</td>
+</tr>
+<tr>
+<td>Tharaxi</td>
+<td>Colmenas de Tharax</td>
+<td>Fascinados; quieren incorporar la reproducción humana</td>
+<td>Peligro principal del interior; la casta disidente puede ser aliada.</td>
+</tr>
+<tr>
+<td>Vesperi</td>
+<td>Vesperia y sus lunas</td>
+<td>Protectores o resistencia</td>
+<td>Reputación: si la ganas, protegen tus colonias; si la pierdes, te expulsan.</td>
+</tr>
+<tr>
+<td>Nómadas del Vacío</td>
+<td>Ciudades flotantes de Céfiro</td>
+<td>Comercian con quien respete sus rutas</td>
+<td>Mercado, rutas, escoltas; bloquear sus rutas los vuelve hostiles.</td>
+</tr>
+<tr>
+<td>Grises</td>
+<td>Estación Ábaco</td>
+<td>Pactos con límites</td>
+<td>Tratados: tecnología o protección a cambio de no pasar de N parcelas.</td>
+</tr>
+<tr>
+<td>Nihil</td>
+<td>Umbra y la oscuridad exterior</td>
+<td>Unos quieren acabar con la humanidad; otros liberarla</td>
+<td>Peligro del final; misterio sobre la naturaleza de los Emperadores.</td>
+</tr>
+<tr>
+<td>Precursores</td>
+<td>Ruinas en todos los mundos; anillo y luna hueca de Umbra</td>
+<td>Desaparecidos</td>
+<td>Exploración y lore: pistas del origen de los Emperadores.</td>
+</tr>
+<tr>
+<td>Erradicadores</td>
+<td>Llegan por la Grieta</td>
+<td>Exterminio</td>
+<td>Crisis periódicas que unen (o no) a los Emperadores. Objetivo: Cunas y colonias.</td>
+</tr>
+<tr>
+<td>Carroñeros</td>
+<td>Anillo de Céfiro y el Cinturón</td>
+<td>Oportunistas</td>
+<td>Piratas: cazarlos, sufrirlos, contratos.</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="plan-3-direcci-n-art-stica-no-realista-pero-precioso">3. Dirección artística: «no realista, pero precioso»</h2>
+<h3 id="plan-3-1-el-estilo-en-una-frase">3.1 El estilo en una frase</h3>
+<blockquote>
+<p><strong>«Pintura luminosa»</strong>: formas simples y legibles, colores saturados que cambian con la luz, atmósferas gruesas y brillantes, y detalles finos que solo se ven de cerca.</p>
+</blockquote>
+<p>Las referencias de tono las elige el dueño en su tablero (P0): imágenes que marcan la dirección de color, luz y forma, sin copiar ninguna.</p>
+<h3 id="plan-3-2-reglas-del-estilo">3.2 Reglas del estilo</h3>
+<ol>
+<li><strong>Color por mapas de gradiente</strong>, no por texturas realistas: cada superficie toma su color de una rampa (sombra → luz → brillo) definida en los datos del planeta o de la especie. Cambiar la rampa cambia el mundo entero.</li>
+<li><strong>La atmósfera tiñe todo</strong>: la niebla de altura toma el color del cielo; las montañas lejanas se funden con él (perspectiva aérea exagerada).</li>
+<li><strong>Luz de borde</strong> (<em>rim light</em>) en naves y criaturas para que se lean contra cualquier fondo.</li>
+<li><strong>Formas grandes, detalles pequeños</strong>: siluetas claras de lejos; paneles, tornillos y grabados solo de cerca.</li>
+<li><strong>Brillo con medida</strong>: estelas y disparos brillan, pero el limitador de destellos (fotosensibilidad) manda siempre.</li>
+<li><strong>Cada pueblo, su idioma visual</strong> (§3.3), y cada planeta, su paleta (§2.2).</li>
+<li><strong>Nada de emojis ni iconos de móvil</strong>: iconos de línea propios, como hoy.</li>
+</ol>
+<h3 id="plan-3-3-el-idioma-visual-de-cada-pueblo">3.3 El idioma visual de cada pueblo</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Pueblo</th>
+<th>Formas</th>
+<th>Materiales</th>
+<th>Colores</th>
+<th>Luz</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Humanidad</td>
+<td>Líneas limpias, paneles grabados, simetría</td>
+<td>Metal claro pintado, vidrio</td>
+<td>Blanco hueso, azul profundo, detalles dorados</td>
+<td>Cálida dentro, fría fuera</td>
+</tr>
+<tr>
+<td>Aurelianos</td>
+<td>Coronas, aletas como estandartes, picos</td>
+<td>Oro pulido, esmalte</td>
+<td>Oro, carmesí, negro</td>
+<td>Brillo de forja</td>
+</tr>
+<tr>
+<td>Elydri</td>
+<td>Facetas, prismas, crecimiento cristalino</td>
+<td>Cristal translúcido con luz interior</td>
+<td>Violeta, rosa, blanco</td>
+<td>Refracción, arcoíris</td>
+</tr>
+<tr>
+<td>Tharaxi</td>
+<td>Orgánico, costillas, bulbos, simetría radial</td>
+<td>Quitina, membranas</td>
+<td>Verde ácido, ámbar, negro</td>
+<td>Bioluminiscencia que late</td>
+</tr>
+<tr>
+<td>Vesperi</td>
+<td>Curvas, cúpulas, hojas</td>
+<td>Cerámica y madera viva</td>
+<td>Oro cálido, verde salvia, malva</td>
+<td>Escudos como pompas de jabón</td>
+</tr>
+<tr>
+<td>Nómadas</td>
+<td>Remiendos, piezas dispares, velas solares</td>
+<td>Chapa reciclada, tela</td>
+<td>Óxido, turquesa, colores de tela</td>
+<td>Faroles, luces de colores</td>
+</tr>
+<tr>
+<td>Grises</td>
+<td>Geometría perfecta: esferas, cubos, toros</td>
+<td>Cerámica blanca mate</td>
+<td>Blanco, gris perla, un único azul</td>
+<td>Líneas de luz finas y exactas</td>
+</tr>
+<tr>
+<td>Nihil</td>
+<td>Siluetas recortadas, sin detalle visible</td>
+<td>Negro que absorbe la luz</td>
+<td>Negro absoluto, borde azul eléctrico</td>
+<td>Distorsión de la luz a su alrededor</td>
+</tr>
+<tr>
+<td>Precursores</td>
+<td>Imposibles: escaleras que no acaban, anillos</td>
+<td>Piedra antigua con vetas de luz</td>
+<td>Piedra gris-arena, luz cian</td>
+<td>Pulso lento, como respiración</td>
+</tr>
+<tr>
+<td>Erradicadores</td>
+<td>Aristas, hojas, asimetría agresiva</td>
+<td>Metal ennegrecido, quemado</td>
+<td>Rojo sangre, negro</td>
+<td>Rojo intermitente</td>
+</tr>
+<tr>
+<td>Carroñeros</td>
+<td>Chatarra soldada, pintura de guerra</td>
+<td>Óxido, parches</td>
+<td>Amarillo peligro, óxido</td>
+<td>Faros desparejados</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="plan-3-4-capturas-objetivo">3.4 Capturas objetivo</h3>
+<p>Cada fase entrega <strong>capturas objetivo</strong> hechas desde cámaras fijas del «banco de pruebas visual» (§4.6). El dueño las aprueba antes de pasar de fase, y se guardan para comparar «antes y después». Propuesta de las primeras diez:
+1. Origen desde su órbita al amanecer, con el anillo humano.
+2. La nave del Emperador de frente, con Aeon detrás.
+3. Cabina de noche sobre Tharax.
+4. Atardecer en las praderas de Vesperia, a pie.
+5. Elyss con aurora, desde la superficie.
+6. Céfiro con su anillo, desde una de sus lunas.
+7. Combate en el Cinturón: trazadoras y explosiones.
+8. Crepúsculo de Brasa: lava y obsidiana.
+9. Umbra y el anillo de los Precursores.
+10. La Grieta abriéndose y la primera oleada de Erradicadores.</p>
+<h3 id="plan-3-5-m-nimos-t-cnicos">3.5 Mínimos técnicos</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Medida</th>
+<th>Objetivo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPU de referencia</td>
+<td><strong>AMD Radeon RX 9060 XT de 16 GB</strong> (la del dueño). Se comprobará también que va bien en tarjetas de 8 GB con calidad media.</td>
+</tr>
+<tr>
+<td>Resolución</td>
+<td>1440p con escalado (TSR); 1080p nativo</td>
+</tr>
+<tr>
+<td>Fotogramas</td>
+<td>60 fps en el espacio; 45–60 en superficie (30 aceptable al principio de la etapa B)</td>
+</tr>
+<tr>
+<td>Carga inicial</td>
+<td>&lt; 20 s hasta ver el espacio; nada de cargas después</td>
+</tr>
+<tr>
+<td>Memoria de vídeo</td>
+<td>≤ 8 GB en calidad alta (cabe con holgura en 16 GB); ≤ 6 GB en calidad media</td>
+</tr>
+<tr>
+<td>Tamaño de la descarga</td>
+<td>&lt; 3 GB (casi todo es procedural)</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="plan-4-c-mo-trabajamos-dos-personas">4. Cómo trabajamos dos personas</h2>
+<h3 id="plan-4-0-por-ahora-desde-la-nube-decisi-n-del-23-10-2026">4.0 Por ahora, desde la nube (decisión del 23-10-2026)</h3>
+<p>Hasta el <strong>domingo 25-10-2026</strong> el dueño no tiene cupo de Claude en su ordenador, así que <strong>hasta entonces Claude trabaja solo desde la nube</strong> (estas sesiones de claude.ai/code). Eso cambia el bucle de trabajo:</p>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Qué</th>
+<th>Cómo, desde la nube</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Escribir el código de Unreal (C++, <code>.usf</code>, Python de editor, datos)</td>
+<td>Claude lo escribe y lo sube a GitHub.</td>
+</tr>
+<tr>
+<td>Compilar y probar <code>AeonCore</code> (C++ puro: protocolo, fórmulas, terreno, parcelas)</td>
+<td><strong>Sí se puede en la nube</strong>: CMake y g++/clang en Linux, con pruebas y vectores compartidos con TypeScript; también en GitHub Actions.</td>
+</tr>
+<tr>
+<td>Compilar el proyecto de Unreal y jugarlo</td>
+<td><strong>Lo hace el dueño</strong>: baja los cambios (GitHub Desktop o <code>git pull</code>), abre el proyecto (Unreal compila solo al abrirlo) y pulsa <em>Play</em>.</td>
+</tr>
+<tr>
+<td>Errores de compilación</td>
+<td>El dueño copia el texto del error (o una captura) en la conversación; Claude lo corrige y vuelve a subir.</td>
+</tr>
+<tr>
+<td>Ver cómo queda</td>
+<td>El dueño manda capturas o vídeos cortos; Claude los mira y propone cambios.</td>
+</tr>
+<tr>
+<td>Servidor, Wiki, despliegues</td>
+<td>Como hasta ahora, desde la nube.</td>
+</tr>
+</tbody>
+</table></div>
+<p>Para que el dueño tenga que hacer lo mínimo:
+- Todo lo que se pueda se escribe en <code>AeonCore</code> y se prueba en la nube antes de que el dueño compile nada.
+- Cada entrega trae una <strong>lista corta de pasos</strong> («baja los cambios, abre el proyecto, pulsa Play, mira el planeta desde la cámara 3 y mándame una captura»).
+- Un botón del menú de depuración del juego guarda <strong>todas las capturas del banco de pruebas</strong> de una vez (§4.6), para mandarlas juntas.
+- Compilar Unreal en el contenedor de la nube <strong>no es viable</strong>: no tiene GPU ni Windows, el motor pesa decenas de GB y para Linux habría que compilarlo desde el código fuente.</p>
+<p>Desde el domingo, con cupo en el ordenador del dueño, se pasa a §4.1 (Claude Code local) y el ritmo sube mucho. Estos días en la nube sirven para lo que no necesita Unreal: el diseño de la Era II (P0), <code>AeonCore</code> y el servidor.</p>
+<h3 id="plan-4-1-claude-en-el-ordenador-del-due-o-m-s-adelante">4.1 Claude en el ordenador del dueño (más adelante)</h3>
+<p>En la nube y en Hetzner, Claude no puede compilar ni ejecutar Unreal (no hay Windows, ni GPU, ni editor). Para que el plan funcione sin que el dueño programe, <strong>Claude Code se instala en el ordenador del dueño</strong>, junto a Unreal. Desde ahí Claude puede:</p>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Capacidad</th>
+<th>Cómo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Escribir y cambiar el código</td>
+<td>C++, HLSL, Python de editor, configuración (<code>.ini</code>), datos (JSON).</td>
+</tr>
+<tr>
+<td>Compilar</td>
+<td>Unreal Build Tool desde la línea de órdenes; Claude lee los errores y los corrige sin pasarlos por el dueño.</td>
+</tr>
+<tr>
+<td>Probar</td>
+<td>Pruebas automáticas de Unreal (<em>Automation Tests</em>) lanzadas desde la línea de órdenes; pruebas de <code>AeonCore</code> con CMake.</td>
+</tr>
+<tr>
+<td>Mirar</td>
+<td>Capturas automáticas desde cámaras fijas del banco de pruebas (§4.6); Claude puede ver las imágenes y compararlas.</td>
+</tr>
+<tr>
+<td>Manejar el editor</td>
+<td>Plugin <strong>MCP</strong> de Unreal (experimental en la 5.8): crear actores, materiales, recursos y niveles, ejecutar pruebas. Escucha solo en <code>127.0.0.1</code> y no tiene autenticación, así que no se expone a la red. Si falla, todo sigue siendo posible con C++, Python y la línea de órdenes.</td>
+</tr>
+<tr>
+<td>Medir rendimiento</td>
+<td><code>stat unit</code>, <code>stat gpu</code>, Unreal Insights por línea de órdenes; Claude lee los informes.</td>
+</tr>
+</tbody>
+</table></div>
+<h4 id="plan-4-1-1-instalar-claude-code-en-windows">4.1.1 Instalar Claude Code en Windows</h4>
+<p>Hay dos maneras; las dos usan la suscripción de Claude del dueño, sin clave de API:
+1. <strong>Pestaña «Code» de la app de Claude para escritorio</strong>, con un entorno <strong>local</strong>: en el selector de entorno (bajo el cuadro de texto), <em>New environment</em> → pestaña <em>Local</em>. Las sesiones locales trabajan con los archivos del ordenador, no en la nube.
+2. <strong>Claude Code en la terminal</strong>: instalar antes <a href="https://git-scm.com/downloads/win">Git para Windows</a> y luego, en PowerShell, <code>irm https://claude.ai/install.ps1 | iex</code>. Abrir otra terminal, comprobar con <code>claude --version</code> y ejecutar <code>claude</code> en la carpeta del proyecto para iniciar sesión en el navegador.</p>
+<p>Cuidados:
+- No definir <code>ANTHROPIC_API_KEY</code> en el ordenador: haría que se facturase como API en vez de usar la suscripción (la misma regla que en el servidor).
+- La app de escritorio puede tapar la orden <code>claude</code> de la terminal; si <code>claude --version</code> muestra algo raro, <code>claude doctor</code> lo aclara.
+- Si PowerShell dice que «la ejecución de scripts está deshabilitada», la guía de problemas de instalación explica cómo permitirlo.
+- Las compilaciones de Unreal son largas: se lanzan en segundo plano para que no las corte el tiempo máximo de una orden.</p>
+<p>Documentación: <a href="https://code.claude.com/docs/en/setup">instalación</a>, <a href="https://code.claude.com/docs/en/desktop">app de escritorio</a>, <a href="https://code.claude.com/docs/en/troubleshoot-install">problemas de instalación</a>.</p>
+<h4 id="plan-4-1-2-conectar-claude-code-con-el-editor-plugin-mcp-de-la-5-8">4.1.2 Conectar Claude Code con el editor (plugin MCP de la 5.8)</h4>
+<p>Pasos según las guías publicadas (comprobarlos con la documentación de Epic al hacerlo; el plugin es experimental y las guías no coinciden del todo en la lista de plugins):
+1. En el editor: <em>Edit → Plugins</em>, activar <strong>Unreal MCP</strong> y los conjuntos de herramientas (<em>Editor Tool Set</em>; algunas guías citan también <em>All Tool Sets</em> o <em>Terminal</em>). Reiniciar el editor.
+2. <em>Edit → Editor Preferences → Model Context Protocol</em>: activar el <strong>arranque automático</strong> del servidor (escucha solo en la máquina local).
+3. Ejecutar la orden de consola que genera la configuración del cliente: escribe un <code>.mcp.json</code> en la raíz del proyecto.
+4. Abrir Claude Code <strong>en la carpeta del proyecto</strong> (donde está <code>.mcp.json</code>) y comprobar con <code>/mcp</code> que el servidor de Unreal aparece conectado.</p>
+<p>Guías: <a href="https://forums.unrealengine.com/t/community-tutorial-unreal-engine-5-8-claude-code-con-mcp-desde-cero-tutorial-completo/2729874">tutorial en español del foro de Epic</a>, <a href="https://www.youtube.com/watch?v=Ko3dy_G75-s">vídeo «UE5.8 MCP Server Setup &amp; Test»</a>, <a href="https://www.youtube.com/watch?v=iiSOB0XbRfU">vídeo «Get Claude AI INSIDE Unreal Engine 5.8»</a>.</p>
+<p>La sesión de la nube sigue para lo que ya hace: servidor, Wiki, base de datos de desarrollo y despliegues (<code>aeonarch-desplegar</code>). Las reglas de privacidad (regla 11) valen también en el ordenador del dueño: nada de datos de producción allí.</p>
+<h3 id="plan-4-2-los-papeles">4.2 Los papeles</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>El dueño</th>
+<th>Claude</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Director</strong>: decide qué se hace y cómo debe sentirse.</td>
+<td><strong>Equipo técnico y de arte procedural</strong>: escribe todo el código y los generadores.</td>
+</tr>
+<tr>
+<td>Juega cada versión y opina (mejor con capturas o vídeos cortos).</td>
+<td>Compila, prueba, hace capturas y compara con las objetivo.</td>
+</tr>
+<tr>
+<td>Aprueba las capturas objetivo de cada fase.</td>
+<td>Propone variantes («tres paletas para Elyss») para elegir.</td>
+</tr>
+<tr>
+<td>Aprende lo justo del editor (§4.5).</td>
+<td>Explica qué pulsar cuando haga falta.</td>
+</tr>
+<tr>
+<td>Despliega en producción con los scripts de siempre.</td>
+<td>Prepara los cambios del servidor y los despliegues.</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="plan-4-3-todo-por-c-digo-el-mapa-completo">4.3 «Todo por código»: el mapa completo</h3>
+<p>Los archivos binarios de Unreal (<code>.uasset</code>, <code>.umap</code>) se generan desde scripts y se pueden <strong>regenerar siempre</strong>: la fuente de verdad son los scripts y los datos, no los binarios.</p>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Qué</th>
+<th>Cómo se hace sin herramientas manuales</th>
+<th>Archivos de texto</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lógica, red, estado, cámara, pilotaje, IA visual</td>
+<td>C++</td>
+<td><code>.h</code>, <code>.cpp</code></td>
+</tr>
+<tr>
+<td><strong>Naves</strong></td>
+<td>Generador procedural (§5) con <em>Geometry Script</em> / <em>Dynamic Mesh</em>; se hornean a Static Mesh con Nanite desde un script de editor.</td>
+<td>C++ + <code>.py</code></td>
+</tr>
+<tr>
+<td><strong>Materiales</strong></td>
+<td>Materiales maestros creados por Python de editor (<code>unreal.MaterialEditingLibrary</code>: crea nodos y los conecta), con la lógica en HLSL propio (<code>.usf/.ush</code>) mediante nodos <em>Custom</em>. Instancias por especie y por planeta desde los datos.</td>
+<td><code>.py</code>, <code>.usf</code>, <code>.ush</code></td>
+</tr>
+<tr>
+<td><strong>Texturas</strong></td>
+<td>Casi todas calculadas en el shader (ruido, triplanar, paneles, desgaste). Las que necesiten ser imagen (mapas de altura, <em>cubemaps</em> del cielo, LUT de color) se generan con <em>compute shaders</em> o en el editor y se guardan.</td>
+<td><code>.usf</code>, C++, <code>.py</code></td>
+</tr>
+<tr>
+<td><strong>Planetas y terreno</strong></td>
+<td>Esfera cúbica con <em>quadtree</em> y LOD; alturas por ruido; biomas por reglas (§6).</td>
+<td>C++, <code>.usf</code></td>
+</tr>
+<tr>
+<td><strong>Atmósferas, nubes, agua</strong></td>
+<td>Shaders propios de <em>raymarching</em> estilizado (§6.4).</td>
+<td><code>.usf</code></td>
+</tr>
+<tr>
+<td><strong>Disparos y efectos</strong></td>
+<td>Sistema propio de efectos en C++ y GPU (§7); Niagara solo si se confirma que se puede generar por script o MCP (<strong>no está confirmado</strong>).</td>
+<td>C++, <code>.usf</code></td>
+</tr>
+<tr>
+<td><strong>Flora, fauna, rocas, edificios</strong></td>
+<td>Gramáticas de formas (§6.6, §8.5).</td>
+<td>C++</td>
+</tr>
+<tr>
+<td><strong>Interfaz</strong></td>
+<td><strong>Slate</strong> (la interfaz de Unreal escrita en C++) o UMG creado desde C++, con CommonUI. Iconos de línea dibujados por código.</td>
+<td>C++</td>
+</tr>
+<tr>
+<td><strong>Sonido y música</strong></td>
+<td>MetaSounds construidos por código (<em>MetaSound Builder</em>) o síntesis propia; sin archivos de audio (regla actual de música generativa). Hay que confirmar en A0 hasta dónde llega la API.</td>
+<td>C++</td>
+</tr>
+<tr>
+<td><strong>Niveles</strong></td>
+<td>Un nivel casi vacío: todo se crea en tiempo de ejecución desde los datos del servidor.</td>
+<td><code>.py</code> mínimo</td>
+</tr>
+<tr>
+<td><strong>Datos de juego</strong></td>
+<td><code>packages/content</code> (TypeScript) es la fuente; un script lo exporta a JSON y el cliente lo carga en <code>UDataAsset</code>.</td>
+<td><code>.ts</code></td>
+</tr>
+<tr>
+<td><strong>Textos</strong></td>
+<td>Claves i18n es/en de <code>packages/shared</code> exportadas a tablas de cadenas.</td>
+<td><code>.ts</code> → <code>.csv</code></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="plan-4-4-el-bucle-de-cada-tarea">4.4 El bucle de cada tarea</h3>
+<ol>
+<li>El dueño pide algo: «las naves de los Grises tienen que parecer talladas en porcelana».</li>
+<li>Claude escribe el código, compila, ejecuta las pruebas y saca capturas desde las cámaras fijas.</li>
+<li>Claude enseña el resultado (capturas, a veces varias variantes) y el dueño elige u opina.</li>
+<li>Se itera hasta que el dueño dice «sí».</li>
+<li>Commit en español (regla 8) y, si toca el servidor, despliegue como siempre.</li>
+<li>Artículo de la Wiki si es un sistema nuevo o cambiado (regla 9).</li>
+</ol>
+<h3 id="plan-4-5-lo-que-aprende-el-due-o-sin-programar">4.5 Lo que aprende el dueño (sin programar)</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Cuándo</th>
+<th>Qué</th>
+<th>Para qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A0</td>
+<td>Instalar Unreal, Visual Studio y Claude Code; abrir el proyecto; <em>Play</em>; capturas.</td>
+<td>Poder jugar cada versión.</td>
+</tr>
+<tr>
+<td>A0</td>
+<td>Git básico con Claude (subir, bajar, volver atrás).</td>
+<td>No perder trabajo.</td>
+</tr>
+<tr>
+<td>A1</td>
+<td>Moverse por el editor: ventana del nivel, panel de detalles, <em>Content Browser</em>.</td>
+<td>Mirar y tocar parámetros.</td>
+</tr>
+<tr>
+<td>A2</td>
+<td>Cambiar parámetros de una instancia de material (color, brillo) y ver el resultado.</td>
+<td>Ajustar colores sin esperar a Claude.</td>
+</tr>
+<tr>
+<td>A3</td>
+<td><em>Output Log</em> y <code>stat fps</code>.</td>
+<td>Contar a Claude lo que pasa.</td>
+</tr>
+<tr>
+<td>B</td>
+<td>Unreal Insights básico (Claude dice qué pulsar).</td>
+<td>Rendimiento en planetas.</td>
+</tr>
+<tr>
+<td>Opcional</td>
+<td>Blender, si algún día quiere modelar a mano una pieza especial (el trono del Emperador, una reliquia).</td>
+<td>Nada del plan lo necesita.</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="plan-4-6-el-banco-de-pruebas-visual">4.6 El banco de pruebas visual</h3>
+<p>Una herramienta propia, pieza clave para trabajar «a ciegas» sin perder calidad:
+- Un nivel especial con <strong>cámaras fijas</strong> (las capturas objetivo de §3.4 y más), hora del día fija y semillas fijas.
+- Una orden (<code>-run=AeonCapture</code>) que abre el juego sin interfaz, recorre las cámaras y guarda capturas con fecha.
+- Una página (como esta, publicada como artefacto) con la <strong>galería de capturas</strong>: antes y después de cada cambio, para que el dueño las vea desde cualquier sitio.
+- Medidas automáticas en cada captura: tiempo de fotograma, memoria de vídeo, número de triángulos y de llamadas de dibujo. Si algo empeora más de un 10 %, se avisa.</p>
+<h3 id="plan-4-7-repositorios-y-ramas">4.7 Repositorios y ramas</h3>
+<ul>
+<li>Repositorio nuevo <strong><code>aeonarch-ue</code></strong> para el cliente (con Git LFS para los binarios regenerables). El repositorio actual (<code>imperium</code>) sigue con el servidor, los paquetes compartidos y la Wiki.</li>
+<li>El cliente incluye <code>imperium</code> como <strong>submódulo</strong> (o copia generada) para leer <code>packages/content</code>, el protocolo y las claves i18n.</li>
+<li><code>AeonCore</code> (C++ puro) tiene integración continua en GitHub Actions en Linux (sin GPU): compila y pasa las pruebas de procgen, protocolo y fórmulas.</li>
+<li>Una rama por fase (<code>ue-a1</code>, <code>ue-a2</code>…), como hasta ahora.</li>
+</ul>
+<hr />
+<h2 id="plan-5-naves-por-c-digo">5. Naves por código</h2>
+<h3 id="plan-5-1-qu-buscamos">5.1 Qué buscamos</h3>
+<p>Naves que parezcan <strong>diseñadas por alguien</strong>, con una silueta que se reconoce de lejos y detalles que premian acercarse. Cada pueblo con su idioma (§3.3). Las 12 clases humanas, las seis de Carroñeros, las alienígenas, la nave nodriza y las piezas del Astillero salen de un único generador con parámetros distintos.</p>
+<h3 id="plan-5-2-el-generador-paso-a-paso">5.2 El generador, paso a paso</h3>
+<ol>
+<li><strong>Esqueleto</strong>: eje principal y una lista de <strong>secciones</strong> (posición a lo largo del eje, forma del perfil, anchura, altura). El perfil puede ser un círculo, un hexágono, un rombo, una gota… interpolados con curvas suaves. Simetría izquierda/derecha (o radial, para Tharaxi y Grises).</li>
+<li><strong>Volúmenes secundarios</strong> por reglas: motores (número, tamaño y colocación según la clase y el empuje de <code>packages/content</code>), alas o aletas, torretas en las bocas de fuego, puente, hangar, radiadores, antenas. Cada volumen es otra pieza de secciones.</li>
+<li><strong>Cortes y operaciones booleanas</strong>: tomas de aire, ranuras, ventanas, compuertas.</li>
+<li><strong>Biseles</strong> en las aristas: lo que más convierte una forma de ordenador en algo «real».</li>
+<li><strong>Detalle de superficie</strong> (<em>greebles</em>): paneles, tuberías, tanques, cajas, antenas pequeñas, repartidos por la superficie con ruido, densidad según la zona (más en motores y uniones, menos en las superficies grandes).</li>
+<li><strong>Colores de vértice</strong> para el material: zona (casco, detalle, motor, vidrio, emisivo), curvatura (para desgaste en los bordes), oclusión (para suciedad en los huecos).</li>
+<li><strong>LOD</strong>: tres o cuatro niveles generados por simplificación; impostores para las flotas lejanas.</li>
+<li><strong>Horneado</strong>: un script de editor ejecuta el generador para cada clase y guarda una Static Mesh con Nanite, sus LOD, su colisión simple y sus <em>sockets</em> (<code>Muzzle_*</code>, <code>Engine_*</code>, <code>Light_*</code>, <code>Seat</code>, <code>Door_*</code>).</li>
+</ol>
+<h3 id="plan-5-3-el-contrato-con-el-servidor">5.3 El contrato con el servidor</h3>
+<p>El servidor usa la forma de las naves: el origen de cada disparo (<code>hardpoints</code>, en <code>apps/server/src/space/service.ts</code>), el radio de choque (<code>SHIP_COLLISION</code>), el tamaño de blanco del combate por rondas y la escala. Regla: <strong>los datos de <code>packages/content</code> mandan</strong>, y el generador coloca las bocas de fuego exactamente donde dicen. Si un cambio de diseño las mueve, un script exporta los <em>sockets</em> a <code>packages/content</code> y se revisa el equilibrio (<code>packages/sim/test/balance.test.ts</code>). Con la escala nueva (§2.4) todas estas cifras cambian a la vez en una fase de servidor (S1, §11).</p>
+<h3 id="plan-5-4-materiales-de-las-naves">5.4 Materiales de las naves</h3>
+<p>Un material maestro por pueblo, con estas capas (todas por código):
+- <strong>Base</strong>: color por mapa de gradiente del pueblo, con variación por pieza.
+- <strong>Paneles</strong>: líneas grabadas en el shader (patrón por proyección triplanar, alineado al casco), con remaches.
+- <strong>Desgaste</strong>: bordes pelados según la curvatura; rayas en la dirección del vuelo.
+- <strong>Suciedad y quemado</strong> en los huecos y detrás de los motores.
+- <strong>Calcas</strong>: números de casco, emblemas del Emperador (por datos), franjas de la casa.
+- <strong>Ventanas</strong> emisivas que se encienden y apagan con un ritmo (vida a bordo).
+- <strong>Daño</strong>: el casco que baja quema el material, abre grietas brillantes y, al morir, la nave se rompe en piezas (cortes precalculados).
+- <strong>Escudo</strong>: carcasa con patrón hexagonal (o el del pueblo) que se ilumina donde golpea.</p>
+<h3 id="plan-5-5-luces-y-motores">5.5 Luces y motores</h3>
+<ul>
+<li>Toberas con cono de luz, ondas de calor y estela que se alarga con el empuje.</li>
+<li>Luces de navegación (roja a babor, verde a estribor), focos de aterrizaje y luz de cabina que se ve desde fuera.</li>
+<li>Postcombustión y arranque de motores (tecla I) con su secuencia de luces.</li>
+</ul>
+<h3 id="plan-5-6-la-nave-del-emperador">5.6 La nave del Emperador</h3>
+<p>Es la protagonista: más detalle, interior completo (§8.4), cabina con instrumentos y una silueta única por Emperador (variaciones del generador a partir del id del Emperador, con elecciones del jugador en el Astillero: color, emblema, piezas).</p>
+<h3 id="plan-5-7-el-astillero">5.7 El Astillero</h3>
+<p>Las piezas del editor de naves (<code>packages/content</code> shipParts.ts y el plan E6–E13 de <code>docs/editor-naves.md</code>) se generan con el mismo sistema y se hornean una vez; en el juego, el diseño del jugador se <strong>monta</strong> con piezas ya horneadas (rápido) y se vuelve a hornear en segundo plano para tener una sola malla.</p>
+<hr />
+<h2 id="plan-6-planetas-por-c-digo">6. Planetas por código</h2>
+<h3 id="plan-6-1-de-lejos">6.1 De lejos</h3>
+<p>Esfera con material de relieve (normales por ruido), mapa de colores por biomas, nubes en una capa aparte y atmósfera por <em>raymarching</em> (§6.4). Desde la órbita ya se ven continentes, océanos, ríos de lava, cristales, selvas que brillan de noche.</p>
+<h3 id="plan-6-2-de-cerca-la-esfera-c-bica">6.2 De cerca: la esfera cúbica</h3>
+<ul>
+<li>Un cubo de seis caras proyectado a esfera; cada cara es un <em>quadtree</em>: cuanto más cerca está la nave, más se subdivide.</li>
+<li>Cada parche es una malla de 33×33 o 65×65 vértices generada en un hilo aparte; costuras sin grietas entre niveles (bordes ajustados o faldones).</li>
+<li>Origen del mundo en la nave (sin saltos visibles).</li>
+<li>Colisión: el parche más cercano genera también su colisión.</li>
+</ul>
+<h3 id="plan-6-3-terreno-y-biomas">6.3 Terreno y biomas</h3>
+<ul>
+<li><strong>Alturas</strong>: suma de ruidos (montañas, colinas, detalle), con erosión simulada barata (terrazas, valles) y rasgos especiales por planeta: cañones de lava en Brasa, agujas de cristal en Elyss, archipiélagos en Origen, colmenas en Tharax, mesetas en Vesperia, géiseres en Umbra.</li>
+<li><strong>Biomas</strong> por temperatura (latitud + altura + cara de día/noche en Brasa), humedad y altura. Cada bioma tiene su rampa de colores, su suelo, su flora y su sonido.</li>
+<li><strong>Agua</strong>: océanos con oleaje por shader, espuma en la orilla, transparencia de color; lagos de lava en Brasa, mares de metano en Umbra.</li>
+<li><strong>Cuevas</strong> (etapa C): volúmenes bajo el terreno con otro sistema (SDF), más adelante.</li>
+</ul>
+<h3 id="plan-6-4-atm-sfera-nubes-y-cielo-estilizados">6.4 Atmósfera, nubes y cielo (estilizados)</h3>
+<ul>
+<li><strong>Atmósfera</strong> por <em>raymarching</em> con dispersión de Rayleigh y Mie, pero con los colores <strong>elegidos</strong> por planeta (cielo malva en Vesperia, verde en Tharax, violeta con aurora en Elyss), no los físicos.</li>
+<li><strong>Nubes</strong> volumétricas baratas (capas con ruido 3D y mucha suavidad), sombras de nubes sobre el terreno.</li>
+<li><strong>Niebla de altura</strong> del color del cielo; perspectiva aérea exagerada.</li>
+<li><strong>Cielo desde la superficie</strong>: los otros planetas, el anillo de Origen, Céfiro enorme en el cielo de sus lunas, la estrella con su corona; estrellas de fondo y la Vía Láctea pintada.</li>
+<li><strong>Ciclo de día y noche</strong> con amaneceres de color, y auroras en Elyss y Umbra.</li>
+<li><strong>Entrada atmosférica</strong>: plasma, calor y temblor según el tipo de atmósfera (<code>entry</code>, ya definido en <code>packages/sim</code> bodies.ts).</li>
+</ul>
+<h3 id="plan-6-5-terreno-compartido-con-el-servidor">6.5 Terreno compartido con el servidor</h3>
+<p>Para que el servidor sepa si una nave choca con una montaña, si un jugador está de pie sobre el suelo o en qué bioma está una parcela, la <strong>altura del terreno y el bioma</strong> deben ser funciones deterministas (regla 3: solo enteros y <code>+ - * / sqrt</code>) escritas en <code>packages/procgen</code> (TypeScript) y portadas a <code>AeonCore</code> (C++) con <strong>vectores de prueba al bit</strong> (ver migracion-unreal.md §3.4). El cliente añade encima detalle puramente visual que no afecta al juego (rocas pequeñas, hierba, pequeñas ondulaciones).</p>
+<h3 id="plan-6-6-flora-rocas-y-vida">6.6 Flora, rocas y vida</h3>
+<ul>
+<li><strong>Rocas</strong>: esferas deformadas por ruido y cortes, con el material del bioma.</li>
+<li><strong>Flora</strong> por gramáticas (sistemas L para árboles y hongos, crecimiento cristalino para Elyss, bulbos y tentáculos para Tharax), colocada por reglas de densidad por bioma; viento por shader.</li>
+<li><strong>Fauna</strong> (etapa C): cuerpos por piezas (como las naves), con esqueletos y animación procedural (patas que buscan el suelo, alas, aletas); comportamientos sencillos (pastar, huir, atacar) calculados en el cliente salvo lo que afecte al juego.</li>
+<li><strong>Guardianes</strong>: cada pueblo protege sus tierras con drones o criaturas (datos en <code>packages/content</code>.</li>
+</ul>
+<hr />
+<h2 id="plan-7-disparos-efectos-y-luz">7. Disparos, efectos y luz</h2>
+<h3 id="plan-7-1-el-sistema-de-efectos-propio">7.1 El sistema de efectos propio</h3>
+<p>Como Niagara se edita con herramientas visuales y no está confirmado que se pueda generar por código, el plan arranca con un <strong>sistema de efectos propio</strong> en C++ y GPU:
+- <strong>Partículas en GPU</strong> (<em>compute shader</em>): posición, velocidad, vida, color por rampa, tamaño; miles por efecto.
+- <strong>Mallas instanciadas</strong> con materiales emisivos para trazadoras, rayos, ondas de choque y restos.
+- <strong>Cintas</strong> (<em>ribbons</em>) para estelas de motores y misiles.
+- <strong>Distorsión</strong> de pantalla para ondas de calor y choques.
+- Todo descrito como <strong>datos</strong> (JSON: cuántas partículas, colores, tiempos), para que el dueño pueda pedir «más chispas, más naranja» y se cambie sin tocar código.</p>
+<p>Si en A0 se confirma que Niagara se puede construir por script o MCP, se usa para lo que convenga; el sistema propio queda igualmente para lo crítico.</p>
+<h3 id="plan-7-2-cat-logo-de-efectos-por-fases">7.2 Catálogo de efectos (por fases)</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Efecto</th>
+<th>Fase</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Estela de motor y arranque (I)</td>
+<td>A1</td>
+<td>Cono de luz, ondas de calor, cinta.</td>
+</tr>
+<tr>
+<td>Pulso de crucero</td>
+<td>A1</td>
+<td>Líneas de velocidad, sonido que sube.</td>
+</tr>
+<tr>
+<td>Trazadora de cañón y destello en la boca</td>
+<td>A3</td>
+<td>Por arma (<code>WeaponKind</code>).</td>
+</tr>
+<tr>
+<td>Impacto en casco, en escudo, en roca</td>
+<td>A3</td>
+<td>Chispas, metal fundido, marca que se enfría.</td>
+</tr>
+<tr>
+<td>Misil: estela, explosión, onda</td>
+<td>A3</td>
+<td>Interceptables (ya en el servidor).</td>
+</tr>
+<tr>
+<td>Explosión de nave y restos</td>
+<td>A3</td>
+<td>Piezas precortadas, fuego que se apaga en el vacío.</td>
+</tr>
+<tr>
+<td>Láser de minería (L)</td>
+<td>A4</td>
+<td>Distorsión, fragmentos, roca que brilla.</td>
+</tr>
+<tr>
+<td>Entrada atmosférica</td>
+<td>B2</td>
+<td>Plasma según <code>entry</code>.</td>
+</tr>
+<tr>
+<td>Polvo al aterrizar</td>
+<td>B2</td>
+<td>Color del suelo.</td>
+</tr>
+<tr>
+<td>Pisadas, huellas</td>
+<td>B3</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Esporas de Tharax, cristales que cantan en Elyss</td>
+<td>B1</td>
+<td>Ambiente por bioma.</td>
+</tr>
+<tr>
+<td>Grieta de los Erradicadores</td>
+<td>C</td>
+<td>El gran efecto del juego.</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="plan-7-3-luz-y-posproceso">7.3 Luz y posproceso</h3>
+<ul>
+<li><strong>Iluminación</strong>: la estrella como luz direccional principal; luz de rebote barata del planeta cercano (color del planeta) y del gigante; Lumen solo en superficie e interiores si el rendimiento lo permite; MegaLights para las muchas luces pequeñas de naves y bases.</li>
+<li><strong>Posproceso</strong>: <em>bloom</em> controlado, exposición automática suave, aberración y grano mínimos, corrección de color por planeta (LUT generada por código), destellos de lente de la estrella.</li>
+<li><strong>Limitador de destellos</strong> global (fotosensibilidad, ya existe en el cliente web: <code>flashLimiter.ts</code>): ningún efecto puede pasar de cierto cambio de brillo por segundo; el aviso de fotosensibilidad se mantiene.</li>
+</ul>
+<hr />
+<h2 id="plan-8-personas-cabina-e-interiores">8. Personas, cabina e interiores</h2>
+<h3 id="plan-8-1-la-cabina">8.1 La cabina</h3>
+<ul>
+<li>Asiento, consola y cristal modelados por código; instrumentos como pantallas 3D (UMG o Slate en una textura): combustible, energía, munición, radar, blancos, estado del casco.</li>
+<li>La cabeza se mueve con la aceleración; vibración con el empuje; gotas y escarcha en el cristal en las atmósferas.</li>
+<li>Primera y tercera persona (como hoy) y cámara libre (G).</li>
+</ul>
+<h3 id="plan-8-2-el-emperador-a-pie-etapa-b">8.2 El Emperador a pie (etapa B)</h3>
+<p>El personaje es <strong>lo más difícil de hacer por código</strong>. Propuesta realista para dos personas:
+- <strong>Traje espacial estilizado con casco cerrado</strong> (sin cara ni pelo: lo más difícil de generar bien). Forma por piezas, como las naves, con el idioma visual humano.
+- <strong>Esqueleto estándar</strong> y <strong>animación procedural</strong>: andar, correr, saltar y caer calculados (pies que buscan el suelo, inclinación en las cuestas, balanceo de brazos), más <em>jetpack</em>.
+- Si algún día se quiere más (animaciones de captura de movimiento), se usan recursos gratuitos con licencia revisada o el dueño aprende Blender. No hace falta para el plan.</p>
+<h3 id="plan-8-3-herederos-y-otros-humanos">8.3 Herederos y otros humanos</h3>
+<p>Los Herederos (Fase 10) y los humanos de a bordo se ven como figuras con el mismo traje y colores de su doctrina; en las colonias, gente andando por las calles con animación procedural sencilla.</p>
+<h3 id="plan-8-4-interiores-de-naves-etapa-b">8.4 Interiores de naves (etapa B)</h3>
+<ul>
+<li><strong>Generación por gramática</strong>: puente, pasillos, camarotes, bodega, sala de máquinas y hangar, colocados según el tamaño de la nave; puertas en los <em>sockets</em> <code>Door_*</code>.</li>
+<li><strong>Marco local</strong>: dentro de la nave, la física del personaje usa el marco de la nave; se puede andar mientras vuela.</li>
+<li>Ventanas desde dentro con la vista real del espacio.</li>
+</ul>
+<h3 id="plan-8-5-edificios-y-bases">8.5 Edificios y bases</h3>
+<ul>
+<li><strong>Gramática de formas</strong> por pueblo: torres aurelianas, cúpulas vesperi, colmenas tharaxi, archivos cristalinos elydri, ciudades flotantes nómadas, arquitectura humana de Origen.</li>
+<li>Las instalaciones del juego (<code>mine</code>, <code>refinery</code>, <code>power_plant</code>, <code>shipyard</code>, <code>drydock</code>, <code>defense_platform</code>, <code>lineage_cradle</code>, <code>factory</code>) tienen cada una su edificio generado, con variaciones.</li>
+<li>Bases del jugador por piezas (etapa B5), que encajan como el Astillero.</li>
+</ul>
+<hr />
+<h2 id="plan-9-interfaz-y-sonido">9. Interfaz y sonido</h2>
+<h3 id="plan-9-1-interfaz">9.1 Interfaz</h3>
+<ul>
+<li><strong>Tres capas</strong>: cabina (instrumentos 3D), visor del casco (HUD de vuelo y combate, en el espacio de la cabeza) y ventanas de gestión (2D).</li>
+<li><strong>Slate en C++</strong> para todo, con un sistema de diseño propio: tipografías, colores por pueblo, espaciados, animaciones suaves. Iconos de línea propios (los SVG de <code>hudIcons.tsx</code> pasan a dibujarse por código).</li>
+<li><strong>Ventanas</strong> que hoy existen (colonias, flotas, logística, mercado, humanidad, batallas, asedios, linaje, contratos, rango, objetivos, investigación, Astillero, ajustes, teclas, tutorial), rediseñadas para el sistema de un solo mundo (§10).</li>
+<li><strong>Mapa del sistema</strong> en 3D: los siete planetas con sus órbitas reales, flotas, parcelas, rutas, peligros; acercarse a un planeta muestra sus parcelas (§10.3).</li>
+<li><strong>i18n es/en</strong> desde las claves de <code>packages/shared</code> (regla 5), exportadas a tablas de cadenas de Unreal.</li>
+<li>Mando de juego opcional (CommonUI lo facilita).</li>
+<li>Preferencias ya decididas: sin emojis, barra de acciones vertical a la izquierda, barra superior en una línea, ventanas con pestañas minimizables.</li>
+</ul>
+<h3 id="plan-9-2-sonido">9.2 Sonido</h3>
+<ul>
+<li><strong>Música generativa</strong> (como hoy, sin archivos): un tema por planeta y por pueblo, construidos con síntesis y reglas de composición; cambia con el peligro, el combate y la hora del día.</li>
+<li><strong>Sonido de la nave</strong>: motores con capas (graves en la cabina, silbido del pulso), crujidos del casco, alarmas.</li>
+<li><strong>Combate</strong>: cañones con cuerpo, impactos según el material, explosiones con cola larga (licencia artística: se oye en el vacío, filtrado).</li>
+<li><strong>Ambiente por bioma</strong>: viento, cristales que cantan en Elyss, el latido de las colmenas en Tharax, olas en Origen, el silencio que zumba cerca de los Nihil.</li>
+<li><strong>Sonido espacial</strong>: atenuación por distancia, oclusión dentro de la nave, reverberación en hangares y cuevas.</li>
+<li>Todo por código: MetaSounds construidos por C++ (confirmar el alcance de la API en A0) o un sintetizador propio.</li>
+</ul>
+<hr />
+<h2 id="plan-10-el-juego-rehecho-para-un-solo-sistema">10. El juego, rehecho para un solo sistema</h2>
+<p>Pasar de una galaxia a un sistema cambia la forma de casi todo. Esta tabla dice qué pasa con cada cosa que ya existe en el juego (ver <code>CLAUDE.md</code> y <code>docs/arquitectura.md</code>).</p>
+<h3 id="plan-10-1-qu-se-queda-qu-cambia-qu-se-va">10.1 Qué se queda, qué cambia, qué se va</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Sistema de hoy</th>
+<th>Destino</th>
+<th>Cómo queda</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Emperador persistente, nombre único, compañeros, visibilidad</td>
+<td><strong>Se queda</strong></td>
+<td>Igual. Todos nacen en Origen.</td>
+</tr>
+<tr>
+<td>Muerte y linaje, Cunas, Herederos, gestación (Fase 10)</td>
+<td><strong>Se queda</strong></td>
+<td>Las Cunas son edificios en parcelas propias; el Núcleo de renacer está en Origen.</td>
+</tr>
+<tr>
+<td>Humanos a bordo (Ley II), tropas</td>
+<td><strong>Se queda</strong></td>
+<td>Se ven a bordo y en las colonias (§8.3).</td>
+</tr>
+<tr>
+<td>Pilotaje, pulso, cabina, energía, combustible, munición</td>
+<td><strong>Se queda</strong></td>
+<td>Con la escala nueva (§2.4) y física estilizada.</td>
+</tr>
+<tr>
+<td>Combate en tiempo real, puntería, fuego amigo, choques</td>
+<td><strong>Se queda</strong></td>
+<td>Igual, servidor autoritativo.</td>
+</tr>
+<tr>
+<td>Calor de la estrella</td>
+<td><strong>Se queda</strong></td>
+<td>Cerca de Aeon y en la cara de día de Brasa.</td>
+</tr>
+<tr>
+<td>Horizonte de agujeros negros</td>
+<td><strong>Se va</strong></td>
+<td>No hay agujero negro en el sistema (podría volver como anomalía de los Nihil).</td>
+</tr>
+<tr>
+<td>IA de naves (Carroñeros, escoltas, milicia, alienígenas)</td>
+<td><strong>Se queda</strong></td>
+<td>Con los hogares de cada pueblo (§2.6).</td>
+</tr>
+<tr>
+<td>Flotas, logística, bodegas, rutas automáticas</td>
+<td><strong>Cambia</strong></td>
+<td>Rutas entre parcelas, lunas, la estación Ábaco y las ciudades nómadas, en tiempo real dentro del sistema (minutos, no horas).</td>
+</tr>
+<tr>
+<td>Combate de flotas por rondas, asedios, conquista</td>
+<td><strong>Cambia</strong></td>
+<td>Sin rondas: <strong>todas las batallas en tiempo real</strong>, simuladas por el servidor en el lugar real. Asedio general sobre parcelas, con ventanas de vulnerabilidad (mecanicas-era2.md §8 y §11).</td>
+</tr>
+<tr>
+<td>Colonias, economía perezosa, cola de construcción, libro <code>resource_ledger</code></td>
+<td><strong>Cambia</strong></td>
+<td>Una colonia ocupa <strong>parcelas</strong> de un planeta o luna (§10.3); los recursos dependen del bioma. La resolución perezosa y el libro siguen igual.</td>
+</tr>
+<tr>
+<td>Reclamar y renombrar planetas</td>
+<td><strong>Cambia</strong></td>
+<td>Se reclaman parcelas; se pueden nombrar las colonias y los lugares descubiertos (nombres reportables, como hoy).</td>
+</tr>
+<tr>
+<td>Mercado global, créditos, humanidad, proyectos comunes</td>
+<td><strong>Cambia</strong></td>
+<td>Se queda el mercado (anillo de Origen y nómada; solo mercado, sin trueque directo). <strong>Se van el tesoro de la humanidad y los proyectos comunes</strong>. Sin mantenimiento.</td>
+</tr>
+<tr>
+<td>Galaxia de 30 000 estrellas, sectores, mapa estelar</td>
+<td><strong>Se va</strong></td>
+<td>Sustituido por el mapa del sistema (§9.1).</td>
+</tr>
+<tr>
+<td>Salto cuántico entre estrellas, túnel, grieta del salto</td>
+<td><strong>Se va</strong></td>
+<td>No hay otras estrellas. El efecto de la grieta se reaprovecha para la <strong>Grieta</strong> de los Erradicadores.</td>
+</tr>
+<tr>
+<td>Descubrimientos y niebla de guerra por sistema</td>
+<td><strong>Cambia</strong></td>
+<td><strong>Cartografía</strong>: se descubren regiones de los planetas, ruinas, cuevas, especies y anomalías; las parcelas no exploradas se ven borrosas en el mapa.</td>
+</tr>
+<tr>
+<td>Espacio profundo y minería de asteroides</td>
+<td><strong>Cambia</strong></td>
+<td>Minería en el Cinturón, el anillo de Céfiro y la superficie de los planetas.</td>
+</tr>
+<tr>
+<td>Sondas</td>
+<td><strong>Cambia</strong></td>
+<td>Sondas que cartografían una región de un planeta o una zona del Cinturón.</td>
+</tr>
+<tr>
+<td>Territorios alienígenas (capa secreta)</td>
+<td><strong>Cambia</strong></td>
+<td>Los pueblos tienen parcelas y zonas en sus mundos (datos + IA).</td>
+</tr>
+<tr>
+<td>Rencor, tributos, reputación</td>
+<td><strong>Se queda</strong></td>
+<td>Con más peso: cada pueblo está a pocos minutos.</td>
+</tr>
+<tr>
+<td>Emperadores de la IA</td>
+<td><strong>Se queda</strong></td>
+<td>Ocupan parcelas como los jugadores.</td>
+</tr>
+<tr>
+<td>Nave nodriza y acople</td>
+<td><strong>Se queda</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Tecnología, fabricación, Astillero</td>
+<td><strong>Se queda</strong></td>
+<td>El Astillero se hace en 3D (§5.7).</td>
+</tr>
+<tr>
+<td>Contratos, rango, objetivos, sucesos, reto de caza, peticiones de colonia</td>
+<td><strong>Cambia</strong></td>
+<td>El rango pasa a <strong>seis oficios</strong>; <strong>solo objetivos semanales</strong>; contratos adaptados (explorar regiones, rescates en lunas, repartos entre parcelas).</td>
+</tr>
+<tr>
+<td>Crisis galácticas</td>
+<td><strong>Cambia</strong></td>
+<td>Crisis del sistema: oleadas de la Grieta, tormentas de Céfiro, despertar de los Precursores.</td>
+</tr>
+<tr>
+<td>Leyendas de la era, ranking, metas</td>
+<td><strong>Se queda</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Ónfalo supermasivo, cielo por sistema, artículo de Wiki por sistema</td>
+<td><strong>Se va</strong></td>
+<td>La Wiki tiene un artículo por planeta, luna y lugar.</td>
+</tr>
+<tr>
+<td>Tutorial (12 capítulos)</td>
+<td><strong>Se rehace</strong></td>
+<td>Para el juego nuevo, empezando por despertar en Origen.</td>
+</tr>
+<tr>
+<td>Puerta de entrada, legal, privacidad, exportación y borrado de cuenta</td>
+<td><strong>Se queda</strong></td>
+<td>Con los cambios del cliente de escritorio (migracion-unreal.md §1–§2).</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="plan-10-2-el-bucle-de-juego-nuevo">10.2 El bucle de juego nuevo</h3>
+<ol>
+<li><strong>Despertar en Origen</strong>: el Emperador nace (o renace) en el Núcleo Humano. Zona segura y gracia para los nuevos.</li>
+<li><strong>Volar y descubrir</strong>: la órbita de Origen, su luna-astillero, el anillo; después, los demás mundos. Cartografiar regiones, encontrar ruinas, conocer a los pueblos.</li>
+<li><strong>Reclamar tierra</strong>: parcelas en Origen (pequeñas y caras), en lunas libres o en mundos peligrosos (grandes y ricas). Cada parcela depende de su bioma.</li>
+<li><strong>Construir y producir</strong>: colonias con instalaciones que se ven en el suelo, población, recursos.</li>
+<li><strong>Comerciar y transportar</strong>: el mercado del anillo, las ciudades nómadas, rutas entre parcelas.</li>
+<li><strong>Tratar con los pueblos</strong>: reputación, tributos, pactos con los Grises, duelos aurelianos, protección vesperi, intercambio con los Elydri.</li>
+<li><strong>Pelear</strong>: piratas del anillo, otros Emperadores, colmenas, invasiones de la Grieta. Asedios y conquista de parcelas.</li>
+<li><strong>Morir y volver</strong>: perder tiempo, posición y obras; renacer en una Cuna o en Origen.</li>
+</ol>
+<h3 id="plan-10-3-parcelas-la-tierra-del-sistema">10.3 Parcelas: la tierra del sistema</h3>
+<ul>
+<li>Cada planeta y luna sólido se divide en <strong>parcelas</strong> (celdas de una malla geodésica: hexágonos y doce pentágonos). Propuesta: 642 parcelas en Origen, 362 en los planetas medianos, 162 en las lunas, y Céfiro sin parcelas (ciudades flotantes, solo de los Nómadas).</li>
+<li>Cada parcela tiene <strong>bioma</strong>, <strong>recursos</strong> y <strong>dueño</strong> (nadie, un Emperador, un pueblo o una colonia independiente).</li>
+<li>Una <strong>colonia</strong> ocupa una o varias parcelas contiguas; las instalaciones son edificios en ellas.</li>
+<li><strong>Origen</strong> es seguro (Núcleo Humano): no se asedia, pero las parcelas son pocas y caras. Fuera de Origen, todo se puede perder (Ley III).</li>
+<li>La guerra es por parcelas: asedio, presencia sostenida, desembarco, captura (lo de la Fase 9b, sobre el mapa nuevo).</li>
+<li>Las parcelas de los pueblos alienígenas son sus tierras: entrar sin permiso tiene consecuencias según su doctrina.</li>
+</ul>
+<h3 id="plan-10-4-cu-nta-gente-cabe">10.4 Cuánta gente cabe</h3>
+<p>Con un solo sistema, todos los jugadores comparten espacio. El servidor actual (CPX22, 2 vCPU) divide el sistema en <strong>zonas de interés</strong> (la órbita de cada cuerpo, la superficie por regiones, el Cinturón, el anillo) y solo manda a cada jugador lo de su zona y las vecinas. Objetivo inicial: <strong>100 jugadores a la vez</strong>, con 30 en la misma zona. Se mide en la fase S4 (§11) antes de prometer más.</p>
+<hr />
+<h2 id="plan-11-el-servidor-para-la-era-ii">11. El servidor para la Era II</h2>
+<p>El servidor se queda (Node + Fastify + ws + PostgreSQL), pero el mundo cambia por completo. Se trabaja en paralelo al cliente, en fases <strong>S0–S7</strong>. Como el juego web se cierra ya (§16), no hay que mantener dos mundos: el servidor nuevo se desarrolla en local y en pruebas, y producción solo sirve la portada, la Wiki y las páginas legales hasta el alfa.</p>
+<h3 id="plan-11-1-c-mo-se-desarrolla-sin-tocar-producci-n">11.1 Cómo se desarrolla sin tocar producción</h3>
+<ul>
+<li>El dueño ejecuta <strong>el servidor en su propio ordenador</strong> (Node + PostgreSQL en Docker), preparado por Claude Code: el cliente de Unreal se conecta a <code>localhost</code> sin puerta ni Cloudflare. Es lo más rápido para iterar.</li>
+<li>Para probar con amigos antes del lanzamiento: un <strong>servidor de pruebas</strong> en Hetzner (otro servicio, otra base, <code>pruebas.aeonarch.de</code> detrás de Cloudflare y de la puerta). Necesita que el dueño cambie el Caddyfile (Claude prepara la orden exacta); no abre puertos nuevos.</li>
+<li><strong>Cierre del juego web (P0)</strong>: producción deja de servir el juego (cliente, <code>/ws</code> y las rutas de juego de la API) y la portada pasa a «Aeonarch se está reconstruyendo», con enlace a la Wiki. Se conservan las cuentas, la Wiki, las páginas legales, la exportación y el borrado de cuenta (RGPD), y la puerta de entrada. La copia de seguridad de <code>aeonarch-desplegar</code> guarda el mundo actual por si se quiere consultar. Hay que avisar a los jugadores y actualizar los términos si hace falta (<code>LEGAL_VERSION</code>).</li>
+<li>En el alfa (A9), el servidor de la Era II se despliega en producción con un mundo nuevo (conservando cuentas y Wiki).</li>
+</ul>
+<h3 id="plan-11-2-fases-del-servidor">11.2 Fases del servidor</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Fase</th>
+<th>Qué</th>
+<th>Va con</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>S0. Cliente de escritorio</strong></td>
+<td>Puerta nativa, código de dispositivo, <code>/api/client-version</code>, generador del protocolo en C++, exportación de <code>content</code> e i18n (migracion-unreal.md §2.3–§2.6).</td>
+<td>A0</td>
+</tr>
+<tr>
+<td><strong>S1. El sistema de Aeon</strong></td>
+<td>Datos del sistema (<code>packages/content</code> aeon.ts: estrella, 7 planetas, 12 lunas, Cinturón, Ábaco, la Grieta), escala nueva (<code>WORLD_SCALE</code>, radios, órbitas, velocidades, tamaños de naves, bocas de fuego), órbitas y rotación por tiempo, gravedad estilizada. Fuera la galaxia y el salto. <code>PROTOCOL_VERSION</code> 16.</td>
+<td>A1</td>
+</tr>
+<tr>
+<td><strong>S2. Superficie</strong></td>
+<td>Terreno y biomas deterministas en <code>packages/procgen</code> (con vectores para C++), colisión con el terreno, aterrizar y despegar, zonas por regiones de superficie.</td>
+<td>A3</td>
+</tr>
+<tr>
+<td><strong>S3. Parcelas</strong></td>
+<td>Malla geodésica, tabla <code>parcels</code>, colonias sobre parcelas, recursos por bioma, cartografía (descubrir regiones). Migraciones nuevas; exportación y borrado de cuenta al día.</td>
+<td>A7</td>
+</tr>
+<tr>
+<td><strong>S4. Zonas y escala</strong></td>
+<td>Zonas de interés del sistema, prueba de carga con 100 clientes simulados, compresión de <code>poses</code>.</td>
+<td>A5–A7</td>
+</tr>
+<tr>
+<td><strong>S5. Pueblos en el sistema</strong></td>
+<td>IA alienígena con hogares, parcelas y guardianes; reputación y pactos; crisis de la Grieta.</td>
+<td>A6</td>
+</tr>
+<tr>
+<td><strong>S6. Cambio de era</strong></td>
+<td>Script de cambio (como <code>galaxia-30k.sh</code>: conserva cuentas y Wiki, reinicia el mundo), textos legales y Wiki nueva, <code>LEGAL_VERSION</code>.</td>
+<td>A9</td>
+</tr>
+<tr>
+<td><strong>S7. A pie e interiores</strong></td>
+<td>Posiciones a pie, marcos locales (planeta, nave), minería y bases a pie.</td>
+<td>B</td>
+</tr>
+</tbody>
+</table></div>
+<p>Cada fase sigue las reglas de siempre: copia de seguridad antes de cambios grandes y despliegues, <code>pnpm typecheck</code> y <code>pnpm build</code>, Wiki en los dos idiomas, nada de datos personales.</p>
+<hr />
+<h2 id="plan-12-la-mega-hoja-de-ruta">12. La mega hoja de ruta</h2>
+<p>Tres etapas. Cada fase termina en algo <strong>jugable</strong>, con <strong>capturas objetivo</strong> aprobadas por el dueño. Tamaños en <strong>semanas</strong> de trabajo a ratos del dueño con Claude trabajando a tope en su ordenador; son <strong>orientativos</strong> y se revisan al acabar cada fase.</p>
+<div class="mwrap"><pre class="mermaid">gantt
+  title Aeonarch en Unreal (orientativo)
+  dateFormat YYYY-MM-DD
+  axisFormat %b %Y
+  section Preparación
+  P0 Diseño de la Era II      :p0, 2026-11-01, 2w
+  A0 Taller                   :a0, after p0, 3w
+  section Etapa A
+  A1 Primer vuelo             :a1, after a0, 5w
+  A2 Naves v1                 :a2, after a1, 6w
+  A3 Origen de cerca          :a3, after a2, 8w
+  A4 Combate                  :a4, after a3, 6w
+  A5 Los siete mundos         :a5, after a4, 10w
+  A6 Los pueblos              :a6, after a5, 8w
+  A7 Parcelas y colonias      :a7, after a6, 8w
+  A8 Gestión                  :a8, after a7, 10w
+  A9 Alfa y cambio de era     :a9, after a8, 6w
+  section Etapa B
+  B1 A pie                    :b1, after a9, 8w
+  B2 Explorar a pie           :b2, after b1, 6w
+  B3 Bases por piezas         :b3, after b2, 8w
+  B4 Interiores de naves      :b4, after b3, 8w
+  B5 Vida                     :b5, after b4, 10w
+  B6 Grandes batallas         :b6, after b5, 8w
+</pre></div>
+
+<h3 id="plan-preparaci-n">Preparación</h3>
+<h4 id="plan-p0-dise-o-de-la-era-ii-2-semanas">P0. Diseño de la Era II (≈ 2 semanas)</h4>
+<ul>
+<li><strong>Objetivo</strong>: cerrar en papel el juego de un solo sistema antes de programar.</li>
+<li><strong>Contenido</strong>:</li>
+<li>Revisar con el dueño §2 (nombres, planetas, pueblos), §3 (estilo) y §10 (qué se queda).</li>
+<li>Reescribir <code>docs/diseno.md</code> para la Era II y añadir <code>docs/sistema-aeon.md</code> con la ficha de cada mundo.</li>
+<li>Tablero de referencias del dueño (10–20 imágenes) y paletas por planeta y pueblo, como datos.</li>
+<li><strong>Cerrar el juego web</strong> (§11.1): portada nueva, aviso a los jugadores, copia de seguridad, Wiki y legal en línea.</li>
+<li><strong>Hecho cuando</strong>: el dueño aprueba la ficha de los siete mundos y el estilo.</li>
+<li><strong>El dueño</strong>: decide y reúne las referencias.</li>
+</ul>
+<h4 id="plan-a0-taller-3-semanas">A0. Taller (≈ 3 semanas)</h4>
+<ul>
+<li><strong>Objetivo</strong>: poder trabajar. Al final, una ventana del juego que entra en el servidor.</li>
+<li><strong>Contenido</strong>:</li>
+<li>Instalar en el ordenador del dueño Git para Windows (o GitHub Desktop), Git LFS, Unreal 5.8.4 y Visual Studio, con una guía paso a paso que escribe Claude (§4.0). Claude Code local, cuando haya cupo (§4.1.1). Activar el plugin MCP de Unreal y comprobar qué herramientas trae.</li>
+<li>Repositorio <code>aeonarch-ue</code>, proyecto C++ con los módulos (§13), compilación y pruebas desde la línea de órdenes.</li>
+<li>Servidor local en el ordenador del dueño (Docker con PostgreSQL), con datos de prueba.</li>
+<li><strong>Pruebas de concepto de «todo por código»</strong>: (1) un material creado desde Python; (2) un shader <code>.usf</code> propio; (3) una malla de <em>Geometry Script</em> horneada con Nanite desde un script; (4) un efecto de partículas en GPU propio; (5) un sonido de MetaSound construido desde C++; (6) un widget de Slate; (7) saber si Niagara se puede crear por script o MCP. El resultado decide herramientas para el resto del plan.</li>
+<li>Banco de pruebas visual v0 (§4.6) y galería de capturas publicada.</li>
+<li>Servidor: <strong>S0</strong>.</li>
+<li><strong>Hecho cuando</strong>: el cliente inicia sesión con código de dispositivo, abre el WebSocket y muestra «Conectado como …»; las siete pruebas de concepto tienen respuesta.</li>
+<li><strong>El dueño</strong>: instala, juega, aprende Git básico (§4.5).</li>
+</ul>
+<h3 id="plan-etapa-a-el-juego-entero-precioso-15-18-meses">Etapa A — El juego entero, precioso (≈ 15–18 meses)</h3>
+<h4 id="plan-a1-primer-vuelo-5-semanas">A1. Primer vuelo (≈ 5 semanas)</h4>
+<ul>
+<li><strong>Objetivo</strong>: la primera sensación: volar en la órbita de Origen.</li>
+<li><strong>Contenido</strong>:</li>
+<li>Aeon (estrella con corona animada), Origen visto desde la órbita (material de lejos, nubes, atmósfera), su luna y el anillo humano.</li>
+<li>Fondo del cielo: estrellas pintadas, Vía Láctea, los otros planetas como discos de colores.</li>
+<li>Nave del Emperador provisional (generador v0: casco y motores).</li>
+<li>Vuelo con inercia y asistencia (Z), pulso de crucero, cámara detrás (B), primera y tercera persona, ratón (G), teclas configurables con Enhanced Input.</li>
+<li>Ver las naves de los demás jugadores (<code>space</code>/<code>poses</code>) con predicción suave.</li>
+<li>Sonido del motor y del pulso.</li>
+<li>Servidor: <strong>S1</strong> (sistema de Aeon, escala nueva).</li>
+<li><strong>Capturas objetivo</strong>: 1 y 2 de §3.4 (en versión provisional).</li>
+<li><strong>Hecho cuando</strong>: dos jugadores vuelan juntos alrededor de Origen a 60 fps.</li>
+</ul>
+<h4 id="plan-a2-naves-v1-6-semanas">A2. Naves v1 (≈ 6 semanas)</h4>
+<ul>
+<li><strong>Objetivo</strong>: naves que parezcan diseñadas.</li>
+<li><strong>Contenido</strong>:</li>
+<li>Generador completo (§5.2): secciones, volúmenes, cortes, biseles, <em>greebles</em>, colores de vértice, LOD, horneado.</li>
+<li>Material maestro humano (§5.4) con paneles, desgaste, calcas, ventanas, luces de navegación, toberas (§5.5).</li>
+<li>Las 12 clases humanas, las seis de Carroñeros y la nave nodriza; la nave del Emperador con variaciones por Emperador.</li>
+<li>Galería de naves en el banco de pruebas, con todas las clases.</li>
+<li>Contrato de bocas de fuego y radios con el servidor (§5.3).</li>
+<li><strong>Capturas objetivo</strong>: galería de las 19 naves; la 2 de §3.4 definitiva.</li>
+<li><strong>Hecho cuando</strong>: el dueño reconoce cada clase por su silueta y le gustan.</li>
+</ul>
+<h4 id="plan-a3-origen-de-cerca-8-semanas">A3. Origen de cerca (≈ 8 semanas)</h4>
+<ul>
+<li><strong>Objetivo</strong>: el gran momento del juego: bajar de la órbita al suelo sin cortes.</li>
+<li><strong>Contenido</strong>:</li>
+<li>Esfera cúbica con <em>quadtree</em> (§6.2), terreno y biomas de Origen (océano, playas, islas, montañas), agua con oleaje y espuma.</li>
+<li>Atmósfera y nubes desde dentro, niebla de altura, ciclo de día y noche, entrada atmosférica.</li>
+<li>Aterrizar y despegar; tren de aterrizaje y polvo; colisión con el terreno.</li>
+<li>Rocas y primera flora procedural (palmeras alienígenas, hierba).</li>
+<li>La capital humana en el anillo y en una isla (arquitectura humana v1).</li>
+<li>Servidor: <strong>S2</strong>.</li>
+<li><strong>Capturas objetivo</strong>: 1 de §3.4 definitiva; atardecer en una playa de Origen con la nave aparcada.</li>
+<li><strong>Hecho cuando</strong>: se baja de la órbita al suelo y se vuelve a subir sin tirones a ≥ 45 fps.</li>
+</ul>
+<h4 id="plan-a4-combate-6-semanas">A4. Combate (≈ 6 semanas)</h4>
+<ul>
+<li><strong>Objetivo</strong>: pelear y que sea un espectáculo.</li>
+<li><strong>Contenido</strong>:</li>
+<li>Cañones, misiles, escudos, asistencia de puntería (marcadores, blanco fijado, punto de adelanto), fuego automático, choques.</li>
+<li>Efectos de §7.2 de la fase A3/A4: trazadoras, impactos por material, explosiones, restos, daño en el casco.</li>
+<li>IA de Carroñeros (llegan del servidor) en el anillo de Céfiro y el Cinturón (provisionales hasta A5).</li>
+<li>Muerte del Emperador: pantalla de muerte y renacer en Origen (lo visual; la lógica ya existe).</li>
+<li>Sonido de combate y alarmas; música que cambia con el peligro.</li>
+<li><strong>Capturas objetivo</strong>: 7 de §3.4.</li>
+<li><strong>Hecho cuando</strong>: una pelea contra una manada de Carroñeros se siente bien y se lee (quién dispara, qué me da).</li>
+</ul>
+<h4 id="plan-a5-los-siete-mundos-10-semanas">A5. Los siete mundos (≈ 10 semanas)</h4>
+<ul>
+<li><strong>Objetivo</strong>: que cada planeta sea un lugar que se recuerda.</li>
+<li><strong>Contenido</strong>, un mundo cada 1–2 semanas, cada uno con terreno, biomas, agua o lava, atmósfera, nubes, flora básica, sonido ambiente y música:</li>
+<li><strong>Brasa</strong>: cara de día fundida, cara de noche de cristal, franja del crepúsculo; calor.</li>
+<li><strong>Elyss</strong>: llanuras de cristal, auroras, cristales que cantan; su luna de cristal.</li>
+<li><strong>Tharax</strong>: selva de hongos luminosos, esporas; sus dos lunas.</li>
+<li><strong>Vesperia</strong>: praderas doradas, árboles torre; sus lunas guardianas.</li>
+<li><strong>Céfiro</strong>: bandas, tormentas, anillo enorme, cinco lunas; vuelo entre las nubes altas (no hay suelo).</li>
+<li><strong>Umbra</strong>: hielo, géiseres, anillo roto de los Precursores, luna hueca.</li>
+<li><strong>El Cinturón</strong>, la estación <strong>Ábaco</strong> (exterior) y la <strong>Grieta</strong> (cerrada).</li>
+<li>Mapa del sistema en 3D (§9.1).</li>
+<li>Servidor: <strong>S4</strong> (zonas de interés y prueba de carga).</li>
+<li><strong>Capturas objetivo</strong>: 3, 4, 5, 6, 8 y 9 de §3.4.</li>
+<li><strong>Hecho cuando</strong>: el dueño puede elegir su planeta favorito y explicar por qué.</li>
+</ul>
+<h4 id="plan-a6-los-pueblos-8-semanas">A6. Los pueblos (≈ 8 semanas)</h4>
+<ul>
+<li><strong>Objetivo</strong>: los nueve pueblos se ven, se oyen y se comportan según su doctrina.</li>
+<li><strong>Contenido</strong>:</li>
+<li>Naves de cada pueblo con su idioma visual (§3.3): materiales de cristal, quitina, oro, porcelana, chatarra, negro absoluto.</li>
+<li>Arquitectura de cada pueblo en su mundo (§8.5): fortaleza aureliana, ciudades-archivo, colmenas, cúpulas, ciudades flotantes, Ábaco por dentro (hangar).</li>
+<li>Guardianes de cada pueblo (drones o criaturas en sus tierras).</li>
+<li>Música de cada pueblo.</li>
+<li>Crisis de la Grieta: apertura y primera oleada de Erradicadores.</li>
+<li>Servidor: <strong>S5</strong>.</li>
+<li><strong>Capturas objetivo</strong>: 10 de §3.4; una por pueblo.</li>
+<li><strong>Hecho cuando</strong>: se distingue cada pueblo solo por la silueta y el color de sus naves.</li>
+</ul>
+<h4 id="plan-a7-parcelas-y-colonias-8-semanas">A7. Parcelas y colonias (≈ 8 semanas)</h4>
+<ul>
+<li><strong>Objetivo</strong>: la tierra se reclama, se construye y se ve.</li>
+<li><strong>Contenido</strong>:</li>
+<li>Malla de parcelas sobre cada planeta y luna (§10.3), visible desde la órbita y en el mapa.</li>
+<li>Reclamar, fundar colonia, construir instalaciones: cada una es un edificio generado en la parcela, con andamios mientras se construye.</li>
+<li>Rutas de logística visibles: cargueros que van y vienen entre parcelas, lunas y el mercado.</li>
+<li>Asedios y conquista sobre parcelas, en 3D en el lugar real (plataformas defensivas, desembarcos).</li>
+<li>Cartografía: regiones descubiertas y borrosas.</li>
+<li>Servidor: <strong>S3</strong>.</li>
+<li><strong>Hecho cuando</strong>: un Emperador funda una colonia en una luna, la ve crecer y otro se la asedia.</li>
+</ul>
+<h4 id="plan-a8-gesti-n-10-semanas">A8. Gestión (≈ 10 semanas)</h4>
+<ul>
+<li><strong>Objetivo</strong>: todo lo que hoy se hace en ventanas, en Unreal y precioso.</li>
+<li><strong>Contenido</strong>:</li>
+<li>Sistema de diseño de la interfaz (Slate), barra superior y de acciones, notificaciones.</li>
+<li>Ventanas: colonias, flotas, logística, mercado, humanidad, batallas, asedios, linaje (Herederos, Cunas), contratos, rango, objetivos, investigación, fabricación, Astillero en 3D, reputación con los pueblos, compañeros, perfil, ajustes, teclas, cuenta (exportar y borrar), aviso de fotosensibilidad.</li>
+<li>i18n es/en completo.</li>
+<li><strong>Hecho cuando</strong>: no hay nada del juego actual (adaptado a la Era II) que no se pueda hacer en Unreal.</li>
+</ul>
+<h4 id="plan-a9-alfa-y-cambio-de-era-6-semanas">A9. Alfa y cambio de era (≈ 6 semanas)</h4>
+<ul>
+<li><strong>Objetivo</strong>: los jugadores actuales pasan a la Era II.</li>
+<li><strong>Contenido</strong>:</li>
+<li>Tutorial nuevo (despertar en Origen, volar, aterrizar, reclamar, construir, pelear, morir y volver).</li>
+<li>Opciones gráficas (calidad baja, media, alta), rendimiento en la GPU de referencia.</li>
+<li>Instalador, firma del ejecutable (opcional, de pago), descarga desde R2 o itch.io (nunca desde Hetzner), comprobación de versión.</li>
+<li>Informe de fallos propio (sin el de Epic), textos legales actualizados (<code>LEGAL_VERSION</code>), Wiki de la Era II (planetas, lunas, pueblos, sistemas).</li>
+<li>Servidor: <strong>S6</strong> (cambio de era, conservando cuentas y Wiki). La portada enlaza a la descarga.</li>
+<li><strong>Hecho cuando</strong>: el dueño y unos pocos jugadores juegan una semana en la Era II sin el cliente web.</li>
+</ul>
+<h3 id="plan-etapa-b-a-pie-y-por-dentro-12-meses">Etapa B — A pie y por dentro (≈ 12 meses)</h3>
+<h4 id="plan-b1-a-pie-8-semanas">B1. A pie (≈ 8 semanas)</h4>
+<ul>
+<li>Salir de la nave: traje estilizado (§8.2), animación procedural, <em>jetpack</em>, linterna, escáner, gravedad de cada mundo, atmósferas peligrosas (calor, frío, esporas, toxinas) con el traje.</li>
+<li>Servidor: posiciones a pie y validación (<strong>S7</strong>).</li>
+<li><strong>Hecho cuando</strong>: se puede dar un paseo al atardecer por Vesperia y volver a la nave.</li>
+</ul>
+<h4 id="plan-b2-explorar-a-pie-6-semanas">B2. Explorar a pie (≈ 6 semanas)</h4>
+<ul>
+<li>Herramienta de minería a pie, vetas por bioma, inventario del traje.</li>
+<li>Ruinas de los Precursores para recorrer, archivos (libros de la Wiki que se desbloquean: lore como recompensa).</li>
+<li>Puntos de interés: pecios, campamentos nómadas, nidos tharaxi, señales de socorro en tierra.</li>
+</ul>
+<h4 id="plan-b3-bases-por-piezas-8-semanas">B3. Bases por piezas (≈ 8 semanas)</h4>
+<ul>
+<li>Construir la colonia pieza a pieza en la parcela (como el Astillero), con energía, defensas y adornos.</li>
+<li>Interiores de los edificios principales (la Cuna de linaje por dentro).</li>
+</ul>
+<h4 id="plan-b4-interiores-de-naves-8-semanas">B4. Interiores de naves (≈ 8 semanas)</h4>
+<ul>
+<li>Puente, pasillos, camarotes, bodega, sala de máquinas y hangar generados (§8.4).</li>
+<li>Levantarse del asiento y andar dentro en vuelo; subir a bordo de la nave de un compañero.</li>
+<li>Naves de flota que aterrizan en el hangar de la nodriza.</li>
+</ul>
+<h4 id="plan-b5-vida-10-semanas">B5. Vida (≈ 10 semanas)</h4>
+<ul>
+<li>Flora animada por viento y por el paso del jugador; fauna procedural por mundo con comportamientos (§6.6).</li>
+<li>Catálogo de especies descubiertas (con nombres reportables).</li>
+</ul>
+<h4 id="plan-b6-grandes-batallas-8-semanas">B6. Grandes batallas (≈ 8 semanas)</h4>
+<ul>
+<li>Naves capitales de 300–600 m, cientos de cazas con LOD e impostores, abordajes (petición pendiente de la hoja de ruta).</li>
+<li>Defensa de Origen contra una gran oleada de la Grieta como suceso del servidor.</li>
+</ul>
+<h3 id="plan-etapa-c-el-sistema-vivo-abierto">Etapa C — El sistema vivo (abierto)</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Fase</th>
+<th>Qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C1. Clima</td>
+<td>Tormentas, lluvia, nieve, tormentas de arena; tormentas de Céfiro que se ven desde sus lunas.</td>
+</tr>
+<tr>
+<td>C2. Estaciones y ciudades</td>
+<td>Interior de Ábaco, ciudades nómadas por dentro, el anillo de Origen por dentro con su mercado.</td>
+</tr>
+<tr>
+<td>C3. Cuevas</td>
+<td>Terreno volumétrico (SDF) bajo la superficie, con cristales y criaturas.</td>
+</tr>
+<tr>
+<td>C4. La verdad de los Precursores</td>
+<td>Arco de lore que lleva al anillo roto de Umbra y a la luna hueca.</td>
+</tr>
+<tr>
+<td>C5. Organizaciones</td>
+<td>Fase 12 de la hoja de ruta actual: alianzas, casas, cuarteles en parcelas.</td>
+</tr>
+<tr>
+<td>C6. Escala</td>
+<td>Más jugadores por zona; si hace falta, separar <code>SpaceService</code> en otro proceso (misma pila).</td>
+</tr>
+<tr>
+<td>C7. Accesibilidad</td>
+<td>Subtítulos del sonido, modos de daltonismo. (El mando de consola va desde el principio: decisión del 23-10-2026, ver mecanicas-era2.md §17b.)</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="plan-13-arquitectura-del-cliente">13. Arquitectura del cliente</h2>
+<pre><code>aeonarch-ue/
+  Source/
+    AeonCore/     C++ puro, sin Unreal: protocolo, fórmulas de packages/sim, terreno y biomas
+                  deterministas, malla de parcelas. Se compila también con CMake y se prueba
+                  en Linux (la nube, GitHub Actions) y en Windows, con vectores generados desde TypeScript.
+    AeonNet/      HTTP y WebSocket al servidor, sesión, código de dispositivo, tickets,
+                  reconexión, modelo de estado (snap/delta), predicción.
+    AeonWorld/    El sistema de Aeon: cuerpos, órbitas y rotación por tiempo, origen flotante,
+                  zonas, cielo, día y noche.
+    AeonPlanets/  Esfera cúbica, quadtree, parches, colisión, biomas, agua, flora, parcelas visibles.
+    AeonShips/    Generador de naves, piezas del Astillero, materiales, daño, luces, sockets.
+    AeonFX/       Partículas en GPU, trazadoras, cintas, explosiones, escudos, limitador de destellos.
+    AeonFlight/   Pawn de la nave, Enhanced Input, cámaras, cabina, autopiloto, asistencia de puntería.
+    AeonPeople/   Traje, esqueleto, animación procedural, interiores (etapa B).
+    AeonBuild/    Gramáticas de edificios, colonias, bases por piezas.
+    AeonUI/       Slate: sistema de diseño, HUD, ventanas, mapa del sistema, tutorial, i18n.
+    AeonAudio/    MetaSounds por código, música generativa, ambiente.
+    AeonTools/    (solo editor) hornear naves, crear materiales, banco de pruebas, capturas.
+  Shaders/        .usf/.ush del plugin AeonShaders.
+  Scripts/        Python de editor.
+  Data/           JSON exportado de packages/content y tablas de cadenas.
+  Tests/          Pruebas automáticas y vectores compartidos.
+</code></pre>
+<p>Reglas:
+- El cliente <strong>no decide nada</strong> del juego: muestra, predice y manda órdenes (regla 2).
+- Lo que el servidor tenga que comprobar se escribe <strong>primero en TypeScript</strong> (<code>packages/procgen</code>, <code>packages/sim</code>) y luego se porta a <code>AeonCore</code> con vectores de prueba (regla 3 para lo determinista).
+- Los datos viven en <code>packages/content</code> (regla 4); Unreal los lee del JSON exportado.
+- Todo texto visible usa claves i18n es/en (regla 5).
+- Nada de lógica de juego en Blueprints: si se usan, solo como capa fina.</p>
+<hr />
+<h2 id="plan-14-presupuestos-de-rendimiento">14. Presupuestos de rendimiento</h2>
+<p>Para la GPU de referencia a 1440p con TSR, 60 fps = 16,6 ms por fotograma.</p>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Parte</th>
+<th>Espacio</th>
+<th>Superficie</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Planetas y terreno</td>
+<td>2 ms</td>
+<td>5 ms</td>
+</tr>
+<tr>
+<td>Atmósfera y nubes</td>
+<td>1,5 ms</td>
+<td>2,5 ms</td>
+</tr>
+<tr>
+<td>Naves (Nanite)</td>
+<td>2 ms</td>
+<td>1 ms</td>
+</tr>
+<tr>
+<td>Efectos</td>
+<td>1,5 ms</td>
+<td>1 ms</td>
+</tr>
+<tr>
+<td>Flora y rocas</td>
+<td>—</td>
+<td>2,5 ms</td>
+</tr>
+<tr>
+<td>Luz, sombras y posproceso</td>
+<td>3 ms</td>
+<td>3 ms</td>
+</tr>
+<tr>
+<td>Interfaz</td>
+<td>0,5 ms</td>
+<td>0,5 ms</td>
+</tr>
+<tr>
+<td>Margen</td>
+<td>6 ms</td>
+<td>1 ms</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Memoria de vídeo ≤ 8 GB en calidad alta y ≤ 6 GB en media; parches de terreno reutilizados (<em>pooling</em>); texturas generadas con tamaño máximo por calidad.</li>
+<li>Red: ≤ 30 KB/s por jugador en combate (hoy, JSON); si se pasa, formato binario solo para <code>poses</code> (migracion-unreal.md §2.2).</li>
+<li>El banco de pruebas mide cada fotograma de las capturas objetivo y avisa si algo empeora más de un 10 %.</li>
+</ul>
+<hr />
+<h2 id="plan-15-riesgos">15. Riesgos</h2>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Riesgo</th>
+<th>Probabilidad</th>
+<th>Impacto</th>
+<th>Qué hacemos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>El plan es enorme para dos personas</strong></td>
+<td>Alta</td>
+<td>Alto</td>
+<td>Un solo sistema, todo procedural, fases jugables, lista de recortes (§15.1), revisar estimaciones al acabar cada fase.</td>
+</tr>
+<tr>
+<td>Claude no «ve» la belleza como un humano</td>
+<td>Alta</td>
+<td>Alto</td>
+<td>Banco de pruebas con capturas, variantes para elegir, el dueño aprueba cada fase.</td>
+</tr>
+<tr>
+<td>Personajes y animación por código salen torpes</td>
+<td>Media</td>
+<td>Medio</td>
+<td>Traje con casco cerrado y animación procedural (§8.2); se deja para la etapa B.</td>
+</tr>
+<tr>
+<td>Niagara o MetaSounds no se pueden crear por código</td>
+<td>Media</td>
+<td>Medio</td>
+<td>Sistemas propios (§7.1, §9.2); se comprueba en A0.</td>
+</tr>
+<tr>
+<td>El plugin MCP es experimental</td>
+<td>Alta</td>
+<td>Bajo</td>
+<td>Todo funciona sin él (C++, Python, línea de órdenes).</td>
+</tr>
+<tr>
+<td>Rendimiento de los planetas</td>
+<td>Media</td>
+<td>Alto</td>
+<td>Presupuestos (§14) desde A1 y medidas automáticas.</td>
+</tr>
+<tr>
+<td>Determinismo TypeScript ↔ C++ del terreno</td>
+<td>Media</td>
+<td>Alto</td>
+<td>Vectores al bit en integración continua.</td>
+</tr>
+<tr>
+<td>Los jugadores actuales se quedan sin juego durante la etapa A</td>
+<td>Segura</td>
+<td>Medio</td>
+<td>Aviso claro y portada con la Wiki; la galería de capturas puede publicarse para que vean el avance; cuentas conservadas para el alfa.</td>
+</tr>
+<tr>
+<td>El servidor pequeño no aguanta a todos en un sistema</td>
+<td>Media</td>
+<td>Alto</td>
+<td>Zonas de interés y prueba de carga (S4) antes de lanzar.</td>
+</tr>
+<tr>
+<td>Coste de descargas</td>
+<td>Baja</td>
+<td>Alto</td>
+<td>Descarga desde R2 o itch.io, nunca desde Hetzner; el vigilante de tráfico sigue.</td>
+</tr>
+<tr>
+<td>Privacidad y licencias</td>
+<td>Baja</td>
+<td>Alto</td>
+<td>Informe de fallos propio; recursos de terceros solo con licencia revisada; regalías de Epic solo por encima de 1 millón de USD.</td>
+</tr>
+<tr>
+<td>Cansancio del dueño</td>
+<td>Media</td>
+<td>Alto</td>
+<td>Fases cortas con algo bonito al final de cada una; la galería de capturas como diario del proyecto.</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="plan-15-1-lista-de-recortes">15.1 Lista de recortes</h3>
+<p>Si el plan va lento, se quita en este orden (de lo primero a lo último):
+1. Etapa C entera.
+2. Fauna (B5): se quedan flora y guardianes.
+3. Interiores de naves (B4).
+4. Bases por piezas (B3): las colonias se siguen viendo y creciendo solas.
+5. A pie (B1–B2): se explora con la nave.
+6. Céfiro con vuelo entre nubes (se ve desde fuera y desde sus lunas).</p>
+<p><strong>Nunca se recorta</strong>: la belleza del espacio, de los siete mundos y de las naves, el aterrizaje sin cortes y el combate.</p>
+<hr />
+<h2 id="plan-16-decisiones-del-due-o-23-10-2026">16. Decisiones del dueño (23-10-2026)</h2>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Pregunta</th>
+<th>Respuesta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nombres y pueblos de los siete mundos (§2.2, §2.6)</td>
+<td>Valen para empezar; se podrán cambiar más adelante.</td>
+</tr>
+<tr>
+<td>Escala (§2.4)</td>
+<td><strong>Compacta</strong>, como se propone: planetas de 3–6 km, cruzar el sistema en unos 2 min.</td>
+</tr>
+<tr>
+<td>GPU</td>
+<td><strong>AMD Radeon RX 9060 XT de 16 GB</strong>: es la de referencia (§3.5).</td>
+</tr>
+<tr>
+<td>Claude Code en el ordenador del dueño (§4.1)</td>
+<td><strong>Más adelante.</strong> Hasta el domingo 25-10-2026 se trabaja <strong>desde la nube</strong> (§4.0); desde entonces, Claude Code en el ordenador del dueño (§4.1.1).</td>
+</tr>
+<tr>
+<td>Andar por los planetas</td>
+<td>En la <strong>etapa B</strong>, después del alfa.</td>
+</tr>
+<tr>
+<td>Parcelas (§10.3)</td>
+<td><strong>Sí.</strong></td>
+</tr>
+<tr>
+<td>Juego web actual</td>
+<td><strong>Cerrado</strong> el 23-10-2026 (<code>GAME_CLOSED</code>, commit <code>99d390a</code> en <code>main</code>, pendiente de desplegar): solo quedan la portada, la Wiki, las páginas legales y la gestión de la cuenta hasta el alfa. No hace falta avisar: solo juega el dueño.</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="plan-17-los-pr-ximos-pasos">17. Los próximos pasos</h2>
+<ol>
+<li>Desplegar el cierre del juego web (ya en <code>main</code>) y reunir el tablero de referencias.</li>
+<li>P0: Claude reescribe <code>docs/diseno.md</code> para la Era II y escribe <code>docs/sistema-aeon.md</code>.</li>
+<li>A0: instalar el taller en el ordenador del dueño y hacer las siete pruebas de concepto.</li>
+<li>Publicar la galería de capturas como artefacto desde la primera captura.</li>
+</ol>
+<hr />
+<h2 id="plan-18-fuentes">18. Fuentes</h2>
+<ul>
+<li><a href="https://dev.epicgames.com/documentation/unreal-engine/unreal-engine-5-8-release-notes">Notas de Unreal Engine 5.8</a></li>
+<li><a href="https://www.strayspark.studio/blog/epic-official-mcp-plugin-ue5-8-vs-third-party">Plugin MCP oficial de la 5.8 (strayspark)</a></li>
+<li><a href="https://byteiota.com/unreal-engine-5-8-ships-mcp-server-ai-agents-can-now-drive-the-editor/">La 5.8 trae un servidor MCP (byteiota)</a></li>
+<li><a href="https://gamineai.com/blog/unreal-engine-5-8-mcp-claude-code-first-safe-editor-session-2026">Unreal 5.8 MCP con Claude Code (gamineai)</a></li>
+<li><a href="https://github.com/CarlxsMG/UEAgent">UEAgent, servidor MCP de terceros</a></li>
+<li><a href="https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/class/MaterialEditingLibrary">MaterialEditingLibrary (API de Python)</a></li>
+<li>Versión 5.8.4, licencia, Pixel Streaming, WebSocket y servidores dedicados: <a href="migracion-unreal.md#fuentes">migracion-unreal.md</a>.</li>
+</ul></section><section class="part" id="lore"><p class="eyebrow">Parte 2 · lore-era2.md</p><h1 class="parttitle">El lore de la Era II</h1><p class="partnote">Contiene los secretos del mundo (marcados como SECRETO). Esta página es privada: no la compartas con jugadores.</p>
+<p>Decisiones del dueño sobre el mundo del juego en Unreal (un solo sistema, siete mundos; ver <a href="roadmap-unreal.md">roadmap-unreal.md</a>). Se va llenando con las respuestas del dueño a las preguntas de Claude. El lore anterior (<a href="lore.md">lore.md</a>) sigue valiendo salvo donde esto lo cambie.</p>
+<blockquote>
+<p>Cada entrada lleva la fecha de la respuesta. Lo que está marcado como <strong>propuesta</strong> es de Claude y el dueño aún no lo ha confirmado.</p>
+</blockquote>
+<h2 id="lore-1-tono-23-10-2026">1. Tono (23-10-2026)</h2>
+<p><strong>Mítico y solemne.</strong> Aeonarch se cuenta como una leyenda antigua: dioses muertos, ruinas, destinos. La belleza del juego es grave, no alegre: cielos inmensos, silencio, monumentos más viejos que la memoria.</p>
+<h2 id="lore-2-por-qu-todo-ocurre-en-aeon-23-10-2026">2. Por qué todo ocurre en Aeon (23-10-2026)</h2>
+<p><strong>Aeon es un lugar sagrado.</strong> Fue el centro de los Precursores, y todos los pueblos han llegado atraídos por lo que esconde. Nadie está allí por casualidad: cada pueblo tiene su motivo para estar cerca de lo que hay en Aeon.</p>
+<h2 id="lore-3-m-s-all-del-sistema-23-10-2026">3. Más allá del sistema (23-10-2026)</h2>
+<p><strong>Es un misterio.</strong> Nadie sabe qué hay fuera de Aeon ni si se puede llegar. Descubrirlo forma parte del juego. La Grieta, por donde llegan los Erradicadores, es la única pista visible de que hay un «fuera».</p>
+<h2 id="lore-4-lo-que-saben-los-emperadores-de-s-mismos-23-10-2026">4. Lo que saben los Emperadores de sí mismos (23-10-2026)</h2>
+<p><strong>Recuerdos rotos.</strong> Los Emperadores tienen fragmentos de vidas pasadas que no encajan entre sí. Cada muerte puede devolver un recuerdo o borrar otro. (Encaja con el lore: «algunos recuerdan vidas que no aparecen en ningún registro», y con los Elydri, que quieren estudiar esos recuerdos.)</p>
+<h2 id="lore-5-lo-sagrado-la-tumba-de-los-dioses-23-10-2026">5. Lo sagrado: la tumba de los dioses (23-10-2026)</h2>
+<p><strong>Aeon es la tumba de los dioses.</strong> Los dioses primordiales murieron aquí, y sus restos (y lo que quede de su poder) siguen en el sistema. Eso es lo que atrae a todos los pueblos.</p>
+<h2 id="lore-6-los-siete-dioses-y-el-que-nadie-nombra-23-10-2026">6. Los siete dioses y el que nadie nombra (23-10-2026)</h2>
+<ul>
+<li><strong>Los dioses son siete</strong>, uno por planeta. Pero el mundo cree que son <strong>seis</strong> (por eso el lore antiguo dice «los seis dioses primordiales han muerto»).</li>
+<li>Una <strong>civilización muerta adoraba a los planetas</strong>, cada uno como un dios.</li>
+<li>Los jugadores deben pensar al principio que hay seis dioses… y preguntarse: <strong>¿y el séptimo planeta? ¿Por qué nadie habla de él?</strong> Ese silencio es uno de los grandes misterios del juego.</li>
+<li>Consecuencia para el diseño: los textos, inscripciones y relatos del juego nombran seis dioses y callan sobre uno de los planetas; las pistas del séptimo se descubren poco a poco.</li>
+</ul>
+<h2 id="lore-7-los-pueblos-ante-lo-sagrado-23-10-2026">7. Los pueblos ante lo sagrado (23-10-2026)</h2>
+<p><strong>Cada pueblo lo entiende de forma distinta</strong>, según su doctrina: unos veneran la tumba, otros la estudian, otros la quieren destruir o apropiarse de ella. Propuesta de lectura por pueblo (por confirmar):</p>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Pueblo</th>
+<th>Qué ve en la tumba de los dioses</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Elydri</td>
+<td>Un archivo que no debe olvidarse: estudian y preservan cada resto.</td>
+</tr>
+<tr>
+<td>Tharaxi</td>
+<td>Materia viva y poderosa que incorporar a la colmena.</td>
+</tr>
+<tr>
+<td>Aurelianos</td>
+<td>Un trono: quien controle la tumba demuestra su derecho a gobernar.</td>
+</tr>
+<tr>
+<td>Vesperi</td>
+<td>Un hogar sagrado que hay que proteger de todos.</td>
+</tr>
+<tr>
+<td>Nómadas</td>
+<td>Un mercado y una ruta: reliquias que comerciar, nada que adorar.</td>
+</tr>
+<tr>
+<td>Grises</td>
+<td>Una variable que ordenar y controlar.</td>
+</tr>
+<tr>
+<td>Nihil</td>
+<td>La prueba de que todo muere: quieren que los dioses descansen del todo.</td>
+</tr>
+<tr>
+<td>Erradicadores</td>
+<td>Algo que la humanidad no debe tocar nunca.</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="lore-8-la-fe-23-10-2026">8. La fe (23-10-2026)</h2>
+<p><strong>De fondo.</strong> Existe en el lore y en los lugares (templos, inscripciones, cultos), pero el jugador no tiene un sistema de religión que manejar.</p>
+<h2 id="lore-9-el-secreto-de-origen-23-10-2026-secreto">9. El secreto de Origen (23-10-2026) — SECRETO</h2>
+<blockquote>
+<p><strong>No se publica en la Wiki ni en ningún texto del juego.</strong> Es la verdad de fondo que el dueño irá desvelando poco a poco.</p>
+</blockquote>
+<ul>
+<li><strong>El séptimo dios es Origen</strong>, el planeta de la humanidad. Los humanos viven sobre él sin saberlo; nadie lo ve como un dios y nadie lo nombra.</li>
+<li><strong>No murió: los otros seis dioses lo sellaron, y duerme.</strong></li>
+<li><strong>Los Precursores</strong> son la civilización muerta que adoraba a los planetas como dioses: sus ruinas son templos a los siete (aunque sus inscripciones solo nombran seis).</li>
+<li><strong>No hay revelación final.</strong> Al ser un MMO, el dueño irá contando la verdad poco a poco (sucesos, textos, lugares nuevos), sin una respuesta cerrada en el juego.</li>
+</ul>
+<p>Consecuencias para el diseño (propuesta):
+- Los templos de los Precursores en los seis mundos «divinos» tienen su dios; en Origen no hay templo… o lo hay enterrado bajo el océano.
+- Que la humanidad, los Emperadores que vuelven de la muerte y el dios que duerme bajo sus pies estén relacionados es la sospecha que el juego debe sembrar, nunca confirmar.</p>
+<h2 id="lore-10-los-seis-dioses-conocidos-23-10-2026">10. Los seis dioses conocidos (23-10-2026)</h2>
+<ul>
+<li>Cada uno tiene <strong>nombre y dominio</strong> propios, ligados a su planeta.</li>
+<li><strong>Se mataron entre ellos</strong> (una guerra divina, después de sellar al séptimo).</li>
+<li><strong>Cada planeta es el cuerpo de su dios</strong>: los restos se ven a gran escala en el paisaje.</li>
+<li>El repositorio es privado: este documento puede guardar los secretos (nunca la Wiki ni los textos del juego).</li>
+</ul>
+<p>Nombres aprobados por el dueño (23-10-2026; se podrán retocar):</p>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Planeta</th>
+<th>Dios</th>
+<th>Dominio</th>
+<th>El cuerpo en el paisaje</th>
+<th>Pueblo que lo habita</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Brasa</td>
+<td><strong>Kaurath, el que Forja</strong></td>
+<td>Fuego, voluntad, poder</td>
+<td>La cara de día es su corazón, que aún arde; la de noche, su piel vitrificada; los ríos de lava son sus venas.</td>
+<td>Aurelianos</td>
+</tr>
+<tr>
+<td>Elyss</td>
+<td><strong>Ilwen, la que Recuerda</strong></td>
+<td>Memoria, tiempo</td>
+<td>Los cristales son sus pensamientos petrificados; cuando el viento los toca, cantan recuerdos que no son de nadie.</td>
+<td>Elydri</td>
+</tr>
+<tr>
+<td>Tharax</td>
+<td><strong>Umara, la Madre Hambrienta</strong></td>
+<td>Vida, hambre, crecimiento</td>
+<td>La selva de hongos crece sobre su carne; las colmenas anidan entre sus costillas, que forman las cordilleras.</td>
+<td>Tharaxi</td>
+</tr>
+<tr>
+<td>Vesperia</td>
+<td><strong>Vael, el Guardián del Umbral</strong></td>
+<td>Hogar, protección, estaciones</td>
+<td>Los árboles torre son sus huesos, que todavía florecen; los valles son sus manos cerradas sobre algo.</td>
+<td>Vesperi</td>
+</tr>
+<tr>
+<td>Céfiro</td>
+<td><strong>Zefaro, el Aliento Errante</strong></td>
+<td>Viento, viaje, libertad</td>
+<td>Su último aliento sigue girando en las bandas; la gran tormenta es su ojo, que nunca se cierra.</td>
+<td>Nómadas del Vacío</td>
+</tr>
+<tr>
+<td>Umbra</td>
+<td><strong>Ossal, el Silencio</strong></td>
+<td>Muerte, final, olvido</td>
+<td>Su cuerpo está congelado; el anillo roto que lo rodea es su corona partida.</td>
+<td>Nihil</td>
+</tr>
+<tr>
+<td>Origen</td>
+<td><em>(nadie lo nombra)</em></td>
+<td><em>(secreto, §9)</em></td>
+<td><em>(nada visible… a primera vista)</em></td>
+<td>Humanidad</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="lore-11-la-guerra-de-los-dioses-las-lunas-y-las-ruinas-23-10-2026">11. La guerra de los dioses, las lunas y las ruinas (23-10-2026)</h2>
+<ul>
+<li><strong>Se mataron por los mortales</strong>: cada dios defendió a su pueblo, y la guerra entre pueblos acabó siendo una guerra entre dioses.</li>
+<li><strong>Las lunas son sus siervos</strong>: seres menores, servidores o hijos de los dioses, también muertos, que siguen orbitando a su señor.</li>
+<li><strong>Las ruinas de los Precursores son una mezcla</strong>: templos colosales visibles, tallados en los cuerpos de los dioses (escaleras que no acaban), y ciudades enterradas bajo el polvo y el hielo, con sus templos en el centro, por descubrir.</li>
+</ul>
+<h2 id="lore-12-los-pueblos-la-humanidad-y-el-n-cleo-23-10-2026">12. Los pueblos, la humanidad y el Núcleo (23-10-2026)</h2>
+<ul>
+<li><strong>Los pueblos de los dioses son los de hoy</strong>: Aurelianos, Elydri, Tharaxi, Vesperi, Nómadas y Nihil ya estaban aquí en tiempos de los dioses, y cada dios defendió al suyo. Encaja con la respuesta del §2 así (propuesta): los seis pueblos «de dios» son nativos de Aeon; los que <strong>llegaron atraídos</strong> por la tumba son los forasteros: los <strong>Erradicadores</strong> (por la Grieta) y los <strong>Carroñeros</strong> (de todas partes). Los <strong>Grises</strong> no son forasteros: son máquinas de los dioses (§15).</li>
+</ul>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Dios</th>
+<th>Su pueblo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Kaurath, el que Forja (Brasa)</td>
+<td>Aurelianos</td>
+</tr>
+<tr>
+<td>Ilwen, la que Recuerda (Elyss)</td>
+<td>Elydri</td>
+</tr>
+<tr>
+<td>Umara, la Madre Hambrienta (Tharax)</td>
+<td>Tharaxi</td>
+</tr>
+<tr>
+<td>Vael, el Guardián del Umbral (Vesperia)</td>
+<td>Vesperi</td>
+</tr>
+<tr>
+<td>Zefaro, el Aliento Errante (Céfiro)</td>
+<td>Nómadas del Vacío</td>
+</tr>
+<tr>
+<td>Ossal, el Silencio (Umbra)</td>
+<td>Nihil</td>
+</tr>
+<tr>
+<td><em>(el que duerme, Origen)</em></td>
+<td><em>(la humanidad… secreto)</em></td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>La humanidad en Origen: nadie se pone de acuerdo</strong> sobre desde cuándo está ahí. Cada fuente humana cuenta una historia distinta.</li>
+<li><strong>Un consejo de Emperadores</strong> gobierna Origen y el Núcleo Humano.</li>
+<li><strong>El primer despertar</strong>: el Emperador despierta en una <strong>cápsula en el fondo del mar</strong> de Origen, sube a la superficie y ve el cielo por primera vez. (Propuesta: es la primera escena del tutorial y también la de cada renacer en el Núcleo.)</li>
+</ul>
+<h2 id="lore-13-la-sangre-de-los-dioses-23-10-2026-secreto">13. La sangre de los dioses (23-10-2026) — SECRETO</h2>
+<blockquote>
+<p>Tampoco va a la Wiki ni a los textos del juego.</p>
+</blockquote>
+<ul>
+<li><strong>La humanidad es la sangre de los dioses.</strong></li>
+<li><strong>Los Precursores eran el pueblo del séptimo dios</strong> (el que duerme en Origen). Adoraban a los siete planetas; al sellar al séptimo, su pueblo desapareció.</li>
+<li>Lectura de Claude (propuesta, por confirmar): explica por qué la humanidad «no puede ser exterminada definitivamente» (Ley II) y por qué los Emperadores vuelven de la muerte; por qué la Gran Hostilidad apunta a los humanos (son lo que queda de los dioses); y por qué la humanidad vive, sin saberlo, sobre el dios dormido de los Precursores.</li>
+</ul>
+<h2 id="lore-14-el-consejo-y-la-vida-en-origen-23-10-2026">14. El consejo y la vida en Origen (23-10-2026)</h2>
+<ul>
+<li><strong>El consejo de Emperadores es solo lore</strong>: existe en la historia, sin papel jugable por ahora.</li>
+<li><strong>Rebelarse contra el consejo</strong>: más adelante (fase futura).</li>
+<li><strong>La vida en Origen es una mezcla</strong>: ciudades bonitas sobre el mar levantadas sobre ruinas antiguas que no construyeron los humanos, con las defensas en el anillo orbital. (Las ruinas serían de los Precursores, el pueblo del dios dormido: otra pista nunca explicada.)</li>
+</ul>
+<h2 id="lore-15-erradicadores-la-grieta-y-los-grises-23-10-2026">15. Erradicadores, la Grieta y los Grises (23-10-2026)</h2>
+<ul>
+<li><strong>Los Erradicadores son lo que mató al universo de fuera.</strong> Aeon es lo último que les queda. (Mantiene el misterio del §3: se sabe que algo arrasó lo de fuera, no qué había ni qué queda.)</li>
+<li><strong>La Grieta es una herida de la guerra de los dioses</strong>: un golpe rompió el borde del sistema y por ahí se cuela lo de fuera.</li>
+<li><strong>Los Grises son máquinas de los dioses</strong>: inteligencias creadas para administrar el sistema, que siguen funcionando sin dueños. Su estación Ábaco y su obsesión por el orden vienen de ahí: siguen cumpliendo una función para unos amos muertos.</li>
+</ul>
+<h2 id="lore-16-lo-que-saben-los-jugadores-lore-p-blico-23-10-2026">16. Lo que saben los jugadores (lore público) (23-10-2026)</h2>
+<p><strong>Los Emperadores son conquistadores</strong>: quieren la tumba de los dioses como todos los demás; es la gran carrera de la era. El lore público habla de seis dioses muertos, de sus cuerpos-planeta, de sus pueblos y de las reliquias; no habla de Origen ni de la sangre.</p>
+<h2 id="lore-17-tiempo-premio-carro-eros-y-nihil-23-10-2026">17. Tiempo, premio, Carroñeros y Nihil (23-10-2026)</h2>
+<ul>
+<li><strong>Los dioses murieron hace eones</strong>: sus cuerpos son ya paisaje y nadie vivo lo vio.</li>
+<li><strong>Lo que se gana conquistando</strong> (sistemas de juego a diseñar):</li>
+<li><strong>Reliquias divinas</strong>: objetos raros de los dioses con poderes únicos para naves, colonias o el Emperador.</li>
+<li><strong>Tierra sagrada</strong>: parcelas sobre restos divinos que producen recursos especiales.</li>
+<li><strong>Recuerdos</strong>: cada reliquia devuelve al Emperador recuerdos rotos (lore personal; encaja con los Elydri y con el secreto de la sangre).</li>
+<li><strong>Los Carroñeros son desterrados de todos los pueblos</strong>: exiliados y desertores que viven de saquear reliquias y viajeros.</li>
+<li><strong>Los Nihil velan a Ossal</strong>: guardan su silencio para que nada lo perturbe. (Por eso distorsionan sensores y luz en Umbra: protegen el sueño de un muerto.)</li>
+</ul>
+<h2 id="lore-18-cada-pueblo-y-su-dios-23-10-2026">18. Cada pueblo y su dios (23-10-2026)</h2>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Pueblo</th>
+<th>Su dios</th>
+<th>Relación</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Aurelianos</strong></td>
+<td>Kaurath, el que Forja</td>
+<td><strong>Las tres cosas a la vez</strong>: cada casa noble dice llevar su fuego y quien gobierne Brasa es su sucesor; forjan sus armas con el fuego que extraen de su corazón (su poder es literalmente el del dios); y cada duelo es una ofrenda, porque demostrar poder es su forma de rezar.</td>
+</tr>
+<tr>
+<td><strong>Elydri</strong></td>
+<td>Ilwen, la que Recuerda</td>
+<td><strong>Viven dentro de su memoria</strong>: sus ciudades-archivo leen los recuerdos de Ilwen en los cristales.</td>
+</tr>
+<tr>
+<td><strong>Tharaxi</strong></td>
+<td>Umara, la Madre Hambrienta</td>
+<td><strong>Son sus hijos</strong>: nacieron de su carne y creen que la mente colectiva es la de Umara. La <strong>casta disidente</strong> son <strong>los que oyen a Umara de verdad</strong>: creen que la mente colectiva traicionó a la Madre y que ella no quería devorar. Por eso pueden aliarse con los Emperadores.</td>
+</tr>
+<tr>
+<td><strong>Vesperi</strong></td>
+<td>Vael, el Guardián del Umbral</td>
+<td><strong>Le deben la vida</strong>: Vael murió defendiéndolos; su pacto es proteger a otros como él los protegió. (De ahí que puedan proteger colonias humanas.)</td>
+</tr>
+<tr>
+<td><strong>Nómadas del Vacío</strong></td>
+<td>Zefaro, el Aliento Errante</td>
+<td><strong>Le deben su libertad</strong>: Zefaro les enseñó a no tener tierra; quien los ata, ofende al dios. (De ahí que bloquear sus rutas los vuelva hostiles.)</td>
+</tr>
+<tr>
+<td><strong>Nihil</strong></td>
+<td>Ossal, el Silencio</td>
+<td><strong>Lo velan</strong> (§17).</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="lore-19-personajes-y-textos-23-10-2026">19. Personajes y textos (23-10-2026)</h2>
+<ul>
+<li><strong>Personajes con diálogo</strong>: embajadores, sacerdotes y mercaderes con nombre que hablan y dan misiones. (Textos escritos por nosotros, en es/en; no es chat entre jugadores, así que respeta el principio de «sin texto libre público».)</li>
+<li><strong>Muchos textos de lore que se encuentran</strong>: inscripciones en las ruinas, crónicas de cada pueblo, cantos de los Elydri… coleccionables que se guardan en un <strong>códice</strong> del Emperador. Los textos nombran seis dioses y callan sobre Origen (§6).</li>
+</ul>
+<h2 id="lore-20-los-humanos-y-sus-emperadores-23-10-2026">20. Los humanos y sus Emperadores (23-10-2026)</h2>
+<ul>
+<li><strong>Los mortales temen a los Emperadores</strong>: seres que vuelven de la muerte; se les obedece, pero inquietan.</li>
+<li><strong>Emperador o Emperatriz</strong>: se elige al crear el personaje, con concordancia en todos los textos (petición ya pendiente en la hoja de ruta).</li>
+<li><strong>La humanidad se divide en las casas de cada Emperador</strong> (linaje, colores, emblema).</li>
+<li><strong>Música coral y sacra</strong>: voces, órgano, cantos antiguos; una catedral en el espacio. Nota técnica: la música es generativa y sin archivos (regla actual); un órgano se sintetiza bien por código, pero un <strong>coro sintético</strong> convincente es difícil. Habrá que probarlo pronto (A0/A1) y, si no convence, valorar con el dueño si se admiten grabaciones de voz.</li>
+</ul>
+<h2 id="lore-21-muerte-cunas-y-emblemas-23-10-2026">21. Muerte, Cunas y emblemas (23-10-2026)</h2>
+<ul>
+<li><strong>Entre vidas, sueños</strong>: mientras gesta, el Emperador tiene visiones breves e inquietantes (un océano, una voz dormida…) que se ven en la pantalla de muerte. Son pistas del secreto (§9, §13), nunca explicadas.</li>
+<li><strong>Las Cunas de linaje son cápsulas en el agua</strong>: como el primer despertar, el Emperador renace bajo el agua o en un líquido, en cualquier planeta donde tenga una Cuna.</li>
+<li><strong>Emblemas de las casas</strong>: se genera uno único a partir del nombre del Emperador y se puede retocar con piezas (formas, símbolos y colores de una lista; sin dibujo a mano ni texto libre, para no tener que moderar).</li>
+</ul>
+<h2 id="lore-pendiente-para-la-pr-xima-tanda">Pendiente para la próxima tanda</h2>
+<ul>
+<li>Cada planeta en detalle: paisajes, lugares, peligros, ruinas.</li>
+<li>Naves y tecnología: cómo funcionan en este mundo y de dónde sale la tecnología.</li>
+<li>Juego: progreso, PvP, economía con reliquias y tierra sagrada.</li>
+<li>Personajes con nombre de cada pueblo (embajadores, sacerdotes, mercaderes).</li>
+</ul></section><section class="part" id="mundos"><p class="eyebrow">Parte 3 · sistema-aeon.md</p><h1 class="parttitle">Los mundos de Aeon</h1>
+<p>Ficha de cada lugar del sistema de la Era II, con las decisiones del dueño. Complementa <a href="roadmap-unreal.md">roadmap-unreal.md</a> §2 (datos y escala), <a href="lore-era2.md">lore-era2.md</a> (dioses y secretos) y <a href="mecanicas-era2.md">mecanicas-era2.md</a> (cómo se juega). Lo marcado como <strong>propuesta</strong> es de Claude y está por confirmar.</p>
+<h2 id="mundos-origen-23-10-2026">Origen (23-10-2026)</h2>
+<p>Mundo océano de la humanidad, zona segura (Núcleo Humano). En el lore secreto, el dios que duerme (lore-era2.md §9); en el lore público, nadie lo nombra como dios.</p>
+<ul>
+<li><strong>Océano de dos caras</strong>: claro y turquesa en las costas, con arrecifes de colores y luz que atraviesa el agua; azul casi negro y abismal mar adentro.</li>
+<li><strong>Mucha vida nativa</strong>: bancos de peces, aves, bosques en las islas.</li>
+<li><strong>No se baja al fondo del mar</strong>: el mar es superficie (la nave no se sumerge). La única excepción es la <strong>escena del despertar</strong>, que se cuenta, no se explora (ver abajo).</li>
+</ul>
+<h3 id="mundos-lugares">Lugares</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Lugar</th>
+<th>Qué es</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>La Fosa del Despertar</strong></td>
+<td>El abismo marino donde están las cápsulas de los Emperadores, con luz que sube del fondo. Desde la superficie se ve como un círculo de agua que brilla de noche. El primer despertar (y cada renacer en Origen) empieza allí: la cápsula sube por la fosa hasta la superficie en una escena, sin control libre bajo el agua.</td>
+</tr>
+<tr>
+<td><strong>La Ciudad del Consejo</strong></td>
+<td>La capital humana, levantada sobre ruinas colosales que no construyeron los humanos; sede del consejo de Emperadores (solo lore). Mercado de tierra, puerto de naves, primeras misiones.</td>
+</tr>
+<tr>
+<td><strong>El Anillo</strong></td>
+<td>El anillo orbital humano: mercado del anillo, hangares, astilleros y defensas. Se ve desde todo el planeta como una cinta de luz que cruza el cielo. Zona segura.</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p>Propuesta: las ruinas bajo la Ciudad del Consejo tienen inscripciones de los Precursores borradas a propósito (pista nunca explicada).</p>
+</blockquote>
+<h2 id="mundos-brasa-23-10-2026">Brasa (23-10-2026)</h2>
+<p>Mundo forja, cuerpo de <strong>Kaurath, el que Forja</strong>; hogar de los <strong>Aurelianos</strong>. Zona disputada.</p>
+<ul>
+<li><strong>La cara de día no se pisa nunca</strong>: solo se sobrevuela muy alto (el calor de la estrella y del corazón del dios destruye lo que baja). Todo lo jugable en tierra está en el <strong>crepúsculo</strong> y en la <strong>cara de noche</strong>.</li>
+<li><strong>Los Aurelianos son cinco o más casas rivales</strong>, un nido de intrigas: cada una con su carácter, su emblema y sus enemistades; un Emperador puede aliarse con una (y ganarse la enemistad de otras). Nombres y caracteres, por proponer.</li>
+</ul>
+<h3 id="mundos-lugares_1">Lugares</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Lugar</th>
+<th>Qué es</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>El Corazón</strong></td>
+<td>El centro de la cara de día, donde late el corazón del dios. Inalcanzable: se ve desde la órbita como un ojo de fuego que palpita. Lugar de sucesos y lore.</td>
+</tr>
+<tr>
+<td><strong>La Corona de Ascuas</strong></td>
+<td>La fortaleza de las casas aurelianas, en la franja del crepúsculo, entre ríos de lava.</td>
+</tr>
+<tr>
+<td><strong>La Arena</strong></td>
+<td>Donde se celebran los duelos aurelianos (sus oraciones); abierta a los Emperadores que acepten las reglas.</td>
+</tr>
+<tr>
+<td><strong>El Mar de Vidrio</strong></td>
+<td>La cara de noche: un desierto de cristal negro donde se reflejan las estrellas.</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="mundos-elyss-23-10-2026">Elyss (23-10-2026)</h2>
+<p>Mundo cristal, cuerpo de <strong>Ilwen, la que Recuerda</strong>; hogar de los <strong>Elydri</strong>. Zona disputada.</p>
+<ul>
+<li><strong>Cielo violeta con aurora permanente.</strong></li>
+<li><strong>Los Elydri nunca dejan entrar a los Emperadores en sus ciudades-archivo</strong>: se trata con ellos fuera, en lugares de encuentro en la superficie (propuesta: atrios de cristal a la entrada de cada archivo, donde esperan sus personajes).</li>
+</ul>
+<h3 id="mundos-lugares_2">Lugares</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Lugar</th>
+<th>Qué es</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Las Llanuras Cantoras</strong></td>
+<td>Campos de cristal que cantan con el viento; recuerdos que no son de nadie (y sonido ambiente del planeta).</td>
+</tr>
+<tr>
+<td><strong>El Ojo de Ilwen</strong></td>
+<td>Un cristal gigante en el polo donde nace la aurora.</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="mundos-tharax-23-10-2026">Tharax (23-10-2026)</h2>
+<p>Mundo vivo, cuerpo de <strong>Umara, la Madre Hambrienta</strong>; hogar de los <strong>Tharaxi</strong>. Zona sin ley.</p>
+<ul>
+<li><strong>Cielo verde y brumoso</strong>: neblina verdosa de día; de noche, la selva brilla.</li>
+<li><strong>La colmena no se expande</strong> fuera de Tharax y sus lunas: es un peligro que se queda en casa (y que se adapta a quien la ataca).</li>
+<li><strong>Los disidentes pueden vivir en colonias humanas</strong>: con mucha reputación, una colonia puede acoger una pequeña comunidad disidente (una bonificación, y el peligro de atraer a la colmena).</li>
+</ul>
+<h3 id="mundos-lugares_3">Lugares</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Lugar</th>
+<th>Qué es</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>La Colmena Madre</strong></td>
+<td>Una colmena del tamaño de una montaña, sobre el pecho de la diosa. El corazón de los Tharaxi; guardianes siempre hostiles.</td>
+</tr>
+<tr>
+<td><strong>El Refugio Disidente</strong></td>
+<td>Escondite de los que oyen a Umara de verdad; sus personajes dan misiones y alianza.</td>
+</tr>
+<tr>
+<td><strong>El Pantano de Esporas</strong></td>
+<td>Niebla de esporas que corroe las naves; recursos raros para quien se atreva.</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="mundos-vesperia-23-10-2026">Vesperia (23-10-2026)</h2>
+<p>Mundo jardín, cuerpo de <strong>Vael, el Guardián del Umbral</strong>; hogar de los <strong>Vesperi</strong>. Zona disputada.</p>
+<ul>
+<li><strong>Clima tranquilo</strong>: templado y sereno.</li>
+<li><strong>Sus dos lunas son jardines salvajes</strong>: selvas sin dueño, abiertas a colonizar (zona disputada).</li>
+</ul>
+<h3 id="mundos-lugares_4">Lugares</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Lugar</th>
+<th>Qué es</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>La Cúpula Mayor</strong></td>
+<td>La ciudad vesperi bajo un escudo que brilla como una pompa de jabón; se enciende entera si alguien amenaza el planeta.</td>
+</tr>
+<tr>
+<td><strong>Las Praderas del Ocaso</strong></td>
+<td>Llanuras doradas donde el atardecer dura horas.</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="mundos-c-firo-23-10-2026">Céfiro (23-10-2026)</h2>
+<p>Gigante gaseoso, cuerpo de <strong>Zefaro, el Aliento Errante</strong>; hogar de los <strong>Nómadas del Vacío</strong> (y de los Carroñeros en su anillo). Las ciudades nómadas son zona segura; las lunas, disputadas; el anillo, sin ley.</p>
+<ul>
+<li><strong>Se puede entrar en las nubes hasta cierta profundidad</strong>: las capas altas se navegan (vuelo entre nubes, leviatanes del aliento); más abajo, la presión aplasta la nave.</li>
+</ul>
+<h3 id="mundos-lugares_5">Lugares</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Lugar</th>
+<th>Qué es</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>El Ojo</strong></td>
+<td>La gran tormenta que nunca se cierra (el ojo del dios). Dentro, calma y algo antiguo.</td>
+</tr>
+<tr>
+<td><strong>Las Ciudades Velas</strong></td>
+<td>Las ciudades nómadas que navegan entre las nubes con velas enormes; mercado nómada y personajes.</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="mundos-umbra-23-10-2026">Umbra (23-10-2026)</h2>
+<p>Mundo helado y oscuro, cuerpo de <strong>Ossal, el Silencio</strong>; lo velan los <strong>Nihil</strong>; ruinas de los Precursores. Zona sin ley.</p>
+<ul>
+<li><strong>Hacer ruido en el Velatorio despierta a los Nihil</strong>: combates, minería o motores a tope cerca de él hacen que te persigan con ocultación e interferencias hasta echarte.</li>
+</ul>
+<h3 id="mundos-lugares_6">Lugares</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Lugar</th>
+<th>Qué es</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>La Corona Rota</strong></td>
+<td>El anillo roto de los Precursores (la corona partida del dios); se vuela entre sus fragmentos.</td>
+</tr>
+<tr>
+<td><strong>El Velatorio</strong></td>
+<td>Donde los Nihil velan a Ossal; silencio absoluto.</td>
+</tr>
+<tr>
+<td><strong>La Luna Hueca</strong></td>
+<td>Una luna vacía por dentro, obra de los Precursores.</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="mundos-otros-lugares-23-10-2026">Otros lugares (23-10-2026)</h2>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Lugar</th>
+<th>Cómo es</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ábaco</strong> (estación de los Grises, L4 de Origen)</td>
+<td><strong>Un mecanismo gigante</strong>: anillos y engranajes blancos que giran despacio, como un reloj del tamaño de una ciudad, con líneas de luz exactas. Zona segura (los Grises no toleran combates).</td>
+</tr>
+<tr>
+<td><strong>La Grieta</strong> (más allá de Umbra)</td>
+<td><strong>Una herida de luz</strong>: un corte en el espacio que brilla y sangra luz roja. Por ella llegan los Erradicadores.</td>
+</tr>
+<tr>
+<td><strong>El Cinturón</strong> (entre Vesperia y Céfiro)</td>
+<td><strong>Escondites</strong> (bases carroñeras dentro de asteroides huecos) y <strong>minas ricas</strong> (metales raros y exóticos). Zona sin ley.</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="mundos-pendiente">Pendiente</h2>
+<ul>
+<li>Personajes con nombre de cada pueblo.</li>
+<li>Las cinco o más casas aurelianas (nombres y caracteres).</li>
+<li>Las lunas una a una.</li>
+</ul></section><section class="part" id="mecanicas"><p class="eyebrow">Parte 4 · mecanicas-era2.md</p><h1 class="parttitle">Las mecánicas</h1>
+<p>Diseño de cómo se juega en la Era II: un solo sistema de siete mundos, en Unreal (ver <a href="roadmap-unreal.md">roadmap-unreal.md</a>). El mundo y sus secretos están en <a href="lore-era2.md">lore-era2.md</a>; este documento solo usa el <strong>lore público</strong> (lo que saben los jugadores).</p>
+<blockquote>
+<p><strong>Estado: diseño, nada construido.</strong> Las cifras son propuestas para ajustar jugando; acabarán como datos en <code>packages/content</code> (regla 4). Cada sección termina con las preguntas que quedan abiertas para el dueño.</p>
+</blockquote>
+<h2 id="mecanicas-0-decisiones-del-due-o-que-marcan-este-dise-o-23-10-2026">0. Decisiones del dueño que marcan este diseño (23-10-2026)</h2>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Decisión</th>
+<th>Consecuencia</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sesiones largas</strong></td>
+<td>Actividades de una a varias horas: expediciones, ruinas, campañas, asedios, cacerías. El imperio sigue funcionando sin el jugador (principio de <code>docs/diseno.md</code>), pero lo mejor pasa jugando.</td>
+</tr>
+<tr>
+<td><strong>PvP mixto</strong></td>
+<td>Zonas seguras, zonas disputadas (solo con guerra declarada entre casas) y zonas sin ley (todo vale).</td>
+</tr>
+<tr>
+<td><strong>Muerte suave</strong></td>
+<td>Al morir solo se pierden <strong>tiempo y posición</strong>: la carga, los humanos, las reliquias y la nave se conservan (la nave se reconstruye con el Emperador). Lo que sí se puede perder para siempre (Ley III) son las colonias y la tierra, por conquista.</td>
+</tr>
+<tr>
+<td><strong>Reliquias moderadas y coleccionables</strong></td>
+<td>Ventajas pequeñas y apilables; lo importante es reunirlas, completar colecciones y su lore.</td>
+</tr>
+<tr>
+<td>Lore (resumen público)</td>
+<td>Aeon es la tumba de seis dioses; cada planeta es el cuerpo de uno; los Emperadores son conquistadores que quieren la tumba como todos; hay reliquias, tierra sagrada y recuerdos que ganar.</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="mecanicas-1-el-bucle-de-juego">1. El bucle de juego</h2>
+<h3 id="mecanicas-1-1-una-sesi-n-larga-t-pica-2-3-horas">1.1 Una sesión larga típica (2–3 horas)</h3>
+<ol>
+<li><strong>Despertar o volver</strong>: el Emperador aparece donde lo dejó (o renace en una Cuna). Un resumen le cuenta qué pasó mientras no estaba: producción, ataques, rutas, mensajes de los pueblos.</li>
+<li><strong>Gestionar (10–15 min)</strong>: colas de construcción, rutas, mercado, encargos de los personajes.</li>
+<li><strong>Salir a la aventura (1–2 h)</strong>, una o varias de:
+   - una <strong>expedición</strong> a una ruina de los Precursores (§7; llega en la etapa B, con el Emperador a pie);
+   - una <strong>cacería</strong> de Carroñeros en el anillo de Céfiro o el Cinturón;
+   - una <strong>misión</strong> de un personaje de un pueblo (§9);
+   - un <strong>asedio</strong> o la defensa de una parcela (§11);
+   - <strong>cartografiar</strong> una región nueva de un planeta (§6);
+   - un <strong>suceso del sistema</strong> en curso (oleada de la Grieta, tormenta de Céfiro…) (§13).</li>
+<li><strong>Volver con el botín</strong>: reliquias, recuerdos, recursos, reputación, entradas del códice.</li>
+<li><strong>Invertir</strong>: reclamar tierra, construir, equipar la nave, encargar naves en el Astillero.</li>
+</ol>
+<h3 id="mecanicas-1-1-1-la-etapa-a-un-poco-de-todo-decisi-n-del-23-10-2026">1.1.1 La etapa A: un poco de todo (decisión del 23-10-2026)</h3>
+<p>Hasta que llegue el Emperador a pie (etapa B), las sesiones largas se reparten <strong>a partes iguales</strong> entre cacerías y combate, conquista y asedios, exploración y cartografía volando bajo, misiones de los pueblos y sucesos del sistema. Ninguna es «la principal»: el jugador elige cada día.</p>
+<h3 id="mecanicas-1-2-lo-que-avanza-sin-el-jugador">1.2 Lo que avanza sin el jugador</h3>
+<p>Igual que ahora, con resolución perezosa en el servidor: producción y población de las colonias, construcción, rutas de logística, viajes de flotas, investigación, gestación del Emperador muerto, gobierno de los Herederos y la IA de los pueblos. El jugador <strong>no</strong> pierde progreso por no conectarse, pero sí puede perder tierra si no la defiende (con avisos y tiempos de asedio largos, §11).</p>
+<h3 id="mecanicas-1-3-las-tres-escalas-del-juego">1.3 Las tres escalas del juego</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Escala</th>
+<th>Qué hace el jugador</th>
+<th>Ejemplo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>El Emperador</strong></td>
+<td>Pilotar, pelear, explorar, hablar con personajes</td>
+<td>Volar a Elyss y entrar en una ciudad enterrada.</td>
+</tr>
+<tr>
+<td><strong>La casa</strong></td>
+<td>Colonias, flotas, rutas, Herederos, diplomacia</td>
+<td>Fundar una colonia en una luna de Vesperia con permiso de los Vesperi.</td>
+</tr>
+<tr>
+<td><strong>El sistema</strong></td>
+<td>Sucesos, guerras entre casas, la carrera por la tumba</td>
+<td>Defender Origen de una oleada de la Grieta con otros jugadores.</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="mecanicas-2-el-emperador">2. El Emperador</h2>
+<h3 id="mecanicas-2-1-qu-tiene">2.1 Qué tiene</h3>
+<ul>
+<li><strong>Hangar de naves</strong> (decisión del 23-10-2026): el Emperador puede tener <strong>las naves que quiera</strong> (sin límite; solo limita el coste) y elegir con cuál sale; la que pilota es su <strong>nave insignia</strong> de ese momento (bodega, armas, escudo, motores, combustible y 3 huecos de reliquia). Las demás esperan en el hangar de una colonia propia o en Origen. Se sigue pudiendo pilotar a distancia las naves de flota, como hoy.</li>
+<li><strong>Traje</strong> (etapa B, a pie): escáner, linterna, <em>jetpack</em>, herramienta de minería, protección contra el clima.</li>
+<li><strong>Recuerdos</strong> (§5) y <strong>reliquias equipadas</strong> (§4).</li>
+<li><strong>Rango</strong> (el actual: experiencia por contratos, combate, exploración).</li>
+<li><strong>Casa</strong> (§3).</li>
+</ul>
+<h3 id="mecanicas-2-2-muerte-y-renacer-muerte-suave">2.2 Muerte y renacer (muerte suave)</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Se pierde</th>
+<th>Se conserva</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>El <strong>tiempo</strong> de gestación.</td>
+<td>La nave (se reconstruye), su carga, sus humanos, su combustible y munición.</td>
+</tr>
+<tr>
+<td>La <strong>posición</strong>: se renace en una Cuna (o en Origen).</td>
+<td>Las reliquias equipadas y guardadas. La nave que pilotaba vuelve a su hangar.</td>
+</tr>
+<tr>
+<td></td>
+<td>Colonias, flotas, créditos, reputación, recuerdos, códice.</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Gestación</strong>: unos minutos la primera vez, más con muertes seguidas (la racha de la Fase 10 sigue: unos minutos la primera vez y se dobla con cada muerte seguida hasta <strong>1 hora o más</strong> de techo, decisión del 23-10-2026; propuesta: 2 h), y se olvida con el tiempo.</li>
+<li><strong>Renacer</strong>: en una <strong>Cuna</strong> propia (cápsula en el agua, en cualquier planeta con colonia propia) o, si no hay, en <strong>Origen</strong>, en la cápsula del fondo del mar (la escena del primer despertar).</li>
+<li><strong>Sueños</strong> (lore): mientras gesta, la pantalla de muerte muestra una visión breve; algunas dejan una pista en el códice.</li>
+<li><strong>Quién te mató</strong> queda registrado para la casa (para guerras y venganzas, §11.4).</li>
+<li><strong>Lo que hace dura la muerte</strong> no es perder cosas, sino <strong>dejar desprotegido lo que defendías</strong>: un asedio que no sostienes, una ruta sin escolta, una expedición a medias (la ruina se «cierra» si te vas, §7.4).</li>
+</ul>
+<h3 id="mecanicas-2-3-emperador-o-emperatriz">2.3 Emperador o Emperatriz</h3>
+<p>Se elige al crear el personaje (y se puede cambiar en Ajustes); todos los textos concuerdan. El traje y la nave cambian de detalles, no de poder.</p>
+<ul>
+<li><strong>La nave desaparece</strong> donde cayó (decisión del 23-10-2026): no deja pecio; se reconstruye entera con el Emperador.</li>
+</ul>
+<hr />
+<h2 id="mecanicas-3-las-casas">3. Las casas</h2>
+<ul>
+<li>Cada Emperador <strong>es</strong> una casa: nombre del linaje (= nombre del Emperador), <strong>emblema</strong> (generado a partir del nombre y retocable con piezas: forma del escudo, símbolo, colores; sin dibujo libre ni texto) y <strong>colores</strong> que pintan sus naves, edificios y uniformes.</li>
+<li><strong>Herederos</strong> (Fase 10): miembros de la casa que gobiernan colonias o mandan flotas, con su doctrina.</li>
+<li><strong>Prestigio de la casa</strong>: suma de tierra, reliquias, colecciones completadas, victorias y obras. Es la base del ranking y del lore (leyendas de la era).</li>
+<li><strong>Alianzas entre casas</strong> (más adelante, Fase 12 de la hoja de ruta actual): pactos de no agresión y defensa mutua; por ahora, <strong>compañeros</strong> como hoy.</li>
+</ul>
+<p><strong>Una casa por jugador</strong> (decisión del 23-10-2026); las alianzas y casas de varios jugadores llegan más adelante.</p>
+<hr />
+<h2 id="mecanicas-4-reliquias-divinas">4. Reliquias divinas</h2>
+<p>Objetos de los dioses muertos. <strong>Poder moderado, coleccionables</strong>: lo bonito es reunirlas.</p>
+<h3 id="mecanicas-4-1-c-mo-son">4.1 Cómo son</h3>
+<ul>
+<li><strong>Seis familias</strong>, una por dios conocido: reliquias de <strong>Kaurath</strong> (fuego, poder), <strong>Ilwen</strong> (memoria, tiempo), <strong>Umara</strong> (vida, crecimiento), <strong>Vael</strong> (protección, hogar), <strong>Zefaro</strong> (viento, viaje), <strong>Ossal</strong> (silencio, muerte).</li>
+<li>Cada reliquia tiene <strong>nombre, texto de lore</strong>, una <strong>ventaja pequeña</strong> y una <strong>colección</strong> a la que pertenece.</li>
+<li><strong>Rareza</strong> por cantidad en el servidor: <strong>comunes</strong> (muchas), <strong>raras</strong> (pocas) y <strong>únicas</strong> (una sola en todo el servidor; quien la tiene sale en la Wiki del juego).</li>
+</ul>
+<h3 id="mecanicas-4-2-qu-dan-moderado">4.2 Qué dan (moderado)</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Familia</th>
+<th>Ejemplos de ventaja (+2 % a +8 %)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Kaurath</td>
+<td>Daño de los cañones, velocidad de la forja (aleaciones).</td>
+</tr>
+<tr>
+<td>Ilwen</td>
+<td>Experiencia de recuerdos, alcance del escáner, velocidad de investigación.</td>
+</tr>
+<tr>
+<td>Umara</td>
+<td>Crecimiento de la población, producción de biomasa.</td>
+</tr>
+<tr>
+<td>Vael</td>
+<td>Escudo de la nave, defensa de las colonias.</td>
+</tr>
+<tr>
+<td>Zefaro</td>
+<td>Velocidad de crucero, consumo de combustible, rapidez de las rutas.</td>
+</tr>
+<tr>
+<td>Ossal</td>
+<td>Sigilo (menos alcance de detección enemiga), resistencia en la muerte (gestación más corta).</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Huecos</strong>: la nave tiene 3 huecos de reliquia, cada colonia 2 y el Emperador (traje) 2. Las demás se guardan en el <strong>relicario</strong> de la casa (un edificio en una colonia, visible).</li>
+<li><strong>Sin acumulación sin fin</strong>: dos reliquias iguales no suman; el tope por tipo de ventaja evita que alguien sea invencible.</li>
+</ul>
+<h3 id="mecanicas-4-3-colecciones">4.3 Colecciones</h3>
+<ul>
+<li>Cada dios tiene <strong>colecciones</strong> de 4–8 reliquias («Las Lágrimas de Ilwen», «Las Plumas de Zefaro»…).</li>
+<li>Completar una colección da una <strong>recompensa que se ve</strong> (un adorno para la nave, un color nuevo de casa, un monumento en tu colonia), un <strong>recuerdo</strong> (§5) y una entrada del códice, más <strong>prestigio</strong>.</li>
+<li>Una <strong>galería</strong> de la casa muestra lo reunido (y lo que falta, como siluetas).</li>
+</ul>
+<h3 id="mecanicas-4-4-c-mo-se-consiguen">4.4 Cómo se consiguen</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Vía</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ruinas de los Precursores</strong> (§7)</td>
+<td>La fuente principal: expediciones largas.</td>
+</tr>
+<tr>
+<td><strong>Tierra sagrada</strong> (§6.3)</td>
+<td>Algunas parcelas generan reliquias comunes muy despacio.</td>
+</tr>
+<tr>
+<td><strong>Personajes de los pueblos</strong> (§9)</td>
+<td>Recompensa de misiones y de reputación alta.</td>
+</tr>
+<tr>
+<td><strong>Sucesos</strong> (§13)</td>
+<td>Oleadas de la Grieta, tormentas, despertares.</td>
+</tr>
+<tr>
+<td><strong>Comercio</strong></td>
+<td>Mercado del anillo (comunes y raras) y Nómadas (con su comisión). Las únicas no se venden.</td>
+</tr>
+<tr>
+<td><strong>Conquista</strong></td>
+<td>Al conquistar una colonia, su relicario puede perder parte de lo guardado (§11.3).</td>
+</tr>
+</tbody>
+</table></div>
+<p>Decisiones del 23-10-2026: <strong>huecos 3 + 2 + 2</strong> aprobados; las <strong>reliquias únicas pasan al conquistador</strong> si se conquista la colonia donde están guardadas (son objetivo de guerra; las que lleva la nave o el Emperador no se pierden, por la muerte suave).</p>
+<hr />
+<h2 id="mecanicas-5-recuerdos">5. Recuerdos</h2>
+<p>Los Emperadores tienen <strong>recuerdos rotos</strong>. Recuperarlos es la progresión personal del Emperador.</p>
+<ul>
+<li><strong>Fragmentos de recuerdo</strong> se consiguen con reliquias nuevas, colecciones completas, ruinas, sueños, cumplir hitos (primera vez en cada planeta, primera colonia…) y con los <strong>Elydri</strong> (que intercambian conocimiento por recuerdos).</li>
+<li>Los fragmentos llenan <strong>recuerdos</strong> completos, cada uno con:</li>
+<li>una <strong>escena breve</strong> (texto e imagen) de una vida pasada que «no encaja»;</li>
+<li>un <strong>rasgo</strong> pequeño y permanente del Emperador (p. ej. «Recuerdas el mar»: +5 % de velocidad bajo el agua; «Recuerdas una guerra»: +3 % de daño contra Erradicadores).</li>
+<li><strong>Árbol de recuerdos</strong>: 6 ramas (una por dios conocido) más una rama <strong>sin nombre</strong> que se llena muy despacio y nunca explica de dónde viene (lore secreto, sin decirlo).</li>
+<li>
+<p>Morir <strong>no</strong> borra recuerdos (muerte suave), aunque un sueño puede «cambiar» el texto de uno.</p>
+</li>
+<li>
+<p><strong>Ceder recuerdos a los Elydri</strong> (decisión del 23-10-2026): el Emperador puede entregar un recuerdo completo a cambio de algo valioso (avanzar de golpe una investigación humana, una reliquia, reputación alta). <strong>Lo pierde</strong>: desaparece su rasgo y su escena queda en el códice como «Entregado a los Elydri». Es una decisión dura y a propósito; los fragmentos de ese recuerdo pueden volver a encontrarse, muy despacio.</p>
+</li>
+</ul>
+<hr />
+<h2 id="mecanicas-5b-colonias-decisiones-del-23-10-2026">5b. Colonias (decisiones del 23-10-2026)</h2>
+<ul>
+<li><strong>Construcción libre</strong>: el jugador coloca cada edificio <strong>donde quiera dentro de sus parcelas</strong> (con rejilla y giro), como en un juego de construcción. El servidor valida la posición (dentro de una parcela propia, sin solaparse, en terreno válido) y guarda la intención; el edificio se construye solo con la cola de siempre, aunque el jugador se desconecte.</li>
+<li><strong>Edificios fijos</strong>: cada instalación (mina, refinería, central, astillero, dique seco, plataforma defensiva, Cuna, fábrica, relicario, granja…) es <strong>un edificio completo</strong> con su aspecto por casa y nivel; no se montan por piezas.</li>
+<li><strong>Comida</strong>: la población consume <strong>biomasa</strong>; si falta, deja de crecer (no muere). Se produce en granjas (biomas fértiles: Origen, Vesperia, Tharax) o se compra.</li>
+<li><strong>Herederos visibles</strong>: tienen nombre, aspecto (el traje de la casa con los colores de su doctrina) y se les ve en la colonia que gobiernan o en el puente de la flota que mandan; se les puede visitar.</li>
+</ul>
+<h2 id="mecanicas-6-la-tierra-parcelas">6. La tierra: parcelas</h2>
+<h3 id="mecanicas-6-1-la-malla">6.1 La malla</h3>
+<ul>
+<li>Cada planeta y luna sólido se divide en <strong>parcelas</strong> de una malla geodésica (hexágonos y 12 pentágonos). Propuesta: <strong>Origen 642</strong>, planetas medianos <strong>362</strong>, lunas <strong>162</strong>; Céfiro sin parcelas (solo sus lunas y las ciudades nómadas, que no se reclaman).</li>
+<li>Cada parcela tiene <strong>bioma</strong>, <strong>recursos</strong>, <strong>dueño</strong> y, a veces, <strong>algo especial</strong> (ruina, tierra sagrada, nido, guardianes).</li>
+</ul>
+<h3 id="mecanicas-6-2-reclamar-y-perder">6.2 Reclamar y perder</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Acción</th>
+<th>Cómo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Reclamar</strong></td>
+<td>Aterrizar (o enviar una flota) en una parcela libre y plantar el estandarte de la casa: coste en créditos según el planeta (caro en Origen, barato y peligroso lejos).</td>
+</tr>
+<tr>
+<td><strong>Límite</strong></td>
+<td>Número máximo de parcelas según el rango y las colonias (para que nadie se quede con un planeta entero al principio).</td>
+</tr>
+<tr>
+<td><strong>Conectar</strong></td>
+<td>Las parcelas contiguas forman una colonia; las sueltas son <strong>puestos</strong> (minería, vigilancia).</td>
+</tr>
+<tr>
+<td><strong>Perder</strong></td>
+<td>Por conquista (§11) o abandono: una parcela sin colonia ni puesto vuelve a estar libre a los 14 días sin visitarla.</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="mecanicas-6-3-tierra-sagrada">6.3 Tierra sagrada</h3>
+<ul>
+<li>Parcelas sobre <strong>restos divinos</strong> (un hueso de Vael que florece, una vena de Kaurath, un cristal-pensamiento de Ilwen). Pocas por planeta, marcadas en el mapa una vez descubiertas.</li>
+<li>Producen el recurso <strong>esencia</strong> (nuevo, de la familia de su dios) y, muy despacio, reliquias comunes.</li>
+<li>Son el <strong>centro de las guerras</strong>: todas las casas y el pueblo del planeta las quieren. Controlar tierra sagrada de un dios cambia la reputación con su pueblo (sube o baja según su doctrina, §9).</li>
+</ul>
+<h3 id="mecanicas-6-4-biomas-y-recursos">6.4 Biomas y recursos</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Planeta</th>
+<th>Biomas principales</th>
+<th>Recursos destacados</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Brasa</td>
+<td>Lava, obsidiana, crepúsculo</td>
+<td><code>metal</code>, <code>alloys</code>, esencia de Kaurath</td>
+</tr>
+<tr>
+<td>Elyss</td>
+<td>Cristal, aurora, llanuras cantoras</td>
+<td><code>crystal</code>, <code>rare_metals</code>, esencia de Ilwen</td>
+</tr>
+<tr>
+<td>Origen</td>
+<td>Océano, islas, arrecifes</td>
+<td>Equilibrado; población alta</td>
+</tr>
+<tr>
+<td>Tharax</td>
+<td>Selva de hongos, esporas, colmena</td>
+<td><strong>biomasa</strong> (nuevo), <code>volatiles</code>, esencia de Umara</td>
+</tr>
+<tr>
+<td>Vesperia</td>
+<td>Pradera dorada, bosque torre</td>
+<td>Comida/biomasa, <code>crystal</code>, esencia de Vael</td>
+</tr>
+<tr>
+<td>Céfiro (lunas)</td>
+<td>Hielo, roca</td>
+<td><code>volatiles</code> (combustible), esencia de Zefaro (en las nubes)</td>
+</tr>
+<tr>
+<td>Umbra</td>
+<td>Hielo azul, géiseres</td>
+<td><code>exotic</code>, <code>rare_metals</code>, esencia de Ossal</td>
+</tr>
+<tr>
+<td>Cinturón y anillo</td>
+<td>Asteroides</td>
+<td><code>metal</code>, <code>rare_metals</code>, <code>exotic</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Recursos actuales que se mantienen: <code>metal</code>, <code>volatiles</code>, <code>crystal</code>, <code>alloys</code>, <code>rare_metals</code>, <code>exotic</code>. Nuevos: <strong>biomasa</strong> (población y organismos) y <strong>esencia</strong> (seis tipos, uno por dios; para reliquias, mejoras y monumentos).</p>
+<h3 id="mecanicas-6-5-cartograf-a">6.5 Cartografía</h3>
+<ul>
+<li>Las regiones de un planeta empiezan <strong>borrosas</strong> en el mapa. Se cartografían de dos formas (decisión del 23-10-2026): <strong>volando bajo con el escáner</strong> (revela al pasar) y con <strong>sondas y torres de escucha</strong> que revelan alrededor y mantienen la región <strong>vigilada</strong> (avisan de quién entra). A pie, en la etapa B.</li>
+<li>Descubrir da experiencia (oficio de Explorador), entradas del códice y, a veces, ruinas o tierra sagrada.</li>
+<li><strong>Cada casa tiene su mapa</strong>: lo que cartografías solo lo ves tú… salvo que <strong>vendas el mapa</strong> en el mercado (decisión del 23-10-2026). Un mapa vendido es una copia de una región tal como estaba ese día.</li>
+</ul>
+<p>Decisión del 23-10-2026: una parcela sin colonia ni puesto queda libre a los <strong>14 días</strong> sin visitarla (se avisa antes). Los números de parcelas (642 / 362 / 162, unas 3600 en total) quedan aprobados.</p>
+<hr />
+<h2 id="mecanicas-7-ruinas-de-los-precursores-expediciones">7. Ruinas de los Precursores (expediciones)</h2>
+<p>La actividad larga principal. Mezcla de <strong>templos colosales</strong> visibles y <strong>ciudades enterradas</strong>.</p>
+<h3 id="mecanicas-7-1-tipos">7.1 Tipos</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Tipo</th>
+<th>Dónde</th>
+<th>Duración</th>
+<th>Para cuántos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Santuario</strong></td>
+<td>Pequeñas ruinas en la superficie</td>
+<td>15–30 min</td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>Ciudad enterrada</strong></td>
+<td>Bajo el polvo y el hielo, se descubren cartografiando</td>
+<td>1–2 h</td>
+<td>1–4</td>
+</tr>
+<tr>
+<td><strong>Gran templo</strong></td>
+<td>Uno por dios, tallado en su cuerpo (escaleras que no acaban)</td>
+<td>2–4 h, por fases</td>
+<td>2–8</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="mecanicas-7-2-qu-se-hace-dentro-en-la-nave-al-principio-a-pie-en-la-etapa-b">7.2 Qué se hace dentro (en la nave al principio; a pie en la etapa B)</h3>
+<ul>
+<li><strong>Recorrer</strong> salas y galerías generadas por gramáticas (cada ruina distinta, pero con el estilo de su dios).</li>
+<li><strong>Puzles</strong> sencillos de los Precursores: alinear luces, abrir puertas con la reliquia correcta, seguir un canto.</li>
+<li><strong>Guardianes</strong> antiguos (máquinas de los Grises o criaturas del dios) que defienden las salas.</li>
+<li><strong>Inscripciones</strong> para el códice (siempre nombran seis dioses).</li>
+<li><strong>Botín</strong>: reliquias, fragmentos de recuerdo, esencia.</li>
+</ul>
+<h3 id="mecanicas-7-3-a-pie-en-la-etapa-b-decisi-n-del-23-10-2026">7.3 A pie, en la etapa B (decisión del 23-10-2026)</h3>
+<p>Las expediciones <strong>llegan con el Emperador a pie</strong> (etapa B de la hoja de ruta), no antes. Hasta entonces, las sesiones largas de la etapa A se llenan con cacerías, misiones de los pueblos, asedios, cartografía y sucesos del sistema; los templos colosales se ven y se sobrevuelan desde fuera, cerrados, como promesa.</p>
+<p>Dentro de las ruinas hay <strong>puzles, combate y jefes</strong> (un gran guardián al final de cada gran templo); recorrerlas es el camino, no el objetivo.</p>
+<h3 id="mecanicas-7-4-reglas">7.4 Reglas</h3>
+<ul>
+<li>Una ruina tiene <strong>progreso compartido</strong> dentro de un grupo; si todos se van o mueren, se «cierra» y hay que volver a empezar (la muerte suave duele aquí).</li>
+<li>Cada ruina se <strong>reinicia</strong> con otra distribución cada cierto tiempo (días), para volver a jugarla.</li>
+<li>Los grandes templos están en <strong>zonas disputadas o sin ley</strong>: entrar es arriesgarse a encontrarse con otra casa.</li>
+</ul>
+<hr />
+<h2 id="mecanicas-8-el-espacio-y-el-combate">8. El espacio y el combate</h2>
+<h3 id="mecanicas-8-1-vuelo">8.1 Vuelo</h3>
+<p>Se mantiene todo lo que ya existe (inercia y asistencia, pulso de crucero, cámaras, autopiloto, arranque de motores, combustible, energía, munición, calor de la estrella) con la <strong>escala nueva</strong> (§2.4 de la hoja de ruta: cruzar el sistema en unos 2 min). Novedad: <strong>volar dentro de las atmósferas</strong> (arrastre, entrada, tormentas) y <strong>aterrizar</strong>.</p>
+<h3 id="mecanicas-8-2-combate-en-tiempo-real">8.2 Combate en tiempo real</h3>
+<p>Se mantiene (cañones, misiles, escudos, asistencia de puntería, fuego automático, choques, fuego amigo), con <strong>zonas</strong> (§11.1) y con <strong>reliquias</strong> que cambian un poco las armas. Las naves de los pueblos pelean según su identidad militar del lore: Elydri con escudos y análisis, Tharaxi en enjambre que se adapta, Aurelianos con comandantes de élite, Nihil con ocultación e interferencia, Vesperi con defensas extraordinarias.</p>
+<h3 id="mecanicas-8-2-1-estilo-del-combate-decisiones-del-23-10-2026">8.2.1 Estilo del combate (decisiones del 23-10-2026)</h3>
+<ul>
+<li><strong>Pesado y táctico</strong>: naves con masa e inercia que giran despacio; lo que cuenta es la posición, el reparto de <strong>energía</strong> entre armas, escudo y motores (la energía ya existe en el juego) y elegir el momento. Las naves pequeñas son algo más ágiles, pero nadie esquiva balas como en un juego de cazas.</li>
+<li><strong>Escudo de burbuja única</strong>, como ahora: un valor que baja y se recarga.</li>
+<li><strong>Daño por partes</strong>: además del casco, se pueden romper <strong>motores</strong> (la nave queda lenta), <strong>armas</strong> (dejan de disparar), <strong>generador de escudo</strong> (no se recarga) y <strong>sensores</strong> (se pierde el radar). Se reparan despacio a bordo y deprisa en una colonia propia o un hangar.</li>
+<li><strong>Tripulación de varios jugadores</strong>: las naves grandes tienen <strong>puestos de artillero</strong> (y, más adelante, de ingeniero) que pueden ocupar compañeros; el piloto vuela y ellos manejan torretas. En la etapa A se entra al puesto desde el menú; con los interiores (etapa B), andando hasta él.</li>
+</ul>
+<h3 id="mecanicas-8-3-criaturas-del-espacio-decisi-n-del-23-10-2026">8.3 Criaturas del espacio (decisión del 23-10-2026)</h3>
+<p><strong>Sí hay criaturas espaciales</strong>, sobre todo cerca de los cuerpos de los dioses (lista aprobada el 23-10-2026):</p>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Criatura</th>
+<th>Dónde</th>
+<th>Comportamiento</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Bancos de luz</strong></td>
+<td>Cerca de Aeon y de Elyss</td>
+<td>Enjambres de destellos que siguen a las naves; inofensivos; su paso deja esencia de Ilwen.</td>
+</tr>
+<tr>
+<td><strong>Leviatanes del aliento</strong></td>
+<td>Entre las nubes de Céfiro</td>
+<td>Gigantes lentos que nadan en el viento de Zefaro; los Nómadas los respetan; cazarlos enfada a los Nómadas.</td>
+</tr>
+<tr>
+<td><strong>Brasas errantes</strong></td>
+<td>Órbita de Brasa</td>
+<td>Fragmentos vivos del fuego de Kaurath; atacan a quien se acerca demasiado al corazón.</td>
+</tr>
+<tr>
+<td><strong>Esporas del vacío</strong></td>
+<td>Alrededor de Tharax</td>
+<td>Nubes vivas que se pegan a los cascos y los corroen; la colmena las usa como arma.</td>
+</tr>
+<tr>
+<td><strong>Siervos menores</strong></td>
+<td>Junto a las lunas</td>
+<td>Restos animados de los siervos de los dioses (las lunas); son los <strong>jefes del sistema</strong> de los sucesos «Despertar de un guardián».</td>
+</tr>
+<tr>
+<td><strong>Ecos de Ossal</strong></td>
+<td>En la oscuridad de Umbra</td>
+<td>Siluetas que solo se ven por el rabillo del ojo; desactivan sensores.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Domesticar</strong> (decisión del 23-10-2026): algunas criaturas (no los jefes) se pueden <strong>atraer y domesticar</strong>; acompañan a la nave o viven en una colonia, con un pequeño efecto (un banco de luz que ilumina y revela lo oculto, una brasa que calienta en Umbra…). Cazarlas no es el objetivo del juego. Cómo se atraen (alimento, esencia, paciencia) queda por diseñar.</p>
+<h3 id="mecanicas-8-4-flotas">8.4 Flotas</h3>
+<p>Decisiones del 23-10-2026:
+- <strong>Todo en tiempo real</strong>: desaparece el combate por rondas. Toda batalla (con o sin jugadores mirando) la simula el servidor en vivo, en el lugar real del sistema, con la IA de naves de la Fase 9d.
+- <strong>Mando mixto</strong>: cada flota lucha sola con la táctica elegida (como hoy) y, si el Emperador está cerca o a distancia, puede dar <strong>órdenes en tiempo real</strong> (atacar a un blanco, formar, cubrir, retirarse) mientras pilota.
+- <strong>Armas</strong>: cañones y misiles (lo que ya hay), <strong>rayos continuos</strong> (queman mientras se mantiene el haz) y <strong>torpedos pesados</strong> (lentos, enormes, interceptables, para naves grandes).
+- <strong>Naves capitales</strong> (300–600 m) para jugadores: <strong>más adelante</strong> (etapa B o C); por ahora solo las tienen los pueblos.
+- Se mantienen escoltas, nodrizas y comandantes Herederos. Los viajes duran minutos.</p>
+<p>Nota técnica: simular en vivo batallas sin nadie mirando cuesta CPU en un servidor pequeño. El servidor las simulará a menos pasos por segundo cuando no haya jugadores cerca (mismo resultado en esencia, menos detalle) y a ritmo completo cuando alguien llegue. Hay que medirlo en la fase S4 (prueba de carga).</p>
+<hr />
+<h2 id="mecanicas-9-los-pueblos">9. Los pueblos</h2>
+<h3 id="mecanicas-9-1-reputaci-n">9.1 Reputación</h3>
+<p>Cada pueblo tiene una <strong>reputación</strong> con cada casa (de «enemigo jurado» a «elegido»), que cambia con lo que haces: misiones, comercio, tributos, ataques, tierra sagrada que controlas y cómo la tratas.</p>
+<h3 id="mecanicas-9-2-lo-que-ofrece-cada-pueblo">9.2 Lo que ofrece cada pueblo</h3>
+<p><strong>Guardianes</strong> (decisión del 23-10-2026): cada pueblo tiene guardianes (drones o criaturas) en sus tierras sagradas que <strong>atacan siempre</strong> a cualquiera que entre, tenga la reputación que tenga. La reputación abre otras puertas (ciudades, embajadas, mercados, permisos para colonizar zonas no sagradas de su mundo), pero el corazón de cada pueblo es peligroso para todos.</p>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Pueblo</th>
+<th>Qué ofrece a buena reputación</th>
+<th>Qué le enfada</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Aurelianos</strong> (Brasa)</td>
+<td>Duelos y torneos con premios, adornos y emblemas forjados con el fuego de Kaurath, vasallaje temporal a cambio de protección.</td>
+<td>Rechazar un duelo, tomar tierra de Kaurath sin vencerles antes.</td>
+</tr>
+<tr>
+<td><strong>Elydri</strong> (Elyss)</td>
+<td>Conocimiento (investigación más rápida) a cambio de <strong>recuerdos</strong>; restauran reliquias dañadas.</td>
+<td>Destruir ruinas o archivos; quemar tierra sagrada.</td>
+</tr>
+<tr>
+<td><strong>Tharaxi</strong> (Tharax)</td>
+<td>La colmena: nada (es hostil). Los <strong>disidentes</strong>: biomasa, criaturas aliadas, rutas secretas por la selva.</td>
+<td>Cualquier ataque a la colmena despierta su <strong>adaptación</strong> (resisten más tu tipo de arma).</td>
+</tr>
+<tr>
+<td><strong>Vesperi</strong> (Vesperia)</td>
+<td><strong>Protección</strong> de tus colonias cercanas (sus escudos), permiso para aterrizar y colonizar en sus tierras.</td>
+<td>Abusar de la fuerza, atacar a débiles, colonizar sin permiso.</td>
+</tr>
+<tr>
+<td><strong>Nómadas</strong> (Céfiro)</td>
+<td>Mercado propio, escoltas, rutas rápidas, contrabando de reliquias.</td>
+<td>Bloquear sus rutas, atacar sus ciudades.</td>
+</tr>
+<tr>
+<td><strong>Grises</strong> (Ábaco)</td>
+<td><strong>Tratados</strong>: investigación más rápida o protección a cambio de no pasar de cierto número de parcelas. Romper el tratado tiene castigo.</td>
+<td>Crecer más allá de lo pactado.</td>
+</tr>
+<tr>
+<td><strong>Nihil</strong> (Umbra)</td>
+<td>Muy poco: paso seguro por Umbra, alguna reliquia de Ossal a quien respeta el silencio.</td>
+<td>Hacer ruido en Umbra: combates, minería, motores a tope cerca de sus velatorios.</td>
+</tr>
+<tr>
+<td><strong>Carroñeros</strong></td>
+<td>Nada oficial; contratos sucios, mercado negro.</td>
+<td>Siempre hostiles salvo pacto puntual.</td>
+</tr>
+<tr>
+<td><strong>Erradicadores</strong></td>
+<td>Nada.</td>
+<td>Existir.</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="mecanicas-9-3-personajes-con-di-logo">9.3 Personajes con diálogo</h3>
+<ul>
+<li>Cada pueblo tiene <strong>3–5 personajes</strong> con nombre, retrato y diálogo escrito: un <strong>embajador</strong>, un <strong>sacerdote o guardián</strong>, un <strong>mercader</strong> y alguno especial (el líder de los disidentes tharaxi, una archivista elydri, un duelista aureliano…).</li>
+<li>Dan <strong>misiones</strong> (cadenas cortas que cuentan una historia), comercian y reaccionan a tu reputación.</li>
+<li>Los diálogos tienen <strong>opciones</strong> que cambian la reputación y, a veces, el desenlace.</li>
+<li>Todo el texto lo escribimos nosotros (es/en); no hay texto libre de jugadores.</li>
+</ul>
+<p>Decisión del 23-10-2026: <strong>texto ahora, voces algún día</strong>. Las voces no serían frases habladas, sino una <strong>lengua inventada</strong>: murmullos, sílabas y exclamaciones breves que acompañan al texto escrito (el texto sigue siendo lo que se lee). Cada pueblo tendría su timbre: cristalino y en eco para los Elydri, grave y solemne para los Aurelianos, chasquidos y zumbidos para los Tharaxi, cálido para los Vesperi, cantarín para los Nómadas, apenas un susurro para los Nihil y tonos puros y exactos para los Grises. Se generarían por código, como el resto del sonido, así que no hace falta grabar a nadie ni traducir voces.</p>
+<ul>
+<li><strong>Muchas misiones pequeñas</strong> (decisión del 23-10-2026): cada personaje tiene encargos cortos y repetibles (llevar algo, cazar, escoltar, cartografiar, recuperar) que cambian con la reputación, más alguna cadena corta que cuenta su historia.</li>
+</ul>
+<hr />
+<h2 id="mecanicas-10-naves-y-astillero">10. Naves y Astillero</h2>
+<ul>
+<li>Se mantienen las clases actuales (12 humanas, Carroñeros, alienígenas, nodriza) y el <strong>Astillero por piezas</strong>.</li>
+<li><strong>Solo tecnología humana</strong> (decisión del 23-10-2026): no hay piezas alienígenas que funcionen distinto. Con reputación, los pueblos dan <strong>adornos</strong> de su estilo (pintura, emblemas, luces) que no cambian el poder.</li>
+<li><strong>Reliquias</strong> en los huecos de la nave (§4.2).</li>
+<li><strong>Personalización</strong>: colores y emblema de la casa, adornos de colecciones completadas.</li>
+<li>La nave insignia se <strong>reconstruye</strong> al morir sin perder nada (muerte suave).</li>
+</ul>
+<hr />
+<h2 id="mecanicas-11-guerra-y-pvp-modelo-mixto">11. Guerra y PvP (modelo mixto)</h2>
+<h3 id="mecanicas-11-1-zonas">11.1 Zonas</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Zona</th>
+<th>Dónde (propuesta)</th>
+<th>Reglas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Segura</strong></td>
+<td>Origen y su órbita, el anillo humano, la estación Ábaco (los Grises no toleran combates), las ciudades nómadas</td>
+<td>Sin PvP. Los pueblos y la milicia del Núcleo protegen.</td>
+</tr>
+<tr>
+<td><strong>Disputada</strong></td>
+<td>Brasa, Elyss, Vesperia, las lunas de Céfiro, los puntos de Lagrange</td>
+<td>PvP <strong>solo entre casas en guerra declarada</strong> (§11.4). Pueblos y piratas atacan igual.</td>
+</tr>
+<tr>
+<td><strong>Sin ley</strong></td>
+<td>Tharax, Umbra, el Cinturón, el anillo de Céfiro, alrededores de la Grieta</td>
+<td>Todo vale. Allí están las mejores ruinas, la tierra sagrada más rica y lo más raro.</td>
+</tr>
+</tbody>
+</table></div>
+<p>El reparto queda aprobado por ahora (23-10-2026) y podrá cambiar. La zona se ve siempre en el HUD y en el mapa. Las zonas pueden cambiar con sucesos (una oleada de la Grieta convierte una zona en sin ley mientras dura).</p>
+<h3 id="mecanicas-11-2-gracia">11.2 Gracia</h3>
+<p>Los Emperadores nuevos tienen <strong>gracia</strong> (como hoy, 24 h ampliables a unos días) en la que no pueden ser atacados por jugadores ni atacar.</p>
+<h3 id="mecanicas-11-3-asedio-y-conquista-de-parcelas">11.3 Asedio y conquista de parcelas</h3>
+<p>Lo de la Fase 9b sobre parcelas (decisión del 23-10-2026: <strong>solo asedio general</strong>, no se destruyen edificios concretos uno a uno): presencia sostenida en órbita y en tierra, plataformas defensivas, desembarco de tropas, captura con pérdidas. Las <strong>tropas son visibles</strong> (decisión del 23-10-2026): los mortales de la casa bajan en lanzaderas y se les ve luchar en el suelo (etapa B, con el personaje a pie; antes, solo las lanzaderas y los combates de fondo). Para no perder tierra mientras duermes:
+- <strong>Aviso</strong> inmediato a la casa (en el juego y, si se activa, notificación).
+- <strong>Tiempos largos</strong>: un asedio necesita <strong>horas de presencia</strong> y se puede <strong>defender</strong> al volver.
+- <strong>Ventanas de vulnerabilidad</strong> (aprobadas el 23-10-2026): cada casa elige unas horas del día en que sus colonias pueden ser asediadas en zonas disputadas. En zonas sin ley no hay ventana: se puede asediar a cualquier hora (con asedios largos y aviso).
+- Al capturar una colonia: la tierra cambia de dueño, el relicario puede perder parte de lo guardado, los edificios quedan dañados. Las reliquias únicas guardadas allí pasan al conquistador.</p>
+<h3 id="mecanicas-11-4-guerra-declarada-entre-casas">11.4 Guerra declarada entre casas</h3>
+<ul>
+<li>Una casa <strong>declara la guerra</strong> a otra; empieza tras un <strong>aviso de 12 h</strong> (decisión del 23-10-2026) para que la otra se prepare.</li>
+<li>Durante la guerra, PvP libre entre ellas en las zonas disputadas; puntuación de guerra (naves destruidas, parcelas tomadas, reliquias capturadas).</li>
+<li>La guerra termina por <strong>rendición</strong>, <strong>tregua</strong> acordada o <strong>tiempo</strong> (máximo de días).</li>
+<li>Las alianzas entre casas (más adelante) arrastran a los aliados.</li>
+</ul>
+<hr />
+<h2 id="mecanicas-12-econom-a-decisiones-del-23-10-2026">12. Economía (decisiones del 23-10-2026)</h2>
+<ul>
+<li><strong>Créditos por varias vías equilibradas</strong>: renta de la población de las colonias (como hoy), comercio entre mercados, pagos de misiones y cacerías, botín.</li>
+<li><strong>Sin mantenimiento</strong>: tener colonias y naves no cuesta nada por estar; el límite al crecimiento lo ponen las parcelas, el rango y la guerra.</li>
+<li><strong>Sin tesoro de la humanidad ni proyectos comunes</strong>: se quitan en la Era II.</li>
+<li><strong>Mercado del anillo</strong> (Origen): libro de órdenes, comisión y envíos según la distancia real. <strong>Solo mercado</strong>: no hay intercambio directo entre jugadores; todo pasa por los libros de órdenes, para evitar abusos.</li>
+<li><strong>Mercado nómada</strong> (Céfiro): más caro, pero compra y vende lo que el del anillo no (reliquias comunes y raras, esencias, contrabando), sin preguntar.</li>
+<li><strong>Fabricación</strong> y <strong>tecnología</strong> como hoy (Fábrica, recetas, <strong>un solo árbol de investigación humano</strong>), con recetas nuevas que usan <strong>esencia</strong> y <strong>biomasa</strong>.</li>
+<li><strong>Logística visible</strong>: cargueros entre parcelas, lunas y mercados. <strong>Los jugadores pueden asaltarlos en zonas sin ley</strong> (piratería de jugadores), además de los Carroñeros; en zonas disputadas, solo entre casas en guerra.</li>
+</ul>
+<h2 id="mecanicas-13-el-sistema-vivo-sucesos">13. El sistema vivo: sucesos</h2>
+<p>Sucesos del servidor (decisión del 23-10-2026: <strong>llegan por sorpresa con unas horas de señales</strong> —temblores en la Grieta, cambios en las nubes de Céfiro, cantos de los cristales—, no con calendario) que hacen que el sistema cambie y que el dueño puede usar para contar el lore poco a poco (MMO):</p>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Suceso</th>
+<th>Qué pasa</th>
+<th>Frecuencia aproximada (propuesta)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Oleada de la Grieta</strong></td>
+<td>Los Erradicadores entran por la Grieta y van a por Cunas y colonias pobladas; recompensas para quien defiende.</td>
+<td>Semanal</td>
+</tr>
+<tr>
+<td><strong>Tormenta de Zefaro</strong></td>
+<td>Una gran tormenta de Céfiro cambia las rutas y deja esencia en las nubes.</td>
+<td>Cada pocos días</td>
+</tr>
+<tr>
+<td><strong>Lluvia del Cinturón</strong></td>
+<td>Meteoros sobre un planeta: daños y minerales raros en el suelo.</td>
+<td>Cada pocos días</td>
+</tr>
+<tr>
+<td><strong>Eclipse</strong></td>
+<td>Cuando Céfiro tapa el sol de una luna o una alineación rara: se abren santuarios que solo existen en la sombra.</td>
+<td>Según las órbitas</td>
+</tr>
+<tr>
+<td><strong>Canto de Elyss</strong></td>
+<td>Los cristales cantan un recuerdo para todo el sistema: una entrada de códice común y una ruina que despierta.</td>
+<td>Rara</td>
+</tr>
+<tr>
+<td><strong>Silencio de Umbra</strong></td>
+<td>Los Nihil apagan los sensores de una región durante horas.</td>
+<td>Rara</td>
+</tr>
+<tr>
+<td><strong>Despertar de un guardián</strong></td>
+<td>Un siervo muerto (una luna) se agita: jefe del sistema para muchas casas a la vez.</td>
+<td>Mensual</td>
+</tr>
+<tr>
+<td><strong>Sucesos del dueño</strong></td>
+<td>Eventos escritos a mano que cuentan el lore (nuevos textos, lugares, personajes).</td>
+<td>Cuando el dueño quiera</td>
+</tr>
+</tbody>
+</table></div>
+<p>Ninguno revela el secreto (lore-era2.md §9 y §13); como mucho, siembran preguntas.</p>
+<h3 id="mecanicas-13-1-las-oleadas-de-la-grieta-decisiones-del-23-10-2026">13.1 Las oleadas de la Grieta (decisiones del 23-10-2026)</h3>
+<ul>
+<li><strong>Destruyen de verdad</strong>: si nadie las para, los Erradicadores arrasan las Cunas y las colonias pobladas que encuentran en su camino (edificios destruidos, población perdida). Es la amenaza real del sistema (Ley III).</li>
+<li><strong>Tregua automática</strong>: mientras dura una oleada, el PvP se desactiva en las zonas afectadas; las casas en guerra pelean del mismo lado.</li>
+<li><strong>Los pueblos también luchan, cada uno a su manera</strong>: los Vesperi defienden a quien esté cerca, los Aurelianos lo ven como un duelo glorioso, los Grises calculan y protegen solo Ábaco, los Nómadas huyen con sus ciudades, los Tharaxi se lanzan en enjambre, los Elydri salvan archivos y los Nihil se esconden en el silencio.</li>
+</ul>
+<h3 id="mecanicas-13-2-historia-principal-por-era">13.2 Historia principal por era</h3>
+<p>Cada era (3 meses) cuenta un <strong>capítulo</strong> de la historia para todo el servidor: una campaña de sucesos, misiones y lugares nuevos que avanza según lo que hacen los jugadores, y que termina con el gran suceso del fin de era (§18). Es la vía principal para que el dueño cuente el lore poco a poco, sin revelar nunca el secreto.</p>
+<ul>
+<li><strong>La historia la decide el dueño</strong> (23-10-2026): está escrita de antemano; los jugadores la viven, no la votan.</li>
+<li><strong>Primera era: «La Grieta se abre».</strong> Los Erradicadores llegan por primera vez; los pueblos y la humanidad descubren que algo de fuera puede entrar en Aeon. La era empieza con señales en el borde del sistema y termina con la gran oleada.</li>
+</ul>
+<hr />
+<h2 id="mecanicas-14-el-c-dice">14. El códice</h2>
+<ul>
+<li>Todo lo que se encuentra se guarda en el <strong>códice</strong> del Emperador: inscripciones, crónicas de los pueblos, cantos elydri, diálogos importantes, sueños, recuerdos, reliquias, criaturas, lugares.</li>
+<li>Ordenado por dios, pueblo y planeta; lo no descubierto aparece como hueco.</li>
+<li>Algunas entradas se <strong>contradicen</strong> entre sí (cada pueblo cuenta la guerra de los dioses a su manera).</li>
+<li>Completar secciones da prestigio y, a veces, un recuerdo.</li>
+</ul>
+<hr />
+<h2 id="mecanicas-15-progresi-n-decisiones-del-23-10-2026">15. Progresión (decisiones del 23-10-2026)</h2>
+<h3 id="mecanicas-15-1-oficios-en-vez-de-un-rango-nico">15.1 Oficios en vez de un rango único</h3>
+<p>El Emperador sube <strong>por oficios</strong>, cada uno con su experiencia y sus rangos (oficios aprobados el 23-10-2026):</p>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Oficio</th>
+<th>Sube con</th>
+<th>Desbloquea (ejemplos)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Piloto</strong></td>
+<td>Vuelo, combate de naves, cacerías</td>
+<td>Maniobras, mejor reparto de energía, naves más grandes en el hangar.</td>
+</tr>
+<tr>
+<td><strong>Señor de la guerra</strong></td>
+<td>Asedios, guerras, mando de flotas</td>
+<td>Más flotas, órdenes de flota, tropas mejores.</td>
+</tr>
+<tr>
+<td><strong>Explorador</strong></td>
+<td>Cartografía, sondas, criaturas, ruinas</td>
+<td>Alcance del escáner, regiones antes que nadie, domesticar criaturas.</td>
+</tr>
+<tr>
+<td><strong>Mercader</strong></td>
+<td>Comercio, rutas, misiones de entrega</td>
+<td>Comisiones más bajas, más órdenes abiertas, cargueros mayores.</td>
+</tr>
+<tr>
+<td><strong>Señor de la tierra</strong></td>
+<td>Colonias, población, construcción</td>
+<td>Más parcelas, edificios de nivel alto, granjas mejores.</td>
+</tr>
+<tr>
+<td><strong>Erudito</strong></td>
+<td>Códice, recuerdos, reliquias, Elydri</td>
+<td>Investigación, colecciones, más huecos de recuerdo.</td>
+</tr>
+</tbody>
+</table></div>
+<p>Las mejoras de los oficios son <strong>pequeñas y prácticas</strong> (como las del rango actual: bodega, combustible, parcelas…); el poder grande no viene del nivel.</p>
+<h3 id="mecanicas-15-2-el-resto">15.2 El resto</h3>
+<div class="twrap"><table>
+<thead>
+<tr>
+<th>Qué</th>
+<th>Cómo sube</th>
+<th>Para qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Recuerdos</strong></td>
+<td>Fragmentos (§5)</td>
+<td>Rasgos permanentes pequeños, lore personal.</td>
+</tr>
+<tr>
+<td><strong>Tecnología</strong></td>
+<td>Investigación humana (un solo árbol)</td>
+<td>Mejoras de naves, colonias y armas.</td>
+</tr>
+<tr>
+<td><strong>Reliquias y colecciones</strong></td>
+<td>Botín (§4)</td>
+<td>Ventajas pequeñas y adornos.</td>
+</tr>
+<tr>
+<td><strong>Reputación</strong></td>
+<td>Pueblos (§9)</td>
+<td>Misiones, permisos, protección, tratados, adornos.</td>
+</tr>
+<tr>
+<td><strong>Prestigio de la casa</strong></td>
+<td>Todo lo anterior</td>
+<td><strong>Ranking público por prestigio</strong> (de la era y del legado histórico) y leyendas.</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Objetivos: solo semanales</strong>, con racha de semanas; desaparecen los diarios.</li>
+<li>Se mantienen los <strong>contratos</strong>, el <strong>reto de caza</strong> y las <strong>peticiones de colonia</strong>, adaptados al sistema.</li>
+</ul>
+<h2 id="mecanicas-16-el-primer-d-a-de-un-jugador">16. El primer día de un jugador</h2>
+<ol>
+<li><strong>Despertar</strong> en la cápsula del fondo del mar de Origen; subir nadando o en la cápsula hasta la superficie: el cielo, el anillo, la estrella. (Tutorial, capítulo 1.)</li>
+<li>Llegar a la ciudad sobre las ruinas; un personaje del <strong>consejo de Emperadores</strong> (solo lore) le da su nave.</li>
+<li><strong>Primer vuelo</strong> en la órbita de Origen; la luna-astillero.</li>
+<li><strong>Primera parcela</strong> en Origen (pequeña, segura).</li>
+<li><strong>Primera misión</strong> de un pueblo (Nómadas, que comercian con todos) y primer viaje fuera de Origen.</li>
+<li><strong>Primer santuario</strong> de los Precursores: primera reliquia, primer recuerdo, primera inscripción con «los seis dioses».</li>
+<li>Primer encuentro con <strong>Carroñeros</strong> (en zona sin ley si se aventura).</li>
+</ol>
+<hr />
+<h2 id="mecanicas-17-qu-cambia-en-el-servidor-resumen">17. Qué cambia en el servidor (resumen)</h2>
+<p>Lo nuevo frente al servidor actual, para las fases S1–S7 de la hoja de ruta:
+- Parcelas, tierra sagrada, cartografía y zonas (S3, S4).
+- Reliquias, colecciones, relicario y huecos; recuerdos y su árbol; códice (nuevas tablas, en la exportación de datos y con borrado en cascada).
+- Reputación ampliada, personajes, misiones y diálogos (datos en <code>packages/content</code>).
+- Ruinas (instancias de expedición con progreso compartido y reinicio).
+- Guerras declaradas, ventanas de vulnerabilidad.
+- Recursos nuevos (<code>biomass</code>, <code>essence_*</code>).
+- Muerte suave: la nave, la carga y los humanos ya no se pierden; techo de gestación.
+- Sucesos del sistema (ampliación de <code>CrisisService</code> y <code>SPACE_EVENTS</code>).</p>
+<h2 id="mecanicas-17b-interfaz-y-experiencia-decisiones-del-23-10-2026">17b. Interfaz y experiencia (decisiones del 23-10-2026)</h2>
+<ul>
+<li><strong>Mesa de mando 3D</strong>: la gestión del imperio se hace en un <strong>holograma del sistema</strong> en el puente de la nave (y en las colonias con sala de mando): se acerca un planeta para ver parcelas y colonias, se arrastran flotas, se trazan rutas, se ven guerras y sucesos. Los datos detallados (colas, mercado, reliquias, códice) se abren como paneles flotantes alrededor del holograma, con el mismo estilo.</li>
+<li><strong>Tutorial como guía con pasos</strong>: capítulos que señalan qué tocar y explican (como el tutorial actual), empezando por el despertar en el mar.</li>
+<li><strong>Modo foto</strong>: cámara libre, ocultar la interfaz, ajustes de exposición, profundidad de campo y filtros; encaja con el pilar de «cada captura, un fondo de pantalla».</li>
+<li><strong>Colores de la interfaz: hueso, azul y oro</strong> (los de la humanidad en el documento de estilo), en el menú principal y en toda la interfaz.</li>
+<li><strong>Sonido</strong>: lo que más importa es la <strong>música coral y sacra</strong>, el <strong>silencio del espacio</strong> (momentos de casi silencio para sentir la escala) y el <strong>ambiente de cada mundo</strong> (viento, cristales que cantan, la selva que late). <strong>Todo generado por código</strong>, también el coro, aunque suene menos real: no se usan grabaciones de voz.</li>
+<li><strong>Mando de consola desde el principio</strong>: todo el juego (vuelo, combate, mesa de mando, menús) se puede jugar con mando además de teclado y ratón.</li>
+</ul>
+<h2 id="mecanicas-18-eras-con-reinicio-decisiones-del-23-10-2026">18. Eras con reinicio (decisiones del 23-10-2026)</h2>
+<ul>
+<li><strong>Una era dura 3 meses.</strong> Termina con un <strong>gran suceso</strong> del sistema (una oleada final de la Grieta, un despertar), anunciado con semanas de antelación.</li>
+<li><strong>Se reinicia</strong> todo lo del mundo: parcelas, colonias, flotas, naves del hangar, créditos, reputación, reliquias y adornos.</li>
+<li><strong>Legado que se conserva</strong>: la cuenta y el Emperador (nombre, casa, emblema), el <strong>códice</strong>, los <strong>recuerdos</strong> (rasgos), el <strong>prestigio</strong> y las <strong>leyendas de la era</strong>.</li>
+<li><strong>Sin ayudas para los que llegan tarde</strong>: quien empieza a mitad de era empieza como todos (con la gracia de los nuevos y las zonas seguras, como siempre).</li>
+<li>Cada era puede <strong>cambiar algo del sistema</strong> (una luna rota, una zona nueva, un pueblo con otra actitud) y es el gran momento para contar más lore.</li>
+<li>Nota técnica: el cambio de era es una versión del script de reinicio que ya existe (<code>galaxia-30k.sh</code> conserva cuentas y Wiki); habrá que ampliarlo para conservar códice, recuerdos y prestigio.</li>
+</ul></section>
+  </main>
+</div>
+<footer>Aeonarch · plan escrito con Claude a partir de las decisiones del dueño. Las cifras son propuestas.</footer>
+
+<script>
+(function () {
+  const planets = [{"n": 1, "nombre": "Brasa", "radioKm": 3, "orbitaKm": 120, "color": "#ff7a3d", "color2": "#3a1a14", "lunas": 0, "anillo": false}, {"n": 2, "nombre": "Elyss", "radioKm": 4, "orbitaKm": 220, "color": "#c79bff", "color2": "#2b1f4a", "lunas": 1, "anillo": false}, {"n": 3, "nombre": "Origen", "radioKm": 6, "orbitaKm": 340, "color": "#4fb6ff", "color2": "#0d2a3f", "lunas": 1, "anillo": true}, {"n": 4, "nombre": "Tharax", "radioKm": 5.5, "orbitaKm": 480, "color": "#7cff6b", "color2": "#16301a", "lunas": 2, "anillo": false}, {"n": 5, "nombre": "Vesperia", "radioKm": 4.5, "orbitaKm": 700, "color": "#ffd36b", "color2": "#3a2e12", "lunas": 2, "anillo": false}, {"n": 6, "nombre": "C\u00e9firo", "radioKm": 16, "orbitaKm": 950, "color": "#ff9ec8", "color2": "#3d1830", "lunas": 5, "anillo": true}, {"n": 7, "nombre": "Umbra", "radioKm": 5, "orbitaKm": 1300, "color": "#7fe0ff", "color2": "#0a1622", "lunas": 1, "anillo": true}];
+  const cv = document.getElementById("sky");
+  const ctx = cv.getContext("2d");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let w = 0, h = 0, dpr = 1;
+  // Estrellas de fondo deterministas.
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const dust = Array.from({ length: 220 }, () => [rnd(), rnd(), rnd() * 1.2 + 0.2, rnd()]);
+  function size() {
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    w = cv.clientWidth; h = cv.clientHeight;
+    cv.width = w * dpr; cv.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function draw(t) {
+    ctx.clearRect(0, 0, w, h);
+    for (const [x, y, r, a] of dust) {
+      ctx.globalAlpha = 0.25 + 0.5 * a;
+      ctx.fillStyle = "#e8e5f2";
+      ctx.fillRect(x * w, y * h, r, r);
+    }
+    ctx.globalAlpha = 1;
+    const sx = -h * 0.35, sy = h * 0.55, sr = h * 0.62;
+    const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * 1.9);
+    g.addColorStop(0, "#fff6dc"); g.addColorStop(0.32, "#f4c76e"); g.addColorStop(0.55, "rgba(244,199,110,0.25)"); g.addColorStop(1, "rgba(244,199,110,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, sr * 1.9, 0, Math.PI * 2); ctx.fill();
+    if (!planets.length) return;
+    const maxO = Math.sqrt(planets[planets.length - 1].orbitaKm);
+    planets.forEach((p, i) => {
+      const R = sr + (w - sr - 40) * (Math.sqrt(p.orbitaKm) / maxO) * 0.98;
+      ctx.strokeStyle = "rgba(161,158,186,0.22)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(sx, sy, R, R * 0.92, 0, -0.9, 0.9); ctx.stroke();
+      const ang = (i % 2 ? -1 : 1) * (0.05 + 0.06 * ((i * 37) % 5)) + (reduce ? 0 : t * 0.00002 / Math.sqrt(p.orbitaKm / 120));
+      const px = sx + Math.cos(ang) * R, py = sy + Math.sin(ang) * R * 0.92;
+      const pr = Math.max(4, Math.min(h * 0.11, 3 + p.radioKm * (h / 210)));
+      if (p.anillo) {
+        ctx.strokeStyle = p.color + "88"; ctx.lineWidth = Math.max(1, pr * 0.18);
+        ctx.beginPath(); ctx.ellipse(px, py, pr * 1.9, pr * 0.5, -0.35, 0, Math.PI * 2); ctx.stroke();
+      }
+      const pg = ctx.createRadialGradient(px - pr * 0.4, py - pr * 0.4, pr * 0.1, px, py, pr);
+      pg.addColorStop(0, "#ffffff"); pg.addColorStop(0.18, p.color); pg.addColorStop(1, p.color2);
+      ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#a19eba"; ctx.font = "11px 'JetBrains Mono', monospace"; ctx.textAlign = "center";
+      if (w > 520 || i % 2 === 0) ctx.fillText(p.nombre.toUpperCase(), px, py + pr + 15);
+    });
+  }
+  function loop(t) { draw(t); if (!reduce) requestAnimationFrame(loop); }
+  size(); draw(0);
+  addEventListener("resize", () => { size(); draw(performance.now()); });
+  if (!reduce) requestAnimationFrame(loop);
+
+  // Índice: marca la sección visible.
+  const links = [...document.querySelectorAll("nav.toc a")];
+  const map = new Map(links.map(a => [a.getAttribute("href").slice(1), a]));
+  const io = new IntersectionObserver(es => {
+    for (const e of es) if (e.isIntersecting) { links.forEach(l => l.classList.remove("on")); map.get(e.target.id)?.classList.add("on"); }
+  }, { rootMargin: "0px 0px -70% 0px" });
+  document.querySelectorAll("main h2[id], main section.part").forEach(h => io.observe(h));
+})();
+</script>
