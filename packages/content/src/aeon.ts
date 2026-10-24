@@ -374,8 +374,8 @@ export const AEON_ENVIRONMENT = {
   gravityMoon: 4,
   /** Arrastre a densidad 1 (fracción de la velocidad por segundo); la densidad baja lineal con la altura. */
   drag: 0.6,
-  /** Distancia mínima del casco al suelo (m): ahí la nave se posa. */
-  clearanceM: 20,
+  /** Distancia del centro de la nave al suelo cuando está posada (m): la altura de la panza de la nave provisional. */
+  clearanceM: 8,
   /** Gigantes gaseosos: suelo de presión a esta fracción del radio por debajo de las nubes. */
   gasFloorDepth: 0.1,
   /** Crucero cerca de un mundo: como mucho esta fracción de la altura por segundo (a 100 km, 50 km/s), sin bajar de la velocidad normal. */
