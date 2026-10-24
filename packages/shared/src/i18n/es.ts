@@ -2143,6 +2143,17 @@ export const es = {
   "shipEditor.problem.no_fuel": "Sin depósito: el motor cuántico no tiene combustible.",
   "shipEditor.problem.unarmed": "Desarmada.",
   "shipEditor.problem.no_shield": "Sin escudo.",
+  // Cliente de Unreal (Era II): se exportan a aeonarch-ue/Data/i18n.json con scripts/export-i18n.ts.
+  "ue.core.ok": "Aeonarch: C++ funcionando. Núcleo correcto (hash de Aeon = {hash})",
+  "ue.core.bad": "Aeonarch: el núcleo C++ da un hash DISTINTO DE TYPESCRIPT ({hash})",
+  "ue.hud.status": "Velocidad: {speed} m/s   Modo: {mode}   Asistencia: {assist}   Cámara: {camera}",
+  "ue.hud.mode.normal": "normal",
+  "ue.hud.mode.cruise": "CRUCERO",
+  "ue.hud.camera.cockpit": "cabina",
+  "ue.hud.camera.behind": "detrás",
+  "ue.hud.controls": "W/S avanzar · A/D lateral · Espacio/Ctrl subir/bajar · Q/E alabeo · ratón dirección · Mayús impulso · C crucero · Z asistencia · B cámara",
+  "ue.common.yes": "sí",
+  "ue.common.no": "no",
 } as const;
 
 export type I18nKey = keyof typeof es;

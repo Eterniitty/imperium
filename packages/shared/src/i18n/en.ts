@@ -2141,4 +2141,15 @@ export const en: Record<I18nKey, string> = {
   "shipEditor.problem.no_fuel": "No tank: the quantum drive has no fuel.",
   "shipEditor.problem.unarmed": "Unarmed.",
   "shipEditor.problem.no_shield": "No shield.",
+  // Cliente de Unreal (Era II): se exportan a aeonarch-ue/Data/i18n.json con scripts/export-i18n.ts.
+  "ue.core.ok": "Aeonarch: C++ running. Core matches (hash of Aeon = {hash})",
+  "ue.core.bad": "Aeonarch: the C++ core gives a hash DIFFERENT FROM TYPESCRIPT ({hash})",
+  "ue.hud.status": "Speed: {speed} m/s   Mode: {mode}   Assist: {assist}   Camera: {camera}",
+  "ue.hud.mode.normal": "normal",
+  "ue.hud.mode.cruise": "CRUISE",
+  "ue.hud.camera.cockpit": "cockpit",
+  "ue.hud.camera.behind": "behind",
+  "ue.hud.controls": "W/S forward · A/D strafe · Space/Ctrl up/down · Q/E roll · mouse steer · Shift boost · C cruise · Z assist · B camera",
+  "ue.common.yes": "yes",
+  "ue.common.no": "no",
 };
