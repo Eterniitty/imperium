@@ -108,6 +108,16 @@ export function dominantBody(bodies: readonly EnvBody[], pos: Vec3, tMs: number,
   return best;
 }
 
+/**
+ * Tope del crucero a una altura sobre el suelo (el altitudeM del último paso):
+ * frena solo al acercarse a un mundo. 0 (sin tope) en el espacio abierto.
+ */
+export function cruiseCapFor(altitudeM: number, maxSpeed: number, p: EnvParams = AEON_ENVIRONMENT): number {
+  if (!(altitudeM < Infinity)) return 0;
+  const cap = altitudeM * p.cruisePerAltitude;
+  return cap > maxSpeed ? cap : maxSpeed;
+}
+
 export interface EnvResult {
   state: FlightState;
   /** Cuerpo dominante (−1: espacio abierto). */

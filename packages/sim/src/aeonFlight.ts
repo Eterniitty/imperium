@@ -35,6 +35,8 @@ export interface FlightInput {
   boost: boolean;
   assist: boolean;
   cruise: boolean;
+  /** Tope de la velocidad de crucero (m/s) cerca de un mundo (cruiseCapFor); 0 o sin poner: sin tope. */
+  cruiseCap?: number;
 }
 
 export type FlightParams = typeof AEON_FLIGHT;
@@ -85,7 +87,9 @@ export function flightStep(state: FlightState, input: FlightInput, dt: number, p
   let vel: Vec3;
   if (cruise > 0) {
     const forward = quatRotate(rot, [1, 0, 0]);
-    const target = p.maxSpeed + (p.cruiseSpeed - p.maxSpeed) * (cruise * cruise);
+    const full = p.maxSpeed + (p.cruiseSpeed - p.maxSpeed) * (cruise * cruise);
+    const cap = input.cruiseCap ?? 0;
+    const target = cap > 0 && cap < full ? cap : full;
     const a = Math.min(1, dt * p.cruiseAlign);
     vel = [
       state.vel[0] + (forward[0] * target - state.vel[0]) * a,
