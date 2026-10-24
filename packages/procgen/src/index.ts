@@ -8,4 +8,5 @@ export * from "./territory";
 export * from "./galaxy";
 export * from "./terrain";
 export * from "./parcels";
+export * from "./trig";
 export { planetDesignation } from "./names";
