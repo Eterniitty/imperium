@@ -9,12 +9,14 @@ if (!out) {
   console.error("Falta la ruta de salida");
   process.exit(1);
 }
-const pick = (dict: Record<string, string>) => Object.fromEntries(Object.entries(dict).filter(([k]) => k.startsWith("ue.")));
+// Cada idioma, como lista de pares [clave, texto] (más fácil de leer en Unreal que un objeto).
+const pick = (dict: Record<string, string>) => Object.entries(dict).filter(([k]) => k.startsWith("ue."));
 const data = { version: 1, es: pick(es), en: pick(en) };
-const missing = Object.keys(data.es).filter((k) => !(k in data.en));
+const enKeys = new Set(data.en.map(([k]) => k));
+const missing = data.es.map(([k]) => k).filter((k) => !enKeys.has(k));
 if (missing.length) {
   console.error("Faltan en inglés: " + missing.join(", "));
   process.exit(1);
 }
 writeFileSync(out, JSON.stringify(data, null, 2) + "\n");
-console.log(`Escrito ${out}: ${Object.keys(data.es).length} textos en es y en.`);
+console.log(`Escrito ${out}: ${data.es.length} textos en es y en.`);
