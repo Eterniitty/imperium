@@ -73,7 +73,7 @@ export class MenuScene {
     this.gtao.blendIntensity = 0.85;
     this.gtao.updateGtaoMaterial({ radius: 1.6, distanceExponent: 1.5, thickness: 2, scale: 1 });
     this.composer.addPass(this.gtao);
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.4, 0.4, 0.92);
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.35, 0.4, 0.96);
     this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
     this.smaa = new SMAAPass();
@@ -120,8 +120,8 @@ export class MenuScene {
         o.receiveShadow = true;
       }
     });
-    // De tres cuartos: la proa hacia la cámara y la compuerta detrás.
-    group.rotation.y = 2.3;
+    // De tres cuartos: la proa hacia la cámara, a la derecha (el menú va a la izquierda).
+    group.rotation.y = -1.3;
     return group;
   }
 
@@ -291,8 +291,8 @@ export class MenuScene {
     }
     // Dos focos sobre la plataforma que dan las sombras de la nave.
     for (const [x, z, k] of [
-      [-10, 8, 420],
-      [12, -10, 280],
+      [-10, 8, 240],
+      [12, -10, 150],
     ] as const) {
       const spot = new THREE.SpotLight(0xfff2e0, k, 80, 0.62, 0.55, 1.6);
       spot.position.set(x, H - 1.5, z);

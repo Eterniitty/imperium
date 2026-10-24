@@ -8,8 +8,9 @@
  * opción puede dejar una sala fuera. Las proporciones solo estiran lo que no es
  * habitable (morro, cola, alas y motores).
  *
- * Ejes de la nave en metros: x a estribor, y arriba, z hacia atrás (la proa en
- * z = 0 apunta a −z, como los demás modelos del cliente).
+ * Ejes de la nave en metros: x a estribor, y arriba, z hacia atrás. En la
+ * plantilla, z = 0 es el frente de la cabina; el morro va por delante (z < 0) y
+ * mide `noseM` por la proporción del morro.
  */
 
 /** Una sala del interior: caja en metros (centro y medidas) y para qué sirve. */
@@ -38,6 +39,15 @@ export interface ShipTemplate {
   rooms: readonly ShipRoom[];
   /** Grosor del casco alrededor de las salas (m). */
   hullM: number;
+  /** Largo del morro por delante de la cabina (m), con la proporción a 1. */
+  noseM: number;
+  /**
+   * Perfil del casco, de la cabina a la cola: [z, semimanga, techo, arista, panza]
+   * en metros. La sección es una superelipse (lomo redondeado, panza plana) que
+   * se une en la arista lateral; entre puntos se interpola suave. Las salas
+   * (con `hullM`) tienen que caber: lo comprueba `shipRoomsFit` del cliente.
+   */
+  hull: readonly (readonly [number, number, number, number, number])[];
   /** Piezas que admite cada zona (la primera es la de serie). */
   noses: readonly ShipNose[];
   wings: readonly ShipWings[];
@@ -91,24 +101,39 @@ export const SHIP_MARK_NUMBER_MAX = 4;
 export const SHIP_MARK_NAME_MAX = 20;
 
 /**
- * Cañonera (unos 35 m): la nave inicial. Cabina de dos plazas al frente, pasillo
- * con el camarote a babor y la cocina a estribor, bodega con rampa ventral y
- * sala de máquinas a popa, entre las dos góndolas de motor.
+ * Cañonera (unos 36 m): la nave inicial. Cabina de dos plazas al frente, pasillo
+ * con el camarote a babor y la cocina a estribor, esclusa, bodega con rampa
+ * ventral y sala de máquinas a popa, entre las dos góndolas de motor.
  */
 export const GUNSHIP: ShipTemplate = {
   id: "gunship",
-  lengthM: 35,
+  lengthM: 36,
   crew: 2,
   beds: 2,
-  hullM: 0.5,
+  hullM: 0.35,
+  noseM: 7,
   rooms: [
-    { id: "cockpit", kind: "cockpit", center: [0, 0.4, 7.5], size: [3.4, 2.3, 4] },
-    { id: "hall", kind: "corridor", center: [0, 0, 12.5], size: [1.8, 2.3, 6] },
-    { id: "quarters", kind: "quarters", center: [-2.4, 0, 12.5], size: [3, 2.3, 5] },
-    { id: "galley", kind: "galley", center: [2.4, 0, 12.5], size: [3, 2.3, 5] },
-    { id: "airlock", kind: "airlock", center: [0, 0, 16.5], size: [3, 2.3, 2] },
-    { id: "cargo", kind: "cargo", center: [0, -0.3, 21], size: [6, 3.2, 7] },
-    { id: "engineering", kind: "engineering", center: [0, 0, 27], size: [4.4, 2.6, 5] },
+    { id: "cockpit", kind: "cockpit", center: [0, 0.2, 1.7], size: [2.6, 2, 3.4] },
+    { id: "hall", kind: "corridor", center: [0, -0.05, 7.2], size: [1.1, 2.2, 7.6] },
+    { id: "quarters", kind: "quarters", center: [-1.5, -0.05, 8], size: [1.9, 2.2, 5] },
+    { id: "galley", kind: "galley", center: [1.5, -0.05, 8], size: [1.9, 2.2, 5] },
+    { id: "airlock", kind: "airlock", center: [0, -0.05, 11.9], size: [2.4, 2.2, 1.8] },
+    { id: "cargo", kind: "cargo", center: [0, -0.3, 16.3], size: [4, 2.7, 7] },
+    { id: "engineering", kind: "engineering", center: [0, -0.05, 22.5], size: [3, 2.3, 5.4] },
+  ],
+  hull: [
+    [0, 1.95, 1.0, -0.35, -1.38],
+    [2.5, 2.55, 1.45, -0.33, -1.55],
+    [5.3, 3.36, 2.0, -0.3, -1.82],
+    [8, 3.42, 2.05, -0.3, -1.85],
+    [11, 3.4, 2.05, -0.3, -1.95],
+    [13.5, 3.3, 2.0, -0.3, -2.2],
+    [17, 3.2, 1.97, -0.3, -2.22],
+    [20, 3.05, 1.92, -0.3, -2.15],
+    [22.5, 2.8, 1.85, -0.25, -1.85],
+    [25.2, 2.6, 1.85, -0.2, -1.75],
+    [27.6, 2.35, 1.6, -0.2, -1.45],
+    [28.4, 2.2, 1.45, -0.2, -1.3],
   ],
   noses: ["chisel", "needle", "blunt"],
   wings: ["swept", "delta", "fan", "stub"],
