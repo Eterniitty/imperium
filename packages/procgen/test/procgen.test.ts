@@ -205,3 +205,19 @@ describe("territorio alienígena", async () => {
     expect(relics).toBeGreaterThan(10);
   });
 });
+
+describe("parcelas de la Era II", () => {
+  it("tienen 10·f²+2 parcelas, 12 pentágonos y vecindades simétricas", async () => {
+    const { buildParcelGrid, parcelAt } = await import("../src");
+    for (const f of [4, 6, 8]) {
+      const grid = buildParcelGrid(f);
+      expect(grid.centers.length).toBe(10 * f * f + 2);
+      expect(grid.neighbors.filter((n) => n.length === 5).length).toBe(12);
+      grid.neighbors.forEach((n, i) => {
+        expect(n.length === 5 || n.length === 6).toBe(true);
+        for (const j of n) expect(grid.neighbors[j]).toContain(i);
+      });
+      grid.centers.forEach(([x, y, z], i) => expect(parcelAt(grid, x, y, z)).toBe(i));
+    }
+  });
+});

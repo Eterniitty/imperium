@@ -6,4 +6,6 @@ export * from "./sector";
 export * from "./system";
 export * from "./territory";
 export * from "./galaxy";
+export * from "./terrain";
+export * from "./parcels";
 export { planetDesignation } from "./names";
