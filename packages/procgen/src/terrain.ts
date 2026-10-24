@@ -66,3 +66,29 @@ export function terrainClimate(p: TerrainParams, x: number, y: number, z: number
   const humidity = fbm3(p.seed + 1299709, x * 2, y * 2, z * 2, 4);
   return { temperature, humidity };
 }
+
+/** Clima de referencia de un bioma (temperatura y humedad en [0, 1]). */
+export interface BiomeClimate {
+  temperature: number;
+  humidity: number;
+}
+
+/**
+ * Índice del bioma de tierra de clima más parecido (distancia al cuadrado; en
+ * empate, el de índice menor). -1 si la lista está vacía. Bajo el nivel del mar
+ * (altura < 0) el juego usa el bioma de mar del mundo, no este.
+ */
+export function nearestBiome(climate: Climate, biomes: readonly BiomeClimate[]): number {
+  let best = -1;
+  let bestD = Infinity;
+  for (let i = 0; i < biomes.length; i++) {
+    const dt = climate.temperature - biomes[i]!.temperature;
+    const dh = climate.humidity - biomes[i]!.humidity;
+    const d = dt * dt + dh * dh;
+    if (d < bestD) {
+      bestD = d;
+      best = i;
+    }
+  }
+  return best;
+}
