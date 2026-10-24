@@ -376,6 +376,10 @@ export const AEON_ENVIRONMENT = {
   drag: 0.6,
   /** Distancia del centro de la nave al suelo cuando está posada (m): la altura de la panza de la nave provisional. */
   clearanceM: 8,
+  /** Margen para contar como posada (m): sin él, la gravedad la despega un fotograma de cada dos. */
+  landToleranceM: 0.25,
+  /** Rozamiento con el suelo al estar posada (fracción de la velocidad por segundo). */
+  groundFriction: 2,
   /** Gigantes gaseosos: suelo de presión a esta fracción del radio por debajo de las nubes. */
   gasFloorDepth: 0.1,
   /** Crucero cerca de un mundo: como mucho esta fracción de la altura por segundo (a 100 km, 50 km/s), sin bajar de la velocidad normal. */

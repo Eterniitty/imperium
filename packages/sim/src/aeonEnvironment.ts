@@ -185,12 +185,15 @@ export function environmentStep(
     const local = rotZ(d, c, s);
     const ground = groundRadiusM(b, local, p);
     altitudeM = r - ground;
-    const floor = ground + p.clearanceM;
-    if (r < floor) {
-      offset = [d[0] * floor, d[1] * floor, d[2] * floor];
+    const floorR = ground + p.clearanceM;
+    if (r < floorR + p.landToleranceM) {
+      // Posada: sobre el suelo, sin velocidad hacia abajo y con rozamiento.
+      offset = [d[0] * floorR, d[1] * floorR, d[2] * floorR];
       altitudeM = p.clearanceM;
       const radial = vel[0] * d[0] + vel[1] * d[1] + vel[2] * d[2];
       if (radial < 0) vel = [vel[0] - d[0] * radial, vel[1] - d[1] * radial, vel[2] - d[2] * radial];
+      const grip = 1 - Math.min(1, dt * p.groundFriction);
+      vel = [vel[0] * grip, vel[1] * grip, vel[2] * grip];
       landed = true;
     }
   }
